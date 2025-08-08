@@ -5,30 +5,130 @@
     </div>
   </div>
 
-  <div class="simulador-container">
-    
-    <!-- Botões à esquerda -->
-    <div class="simulador-buttons">
-      <button onclick="abrirPopupSimulacao()">Simular com Gráfico</button>
-      <button onclick="abrirPopupReforco()">Simular Reforço</button>
-      <button onclick="abrirSimuladorTP2()">Calcular TP2</button>
-      <button onclick="abrirSimulador()">🔎 TOP 10</button>
-    </div>
+<div class="screen-body sim-layout">
+    <!-- COLUNA ESQUERDA: BOTÕES -->
+    <aside class="sim-sidebar">
+      <button class="btn dark full" data-target="panel-grafico">
+        📈 Simular com Gráfico
+      </button>
+      <button class="btn dark full" data-target="panel-reforco">
+        ➕ Simular Reforço
+      </button>
+      <button class="btn dark full" data-target="panel-tp2">
+        🎯 Calcular TP2
+      </button>
+      <button class="btn dark full" data-target="panel-top10">
+        🔎 TOP 10 para Investir
+      </button>
+      <button class="btn outline full" onclick="window.navigateTo?.('dashboard')">
+        ← Voltar à Dashboard
+      </button>
+    </aside>
 
-    <!-- Popups à direita -->
-    <div class="simulador-popups">
-      <div id="popupSimulacao" class="simulador-popup hidden">
+    <!-- COLUNA DIREITA: “POPUPS” (PAINÉIS) -->
+    <section class="sim-content">
+
+      <!-- PAINEL: SIMULAR COM GRÁFICO -->
+      <div id="panel-grafico" class="panel active">
         <h3>📈 Simulador com Gráfico</h3>
-        <input type="text" placeholder="Nome da Ação">
-        <input type="number" placeholder="TP1">
-        <input type="number" placeholder="TP2">
+
+        <div class="form-grid">
+          <input type="text" id="nomeAcao" placeholder="Nome da Ação" />
+          <input type="number" id="tp1" placeholder="TP1 (Preço inicial)" />
+          <input type="number" id="tp2" placeholder="TP2 (Preço final)" />
+          <input type="number" id="investimento" placeholder="Investido (€)" />
+          <input type="number" id="dividendo" placeholder="Dividendo por ação (€)" />
+        </div>
+
+        <div class="quick-buttons">
+          <button class="btn ghost" data-quick="500">💶 500</button>
+          <button class="btn ghost" data-quick="1000">💶 1000</button>
+          <button class="btn ghost" data-quick="1500">💶 1500</button>
+          <button class="btn ghost" data-quick="2000">💶 2000</button>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn premium" id="btnSimularGrafico">Simular com gráfico</button>
+          <button class="btn outline" id="btnSomarLucros">Somar Lucros</button>
+          <button class="btn outline" id="btnLimparTabela">Limpar</button>
+          <button class="btn outline" id="btnLimparGrafico">🧹 Limpar Gráfico</button>
+          <button class="btn outline" id="btnEnviarEmail">📧 Enviar Email</button>
+        </div>
+
+        <div class="tabela-scroll-wrapper">
+          <table id="tabelaSimulacoes">
+            <thead>
+              <tr>
+                <th>Ação</th>
+                <th>TP1</th>
+                <th>TP2</th>
+                <th>Investido</th>
+                <th>Lucro</th>
+                <th>% Crescimento</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <canvas id="graficoLucro" height="220"></canvas>
       </div>
 
-      <div id="popupReforco" class="simulador-popup hidden">
-        <h3>📈 Simular Reforço</h3>
-        <input type="number" placeholder="Investimento Inicial (€)">
-      </div>
-    </div>
+      <!-- PAINEL: REFORÇO -->
+      <div id="panel-reforco" class="panel">
+        <h3>➕ Simular Reforço de Investimento</h3>
+        <div class="form-grid">
+          <input type="number" id="invest1" placeholder="Investimento Inicial (€)" />
+          <input type="number" id="preco1" placeholder="Preço por Ação 1 (€)" />
+          <input type="number" id="invest22" placeholder="Reforço (€)" />
+          <input type="number" id="preco2" placeholder="Preço por Ação 2 (€)" />
+        </div>
 
+        <div class="actions-row">
+          <button class="btn premium" id="btnCalcularReforco">Calcular</button>
+          <button class="btn outline" id="btnLimparReforco">Limpar</button>
+        </div>
+
+        <div id="resultadoReforco" class="resultado-popup"></div>
+      </div>
+
+      <!-- PAINEL: CALCULAR TP2 -->
+      <div id="panel-tp2" class="panel">
+        <h3>🎯 Calcular TP2</h3>
+        <div class="form-grid">
+          <input type="number" id="tp1Input" placeholder="TP1 (preço de compra €)" />
+          <input type="number" id="investimentoInput" placeholder="Valor Investido (€)" />
+          <input type="number" id="lucroDesejadoInput" placeholder="Lucro Desejado (€)" />
+        </div>
+
+        <div class="actions-row">
+          <button class="btn premium" id="btnCalcularTP2">Calcular TP2</button>
+          <button class="btn outline" id="btnLimparTP2">Limpar</button>
+        </div>
+
+        <div id="resultadoTP2" class="resultado-popup"></div>
+      </div>
+
+      <!-- PAINEL: TOP 10 -->
+      <div id="panel-top10" class="panel">
+        <h3>🔎 TOP 10 para Investir</h3>
+        <div class="form-grid">
+          <input type="number" id="inputInvestimento" placeholder="Montante a investir (€) — Ex: 1500" />
+          <input type="number" id="inputLucro" placeholder="Lucro desejado (€) — Ex: 100" />
+          <input type="number" id="inputCrescimento" placeholder="Crescimento estimado (%) — opcional" />
+        </div>
+
+        <div class="actions-row">
+          <button class="btn premium" id="btnSimularTop10">Simular</button>
+          <button class="btn outline" id="btnLimparTop10">Limpar</button>
+        </div>
+
+        <div id="resultadoSimulacao" class="resultado-container"></div>
+      </div>
+    </section>
   </div>
 </div>
+
+<!-- Chart.js (apenas aqui, porque este screen usa gráfico) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="js/screens/simulador.js"></script>
