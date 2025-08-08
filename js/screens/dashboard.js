@@ -105,6 +105,11 @@ export async function initScreen() {
 
   // 2) Atividades recentes com barra de progresso
   await carregarAtividadeRecenteComProgresso();
+  // Ao clicar no botão "Nova Simulação" -> navegar para screen "menu"
+document.getElementById("btnNovaSimulacao")?.addEventListener("click", () => {
+  import("../main.js").then(({ navigateTo }) => navigateTo("simulador"));
+});
+
 }
 
 // ------- Atividade recente com barra de progresso -------

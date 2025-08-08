@@ -1,0 +1,34 @@
+<div class="Simulador" data-screen-title="Simulador">
+  <div class="Simulador-header">
+    <div class="Simulador">
+      <p class="subtitle">Screen para simular investimentos ou posições</p>
+    </div>
+  </div>
+
+  <div class="simulador-container">
+    
+    <!-- Botões à esquerda -->
+    <div class="simulador-buttons">
+      <button onclick="abrirPopupSimulacao()">Simular com Gráfico</button>
+      <button onclick="abrirPopupReforco()">Simular Reforço</button>
+      <button onclick="abrirSimuladorTP2()">Calcular TP2</button>
+      <button onclick="abrirSimulador()">🔎 TOP 10</button>
+    </div>
+
+    <!-- Popups à direita -->
+    <div class="simulador-popups">
+      <div id="popupSimulacao" class="simulador-popup hidden">
+        <h3>📈 Simulador com Gráfico</h3>
+        <input type="text" placeholder="Nome da Ação">
+        <input type="number" placeholder="TP1">
+        <input type="number" placeholder="TP2">
+      </div>
+
+      <div id="popupReforco" class="simulador-popup hidden">
+        <h3>📈 Simular Reforço</h3>
+        <input type="number" placeholder="Investimento Inicial (€)">
+      </div>
+    </div>
+
+  </div>
+</div>
