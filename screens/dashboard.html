@@ -90,7 +90,28 @@
       <button id="btnNovaSimulacao" class="btn premium full">Nova Simulação</button>
       <button class="btn outline full">Adicionar Ação</button>
       <button class="btn ghost full">Definir Objetivo</button>
-      <button class="btn ghost full">Analisar Progresso</button>
+      <button class="btn ghost full" id="btnOportunidades">Analisar Oportunidades</button>
     </div>
   </div>
+
+    <!-- POPUP: Top 10 Oportunidades -->
+    <div id="opModal" class="modal hidden">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Top 10 Oportunidades</h3>
+          <button class="icon-btn" id="opClose" title="Fechar">✖</button>
+        </div>
+
+        <div class="modal-toolbar">
+          <button class="chip" data-periodo="1s">1 semana</button>
+          <button class="chip" data-periodo="1m">1 mês</button>
+          <button class="chip" data-periodo="1ano">1 ano</button>
+        </div>
+
+        <div class="top10-box">
+          <ul id="listaTop10"></ul>
+        </div>
+      </div>
+    </div>
+
 </div>

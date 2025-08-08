@@ -38,7 +38,7 @@ export async function initScreen() {
       }
     });
 
-    // Agrupar ativos por TICKER (para KPIs por ativo agregado)
+    // Agrupar ativos por TICKER
     const agrupadoPorTicker = new Map();
 
     ativosSnapshot.forEach((doc) => {
@@ -60,7 +60,6 @@ export async function initScreen() {
       grupo.quantidade   += quantidade;
       grupo.investimento += precoCompra * quantidade;
 
-      // objetivo conta uma única vez por ticker (até decidires outra regra)
       if (!grupo.objetivoDefinido && objetivo > 0) {
         grupo.objetivoFinanceiro = objetivo;
         grupo.objetivoDefinido   = true;
@@ -103,16 +102,35 @@ export async function initScreen() {
     console.error("❌ Erro nos KPIs:", err);
   }
 
-  // 2) Atividades recentes com barra de progresso
+  // 2) Atividades recentes
   await carregarAtividadeRecenteComProgresso();
-  // Ao clicar no botão "Nova Simulação" -> navegar para screen "menu"
-document.getElementById("btnNovaSimulacao")?.addEventListener("click", () => {
-  import("../main.js").then(({ navigateTo }) => navigateTo("simulador"));
-});
 
+  // Botão "Nova Simulação"
+  document.getElementById("btnNovaSimulacao")?.addEventListener("click", () => {
+    import("../main.js").then(({ navigateTo }) => navigateTo("simulador"));
+  });
+
+  // Botão "Analisar Oportunidades"
+  document.getElementById("btnOportunidades")?.addEventListener("click", openOportunidades);
+
+  // Fechar popup
+  document.getElementById("opClose")?.addEventListener("click", closeOportunidades);
+  document.getElementById("opModal")?.addEventListener("click", (e) => {
+    if (e.target.id === "opModal") closeOportunidades();
+  });
+
+  // Botões período
+  document.querySelectorAll("#opModal .chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const p = btn.getAttribute("data-periodo");
+      opPeriodoAtual = p || "1s";
+      setActiveChip(opPeriodoAtual);
+      carregarTop10Crescimento(opPeriodoAtual);
+    });
+  });
 }
 
-// ------- Atividade recente com barra de progresso -------
+// ------- Atividade recente -------
 async function carregarAtividadeRecenteComProgresso() {
   const cont = document.getElementById("atividadeRecente");
   if (!cont) return;
@@ -130,7 +148,6 @@ async function carregarAtividadeRecenteComProgresso() {
       return;
     }
 
-    // Preços atuais
     const mapaPrecoAtual = {};
     const snapAcoes = await getDocs(collection(db, "acoesDividendos"));
     snapAcoes.forEach(doc => {
@@ -152,23 +169,19 @@ async function carregarAtividadeRecenteComProgresso() {
       const precoCompra = Number(d.precoCompra || 0);
       const objetivoLucro = Number(d.objetivoFinanceiro || 0);
 
-      // Data
       let dataTxt = "sem data";
       if (d.dataCompra && typeof d.dataCompra.toDate === "function") {
         dataTxt = fmtDate.format(d.dataCompra.toDate());
       }
 
-      // Preço atual
       const precoAtual = typeof mapaPrecoAtual[ticker] === "number"
         ? mapaPrecoAtual[ticker]
         : precoCompra;
 
-      // Lucro atual
       const investido   = precoCompra * qtd;
       const atual       = precoAtual * qtd;
       const lucroAtual  = atual - investido;
 
-      // Progresso vs objetivo
       let pct = 0, widthPct = 0, pctText = "—";
       const positive = lucroAtual >= 0;
 
@@ -207,4 +220,91 @@ async function carregarAtividadeRecenteComProgresso() {
     console.error("Erro ao carregar atividade/progresso:", e);
     cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
   }
+}
+
+// ------- Popup Top 10 Oportunidades -------
+let opInterval = null;
+let opPeriodoAtual = "1s";
+
+async function carregarTop10Crescimento(periodo = "1s") {
+  const lista = document.getElementById("listaTop10");
+  if (!lista) return;
+
+  lista.innerHTML = "🔄 A carregar...";
+
+  const campos = {
+    "1s": "taxaCrescimento_1semana",
+    "1m": "taxaCrescimento_1mes",
+    "1ano": "taxaCrescimento_1ano",
+  };
+  const campo = campos[periodo] || campos["1s"];
+
+  try {
+    const snap = await getDocs(collection(db, "acoesDividendos"));
+    const arr = [];
+
+    snap.forEach(doc => {
+      const d = doc.data();
+      const crescimento = Number(d[campo] ?? 0);
+      if (Number.isFinite(crescimento) && d.ticker) {
+        arr.push({
+          nome: d.nome || d.ticker,
+          ticker: String(d.ticker).toUpperCase(),
+          crescimento
+        });
+      }
+    });
+
+    const top10 = arr.sort((a,b) => b.crescimento - a.crescimento).slice(0, 10);
+
+    if (top10.length === 0) {
+      lista.innerHTML = "<li>😕 Nenhuma ação com crescimento positivo.</li>";
+      return;
+    }
+
+    lista.innerHTML = top10.map(item => `
+      <li>
+        <div class="left">
+          <strong>${item.nome}</strong>
+          <span class="ticker">(${item.ticker})</span>
+        </div>
+        <span class="${item.crescimento >= 0 ? "gain" : "loss"}">
+          ${item.crescimento >= 0 ? "+" : ""}${item.crescimento.toFixed(2)}%
+        </span>
+      </li>
+    `).join("");
+  } catch (err) {
+    console.error("Erro ao carregar Top 10:", err);
+    lista.innerHTML = "<li style='color:#f88;'>Erro ao carregar dados.</li>";
+  }
+}
+
+function openOportunidades() {
+  const modal = document.getElementById("opModal");
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+  setActiveChip(opPeriodoAtual);
+  carregarTop10Crescimento(opPeriodoAtual);
+
+  clearInterval(opInterval);
+  opInterval = setInterval(() => {
+    carregarTop10Crescimento(opPeriodoAtual);
+  }, 30000);
+}
+
+function closeOportunidades() {
+  const modal = document.getElementById("opModal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  clearInterval(opInterval);
+  opInterval = null;
+}
+
+function setActiveChip(periodo) {
+  document.querySelectorAll("#opModal .chip").forEach(ch => {
+    const p = ch.getAttribute("data-periodo");
+    ch.classList.toggle("active", p === periodo);
+  });
 }
