@@ -1,0 +1,406 @@
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(0, 0%, 3.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(0, 0%, 3.9%);
+  --primary: hsl(0, 0%, 9%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --muted: hsl(0, 0%, 96.1%);
+  --muted-foreground: hsl(0, 0%, 45.1%);
+  --success: hsl(142, 69%, 58%);
+  --warning: hsl(38, 92%, 50%);
+  --info: hsl(0, 0%, 45%);
+  --border: hsl(0, 0%, 89.8%);
+  --radius: 0.75rem;
+  --shadow-card: 0 4px 20px -2px hsl(0, 0%, 0%, 0.1);
+  --transition: all 0.3s ease;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.dashboard {
+  padding: 1.5rem;
+}
+
+.dashboard-header {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-header h1 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: var(--card);
+  padding: 1rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+}
+
+.card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.value {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.subvalue {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+.icon-box {
+  background-color: var(--muted);
+  padding: 0.6rem;
+  border-radius: var(--radius);
+  font-size: 1.2rem;
+}
+
+.card.premium .icon-box { background-color: hsl(0, 0%, 95%); }
+.card.success .icon-box { background-color: hsl(142, 69%, 92%); }
+.card.info .icon-box { background-color: hsl(0, 0%, 92%); }
+.card.default .icon-box { background-color: hsl(0, 0%, 90%); }
+
+.dashboard-columns {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+}
+
+.muted {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+.date {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.btn {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 0.6rem;
+}
+
+.btn.full {
+  width: 100%;
+  text-align: center;
+}
+
+.btn.premium {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+}
+
+.btn.outline {
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.btn.ghost {
+  background-color: transparent;
+  color: var(--muted-foreground);
+  border: none;
+}
+
+.footer-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 60px; /* ou 70px, consoante o design */
+  background-color: white;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #ccc;
+  z-index: 1000;
+}
+
+.footer-nav button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  padding: 10px 16px;
+  background-color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.footer-nav i {
+  font-size: 18px;
+}
+/*actividade completa*/
+.atividade-completa {
+  padding: 20px;
+}
+
+.atividade-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.atividade-item {
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f9f9f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.atividade-item .muted {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.atividade-item .date {
+  font-size: 0.8em;
+  color: #aaa;
+}
+
+#screenContainer {
+  padding-bottom: 80px; /* ou o valor da altura do footer */
+}
+.page { padding: 1.5rem; padding-bottom: 90px; }
+.activity-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:.75rem; border:1px solid var(--border); border-radius: var(--radius);
+  margin-bottom:.6rem; background: var(--card);
+}
+.activity-left { display:flex; gap:.75rem; align-items:center; }
+.activity-icon { font-size:1.1rem; background:var(--muted); border-radius:50%; padding:.4rem .5rem; }
+
+.icon-box i {
+  font-size: 1.5rem;
+  color: inherit; /* mantém a cor que o cartão já usa */
+}
+.activity-left {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+}
+.activity-icon {
+  display: inline-flex;
+  width: 36px; height: 36px;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--muted);
+  font-size: 1rem;
+}
+
+.progress-row {
+  margin-top: .35rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .5rem;
+  align-items: center;
+}
+.progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 8px;
+  background: var(--muted);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, hsl(142, 69%, 58%), hsl(142, 69%, 45%));
+}
+.small { font-size: .8rem; }
+
+
+/*adaptar o footer para mobile*/
+/* Geral: mede padding/border dentro da largura */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Evita scroll horizontal acidental */
+html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+
+/* FOOTER responsivo e à prova de notches */
+.footer-nav {
+  position: fixed;
+  left: 0;
+  right: 0;          /* usa left+right em vez de width:100vw */
+  bottom: 0;
+  z-index: 999;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  gap: 0;            /* elimina pequenos overflows por gaps grandes */
+  padding: 6px 8px calc(env(safe-area-inset-bottom, 0) + 6px); /* iPhone notch */
+  background: var(--background);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 10px rgba(0,0,0,.12);
+}
+
+/* Botões do footer: nunca excedem a largura */
+.footer-nav button {
+  flex: 1 1 0;
+  min-width: 0;         /* IMPORTANTÍSSIMO p/ evitar “esticar” */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;      /* ajusta texto em mobile */
+  line-height: 1.1;
+  white-space: nowrap;  /* impede quebra de linha do label */
+  overflow: hidden;     /* corta texto/ícone que quiser sair */
+  text-overflow: ellipsis;
+}
+
+/* Ícones (Font Awesome ou emoji) */
+.footer-nav button i,
+.footer-nav button .icon {
+  font-size: 18px;
+}
+
+/* Hover só para desktop */
+@media (hover:hover) {
+  .footer-nav button:hover {
+    background: var(--muted);
+    border-radius: 10px;
+  }
+}
+
+/* Em ecrãs muito estreitos, encolhe tudo um bocadinho */
+@media (max-width: 380px) {
+  .footer-nav { padding: 4px 6px calc(env(safe-area-inset-bottom,0) + 4px); }
+  .footer-nav button { font-size: 11px; padding: 6px 2px; }
+  .footer-nav button i { font-size: 16px; }
+}
+/*LOGOTIPO*/
+/* Header da dashboard — mantém o layout lado a lado */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  padding: 0 10px;
+  /* evita quebra para baixo no mobile */
+  flex-wrap: nowrap;
+}
+
+.dashboard-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;            /* permite o texto fazer wrap */
+}
+
+.dashboard-title h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+.dashboard-title .subtitle {
+  margin: .2rem 0 0 0;
+  font-size: .95rem;
+  color: #888;
+  white-space: normal;      /* deixa o subtítulo partir linha */
+  word-break: break-word;   /* e não estourar o layout */
+}
+
+.dashboard-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex: 0 0 auto;          /* não encolher nem crescer */
+}
+
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  .dashboard-title h1 {
+    font-size: 1.4rem;
+  }
+  .dashboard-title .subtitle {
+    font-size: .85rem;
+  }
+  .dashboard-logo {
+    width: 36px;
+    height: 36px;
+  }
+}
+/* Header fixo no topo */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.app-header h1 {
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.header-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+/* Mobile ajuste */
+@media (max-width: 600px) {
+  .app-header h1 {
+    font-size: 1.2rem;
+  }
+  .header-logo {
+    width: 36px;
+    height: 36px;
+  }
+}
+

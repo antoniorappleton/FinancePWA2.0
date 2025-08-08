@@ -1,0 +1,96 @@
+<div class="dashboard" data-screen-title="Dashboard">
+  <div class="dashboard-header">
+    <div class="dashboard-title">
+      <p class="subtitle">Visão geral do seu portfólio de investimentos</p>
+    </div>
+  </div>
+
+  <div class="metrics-grid">
+    <div class="card premium">
+      <div class="card-content">
+        <div>
+          <p class="label">Valor Total</p>
+          <p class="value valor-total" id="valorTotal">€0.00</p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-coins"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card success">
+      <div class="card-content">
+        <div>
+          <p class="label">Retorno Total</p>
+          <p class="value retorno-total" id="retornoTotal">0%</p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-chart-line"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card info">
+      <div class="card-content">
+        <div>
+          <p class="label">Lucro Total</p>
+          <p class="value lucro-total" id="lucroTotal">€0.00</p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-wallet"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card default">
+      <div class="card-content">
+        <div>
+          <p class="label">Posições Ativas</p>
+          <p class="value posicoes-ativas" id="posicoesAtivas">0</p>
+          <p class="subvalue">
+            Objetivos:
+            <span class="objetivos-financeiros" id="objetivosFinanceiros"
+              >0/0</span
+            >
+          </p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-bullseye"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card warning">
+      <div class="card-content">
+        <div>
+          <p class="label">Taxa de Sucesso</p>
+          <p class="value taxa-sucesso" id="taxaSucesso">0%</p>
+          <p class="subvalue">
+            Objetivo Total: <span id="objetivoTotal">€0.00</span>
+          </p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-rocket"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-columns">
+    <div class="card glass">
+      <h3>Atividade Recente</h3>
+      <div id="atividadeRecente"></div>
+      <button class="btn outline full" onclick="navigateTo('atividade')">
+        Ver Toda Atividade
+      </button>
+    </div>
+
+    <div class="card glass">
+      <h3>Ações Rápidas</h3>
+      <button class="btn premium full">Nova Simulação</button>
+      <button class="btn outline full">Adicionar Ação</button>
+      <button class="btn ghost full">Definir Objetivo</button>
+      <button class="btn ghost full">Analisar Progresso</button>
+    </div>
+  </div>
+</div>

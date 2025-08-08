@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#4CAF50" />
+    <title>APPFinance</title>
+  </head>
+  <body>
+    
+    <!-- HEADER COM TÍTULO E LOGO -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 id="screenTitle"></h1>
+      </div>
+      <div class="header-right">
+        <img src="icons/icon-192.png" alt="Logo" class="header-logo" />
+      </div>
+    </header>
+
+    <div id="screenContainer">A carregar...</div>
+    <footer class="footer-nav">
+      <button onclick="navigateTo('dashboard')">
+        <i class="fas fa-clock"></i><span>Dashboard</span>
+      </button>
+      <button onclick="navigateTo('menu')">
+        <i class="fas fa-calculator"></i><span>Simulador</span>
+      </button>
+      <button onclick="navigateTo('atividade')">
+        <i class="fas fa-chart-line"></i><span>Portfólio</span>
+      </button>
+      <button onclick="navigateTo('settings')">
+        <i class="fas fa-cog"></i><span>Configurações</span>
+      </button>
+    </footer>
+
+    <!-- Apenas um script principal (com type="module") -->
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
