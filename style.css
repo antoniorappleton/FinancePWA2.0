@@ -404,3 +404,36 @@ html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
   }
 }
 
+/*barras*/
+/* --- Progresso compacto para activity list --- */
+.activity-meta {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--muted-foreground, #666);
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+}
+.progress {
+  margin-top: 6px;
+}
+.progress-track {
+  height: 6px;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--muted, #eee);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width .35s ease;
+}
+.progress-fill.positive {
+  background: #22c55e; /* verde */
+}
+.progress-fill.negative {
+  background: #ef4444; /* vermelho */
+}
+
