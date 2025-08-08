@@ -5,18 +5,25 @@
     </div>
   </div>
 
-<div class="screen-body sim-layout">
+  <div class="screen-body sim-layout">
     <!-- COLUNA ESQUERDA: BOTÕES -->
     <aside class="sim-sidebar">
-      <button class="btn dark full" data-target="panel-grafico">Simular com Gráfico</button>
-      <button class="btn dark full" data-target="panel-reforco">Simular Reforço</button>
-      <button class="btn dark full" data-target="panel-tp2">Calcular TP2</button>
-      <button class="btn dark full" data-target="panel-top10">TOP 10 para Investir</button>
+      <button class="btn dark full" data-target="panel-grafico">
+        Simular com Gráfico
+      </button>
+      <button class="btn dark full" data-target="panel-reforco">
+        Simular Reforço
+      </button>
+      <button class="btn dark full" data-target="panel-tp2">
+        Calcular TP2
+      </button>
+      <button class="btn dark full" data-target="panel-top10">
+        TOP 10 para Investir
+      </button>
     </aside>
 
     <!-- COLUNA DIREITA: “POPUPS” (PAINÉIS) -->
     <section class="sim-content">
-
       <!-- PAINEL: SIMULAR COM GRÁFICO -->
       <div id="panel-grafico" class="panel active">
         <h3>📈 Simulador com Gráfico</h3>
@@ -26,7 +33,11 @@
           <input type="number" id="tp1" placeholder="TP1 (Preço inicial)" />
           <input type="number" id="tp2" placeholder="TP2 (Preço final)" />
           <input type="number" id="investimento" placeholder="Investido (€)" />
-          <input type="number" id="dividendo" placeholder="Dividendo por ação (€)" />
+          <input
+            type="number"
+            id="dividendo"
+            placeholder="Dividendo por ação (€)"
+          />
         </div>
 
         <div class="quick-buttons">
@@ -37,10 +48,14 @@
         </div>
 
         <div class="actions-row">
-          <button class="btn premium" id="btnSimularGrafico">Simular com gráfico</button>
+          <button class="btn premium" id="btnSimularGrafico">
+            Simular com gráfico
+          </button>
           <button class="btn outline" id="btnSomarLucros">Somar Lucros</button>
           <button class="btn outline" id="btnLimparTabela">Limpar</button>
-          <button class="btn outline" id="btnLimparGrafico">Limpar Gráfico</button>
+          <button class="btn outline" id="btnLimparGrafico">
+            Limpar Gráfico
+          </button>
           <button class="btn outline" id="btnEnviarEmail">Enviar Email</button>
         </div>
 
@@ -60,15 +75,21 @@
           </table>
         </div>
 
-        <canvas id="graficoLucro" height="220"></canvas>
-        
+        <div style="height: 300px">
+          <canvas id="graficoLucro"></canvas>
+        </div>
+
       </div>
 
       <!-- PAINEL: REFORÇO -->
       <div id="panel-reforco" class="panel">
         <h3>Simular Reforço de Investimento</h3>
         <div class="form-grid">
-          <input type="number" id="invest1" placeholder="Investimento Inicial (€)" />
+          <input
+            type="number"
+            id="invest1"
+            placeholder="Investimento Inicial (€)"
+          />
           <input type="number" id="preco1" placeholder="Preço por Ação 1 (€)" />
           <input type="number" id="invest22" placeholder="Reforço (€)" />
           <input type="number" id="preco2" placeholder="Preço por Ação 2 (€)" />
@@ -86,9 +107,21 @@
       <div id="panel-tp2" class="panel">
         <h3>🎯 Calcular TP2</h3>
         <div class="form-grid">
-          <input type="number" id="tp1Input" placeholder="TP1 (preço de compra €)" />
-          <input type="number" id="investimentoInput" placeholder="Valor Investido (€)" />
-          <input type="number" id="lucroDesejadoInput" placeholder="Lucro Desejado (€)" />
+          <input
+            type="number"
+            id="tp1Input"
+            placeholder="TP1 (preço de compra €)"
+          />
+          <input
+            type="number"
+            id="investimentoInput"
+            placeholder="Valor Investido (€)"
+          />
+          <input
+            type="number"
+            id="lucroDesejadoInput"
+            placeholder="Lucro Desejado (€)"
+          />
         </div>
 
         <div class="actions-row">
@@ -103,9 +136,21 @@
       <div id="panel-top10" class="panel">
         <h3>🔎 TOP 10 para Investir</h3>
         <div class="form-grid">
-          <input type="number" id="inputInvestimento" placeholder="Montante a investir (€) — Ex: 1500" />
-          <input type="number" id="inputLucro" placeholder="Lucro desejado (€) — Ex: 100" />
-          <input type="number" id="inputCrescimento" placeholder="Crescimento estimado (%) — opcional" />
+          <input
+            type="number"
+            id="inputInvestimento"
+            placeholder="Montante a investir (€) — Ex: 1500"
+          />
+          <input
+            type="number"
+            id="inputLucro"
+            placeholder="Lucro desejado (€) — Ex: 100"
+          />
+          <input
+            type="number"
+            id="inputCrescimento"
+            placeholder="Crescimento estimado (%) — opcional"
+          />
         </div>
 
         <div class="actions-row">

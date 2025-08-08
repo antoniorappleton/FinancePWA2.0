@@ -262,7 +262,15 @@ body {
 *, *::before, *::after { box-sizing: border-box; }
 
 /* Evita scroll horizontal acidental */
-html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+html, body {
+  overflow-y: scroll; /* barra sempre presente, evita empurrões */
+}
+
+#graficoSimulacao canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
 
 /* FOOTER responsivo e à prova de notches */
 .footer-nav {

@@ -128,7 +128,7 @@ function atualizarGrafico() {
 
   const ctx = canvas.getContext("2d");
   grafico = new Chart(ctx, {
-    type: "bar",
+    type: "bar", // podes mudar para 'line' se quiseres
     data: {
       labels,
       datasets: [
@@ -143,11 +143,15 @@ function atualizarGrafico() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false, // permite ocupar altura do container
+      animation: { duration: 300 },
+      layout: { padding: 0 },
       plugins: { legend: { display: false } },
       scales: { y: { beginAtZero: true } },
     },
   });
 }
+
 
 function simularEGUardar() {
   document.querySelector(".tabela-scroll-wrapper")?.classList.remove("hidden");
