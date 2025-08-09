@@ -1,23 +1,29 @@
 // js/screens/simulador.js
-// Requer Chart.js incluído em simulador.html (ex.: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>)
+// Requer Chart.js incluído na página (ex.: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>)
 
+import { getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { db } from "../firebase-config.js";
+
+/* =========================
+   ESTADO
+   ========================= */
 let simulacoes = [];
 let grafico = null;
 
 /* =========================
-   HELPERS
+   HELPERS GERAIS
    ========================= */
 function setScreenTitleIfAvailable() {
   if (typeof window.setScreenTitle === "function") {
     window.setScreenTitle("Simulador");
   }
 }
-
 function toNumber(v) {
   const n = parseFloat(String(v ?? "").replace(",", "."));
   return isNaN(n) ? 0 : n;
 }
-
+function euro(v){ return new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(v||0); }
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 function limparInputsSimulacao() {
   ["nomeAcao","tp1","tp2","investimento","dividendo"].forEach(id => {
     const el = document.getElementById(id);
@@ -128,7 +134,7 @@ function atualizarGrafico() {
 
   const ctx = canvas.getContext("2d");
   grafico = new Chart(ctx, {
-    type: "bar", // podes mudar para 'line' se quiseres
+    type: "bar",
     data: {
       labels,
       datasets: [
@@ -143,7 +149,7 @@ function atualizarGrafico() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false, // permite ocupar altura do container
+      maintainAspectRatio: false,
       animation: { duration: 300 },
       layout: { padding: 0 },
       plugins: { legend: { display: false } },
@@ -151,7 +157,6 @@ function atualizarGrafico() {
     },
   });
 }
-
 
 function simularEGUardar() {
   document.querySelector(".tabela-scroll-wrapper")?.classList.remove("hidden");
@@ -168,9 +173,7 @@ function simularEGUardar() {
   }
 
   guardarSimulacao({ nomeAcao: nome, tp1, tp2, valorInvestido: investimento, dividendo });
-
-  // Limpa apenas os inputs (mantém gráfico+tabela)
-  limparInputsSimulacao();
+  limparInputsSimulacao(); // limpa inputs mas mantém tabela/gráfico
 }
 
 function limparGrafico() {
@@ -236,54 +239,236 @@ function calcularTP2() {
 }
 
 /* =========================
-   TOP 10 (placeholder local)
+   TOP 10 — Distribuição
    ========================= */
-function simularTop10() {
-  const inv   = toNumber(document.getElementById("inputInvestimento")?.value);
-  const lucro = toNumber(document.getElementById("inputLucro")?.value);
-  const cres  = toNumber(document.getElementById("inputCrescimento")?.value); // opcional (%)
+/* mapeamento do período */
+function campoCrescimento(periodoSel){
+  if (periodoSel === "1s")  return "taxaCrescimento_1semana";
+  if (periodoSel === "1m")  return "taxaCrescimento_1mes";
+  return "taxaCrescimento_1ano";
+}
+function melhorTaxaDisponivel(acao, prefer){
+  const ordem = prefer === "taxaCrescimento_1ano"
+    ? ["taxaCrescimento_1ano","taxaCrescimento_1mes","taxaCrescimento_1semana"]
+    : [prefer,"taxaCrescimento_1mes","taxaCrescimento_1semana","taxaCrescimento_1ano"];
+  for (const k of ordem){
+    const v = Number(acao[k] || 0);
+    if (v !== 0) return v;
+  }
+  return 0;
+}
+function dividirPeriodicidade(dividendo, periodicidade){
+  const p = String(periodicidade||"").toLowerCase();
+  if (p === "mensal")     return dividendo * 12;
+  if (p === "trimestral") return dividendo * 4;
+  if (p === "semestral")  return dividendo * 2;
+  return dividendo; // anual ou n/a
+}
 
-  const out = document.getElementById("resultadoSimulacao");
+function calcularMetricasAcao(acao, periodoSel, horizonte){
+  const prefer = campoCrescimento(periodoSel);
+  const taxaPct = melhorTaxaDisponivel(acao.raw || acao, prefer);
+  const preco     = Number(acao.valorStock || 0);
+  const dividendo = Number(acao.dividendo || 0);
+  const per       = acao.periodicidade || "";
 
-  if (inv <= 0 || lucro <= 0) {
-    out.innerHTML = `<p class="muted">Preenche pelo menos Montante a investir e Lucro desejado.</p>`;
+  if (!(preco>0)) return null;
+
+  const r = clamp(taxaPct/100, -0.95, 5);  // segurança
+  const dividendoAnual = dividirPeriodicidade(dividendo, per);
+  const h = Math.max(1, Number(horizonte||1));
+  const mult = Math.pow(1+r, h);
+  const valorizacao = preco * (mult - 1);
+  const totalDividendos = dividendoAnual * h;
+
+  const lucroUnidade = totalDividendos + valorizacao;
+  const retornoPorEuro = lucroUnidade / preco;
+
+  return { preco, dividendoAnual, taxaPct, mult, lucroUnidade, retornoPorEuro };
+}
+
+/* distribuição fracionada (proporcional) */
+function distribuirFracoes(acoes, investimento){
+  const somaRetorno = acoes.reduce((s,a)=>s + a.metrics.retornoPorEuro, 0);
+  if (somaRetorno <= 0) return { linhas: [], totalLucro: 0, totalGasto: 0, restante: investimento };
+
+  const linhas = acoes.map(a=>{
+    const propor = a.metrics.retornoPorEuro / somaRetorno;
+    const investido = investimento * propor;
+    const qtd = investido / a.metrics.preco;
+    const lucro = qtd * a.metrics.lucroUnidade;
+    return {
+      nome: a.nome, ticker: a.ticker,
+      preco: a.metrics.preco,
+      quantidade: qtd,
+      investido,
+      lucro,
+      taxaPct: a.metrics.taxaPct,
+      dividendoAnual: a.metrics.dividendoAnual
+    };
+  });
+
+  const totalLucro = linhas.reduce((s,l)=>s+l.lucro,0);
+  const totalGasto = linhas.reduce((s,l)=>s+l.investido,0);
+
+  return { linhas, totalLucro, totalGasto, restante: Math.max(0, investimento - totalGasto) };
+}
+
+/* distribuição por ações inteiras (guloso) */
+function distribuirInteiras(acoes, investimento){
+  const ordenadas = [...acoes].sort((a,b)=>b.metrics.retornoPorEuro - a.metrics.retornoPorEuro);
+
+  const linhasMap = new Map(); // ticker -> linha acumulada
+  let restante = investimento;
+
+  const precoMin = Math.min(...ordenadas.map(a=>a.metrics.preco));
+  while (restante >= precoMin - 1e-9){
+    // escolhe a melhor que caiba agora
+    let best = null;
+    for (const a of ordenadas){
+      if (a.metrics.preco <= restante + 1e-9){ best = a; break; }
+    }
+    if (!best) break;
+
+    const key = best.ticker;
+    const linha = linhasMap.get(key) || {
+      nome: best.nome, ticker: best.ticker,
+      preco: best.metrics.preco,
+      quantidade: 0, investido: 0, lucro: 0,
+      taxaPct: best.metrics.taxaPct,
+      dividendoAnual: best.metrics.dividendoAnual
+    };
+    linha.quantidade += 1;
+    linha.investido  += best.metrics.preco;
+    linha.lucro      += best.metrics.lucroUnidade;
+    linhasMap.set(key, linha);
+
+    restante -= best.metrics.preco;
+  }
+
+  const linhas = Array.from(linhasMap.values());
+  const totalLucro = linhas.reduce((s,l)=>s+l.lucro,0);
+  const totalGasto = linhas.reduce((s,l)=>s+l.investido,0);
+
+  return { linhas, totalLucro, totalGasto, restante };
+}
+
+/* fetch das ações da BD */
+async function fetchAcoesBase(){
+  const snap = await getDocs(collection(db, "acoesDividendos"));
+  const out = [];
+  snap.forEach(doc=>{
+    const d = doc.data();
+    if (!d || !d.ticker) return;
+    out.push({
+      nome: d.nome || d.ticker,
+      ticker: String(d.ticker).toUpperCase(),
+      valorStock: Number(d.valorStock || 0),
+      dividendo: Number(d.dividendo || 0),
+      periodicidade: d.periodicidade || "Anual",
+      taxa_1s: Number(d.taxaCrescimento_1semana || 0),
+      taxa_1m: Number(d.taxaCrescimento_1mes || 0),
+      taxa_1a: Number(d.taxaCrescimento_1ano || 0),
+      raw: d
+    });
+  });
+  return out;
+}
+
+/* principal da distribuição */
+async function distribuirInvestimento(opts){
+  const { investimento, periodoSel, horizonte, acoesCompletas } = opts;
+
+  const base = await fetchAcoesBase();
+
+  // calcular métricas
+  const comMetricas = base
+    .map(a=>{
+      const metrics = calcularMetricasAcao(a, periodoSel, horizonte);
+      return metrics ? {...a, metrics} : null;
+    })
+    .filter(Boolean)
+    .filter(a=>a.metrics.retornoPorEuro > 0);
+
+  if (comMetricas.length === 0) {
+    return { linhas: [], totalLucro: 0, totalGasto: 0, restante: investimento };
+  }
+
+  // (opcional) limitar ao TOP_N melhores por retorno/€:
+  const TOP_N = 10;
+  const universo = [...comMetricas]
+    .sort((a,b)=>b.metrics.retornoPorEuro - a.metrics.retornoPorEuro)
+    .slice(0, TOP_N);
+
+  // distribuir
+  if (acoesCompletas){
+    return distribuirInteiras(universo, investimento);
+  } else {
+    return distribuirFracoes(universo, investimento);
+  }
+}
+
+/* render do resultado TOP 10 */
+function renderResultado(destEl, resultado, opts){
+  const { linhas, totalLucro, totalGasto, restante=0 } = resultado;
+
+  if (!linhas || linhas.length===0){
+    destEl.innerHTML = `<div class="card"><p class="muted">Sem ações elegíveis com retorno positivo para o período selecionado.</p></div>`;
     return;
   }
 
-  const candidatos = ["AAPL","NVDA","AMD","MSFT","VUAA"].map((ticker, i) => {
-    const tp1 = 100 + i * 25; // preço base fictício
-    const n   = inv / tp1;
-    const tp2 = tp1 + (lucro / n);
-    const percent = tp1 > 0 ? ((tp2 - tp1) / tp1) * 100 : 0;
-    const override = cres > 0 ? ` | Cresc. ref: ${cres.toFixed(1)}%` : "";
-    return { ticker, tp1, n, tp2, percent, note: override };
-  });
+  const rows = linhas.map(l=>`
+    <tr>
+      <td>${l.nome} <span class="muted">(${l.ticker})</span></td>
+      <td>${euro(l.preco)}</td>
+      <td>${l.quantidade.toFixed( opts.acoesCompletas ? 0 : 4 )}</td>
+      <td>${euro(l.investido)}</td>
+      <td>${euro(l.lucro)}</td>
+      <td>${(l.taxaPct||0).toFixed(2)}%</td>
+      <td>${euro(l.dividendoAnual||0)}/ano</td>
+    </tr>
+  `).join("");
 
-  out.innerHTML = `
-    <table class="table-like">
-      <thead>
-        <tr>
-          <th>Ticker</th><th>TP1 (€)</th><th>Qtd</th><th>TP2 alvo (€)</th><th>Δ%</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${candidatos.map(c => `
-          <tr>
-            <td>${c.ticker}</td>
-            <td>${c.tp1.toFixed(2)}</td>
-            <td>${c.n.toFixed(2)}</td>
-            <td>${c.tp2.toFixed(2)}</td>
-            <td>${c.percent.toFixed(1)}% ${c.note}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-    <p class="muted">Nota: isto é apenas uma simulação local. Podemos ligar à coleção <code>acoesDividendos</code> mais tarde para resultados reais.</p>
+  destEl.innerHTML = `
+    <div class="card">
+      <div class="tabela-scroll-wrapper">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th>Ativo</th>
+              <th>Preço</th>
+              <th>Qtd</th>
+              <th>Investido</th>
+              <th>Lucro Estim.</th>
+              <th>Tx ${opts.periodoSel}</th>
+              <th>Dividendo</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p style="margin-top:.6rem">
+        <strong>Total investido:</strong> ${euro(totalGasto)}
+        ${opts.acoesCompletas && restante>0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
+        <br/>
+        <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte>1?"períodos":"período"}):</strong> ${euro(totalLucro)}
+      </p>
+    </div>
   `;
 }
 
+/* ler opções do UI (TOP 10) */
+function getTop10Options() {
+  const investimento = Number(document.getElementById("inputInvestimento")?.value || 0);
+  const periodoSel   = (document.getElementById("inputPeriodo")?.value || "1ano"); // "1s" | "1m" | "1ano"
+  const horizonte    = Math.max(1, Number(document.getElementById("inputHorizonte")?.value || 1));
+  const usarTotal      = !!document.getElementById("chkUsarTotal")?.checked;
+  const acoesCompletas = !!document.getElementById("chkAcoesCompletas")?.checked;
+  return { investimento, periodoSel, horizonte, usarTotal, acoesCompletas };
+}
+
 /* =========================
-   EMAIL (mailto: resumo)
+   EMAIL (mailto)
    ========================= */
 function enviarEmailResumo() {
   const emailDestino = prompt("Para que email queres enviar o resumo?");
@@ -390,14 +575,60 @@ export function initScreen() {
     if (out) out.innerHTML = "";
   });
 
-  // Top 10 (mock)
-  document.getElementById("btnSimularTop10")?.addEventListener("click", simularTop10);
+  // === TOP 10 ===
+
+  // estado inicial das checkboxes
+  const chkUsarTotal = document.getElementById("chkUsarTotal");
+  const chkAcoesCompletas = document.getElementById("chkAcoesCompletas");
+  if (chkUsarTotal) chkUsarTotal.checked = true;
+  if (chkAcoesCompletas) chkAcoesCompletas.checked = false;
+
+  // exclusividade
+  chkUsarTotal?.addEventListener("change", () => {
+    if (chkUsarTotal.checked) chkAcoesCompletas.checked = false;
+  });
+  chkAcoesCompletas?.addEventListener("change", () => {
+    if (chkAcoesCompletas.checked) chkUsarTotal.checked = false;
+  });
+
+  // simular
+  document.getElementById("btnSimularTop10")?.addEventListener("click", async () => {
+    const investimento = Number(document.getElementById("inputInvestimento")?.value || 0);
+    const periodoSel   = (document.getElementById("inputPeriodo")?.value || "1ano");
+    const horizonte    = Math.max(1, Number(document.getElementById("inputHorizonte")?.value || 1));
+    const usarTotal      = !!document.getElementById("chkUsarTotal")?.checked;
+    const acoesCompletas = !!document.getElementById("chkAcoesCompletas")?.checked;
+
+    if (!investimento || investimento <= 0){
+      alert("Indica o montante a investir.");
+      return;
+    }
+
+    const opts = { investimento, periodoSel, horizonte, usarTotal, acoesCompletas };
+    const box = document.getElementById("resultadoSimulacao");
+    if (box) box.innerHTML = `<div class="card">A simular…</div>`;
+
+    try{
+      const resultado = await distribuirInvestimento(opts);
+      if (box) renderResultado(box, resultado, opts);
+    }catch(err){
+      console.error(err);
+      if (box) box.innerHTML = `<div class="card"><p class="muted">Ocorreu um erro na simulação.</p></div>`;
+    }
+  });
+
+  // limpar
   document.getElementById("btnLimparTop10")?.addEventListener("click", () => {
-    ["inputInvestimento","inputLucro","inputCrescimento"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-    const out = document.getElementById("resultadoSimulacao");
-    if (out) out.innerHTML = "";
+    const investEl = document.getElementById("inputInvestimento");
+    const perEl = document.getElementById("inputPeriodo");
+    const horEl = document.getElementById("inputHorizonte");
+    const box = document.getElementById("resultadoSimulacao");
+
+    if (investEl) investEl.value = "";
+    if (perEl) perEl.value = "1ano";
+    if (horEl) horEl.value = 1;
+    if (chkUsarTotal) chkUsarTotal.checked = true;
+    if (chkAcoesCompletas) chkAcoesCompletas.checked = false;
+    if (box) box.innerHTML = "";
   });
 }

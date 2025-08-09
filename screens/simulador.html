@@ -133,33 +133,60 @@
       </div>
 
       <!-- PAINEL: TOP 10 -->
-      <div id="panel-top10" class="panel">
-        <h3>🔎 TOP 10 para Investir</h3>
-        <div class="form-grid">
+    <div id="panel-top10" class="panel">
+      <h3>🔎 TOP 10 para Investir</h3>
+
+      <div class="form-grid">
+        <label>
+          Montante a investir (€)
           <input
             type="number"
             id="inputInvestimento"
-            placeholder="Montante a investir (€) — Ex: 1500"
+            placeholder="Ex: 1500"
+            min="0"
+            step="0.01"
+            required
           />
-          <input
-            type="number"
-            id="inputLucro"
-            placeholder="Lucro desejado (€) — Ex: 100"
-          />
-          <input
-            type="number"
-            id="inputCrescimento"
-            placeholder="Crescimento estimado (%) — opcional"
-          />
-        </div>
+        </label>
 
-        <div class="actions-row">
-          <button class="btn premium" id="btnSimularTop10">Simular</button>
-          <button class="btn outline" id="btnLimparTop10">Limpar</button>
-        </div>
+        <label>
+          Período de crescimento
+          <select id="inputPeriodo">
+            <option value="1ano" selected>1 ano</option>
+            <option value="1m">1 mês</option>
+            <option value="1s">1 semana</option>
+          </select>
+        </label>
 
-        <div id="resultadoSimulacao" class="resultado-container"></div>
+        <!-- (Opcional) multiplicador de horizonte: 1x (1 ano), 2x (2 anos), etc. -->
+        <!-- podes remover se não quiseres -->
+        <label>
+          Horizonte (anos)
+          <input type="number" id="inputHorizonte" value="1" min="1" step="1" />
+        </label>
       </div>
+
+      <div class="actions-row" style="align-items:center;">
+        <label style="display:flex; gap:.5rem; align-items:center;">
+          <input type="checkbox" id="chkUsarTotal" checked />
+          <span>Usar todo o investimento</span>
+        </label>
+
+        <label style="display:flex; gap:.5rem; align-items:center;">
+          <input type="checkbox" id="chkAcoesCompletas" />
+          <span>Apenas ações completas</span>
+        </label>
+      </div>
+
+  <div class="actions-row">
+    <button class="btn premium" id="btnSimularTop10">Simular</button>
+    <button class="btn outline" id="btnLimparTop10">Limpar</button>
+  </div>
+
+  <div id="resultadoSimulacao" class="resultado-container"></div>
+</div>
+
+
     </section>
   </div>
 </div>
