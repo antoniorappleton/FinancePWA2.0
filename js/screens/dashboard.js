@@ -280,8 +280,8 @@ async function carregarAtividadeRecenteSimplificada() {
       `);
     });
 
-    // Render inicial: só 4
-    renderAtividades(cont, 4);
+    // Render inicial: só 2
+    renderAtividades(cont, 2);
     atividadesExpandido = false;
 
     // Ligar o botão "Ver Toda Atividade" (sem mexer no HTML: apanha o primeiro .btn.outline.full nessa card)
