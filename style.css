@@ -496,3 +496,48 @@ select:focus {
   }
 }
 
+/*ver no telemóvel/*
+/* --- Mobile fixes para o modal Definir Objetivo --- */
+
+/* garante que o content do modal pode rolar bem em mobile */
+.modal-dialog,
+.modal-goal { max-height: 90vh; }
+
+.modal-body.goal-grid{
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0; /* crucial para filhos com overflow funcionarem */
+}
+
+/* cada coluna pode encolher e deixar o filho com overflow controlar a rolagem */
+.goal-col{
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* <- importante em layouts com grid/flex */
+}
+
+/* a LISTA passa a ocupar o espaço disponível e tem altura mínima útil */
+.goal-list-wrap{
+  flex: 1 1 auto;           /* ocupa o espaço que sobrar */
+  min-height: 220px;        /* não fica “colada” a 0px */
+  max-height: 50vh;         /* evita passar o viewport */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* em ecrãs estreitos, dá um pouco mais de ar à lista */
+@media (max-width: 900px){
+  #goalModal .goal-grid{ grid-template-columns: 1fr; }
+  .goal-list-wrap{ max-height: 55vh; }
+}
+
+/* quando entras no modo de resultado, continua tudo ok */
+#goalModal.goal-show-results .goal-grid { display: none; }
+#goalModal.goal-show-results #goalResultado{
+  display: block;
+  height: auto;
+  max-height: calc(90vh - 56px);
+  overflow: auto;
+}
+.goal-filters{ position: sticky; top: 0; padding-bottom: 6px; }
+.goal-selected, .goal-params{ padding: 10px; }
