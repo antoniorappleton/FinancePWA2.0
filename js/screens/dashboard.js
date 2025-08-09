@@ -294,7 +294,7 @@ async function carregarAtividadeRecenteSimplificada() {
           renderAtividades(cont, atividadesCache.length);
           btnVerTodos.textContent = "Mostrar menos";
         } else {
-          renderAtividades(cont, 4);
+          renderAtividades(cont, 2);
           btnVerTodos.textContent = "Ver Toda Atividade";
         }
       };

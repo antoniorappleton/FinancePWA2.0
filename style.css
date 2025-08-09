@@ -234,3 +234,51 @@ body{
 }
 .atividade-item .muted{ color:#666; font-size:.9em; }
 .atividade-item .date{ font-size:.8em; color:#aaa; }
+
+/*dropdown*/
+/* Estilo geral dos dropdowns */
+select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 8px;
+  background-color: var(--input-bg, #fff);
+  color: var(--text-color, #333);
+  font-size: 14px;
+  appearance: none; /* remove setas padrão */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+select:focus {
+  border-color: var(--accent-color, #0099ff);
+  box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.15);
+  outline: none;
+}
+/* Botões outline e ghost personalizados */
+.btn.outline,
+.btn.ghost {
+  border: 1.5px solid #000; /* borda preta */
+  color: #000;
+  background-color: transparent;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* sombra leve */
+  transition: all 0.2s ease-in-out;
+}
+
+/* Hover para dar destaque */
+.btn.outline:hover,
+.btn.ghost:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25); /* sombra mais intensa */
+  transform: translateY(-1px); /* efeito leve de levantar */
+}
+
+/* Quando clicado */
+.btn.outline:active,
+.btn.ghost:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
