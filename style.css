@@ -541,3 +541,37 @@ select:focus {
 }
 .goal-filters{ position: sticky; top: 0; padding-bottom: 6px; }
 .goal-selected, .goal-params{ padding: 10px; }
+/* --- FIX: modal mobile não sobrepor a lista --- */
+@media (max-width: 900px){
+  /* 1) nada de sticky em mobile */
+  .goal-filters{ position: static; z-index: auto; }
+  .goal-actions{ position: static; background: transparent; }
+
+  /* 2) a lista passa a controlar a rolagem e fica acima de tudo */
+  .goal-list-wrap{
+    position: relative;       /* permite z-index */
+    z-index: 2;               /* lista acima dos outros blocos */
+    flex: 1 1 auto;
+    min-height: 260px;        /* espaço mínimo visível */
+    max-height: 56vh;         /* cabe no ecrã */
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 3) blocos da direita nunca se sobrepõem */
+  .goal-selected,
+  .goal-params{
+    position: static;         /* sem contextos de empilhamento estranhos */
+    z-index: 1;
+  }
+
+  /* 4) o content do modal pode rolar sem “apertar” filhos */
+  .modal-body.goal-grid{
+    overflow: auto;
+    min-height: 0;
+  }
+
+  /* 5) garante que a ordem é: filtros/lista -> selecionadas -> parâmetros */
+  #goalModal .goal-grid > .goal-col:first-child{ order: 1; }
+  #goalModal .goal-grid > .goal-col:last-child { order: 2; }
+}
