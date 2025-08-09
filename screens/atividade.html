@@ -7,3 +7,97 @@
 <script>
   if (typeof initScreen === "function") initScreen();
 </script>
+<!-- Modal QUICK BUY/SELL (portfolio) -->
+<div id="pfAddModal" class="modal hidden">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 id="pfAddTitle">Adicionar Ação</h3>
+      <button class="icon-btn" id="pfAddClose" title="Fechar">✖</button>
+    </div>
+
+    <form id="pfAddForm" class="page" style="padding: 14px">
+      <div class="form-grid">
+        <label>
+          Tipo
+          <select id="pfTipoAcao">
+            <option value="compra">Compra</option>
+            <option value="venda">Venda</option>
+          </select>
+        </label>
+
+        <label>
+          Ticker
+          <input id="pfTicker" placeholder="ex.: AAPL" />
+        </label>
+
+        <label>
+          Nome
+          <input id="pfNome" placeholder="Nome do ativo" />
+        </label>
+
+        <label>
+          Setor
+          <select id="pfSetor">
+            <option value="">Selecione um Setor</option>
+            <option value="ETF iTech">ETF iTech</option>
+            <option value="ETF Finance">ETF Finance</option>
+            <option value="ETF Energia">ETF Energia</option>
+            <option value="ETF Materiais">ETF Materiais</option>
+            <option value="Alimentação">Alimentação</option>
+            <option value="Automóvel">Automóvel</option>
+            <option value="Bens de Consumo">Bens de Consumo</option>
+            <option value="Consumo Cíclico">Consumo Cíclico</option>
+            <option value="Consumo Defensivo">Consumo Defensivo</option>
+            <option value="Defesa">Defesa</option>
+            <option value="Energia">Energia</option>
+            <option value="Finanças">Finanças</option>
+            <option value="Imobiliário">Imobiliário</option>
+            <option value="Indústria">Indústria</option>
+            <option value="Infraestruturas / Energia">Infraestruturas / Energia</option>
+            <option value="Materiais">Materiais</option>
+            <option value="Restauração">Restauração</option>
+            <option value="Saúde">Saúde</option>
+            <option value="Tecnologia">Tecnologia</option>
+            <option value="Telecomunicações">Telecomunicações</option>
+          </select>
+        </label>
+
+        <label>
+          Mercado
+          <select id="pfMercado">
+            <option value="">Seleciona o Mercado</option>
+            <option value="Portugal">Portugal</option>
+            <option value="Europeu">Europeu</option>
+            <option value="Americano">Americano</option>
+            <option value="Americano SP500">Americano SP500</option>
+          </select>
+        </label>
+
+        <label>
+          Quantidade
+          <input id="pfQuantidade" type="number" step="0.0001" />
+        </label>
+
+        <label id="pfLabelPreco">
+          Preço de compra (€)
+          <input id="pfPreco" type="number" step="0.0001" />
+        </label>
+
+        <label>
+          Objetivo (lucro €) <small class="muted">(opcional)</small>
+          <input id="pfObjetivo" type="number" step="0.01" />
+        </label>
+
+        <label id="pfVendaTotalWrap" style="display:none">
+          <input type="checkbox" id="pfVendaTotal" />
+          Venda total (remove da carteira após registo)
+        </label>
+      </div>
+
+      <div class="actions-row">
+        <button type="submit" class="btn premium">Guardar</button>
+        <button type="button" class="btn outline" id="pfAddCancel">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>

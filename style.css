@@ -77,6 +77,10 @@ body{
 }
 
 /* ===== Activity list ===== */
+.tag{display:inline-block;font-size:.75rem;padding:2px 6px;border-radius:999px;margin-right:6px}
+.tag.compra{background:#e7f7ee;color:#117a39}
+.tag.venda{background:#ffe5e5;color:#a52121}
+
 .activity-item{
   display:flex; justify-content:space-between; align-items:center;
   padding:.75rem; margin-bottom:.6rem;

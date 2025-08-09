@@ -245,26 +245,32 @@ async function carregarAtividadeRecenteSimplificada() {
     atividadesCache = []; // reset cache
 
     snapAtivos.forEach(doc => {
-      const d = doc.data();
+        const d = doc.data();
 
-      const nome        = d.nome || d.ticker || "Ativo";
-      const ticker      = String(d.ticker || "").toUpperCase();
-      const setor       = d.setor || "-";
-      const mercado     = d.mercado || "-";
-      const precoCompra = Number(d.precoCompra || 0);
-      const quantidade  = Number(d.quantidade || 0);
+        const nome        = d.nome || d.ticker || "Ativo";
+        const ticker      = String(d.ticker || "").toUpperCase();
+        const setor       = d.setor || "-";
+        const mercado     = d.mercado || "-";
+        const precoCompra = Number(d.precoCompra || 0);
+        const quantidade  = Number(d.quantidade || 0);
 
-      let dataTxt = "sem data";
-      if (d.dataCompra && typeof d.dataCompra.toDate === "function") {
-        dataTxt = fmtDateL.format(d.dataCompra.toDate());
-      }
+        // NOVO → badge COMPRA/VENDA
+        const tipo  = (d.tipoAcao || "compra").toLowerCase();
+        const badge = tipo === "venda"
+          ? '<span class="tag venda">VENDA</span>'
+          : '<span class="tag compra">COMPRA</span>';
+
+        let dataTxt = "sem data";
+        if (d.dataCompra && typeof d.dataCompra.toDate === "function") {
+          dataTxt = fmtDateL.format(d.dataCompra.toDate());
+        }
 
       atividadesCache.push(`
         <div class="activity-item">
           <div class="activity-left">
             <span class="activity-icon">🛒</span>
             <div>
-              <p><strong>${nome}</strong> <span class="muted">(${ticker})</span></p>
+              <p>${badge} <strong>${nome}</strong> <span class="muted">(${ticker})</span></p>
               <p class="muted">${setor} • ${mercado}</p>
               <p class="muted">${quantidade} ${quantidade === 1 ? "ação" : "ações"} @ ${fmtEUR.format(precoCompra)}</p>
               <p class="muted">Data: ${dataTxt}</p>
