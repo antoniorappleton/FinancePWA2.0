@@ -90,7 +90,7 @@
       <h3>Ações Rápidas</h3>
       <button class="btn premium full" id="btnNovaSimulacao">Nova Simulação</button>
       <button class="btn outline full" id="btnOportunidades">Analisar Oportunidades</button>
-      <button class="btn ghost full">Adicionar Ação</button>
+      <button class="btn outline full" id="btnAddAcao">Adicionar Ação</button>
       <button class="btn ghost full">Definir Objetivo</button>
       
     </div>
@@ -115,5 +115,72 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal: Adicionar Ação -->
+<div id="addModal" class="modal hidden">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Adicionar Ação</h3>
+      <button class="icon-btn" id="addClose" title="Fechar">✖</button>
+    </div>
+
+    <form id="addForm" style="padding:14px 16px;">
+      <div class="form-grid">
+        <label>
+          Tipo de operação
+          <select id="tipoAcao" required>
+            <option value="compra" selected>Compra</option>
+            <option value="venda">Venda</option>
+          </select>
+        </label>
+
+        <label>
+          Nome
+          <input id="nomeAtivo" type="text" placeholder="Ex.: Apple Inc." required />
+        </label>
+
+        <label>
+          Ticker
+          <input id="tickerAtivo" type="text" placeholder="Ex.: AAPL" required />
+        </label>
+
+        <label>
+          Setor
+          <input id="setorAtivo" type="text" placeholder="Ex.: Tecnologia" />
+        </label>
+
+        <label>
+          Mercado
+          <input id="mercadoAtivo" type="text" placeholder="Ex.: Americano SP500" />
+        </label>
+
+        <label>
+          Quantidade
+          <input id="quantidadeAtivo" type="number" step="0.0001" min="0.0001" required />
+        </label>
+
+        <label id="labelPreco">
+          Preço da transação (€)
+          <input id="precoAtivo" type="number" step="0.0001" min="0" required />
+        </label>
+
+        <label>
+          Objetivo financeiro (€) <small class="muted">(opcional)</small>
+          <input id="objetivoAtivo" type="number" step="0.01" min="0" />
+        </label>
+      </div>
+
+      <div class="actions-row" style="margin-top:12px;">
+        <button type="submit" class="btn premium">Guardar</button>
+        <button type="button" class="btn outline" id="addCancel">Cancelar</button>
+      </div>
+
+      <p class="muted" style="margin-top:8px;">
+        A data/hora é registada automaticamente.
+      </p>
+    </form>
+  </div>
+</div>
+
 
 </div>

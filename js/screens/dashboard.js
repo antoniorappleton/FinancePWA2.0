@@ -1,7 +1,7 @@
 // js/screens/dashboard.js
 import { db } from "../firebase-config.js";
 import {
-  getDocs, collection, query, orderBy, limit
+  getDocs, collection, query, orderBy, limit, addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 export async function initScreen() {
@@ -129,6 +129,90 @@ export async function initScreen() {
       carregarTop10Crescimento(opPeriodoAtual);
     });
   });
+
+    // --- Modal: Adicionar Ação ---
+  const btnAdd = document.getElementById("btnAddAcao");
+  const addModal = document.getElementById("addModal");
+  const addClose = document.getElementById("addClose");
+  const addCancel = document.getElementById("addCancel");
+  const addForm = document.getElementById("addForm");
+  const tipoAcaoSel = document.getElementById("tipoAcao");
+  const labelPreco = document.getElementById("labelPreco");
+
+  // abre
+  btnAdd?.addEventListener("click", () => {
+    addModal?.classList.remove("hidden");
+  });
+
+  // fecha
+  function closeAddModal() {
+    addModal?.classList.add("hidden");
+    addForm?.reset();
+    // repõe o label (caso tenha mudado para Venda)
+    if (labelPreco) labelPreco.firstChild.textContent = "Preço da transação (€)";
+  }
+  addClose?.addEventListener("click", closeAddModal);
+  addCancel?.addEventListener("click", closeAddModal);
+  addModal?.addEventListener("click", (e) => {
+    if (e.target.id === "addModal") closeAddModal();
+  });
+
+  // muda o label conforme compra/venda (puramente visual)
+  tipoAcaoSel?.addEventListener("change", () => {
+    if (!labelPreco) return;
+    if (tipoAcaoSel.value === "venda") {
+      labelPreco.firstChild.textContent = "Preço de venda (€)";
+    } else {
+      labelPreco.firstChild.textContent = "Preço de compra (€)";
+    }
+  });
+
+  // submit
+  addForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const tipoAcao = (document.getElementById("tipoAcao")?.value || "compra").toLowerCase();
+    const nome     = (document.getElementById("nomeAtivo")?.value || "").trim();
+    const ticker   = (document.getElementById("tickerAtivo")?.value || "").trim().toUpperCase();
+    const setor    = (document.getElementById("setorAtivo")?.value || "").trim();
+    const mercado  = (document.getElementById("mercadoAtivo")?.value || "").trim();
+    const qtdRaw   = Number(document.getElementById("quantidadeAtivo")?.value || 0);
+    const preco    = Number(document.getElementById("precoAtivo")?.value || 0);
+    const objetivo = Number(document.getElementById("objetivoAtivo")?.value || 0);
+
+    if (!nome || !ticker || !qtdRaw || !preco) {
+      alert("Preenche pelo menos: Tipo, Nome, Ticker, Quantidade e Preço.");
+      return;
+    }
+
+    // ── regra simples: vendas entram como quantidade negativa e usam o mesmo campo 'precoCompra'
+    const quantidade = tipoAcao === "venda" ? -Math.abs(qtdRaw) : Math.abs(qtdRaw);
+
+    const payload = {
+      tipoAcao,              // "compra" ou "venda" (útil para auditoria)
+      nome,
+      ticker,
+      setor,
+      mercado,
+      quantidade,            // negativo na venda
+      precoCompra: preco,    // mantém a compatibilidade com os teus cálculos atuais
+      objetivoFinanceiro: isNaN(objetivo) ? 0 : objetivo,
+      dataCompra: serverTimestamp(), // data/hora automática
+    };
+
+    try {
+      await addDoc(collection(db, "ativos"), payload);
+      closeAddModal();
+
+      // Atualiza o painel rapidamente. Para máxima simplicidade, recarrega:
+      // (se preferires sem refresh, dá para chamar as funções de KPI e atividade novamente)
+      window.location.reload();
+    } catch (err) {
+      console.error("❌ Erro ao guardar ativo:", err);
+      alert("Não foi possível guardar. Tenta novamente.");
+    }
+  });
+
 }
 
 /* =========================
