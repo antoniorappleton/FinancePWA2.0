@@ -240,73 +240,85 @@
   </div>
   
   <!-- Modal: Definir Objetivo -->
-<div id="goalModal" class="modal hidden">
+  <div id="goalModal" class="modal hidden">
   <div class="modal-dialog modal-goal">
     <div class="modal-header">
       <h3>Definir Objetivo (seleção personalizada)</h3>
       <button class="icon-btn" id="goalClose" title="Fechar">✖</button>
     </div>
 
-    <div class="modal-body goal-grid">
-      <!-- COLUNA ESQUERDA: Filtros + Lista -->
-      <div class="goal-col">
-        <div class="goal-filters">
-          <div class="form-grid">
-            <input id="goalFiltroTicker"  type="search" placeholder="Ticker (ex.: AAPL)" />
-            <input id="goalFiltroNome"    type="search" placeholder="Nome (contém...)" />
-            <input id="goalFiltroSetor"   type="search" placeholder="Setor" />
-            <input id="goalFiltroMercado" type="search" placeholder="Mercado" />
-          </div>
-          <div class="actions-row" style="justify-content:flex-end">
-            <button class="btn outline btn-black-shadow" id="goalBtnFiltrar">Filtrar</button>
-            <button class="btn outline btn-black-shadow" id="goalBtnLimpar">Limpar</button>
-          </div>
-        </div>
+    <!-- WIZARD -->
+    <div class="goal-wizard">
 
-        <div class="goal-list-wrap">
-          <ul id="goalListaAcoes" class="goal-list"></ul>
+      <!-- PASSO 1 · Filtros -->
+      <section class="goal-step" data-step="1">
+        <h4>Filtros</h4>
+        <div class="form-grid">
+          <input id="goalFiltroTicker"  type="search" placeholder="Ticker (ex.: AAPL)" />
+          <input id="goalFiltroNome"    type="search" placeholder="Nome (contém...)" />
+          <select id="goalFiltroSetor"></select>
+          <select id="goalFiltroMercado"></select>
+          <select id="goalFiltroMes"></select>
+          <select id="goalFiltroPeriodicidade"></select>
         </div>
-      </div>
-
-      <!-- COLUNA DIREITA: Selecionadas + Parâmetros + Simular -->
-      <div class="goal-col">
-        <div class="goal-selected">
-          <h4>Selecionadas</h4>
-          <div class="muted" style="margin-bottom:.4rem">Ficam guardadas mesmo se fizeres novo filtro. Remove com o “x”.</div>
-          <div id="goalSelecionadas" class="goal-tags"></div>
+        <div class="actions-row" style="justify-content:flex-end">
+          <button class="btn outline btn-black-shadow" id="goalBtnLimpar">Limpar</button>
+          <button class="btn premium" id="goalNext1">Seguinte</button>
         </div>
+      </section>
 
-        <div class="goal-params">
-          <h4>Parâmetros</h4>
-          <div class="form-grid">
-            <input type="number" id="goalInvest" placeholder="Montante a investir (€) – ex.: 1500" />
-            <select id="goalPeriodo">
-              <option value="1ano" selected>Taxa de Crescimento: 1 ano</option>
-              <option value="1m">Taxa de Crescimento: 1 mês</option>
-              <option value="1s">Taxa de Crescimento: 1 semana</option>
-            </select>
-            <input type="number" id="goalHorizonte" placeholder="Horizonte (nº períodos)" value="1" min="1" />
+      <!-- PASSO 2 · Escolher ações -->
+      <section class="goal-step" data-step="2" hidden>
+        <div class="goal-columns-2">
+          <div class="goal-list-wrap">
+            <ul id="goalListaAcoes" class="goal-list"></ul>
           </div>
-          <div class="actions-row" style="margin-top:.4rem">
-            <label class="chk">
-              <input type="checkbox" id="goalAcoesCompletas" />
-              <span>Apenas ações completas</span>
-            </label>
-            <label class="chk">
-              <input type="checkbox" id="goalUsarTotal" checked />
-              <span>Usar todo o investimento</span>
-            </label>
+
+          <div class="goal-selected">
+            <h4>Selecionadas</h4>
+            <p class="muted">Ficam guardadas mesmo se fizeres novo filtro. Remove com o “x”.</p>
+            <div id="goalSelecionadas" class="goal-tags"></div>
           </div>
         </div>
+        <div class="actions-row" style="justify-content:space-between">
+          <button class="btn outline" id="goalBack2">Voltar</button>
+          <div>
+            <button class="btn outline btn-black-shadow" id="goalBtnFiltrar">Aplicar filtros</button>
+            <button class="btn premium" id="goalNext2">Seguinte</button>
+          </div>
+        </div>
+      </section>
 
-        <div class="goal-actions">
+      <!-- PASSO 3 · Parâmetros e Simular -->
+      <section class="goal-step" data-step="3" hidden>
+        <h4>Parâmetros</h4>
+        <div class="form-grid">
+          <input type="number" id="goalInvest" placeholder="Montante a investir (€) – ex.: 1500" />
+          <select id="goalPeriodo">
+            <option value="1ano" selected>Taxa de Crescimento: 1 ano</option>
+            <option value="1m">Taxa de Crescimento: 1 mês</option>
+            <option value="1s">Taxa de Crescimento: 1 semana</option>
+          </select>
+          <input type="number" id="goalHorizonte" placeholder="Horizonte (nº períodos)" value="1" min="1" />
+        </div>
+        <div class="actions-row">
+          <label class="chk"><input type="checkbox" id="goalAcoesCompletas" /> <span>Apenas ações completas</span></label>
+          <label class="chk"><input type="checkbox" id="goalUsarTotal" checked /> <span>Usar todo o investimento</span></label>
+        </div>
+
+        <div class="actions-row" style="justify-content:space-between">
+          <button class="btn outline" id="goalBack3">Voltar</button>
           <button class="btn premium" id="goalBtnSimular">Simular</button>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div class="goal-result">
-      <div id="goalResultado"></div>
+      <!-- PASSO 4 · Resultado “full” -->
+      <section class="goal-step" data-step="4" hidden>
+        <div class="goal-result">
+          <div id="goalResultado"></div>
+        </div>
+      </section>
+
     </div>
   </div>
 </div>

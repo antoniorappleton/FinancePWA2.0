@@ -400,9 +400,8 @@ function setActiveChip(periodo) {
   });
 }
 
-//Simulador Botão Definir Objetivo
 // =========================
-// (ADICIONA / SUBSTITUI DAQUI PARA BAIXO)
+// Simulador Botão Definir Objetivo (versão wizard + dropdowns)
 // =========================
 
 // ---------- Helpers comuns ----------
@@ -546,11 +545,30 @@ function renderResultado(destEl, resultado, opts){
   `;
 }
 
+// --- opções dropdowns
+const OPT_SETORES = [
+  "", "ETF iTech","ETF Finance","ETF Energia","ETF Materiais",
+  "Alimentação","Automóvel","Bens de Consumo","Consumo Cíclico","Consumo Defensivo",
+  "Defesa","Energia","Finanças","Imobiliário","Indústria",
+  "Infraestruturas / Energia","Materiais","Restauração","Saúde","Tecnologia","Telecomunicações"
+];
+const OPT_MERCADOS = ["", "Portugal","Europeu","Americano","Americano SP500"];
+const OPT_MESES = ["", "n/A","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const OPT_PERIODICIDADE = ["", "n/A","Anual","Semestral","Trimestral","Mensal"];
+
+function fillSelect(id, opts, placeholder){
+  const el = document.getElementById(id); if(!el) return;
+  el.innerHTML = opts.map(v=>{
+    const label = v || (placeholder||"Todos");
+    return `<option value="${v}">${label}</option>`;
+  }).join("");
+}
+
 // ---------- Estado do modal ----------
 let GOAL_CACHE = [];
 const GOAL_SELECTED = new Map();
 
-// fetch acoesDividendos (inclui setor/mercado se existirem)
+// fetch acoesDividendos (inclui setor/mercado/mes/periodicidade)
 async function fetchAcoesGoal(){
   const snap = await getDocs(collection(db, "acoesDividendos"));
   const out = [];
@@ -562,6 +580,7 @@ async function fetchAcoesGoal(){
       ticker: String(d.ticker).toUpperCase(),
       valorStock: Number(d.valorStock || 0),
       dividendo: Number(d.dividendo || 0),
+      mes: d.mes || "",
       periodicidade: d.periodicidade || "Anual",
       taxaCrescimento_1semana: Number(d.taxaCrescimento_1semana || 0),
       taxaCrescimento_1mes: Number(d.taxaCrescimento_1mes || 0),
@@ -572,67 +591,99 @@ async function fetchAcoesGoal(){
   return out;
 }
 
-// abrir/fechar
+// ----- Wizard helpers -----
+function showGoalStep(n){
+  document.querySelectorAll('#goalModal .goal-step').forEach(sec=>{
+    sec.hidden = sec.dataset.step !== String(n);
+  });
+}
+function ensureListVisible(){
+  const evt = new Event('click');
+  document.getElementById('goalBtnFiltrar')?.dispatchEvent(evt);
+}
+
+// ----- Abrir/fechar -----
 const btnObjetivo = document.getElementById("btnObjetivo");
 const goalModal   = document.getElementById("goalModal");
 const goalClose   = document.getElementById("goalClose");
 
 btnObjetivo?.addEventListener("click", async () => {
-  goalModal?.classList.remove("hidden");
+  // always open at step 1
+  showGoalStep(1);
 
-  // aplica grid responsivo ao content do modal (se ainda não tiver)
-  document.querySelector('#goalModal .goal-columns')?.classList.add('goal-grid');
+  // preencher dropdowns
+  fillSelect("goalFiltroSetor", OPT_SETORES, "Setor");
+  fillSelect("goalFiltroMercado", OPT_MERCADOS, "Mercado");
+  fillSelect("goalFiltroMes", OPT_MESES, "Mês do dividendo");
+  fillSelect("goalFiltroPeriodicidade", OPT_PERIODICIDADE, "Periodicidade");
+
+  goalModal?.classList.remove("hidden");
 
   if (GOAL_CACHE.length === 0) GOAL_CACHE = await fetchAcoesGoal();
   renderGoalList(GOAL_CACHE);
   renderGoalSelected();
 
-  // normaliza exclusividade dos 2 checkboxes
   syncGoalCheckboxes();
 });
+
 goalClose?.addEventListener("click", closeGoalModal);
 goalModal?.addEventListener("click", (e) => {
   if (e.target.id === "goalModal") closeGoalModal();
 });
 
 function closeGoalModal() {
-  const modal = document.getElementById("goalModal");
-  modal?.classList.add("hidden");
-  modal?.classList.remove("goal-show-results");
-
+  goalModal?.classList.add("hidden");
+  goalModal?.classList.remove("goal-show-results");
   GOAL_SELECTED.clear();
   const box = document.getElementById("goalResultado");
   if (box) box.innerHTML = "";
   const bar = document.getElementById("goalResultsBar");
   if (bar) bar.remove();
+  showGoalStep(1);
 }
 
-// filtrar/limpar
+// ----- Passos -----
+document.getElementById('goalNext1')?.addEventListener('click', ()=>{
+  showGoalStep(2);
+  ensureListVisible();
+});
+document.getElementById('goalNext2')?.addEventListener('click', ()=>{
+  if (GOAL_SELECTED.size === 0) { alert('Seleciona pelo menos uma ação.'); return; }
+  showGoalStep(3);
+});
+document.getElementById('goalBack2')?.addEventListener('click', ()=> showGoalStep(1));
+document.getElementById('goalBack3')?.addEventListener('click', ()=> showGoalStep(2));
+document.getElementById('goalBackToEdit')?.addEventListener('click', ()=> showGoalStep(3));
+
+// ----- Filtrar/Limpar -----
 document.getElementById("goalBtnFiltrar")?.addEventListener("click", () => {
-  const t  = (document.getElementById("goalFiltroTicker")?.value || "").trim().toLowerCase();
-  const n  = (document.getElementById("goalFiltroNome")?.value   || "").trim().toLowerCase();
-  const s  = (document.getElementById("goalFiltroSetor")?.value  || "").trim().toLowerCase();
-  const m  = (document.getElementById("goalFiltroMercado")?.value|| "").trim().toLowerCase();
+  const t   = (document.getElementById("goalFiltroTicker")?.value || "").trim().toLowerCase();
+  const n   = (document.getElementById("goalFiltroNome")?.value   || "").trim().toLowerCase();
+  const s   = (document.getElementById("goalFiltroSetor")?.value  || "").trim().toLowerCase();
+  const m   = (document.getElementById("goalFiltroMercado")?.value|| "").trim().toLowerCase();
+  const mes = (document.getElementById("goalFiltroMes")?.value    || "").trim().toLowerCase();
+  const per = (document.getElementById("goalFiltroPeriodicidade")?.value||"").trim().toLowerCase();
 
   const res = GOAL_CACHE.filter(a => {
-    const hitT = !t || a.ticker.toLowerCase().includes(t);
-    const hitN = !n || a.nome.toLowerCase().includes(n);
-    const hitS = !s || String(a.raw?.setor||"").toLowerCase().includes(s);
-    const hitM = !m || String(a.raw?.mercado||"").toLowerCase().includes(m);
-    return hitT && hitN && hitS && hitM;
+    const hitT   = !t   || a.ticker.toLowerCase().includes(t);
+    const hitN   = !n   || a.nome.toLowerCase().includes(n);
+    const hitS   = !s   || String(a.raw?.setor||"").toLowerCase()      === s;
+    const hitM   = !m   || String(a.raw?.mercado||"").toLowerCase()    === m;
+    const hitMes = !mes || String(a.mes||"").toLowerCase()             === mes;
+    const hitPer = !per || String(a.periodicidade||"").toLowerCase()   === per;
+    return hitT && hitN && hitS && hitM && hitMes && hitPer;
   });
 
   renderGoalList(res);
 });
 
 document.getElementById("goalBtnLimpar")?.addEventListener("click", () => {
-  ["goalFiltroTicker","goalFiltroNome","goalFiltroSetor","goalFiltroMercado"].forEach(id=>{
-    const el = document.getElementById(id); if (el) el.value = "";
-  });
+  ["goalFiltroTicker","goalFiltroNome","goalFiltroSetor","goalFiltroMercado","goalFiltroMes","goalFiltroPeriodicidade"]
+    .forEach(id=>{ const el = document.getElementById(id); if (el) el.value = ""; });
   renderGoalList(GOAL_CACHE);
 });
 
-// render lista filtrada (SEM checkbox; só botão “＋/✓”)
+// ----- Lista (toggle por botão “＋/✓”) -----
 function renderGoalList(arr){
   const ul = document.getElementById("goalListaAcoes");
   if (!ul) return;
@@ -661,7 +712,6 @@ function renderGoalList(arr){
     `;
   }).join("");
 
-  // toggle seleção no botão
   ul.querySelectorAll('.goal-toggle').forEach(btn=>{
     btn.addEventListener('click', () => {
       const t = btn.dataset.ticker;
@@ -681,7 +731,7 @@ function renderGoalList(arr){
   });
 }
 
-// render selecionadas (tags)
+// ----- Selecionadas (tags) -----
 function renderGoalSelected(){
   const wrap = document.getElementById("goalSelecionadas");
   if (!wrap) return;
@@ -699,20 +749,18 @@ function renderGoalSelected(){
     </span>
   `).join("");
 
-  // remover por tag
   wrap.querySelectorAll('button[data-del]').forEach(btn=>{
     btn.addEventListener("click", () => {
       const t = btn.dataset.del;
       GOAL_SELECTED.delete(t);
       renderGoalSelected();
-      // atualiza botão na lista (volta a “＋”)
       const b = document.querySelector(`#goalListaAcoes .goal-toggle[data-ticker="${t}"]`);
       if (b){ b.textContent = '＋'; b.title = 'Adicionar'; }
     });
   });
 }
 
-// Exclusividade das duas checkboxes
+// ----- Exclusividade das duas checkboxes -----
 function syncGoalCheckboxes(){
   const chkInt = document.getElementById("goalAcoesCompletas");
   const chkTot = document.getElementById("goalUsarTotal");
@@ -722,14 +770,12 @@ function syncGoalCheckboxes(){
     if (e.target === chkInt && chkInt.checked) chkTot.checked = false;
     if (e.target === chkTot && chkTot.checked) chkInt.checked = false;
   }
-  chkInt.removeEventListener('change', onChange); // evita listeners duplicados
-  chkTot.removeEventListener('change', onChange);
-  chkInt.addEventListener('change', onChange);
-  chkTot.addEventListener('change', onChange);
-  onChange({target: chkInt.checked ? chkInt : chkTot}); // normaliza
+  chkInt.onchange = onChange;
+  chkTot.onchange = onChange;
+  onChange({target: chkInt.checked ? chkInt : chkTot});
 }
 
-// SIMULAR com as selecionadas (resultado ocupa largura total)
+// ----- Simular -----
 document.getElementById("goalBtnSimular")?.addEventListener("click", async ()=>{
   const invest   = Number(document.getElementById("goalInvest")?.value || 0);
   const periodo  = (document.getElementById("goalPeriodo")?.value || "1ano");
@@ -741,14 +787,8 @@ document.getElementById("goalBtnSimular")?.addEventListener("click", async ()=>{
   if (box) box.innerHTML = `<div class="card">A simular…</div>`;
 
   const baseSelecionada = Array.from(GOAL_SELECTED.values());
-  if (baseSelecionada.length === 0){
-    if (box) box.innerHTML = `<div class="card"><p class="muted">Seleciona pelo menos uma ação.</p></div>`;
-    return;
-  }
-  if (invest <= 0){
-    if (box) box.innerHTML = `<div class="card"><p class="muted">Indica o montante a investir.</p></div>`;
-    return;
-  }
+  if (baseSelecionada.length === 0){ box.innerHTML = `<div class="card"><p class="muted">Seleciona pelo menos uma ação.</p></div>`; return; }
+  if (invest <= 0){ box.innerHTML = `<div class="card"><p class="muted">Indica o montante a investir.</p></div>`; return; }
 
   try{
     const comMetricas = baseSelecionada
@@ -766,24 +806,23 @@ document.getElementById("goalBtnSimular")?.addEventListener("click", async ()=>{
       : distribuirFracoes(comMetricas, invest);
 
     renderResultado(box, resultado, { periodo, horizonte, inteiras, usarTot });
-    goalEnterResultsMode();
+    goalEnterResultsMode();        // mostra modo resultado
   }catch(err){
     console.error(err);
-    if (box) box.innerHTML = `<div class="card"><p class="muted">Ocorreu um erro na simulação.</p></div>`;
+    box.innerHTML = `<div class="card"><p class="muted">Ocorreu um erro na simulação.</p></div>`;
   }
 });
 
-// === UI: modo resultado (mostra só o resultado e um X para voltar) ===
+// === UI: modo resultado ===
 function goalEnterResultsMode() {
   const modal = document.getElementById("goalModal");
   if (!modal) return;
+  showGoalStep(4);                           // step 4 = resultados
   modal.classList.add("goal-show-results");
 
-  // barra fixa c/ botão voltar (cria só 1x)
-  const barId = "goalResultsBar";
-  if (!document.getElementById(barId)) {
+  if (!document.getElementById("goalResultsBar")) {
     const bar = document.createElement("div");
-    bar.id = barId;
+    bar.id = "goalResultsBar";
     bar.className = "goal-results-bar";
     bar.innerHTML = `
       <button id="goalBackToEdit" class="icon-btn close" title="Voltar">×</button>
@@ -794,10 +833,9 @@ function goalEnterResultsMode() {
     document.getElementById("goalBackToEdit")?.addEventListener("click", goalExitResultsMode);
   }
 }
-
 function goalExitResultsMode() {
   const modal = document.getElementById("goalModal");
   if (!modal) return;
   modal.classList.remove("goal-show-results");
+  showGoalStep(3);                            // regressa ao passo 3
 }
-
