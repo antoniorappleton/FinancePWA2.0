@@ -96,16 +96,22 @@ export async function initScreen() {
       const objetivo = g.objetivo > 0 ? g.objetivo : 0;
 
       if (objetivo > 0) {
-        const pct = (lucroAtual / objetivo) * 100; // pode ser negativo
-        const widthPct = clamp(Math.abs(pct), 0, 100).toFixed(0);
-        const positive = lucroAtual >= 0;
+        // progresso real em relação ao objetivo (pode ser negativo)
+        const progresso = (lucroAtual / objetivo) * 100;
 
-        pctText = `${pct.toFixed(0)}%`;
+        // limitar entre -100 e 100
+        const clamped = Math.max(-100, Math.min(100, progresso));
+
+        // largura do lado a preencher: 0..50 (porque a barra tem duas metades)
+        const sideWidthPct = (Math.abs(clamped) / 2).toFixed(1);
+
+        const positive = clamped >= 0;
+        pctText = `${clamped.toFixed(0)}%`;
 
         barHTML = `
           <div class="progress-dual">
             <div class="track">
-              <div class="fill ${positive ? "positive" : "negative"}" style="width:${widthPct}%"></div>
+              <div class="fill ${positive ? "positive" : "negative"}" style="width:${sideWidthPct}%"></div>
               <div class="zero"></div>
             </div>
           </div>
