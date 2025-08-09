@@ -399,3 +399,405 @@ function setActiveChip(periodo) {
     ch.classList.toggle("active", p === periodo);
   });
 }
+
+//Simulador Botão Definir Objetivo
+// =========================
+// (ADICIONA / SUBSTITUI DAQUI PARA BAIXO)
+// =========================
+
+// ---------- Helpers comuns ----------
+function euro(v){ return new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(v||0); }
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+function dividirPeriodicidade(dividendo, periodicidade){
+  const p = String(periodicidade||"").toLowerCase();
+  if (p === "mensal")     return dividendo * 12;
+  if (p === "trimestral") return dividendo * 4;
+  if (p === "semestral")  return dividendo * 2;
+  return dividendo; // anual ou n/a
+}
+function campoCrescimento(periodoSel){
+  if (periodoSel === "1s")  return "taxaCrescimento_1semana";
+  if (periodoSel === "1m")  return "taxaCrescimento_1mes";
+  return "taxaCrescimento_1ano";
+}
+function melhorTaxaDisponivel(acao, prefer){
+  const ordem = [prefer, "taxaCrescimento_1mes", "taxaCrescimento_1semana", "taxaCrescimento_1ano"];
+  for (const k of ordem){
+    const v = Number(acao[k] || 0);
+    if (v !== 0) return v;
+  }
+  return 0;
+}
+function calcularMetricasAcao(acao, periodoSel, horizonte){
+  const prefer = campoCrescimento(periodoSel);
+  const taxaPct = melhorTaxaDisponivel(acao, prefer);
+  const preco     = Number(acao.valorStock || 0);
+  const dividendo = Number(acao.dividendo || 0);
+  const per       = acao.periodicidade || "Anual";
+  if (!(preco>0)) return null;
+
+  const r = clamp(taxaPct/100, -0.95, 5);
+  const h = Math.max(1, Number(horizonte||1));
+
+  const mult = Math.pow(1+r, h);
+  const valorizacao = preco * (mult - 1);
+  const totalDividendos = dividirPeriodicidade(dividendo, per) * h;
+
+  const lucroUnidade = totalDividendos + valorizacao;
+  const retornoPorEuro = lucroUnidade / preco;
+
+  return { preco, dividendoAnual: dividirPeriodicidade(dividendo, per), taxaPct, lucroUnidade, retornoPorEuro };
+}
+
+function distribuirFracoes(acoes, investimento){
+  const somaRetorno = acoes.reduce((s,a)=>s + a.metrics.retornoPorEuro, 0);
+  if (somaRetorno <= 0) return { linhas: [], totalLucro: 0, totalGasto: 0, restante: investimento };
+
+  const linhas = acoes.map(a=>{
+    const propor = a.metrics.retornoPorEuro / somaRetorno;
+    const investido = investimento * propor;
+    const qtd = investido / a.metrics.preco;
+    const lucro = qtd * a.metrics.lucroUnidade;
+    return {
+      nome: a.nome, ticker: a.ticker,
+      preco: a.metrics.preco,
+      quantidade: qtd,
+      investido,
+      lucro,
+      taxaPct: a.metrics.taxaPct,
+      dividendoAnual: a.metrics.dividendoAnual
+    };
+  });
+  const totalLucro = linhas.reduce((s,l)=>s+l.lucro,0);
+  const totalGasto = linhas.reduce((s,l)=>s+l.investido,0);
+  return { linhas, totalLucro, totalGasto, restante: Math.max(0, investimento - totalGasto) };
+}
+
+function distribuirInteiras(acoes, investimento){
+  const ordenadas = [...acoes].sort((a,b)=>b.metrics.retornoPorEuro - a.metrics.retornoPorEuro);
+  const linhasMap = new Map();
+  let restante = investimento;
+
+  const precoMin = Math.min(...ordenadas.map(a=>a.metrics.preco));
+  while (restante >= precoMin - 1e-9){
+    let best = null;
+    for (const a of ordenadas){
+      if (a.metrics.preco <= restante + 1e-9){ best = a; break; }
+    }
+    if (!best) break;
+
+    const key = best.ticker;
+    const linha = linhasMap.get(key) || {
+      nome: best.nome, ticker: best.ticker,
+      preco: best.metrics.preco,
+      quantidade: 0, investido: 0, lucro: 0,
+      taxaPct: best.metrics.taxaPct,
+      dividendoAnual: best.metrics.dividendoAnual
+    };
+    linha.quantidade += 1;
+    linha.investido  += best.metrics.preco;
+    linha.lucro      += best.metrics.lucroUnidade;
+    linhasMap.set(key, linha);
+    restante -= best.metrics.preco;
+  }
+  const linhas = Array.from(linhasMap.values());
+  const totalLucro = linhas.reduce((s,l)=>s+l.lucro,0);
+  const totalGasto = linhas.reduce((s,l)=>s+l.investido,0);
+  return { linhas, totalLucro, totalGasto, restante };
+}
+
+function renderResultado(destEl, resultado, opts){
+  const { linhas, totalLucro, totalGasto, restante=0 } = resultado;
+  if (!linhas || linhas.length===0){
+    destEl.innerHTML = `<div class="card"><p class="muted">Nenhuma ação selecionada com retorno positivo.</p></div>`;
+    return;
+  }
+  const rows = linhas.map(l=>`
+    <tr>
+      <td>${l.nome} <span class="muted">(${l.ticker})</span></td>
+      <td>${euro(l.preco)}</td>
+      <td>${l.quantidade.toFixed( opts.inteiras ? 0 : 4 )}</td>
+      <td>${euro(l.investido)}</td>
+      <td>${euro(l.lucro)}</td>
+      <td>${(l.taxaPct||0).toFixed(2)}%</td>
+      <td>${euro(l.dividendoAnual||0)}/ano</td>
+    </tr>
+  `).join("");
+  destEl.innerHTML = `
+    <div class="card">
+      <div class="tabela-scroll-wrapper">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th>Ativo</th><th>Preço</th><th>Qtd</th><th>Investido</th><th>Lucro Estim.</th><th>Tx ${opts.periodo}</th><th>Dividendo</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p style="margin-top:.6rem">
+        <strong>Total investido:</strong> ${euro(totalGasto)}
+        ${opts.inteiras && restante>0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
+        <br/>
+        <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte>1?"períodos":"período"}):</strong> ${euro(totalLucro)}
+      </p>
+    </div>
+  `;
+}
+
+// ---------- Estado do modal ----------
+let GOAL_CACHE = [];
+const GOAL_SELECTED = new Map();
+
+// fetch acoesDividendos (inclui setor/mercado se existirem)
+async function fetchAcoesGoal(){
+  const snap = await getDocs(collection(db, "acoesDividendos"));
+  const out = [];
+  snap.forEach(doc=>{
+    const d = doc.data();
+    if (!d?.ticker) return;
+    out.push({
+      nome: d.nome || d.ticker,
+      ticker: String(d.ticker).toUpperCase(),
+      valorStock: Number(d.valorStock || 0),
+      dividendo: Number(d.dividendo || 0),
+      periodicidade: d.periodicidade || "Anual",
+      taxaCrescimento_1semana: Number(d.taxaCrescimento_1semana || 0),
+      taxaCrescimento_1mes: Number(d.taxaCrescimento_1mes || 0),
+      taxaCrescimento_1ano: Number(d.taxaCrescimento_1ano || 0),
+      raw: { setor: d.setor || "", mercado: d.mercado || "" }
+    });
+  });
+  return out;
+}
+
+// abrir/fechar
+const btnObjetivo = document.getElementById("btnObjetivo");
+const goalModal   = document.getElementById("goalModal");
+const goalClose   = document.getElementById("goalClose");
+
+btnObjetivo?.addEventListener("click", async () => {
+  goalModal?.classList.remove("hidden");
+
+  // aplica grid responsivo ao content do modal (se ainda não tiver)
+  document.querySelector('#goalModal .goal-columns')?.classList.add('goal-grid');
+
+  if (GOAL_CACHE.length === 0) GOAL_CACHE = await fetchAcoesGoal();
+  renderGoalList(GOAL_CACHE);
+  renderGoalSelected();
+
+  // normaliza exclusividade dos 2 checkboxes
+  syncGoalCheckboxes();
+});
+goalClose?.addEventListener("click", closeGoalModal);
+goalModal?.addEventListener("click", (e) => {
+  if (e.target.id === "goalModal") closeGoalModal();
+});
+
+function closeGoalModal() {
+  const modal = document.getElementById("goalModal");
+  modal?.classList.add("hidden");
+  modal?.classList.remove("goal-show-results");
+
+  GOAL_SELECTED.clear();
+  const box = document.getElementById("goalResultado");
+  if (box) box.innerHTML = "";
+  const bar = document.getElementById("goalResultsBar");
+  if (bar) bar.remove();
+}
+
+// filtrar/limpar
+document.getElementById("goalBtnFiltrar")?.addEventListener("click", () => {
+  const t  = (document.getElementById("goalFiltroTicker")?.value || "").trim().toLowerCase();
+  const n  = (document.getElementById("goalFiltroNome")?.value   || "").trim().toLowerCase();
+  const s  = (document.getElementById("goalFiltroSetor")?.value  || "").trim().toLowerCase();
+  const m  = (document.getElementById("goalFiltroMercado")?.value|| "").trim().toLowerCase();
+
+  const res = GOAL_CACHE.filter(a => {
+    const hitT = !t || a.ticker.toLowerCase().includes(t);
+    const hitN = !n || a.nome.toLowerCase().includes(n);
+    const hitS = !s || String(a.raw?.setor||"").toLowerCase().includes(s);
+    const hitM = !m || String(a.raw?.mercado||"").toLowerCase().includes(m);
+    return hitT && hitN && hitS && hitM;
+  });
+
+  renderGoalList(res);
+});
+
+document.getElementById("goalBtnLimpar")?.addEventListener("click", () => {
+  ["goalFiltroTicker","goalFiltroNome","goalFiltroSetor","goalFiltroMercado"].forEach(id=>{
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+  renderGoalList(GOAL_CACHE);
+});
+
+// render lista filtrada (SEM checkbox; só botão “＋/✓”)
+function renderGoalList(arr){
+  const ul = document.getElementById("goalListaAcoes");
+  if (!ul) return;
+  if (!arr || arr.length === 0) {
+    ul.innerHTML = `<li><span class="meta">Sem resultados.</span></li>`;
+    return;
+  }
+
+  ul.innerHTML = arr.map(a => {
+    const selected = GOAL_SELECTED.has(a.ticker);
+    const setor   = a.raw?.setor || "-";
+    const mercado = a.raw?.mercado || "-";
+    const preco   = Number(a.valorStock||0).toFixed(2);
+    return `
+      <li>
+        <div style="display:flex;align-items:center;gap:10px;flex:1;">
+          <div>
+            <div><strong>${a.nome}</strong> <span class="meta">(${a.ticker})</span></div>
+            <div class="meta">${setor} • ${mercado} · Preço: €${preco}</div>
+          </div>
+        </div>
+        <button class="icon-btn goal-toggle" data-ticker="${a.ticker}" title="${selected?'Remover':'Adicionar'}">
+          ${selected ? '✓' : '＋'}
+        </button>
+      </li>
+    `;
+  }).join("");
+
+  // toggle seleção no botão
+  ul.querySelectorAll('.goal-toggle').forEach(btn=>{
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.ticker;
+      const obj = arr.find(x=>x.ticker===t) || GOAL_CACHE.find(x=>x.ticker===t);
+      if (!obj) return;
+      if (GOAL_SELECTED.has(t)) {
+        GOAL_SELECTED.delete(t);
+        btn.textContent = '＋';
+        btn.title = 'Adicionar';
+      } else {
+        GOAL_SELECTED.set(t, obj);
+        btn.textContent = '✓';
+        btn.title = 'Remover';
+      }
+      renderGoalSelected();
+    });
+  });
+}
+
+// render selecionadas (tags)
+function renderGoalSelected(){
+  const wrap = document.getElementById("goalSelecionadas");
+  if (!wrap) return;
+
+  const list = Array.from(GOAL_SELECTED.values());
+  if (list.length === 0) {
+    wrap.innerHTML = `<span class="muted">Nenhuma ação selecionada.</span>`;
+    return;
+  }
+
+  wrap.innerHTML = list.map(a => `
+    <span class="goal-tag">
+      ${a.ticker}
+      <button title="Remover" data-del="${a.ticker}">x</button>
+    </span>
+  `).join("");
+
+  // remover por tag
+  wrap.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.addEventListener("click", () => {
+      const t = btn.dataset.del;
+      GOAL_SELECTED.delete(t);
+      renderGoalSelected();
+      // atualiza botão na lista (volta a “＋”)
+      const b = document.querySelector(`#goalListaAcoes .goal-toggle[data-ticker="${t}"]`);
+      if (b){ b.textContent = '＋'; b.title = 'Adicionar'; }
+    });
+  });
+}
+
+// Exclusividade das duas checkboxes
+function syncGoalCheckboxes(){
+  const chkInt = document.getElementById("goalAcoesCompletas");
+  const chkTot = document.getElementById("goalUsarTotal");
+  if (!chkInt || !chkTot) return;
+
+  function onChange(e){
+    if (e.target === chkInt && chkInt.checked) chkTot.checked = false;
+    if (e.target === chkTot && chkTot.checked) chkInt.checked = false;
+  }
+  chkInt.removeEventListener('change', onChange); // evita listeners duplicados
+  chkTot.removeEventListener('change', onChange);
+  chkInt.addEventListener('change', onChange);
+  chkTot.addEventListener('change', onChange);
+  onChange({target: chkInt.checked ? chkInt : chkTot}); // normaliza
+}
+
+// SIMULAR com as selecionadas (resultado ocupa largura total)
+document.getElementById("goalBtnSimular")?.addEventListener("click", async ()=>{
+  const invest   = Number(document.getElementById("goalInvest")?.value || 0);
+  const periodo  = (document.getElementById("goalPeriodo")?.value || "1ano");
+  const horizonte= Math.max(1, Number(document.getElementById("goalHorizonte")?.value || 1));
+  const inteiras = !!document.getElementById("goalAcoesCompletas")?.checked;
+  const usarTot  = !!document.getElementById("goalUsarTotal")?.checked;
+  const box      = document.getElementById("goalResultado");
+
+  if (box) box.innerHTML = `<div class="card">A simular…</div>`;
+
+  const baseSelecionada = Array.from(GOAL_SELECTED.values());
+  if (baseSelecionada.length === 0){
+    if (box) box.innerHTML = `<div class="card"><p class="muted">Seleciona pelo menos uma ação.</p></div>`;
+    return;
+  }
+  if (invest <= 0){
+    if (box) box.innerHTML = `<div class="card"><p class="muted">Indica o montante a investir.</p></div>`;
+    return;
+  }
+
+  try{
+    const comMetricas = baseSelecionada
+      .map(a=>{ const m = calcularMetricasAcao(a, periodo, horizonte); return m ? {...a, metrics:m} : null; })
+      .filter(Boolean)
+      .filter(a=>a.metrics.retornoPorEuro > 0);
+
+    if (comMetricas.length === 0){
+      box.innerHTML = `<div class="card"><p class="muted">As ações selecionadas não têm retorno positivo para o período escolhido.</p></div>`;
+      return;
+    }
+
+    const resultado = inteiras
+      ? distribuirInteiras(comMetricas, invest)
+      : distribuirFracoes(comMetricas, invest);
+
+    renderResultado(box, resultado, { periodo, horizonte, inteiras, usarTot });
+    goalEnterResultsMode();
+  }catch(err){
+    console.error(err);
+    if (box) box.innerHTML = `<div class="card"><p class="muted">Ocorreu um erro na simulação.</p></div>`;
+  }
+});
+
+// === UI: modo resultado (mostra só o resultado e um X para voltar) ===
+function goalEnterResultsMode() {
+  const modal = document.getElementById("goalModal");
+  if (!modal) return;
+  modal.classList.add("goal-show-results");
+
+  // barra fixa c/ botão voltar (cria só 1x)
+  const barId = "goalResultsBar";
+  if (!document.getElementById(barId)) {
+    const bar = document.createElement("div");
+    bar.id = barId;
+    bar.className = "goal-results-bar";
+    bar.innerHTML = `
+      <button id="goalBackToEdit" class="icon-btn close" title="Voltar">×</button>
+      <span class="title">Resultado da simulação</span>
+    `;
+    const res = document.getElementById("goalResultado");
+    if (res && res.parentNode) res.parentNode.insertBefore(bar, res);
+    document.getElementById("goalBackToEdit")?.addEventListener("click", goalExitResultsMode);
+  }
+}
+
+function goalExitResultsMode() {
+  const modal = document.getElementById("goalModal");
+  if (!modal) return;
+  modal.classList.remove("goal-show-results");
+}
+

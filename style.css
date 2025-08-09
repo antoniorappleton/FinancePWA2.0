@@ -282,3 +282,217 @@ select:focus {
   transform: translateY(0);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
+
+/*botões popup*/
+#goalModal .form-grid button {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+
+#goalModal .btn.outline {
+  border: 1px solid #000; /* preto como pediste para outros */
+  color: #000;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+#goalModal .btn.ghost {
+  border: 1px solid transparent;
+  color: #555;
+  background: #f9f9f9;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* ---- Modal Definir Objetivo ---- */
+.modal-goal{ width:min(1100px,95vw); max-height:90vh; display:flex; flex-direction:column; }
+.modal-body.goal-grid{
+  display:grid; grid-template-columns: 1.1fr 0.9fr; gap:12px;
+  padding:12px 16px; overflow:auto;
+}
+@media (max-width:900px){
+  .modal-body.goal-grid{ grid-template-columns: 1fr; }
+}
+
+.goal-col{ min-height:0; display:flex; flex-direction:column; gap:10px; }
+.goal-filters{ position:sticky; top:0; background:#111; padding-bottom:6px; z-index:2; }
+.goal-list-wrap{ overflow:auto; border:1px solid rgba(255,255,255,.08); border-radius:10px; }
+.goal-list{ list-style:none; margin:0; padding:0; }
+.goal-list li{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px 12px; border-bottom:1px dashed rgba(255,255,255,.08);
+}
+.goal-list .meta{ color:#aaa; font-size:.85rem; }
+
+.goal-selected{ background:#1a1a1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px; }
+.goal-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+.goal-tag{
+  background:#2a2a2a; color:#f1f1f1; border:1px solid rgba(255,255,255,.08);
+  padding:6px 10px; border-radius:999px; display:flex; align-items:center; gap:8px;
+}
+.goal-tag button{ background:transparent; border:0; color:#f88; cursor:pointer; }
+
+.goal-params{ background:#1a1a1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px; }
+.goal-actions{
+  position:sticky; bottom:0; padding:10px 0 0;
+  background:linear-gradient(180deg, rgba(17,17,17,0) 0%, #111 60%);
+  display:flex; justify-content:flex-end;
+}
+
+/* resultado em baixo, fora do grid, para ficar sempre visível ao scrolar conteúdo */
+.goal-result{ padding:10px 16px 16px; overflow:auto; max-height:40vh; }
+.goal-result .card{ background:#0f0f0f; border:1px solid rgba(255,255,255,.08); }
+
+.chk{ display:flex; align-items:center; gap:6px; color:#ddd; }
+
+/* botões outline com borda preta e sombra (como pediste) */
+.btn.outline.btn-black-shadow{
+  border:1px solid #000;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+}
+
+/*resultado do filtro das ações escolhidas */
+/* Resultado dentro do modal Definir Objetivo */
+#goalResultado .card{
+  background: var(--card-bg, #17191c);
+  color: var(--fg, #eaeaea);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+#goalResultado table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#goalResultado thead th{
+  text-align: left;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.18);
+  color: inherit;
+}
+
+#goalResultado tbody td{
+  padding: 10px 12px;
+  color: inherit;
+  border-bottom: 1px dashed rgba(255,255,255,.10);
+}
+
+#goalResultado tbody tr:nth-child(odd){
+  background: rgba(255,255,255,.03);
+}
+
+/* o pequeno resumo em baixo */
+#goalResultado p{
+  color: inherit;
+}
+/* Layout do modal Definir Objetivo */
+#goalModal .goal-grid{
+  display: grid;
+  grid-template-columns: minmax(340px, 1fr) minmax(320px, 420px);
+  gap: 16px;
+}
+
+/* Resultado ocupa a largura total, por baixo das duas colunas */
+#goalResultado{
+  grid-column: 1 / -1;
+  max-height: 45vh;
+  overflow: auto;
+  margin-top: 8px;
+}
+
+/* Cartão e tabela legíveis em dark */
+#goalResultado .card{
+  background: var(--card-bg, #17191c);
+  color: var(--fg, #e9e9e9);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.08);
+}
+#goalResultado table{ width:100%; border-collapse:collapse; }
+#goalResultado thead th{
+  text-align:left; font-weight:600; padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.18); color:inherit;
+}
+#goalResultado tbody td{
+  padding:10px 12px; color:inherit;
+  border-bottom:1px dashed rgba(255,255,255,.10);
+}
+#goalResultado tbody tr:nth-child(odd){ background: rgba(255,255,255,.03); }
+
+/* Lista de ações – botão de toggle “＋/✓” */
+#goalListaAcoes .goal-toggle{
+  width: 34px; height: 34px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+}
+#goalListaAcoes .goal-toggle:hover{ filter: brightness(1.1); }
+
+/* Responsivo */
+@media (max-width: 900px){
+  #goalModal .goal-grid{ grid-template-columns: 1fr; }
+  #goalResultado{ max-height: 50vh; }
+}
+/* quando queremos ver apenas o resultado */
+#goalModal.goal-show-results .goal-grid { display: none; }     /* esconde filtros + lista */
+#goalModal.goal-show-results #goalResultado{
+  display: block;
+  grid-column: 1 / -1;
+  height: auto;
+  max-height: calc(90vh - 64px);
+  overflow: auto;
+  margin-top: 0;
+}
+
+/* barra fixa com X para voltar */
+.goal-results-bar{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(10,10,12,.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.goal-results-bar .title{ font-weight: 600; opacity: .95; }
+
+/* botão X */
+.icon-btn.close{
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  font-size: 20px; line-height: 1;
+  display: grid; place-items: center;
+}
+.icon-btn.close:hover{ filter: brightness(1.08); }
+
+/* resultado legível em tema escuro */
+#goalResultado .card{
+  background: var(--card-bg, #17191c);
+  color: var(--fg, #ececec);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.08);
+}
+#goalResultado thead th{
+  text-align:left; font-weight:600; padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.18);
+}
+#goalResultado tbody td{
+  padding:10px 12px;
+  border-bottom:1px dashed rgba(255,255,255,.10);
+}
+#goalResultado tbody tr:nth-child(odd){ background: rgba(255,255,255,.03); }
+
+@media (max-width: 900px){
+  #goalModal.goal-show-results #goalResultado{
+    max-height: calc(92vh - 56px);
+  }
+}
+
