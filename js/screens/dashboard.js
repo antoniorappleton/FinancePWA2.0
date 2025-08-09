@@ -8,13 +8,14 @@ export async function initScreen() {
   console.log("✅ dashboard.js iniciado");
 
   // --- ELEMENTOS DA UI ---
-  const valorTotalEl      = document.getElementById("valorTotal");
-  const retornoEl         = document.getElementById("retornoTotal");
-  const lucroTotalEl      = document.getElementById("lucroTotal");
-  const posicoesEl        = document.getElementById("posicoesAtivas");
-  const objetivosEl       = document.getElementById("objetivosFinanceiros");
-  const taxaSucessoEl     = document.getElementById("taxaSucesso");
-  const objetivoTotalEl   = document.getElementById("objetivoTotal");
+  const valorTotalEl    = document.getElementById("valorTotal");
+  const retornoEl       = document.getElementById("retornoTotal");
+  const lucroTotalEl    = document.getElementById("lucroTotal");
+  const posicoesEl      = document.getElementById("posicoesAtivas");
+  const objetivosEl     = document.getElementById("objetivosFinanceiros");
+  const taxaSucessoEl   = document.getElementById("taxaSucesso");
+  const objetivoTotalEl = document.getElementById("objetivoTotal");
+  const valorCarteiraEl = document.getElementById("valorCarteira");
 
   // --- ACUMULADORES ---
   let totalInvestido = 0;
@@ -34,7 +35,7 @@ export async function initScreen() {
     acoesSnapshot.forEach((doc) => {
       const d = doc.data();
       if (d.ticker && typeof d.valorStock === "number") {
-        valorAtualMap.set(d.ticker.toUpperCase(), d.valorStock);
+        valorAtualMap.set(String(d.ticker).toUpperCase(), d.valorStock);
       }
     });
 
@@ -60,6 +61,7 @@ export async function initScreen() {
       grupo.quantidade   += quantidade;
       grupo.investimento += precoCompra * quantidade;
 
+      // objetivo conta uma única vez por ticker
       if (!grupo.objetivoDefinido && objetivo > 0) {
         grupo.objetivoFinanceiro = objetivo;
         grupo.objetivoDefinido   = true;
@@ -86,8 +88,10 @@ export async function initScreen() {
       }
     });
 
-    const retorno      = totalInvestido > 0 ? (totalLucro / totalInvestido) * 100 : 0;
-    const taxaSucesso  = objetivoFinanceiroTotal > 0 ? (totalLucro / objetivoFinanceiroTotal) * 100 : 0;
+    const retorno     = totalInvestido > 0 ? (totalLucro / totalInvestido) * 100 : 0;
+    const taxaSucesso = objetivoFinanceiroTotal > 0 ? (totalLucro / objetivoFinanceiroTotal) * 100 : 0;
+    // 💰 Valor em carteira (total investido + lucro/prejuízo)
+    const valorCarteira = totalInvestido + totalLucro;
 
     // Atualizar UI
     if (valorTotalEl)     valorTotalEl.textContent     = `€${totalInvestido.toFixed(2)}`;
@@ -97,29 +101,27 @@ export async function initScreen() {
     if (objetivosEl)      objetivosEl.textContent      = `${objetivosAtingidos}/${totalObjetivos}`;
     if (objetivoTotalEl)  objetivoTotalEl.textContent  = `€${objetivoFinanceiroTotal.toFixed(2)}`;
     if (taxaSucessoEl)    taxaSucessoEl.textContent    = `${taxaSucesso.toFixed(1)}%`;
+    if (valorCarteiraEl)  valorCarteiraEl.textContent  = `€${valorCarteira.toFixed(2)} valor em carteira`;
 
   } catch (err) {
     console.error("❌ Erro nos KPIs:", err);
   }
 
-  // 2) Atividades recentes
-  await carregarAtividadeRecenteComProgresso();
+  // 2) Atividades recentes (apenas campos solicitados, sem barras)
+  await carregarAtividadeRecenteSimplificada();
 
-  // Botão "Nova Simulação"
+  // 3) Botões
   document.getElementById("btnNovaSimulacao")?.addEventListener("click", () => {
     import("../main.js").then(({ navigateTo }) => navigateTo("simulador"));
   });
 
-  // Botão "Analisar Oportunidades"
   document.getElementById("btnOportunidades")?.addEventListener("click", openOportunidades);
-
-  // Fechar popup
   document.getElementById("opClose")?.addEventListener("click", closeOportunidades);
   document.getElementById("opModal")?.addEventListener("click", (e) => {
     if (e.target.id === "opModal") closeOportunidades();
   });
 
-  // Botões período
+  // Chips do período no popup
   document.querySelectorAll("#opModal .chip").forEach(btn => {
     btn.addEventListener("click", () => {
       const p = btn.getAttribute("data-periodo");
@@ -130,17 +132,15 @@ export async function initScreen() {
   });
 }
 
-// ------- Atividade recente -------
-async function carregarAtividadeRecenteComProgresso() {
+/* =========================
+   ATIVIDADE RECENTE (SIMPLIFICADA)
+   ========================= */
+async function carregarAtividadeRecenteSimplificada() {
   const cont = document.getElementById("atividadeRecente");
   if (!cont) return;
 
   try {
-    const q = query(
-      collection(db, "ativos"),
-      orderBy("dataCompra", "desc"),
-      limit(8)
-    );
+    const q = query(collection(db, "ativos"), orderBy("dataCompra", "desc"), limit(8));
     const snapAtivos = await getDocs(q);
 
     if (snapAtivos.empty) {
@@ -148,47 +148,28 @@ async function carregarAtividadeRecenteComProgresso() {
       return;
     }
 
-    const mapaPrecoAtual = {};
-    const snapAcoes = await getDocs(collection(db, "acoesDividendos"));
-    snapAcoes.forEach(doc => {
-      const d = doc.data();
-      if (d.ticker && typeof d.valorStock === "number") {
-        mapaPrecoAtual[d.ticker.toUpperCase()] = d.valorStock;
-      }
+    const fmtEUR   = new Intl.NumberFormat("pt-PT",{ style:"currency", currency:"EUR" });
+    const fmtDateL = new Intl.DateTimeFormat("pt-PT", {
+      year: "numeric", month: "long", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      timeZoneName: "short" // ex.: GMT+1/UTC+1 (depende do ambiente)
     });
-
-    const fmtEUR  = new Intl.NumberFormat("pt-PT",{ style:"currency", currency:"EUR" });
-    const fmtDate = new Intl.DateTimeFormat("pt-PT",{ year:"numeric", month:"2-digit", day:"2-digit" });
 
     const html = [];
     snapAtivos.forEach(doc => {
       const d = doc.data();
-      const nome        = d.nome || d.ticker || "Ativo";
-      const ticker      = (d.ticker || "").toUpperCase();
-      const qtd         = Number(d.quantidade || 0);
-      const precoCompra = Number(d.precoCompra || 0);
-      const objetivoLucro = Number(d.objetivoFinanceiro || 0);
 
+      const nome        = d.nome || d.ticker || "Ativo";
+      const ticker      = String(d.ticker || "").toUpperCase();
+      const setor       = d.setor || "-";
+      const mercado     = d.mercado || "-";
+      const precoCompra = Number(d.precoCompra || 0);
+      const quantidade  = Number(d.quantidade || 0);
+
+      // Data completa (ex.: "1 de agosto de 2025, 00:00:00 GMT+1")
       let dataTxt = "sem data";
       if (d.dataCompra && typeof d.dataCompra.toDate === "function") {
-        dataTxt = fmtDate.format(d.dataCompra.toDate());
-      }
-
-      const precoAtual = typeof mapaPrecoAtual[ticker] === "number"
-        ? mapaPrecoAtual[ticker]
-        : precoCompra;
-
-      const investido   = precoCompra * qtd;
-      const atual       = precoAtual * qtd;
-      const lucroAtual  = atual - investido;
-
-      let pct = 0, widthPct = 0, pctText = "—";
-      const positive = lucroAtual >= 0;
-
-      if (objetivoLucro > 0) {
-        pct     = (lucroAtual / objetivoLucro) * 100;
-        widthPct= Math.min(100, Math.abs(pct));
-        pctText = `${pct.toFixed(0)}%`;
+        dataTxt = fmtDateL.format(d.dataCompra.toDate());
       }
 
       html.push(`
@@ -196,33 +177,26 @@ async function carregarAtividadeRecenteComProgresso() {
           <div class="activity-left">
             <span class="activity-icon">🛒</span>
             <div>
-              <p><strong>Compra - ${nome}</strong></p>
-              <p class="muted">${qtd} ${qtd === 1 ? "ação" : "ações"} @ ${fmtEUR.format(precoCompra)}</p>
-
-              <div class="activity-meta">
-                <span>Objetivo (lucro): <strong>${fmtEUR.format(objetivoLucro || 0)}</strong></span>
-                <span>${pctText}</span>
-              </div>
-              <div class="progress">
-                <div class="progress-track">
-                  <div class="progress-fill ${positive ? "positive" : "negative"}" style="width:${widthPct}%"></div>
-                </div>
-              </div>
+              <p><strong>${nome}</strong> <span class="muted">(${ticker})</span></p>
+              <p class="muted">${setor} • ${mercado}</p>
+              <p class="muted">${quantidade} ${quantidade === 1 ? "ação" : "ações"} @ ${fmtEUR.format(precoCompra)}</p>
+              <p class="muted">Data: ${dataTxt}</p>
             </div>
           </div>
-          <span class="date">${dataTxt}</span>
         </div>
       `);
     });
 
     cont.innerHTML = html.join("");
   } catch (e) {
-    console.error("Erro ao carregar atividade/progresso:", e);
+    console.error("Erro ao carregar atividade:", e);
     cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
   }
 }
 
-// ------- Popup Top 10 Oportunidades -------
+/* =========================
+   POPUP: TOP 10 OPORTUNIDADES
+   ========================= */
 let opInterval = null;
 let opPeriodoAtual = "1s";
 
@@ -233,9 +207,9 @@ async function carregarTop10Crescimento(periodo = "1s") {
   lista.innerHTML = "🔄 A carregar...";
 
   const campos = {
-    "1s": "taxaCrescimento_1semana",
-    "1m": "taxaCrescimento_1mes",
-    "1ano": "taxaCrescimento_1ano",
+    "1s":  "taxaCrescimento_1semana",
+    "1m":  "taxaCrescimento_1mes",
+    "1ano":"taxaCrescimento_1ano",
   };
   const campo = campos[periodo] || campos["1s"];
 
