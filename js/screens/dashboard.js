@@ -90,8 +90,7 @@ export async function initScreen() {
 
     const retorno     = totalInvestido > 0 ? (totalLucro / totalInvestido) * 100 : 0;
     const taxaSucesso = objetivoFinanceiroTotal > 0 ? (totalLucro / objetivoFinanceiroTotal) * 100 : 0;
-    // 💰 Valor em carteira (total investido + lucro/prejuízo)
-    const valorCarteira = totalInvestido + totalLucro;
+    const valorCarteira = totalInvestido + totalLucro; // 💰 investido + lucro/prejuízo
 
     // Atualizar UI
     if (valorTotalEl)     valorTotalEl.textContent     = `€${totalInvestido.toFixed(2)}`;
@@ -107,7 +106,7 @@ export async function initScreen() {
     console.error("❌ Erro nos KPIs:", err);
   }
 
-  // 2) Atividades recentes (apenas campos solicitados, sem barras)
+  // 2) Atividades recentes (apenas campos solicitados, sem barras) — com expand/colapse
   await carregarAtividadeRecenteSimplificada();
 
   // 3) Botões
@@ -133,14 +132,18 @@ export async function initScreen() {
 }
 
 /* =========================
-   ATIVIDADE RECENTE (SIMPLIFICADA)
+   ATIVIDADE RECENTE (SIMPLIFICADA) + EXPAND/COLAPSE
    ========================= */
+let atividadesCache = [];     // guarda todos os docs formatados
+let atividadesExpandido = false; // estado de expansão
+
 async function carregarAtividadeRecenteSimplificada() {
   const cont = document.getElementById("atividadeRecente");
   if (!cont) return;
 
   try {
-    const q = query(collection(db, "ativos"), orderBy("dataCompra", "desc"), limit(8));
+    // Trazemos MAIS do que 4 para já termos tudo em cache
+    const q = query(collection(db, "ativos"), orderBy("dataCompra", "desc"), limit(50));
     const snapAtivos = await getDocs(q);
 
     if (snapAtivos.empty) {
@@ -152,10 +155,11 @@ async function carregarAtividadeRecenteSimplificada() {
     const fmtDateL = new Intl.DateTimeFormat("pt-PT", {
       year: "numeric", month: "long", day: "numeric",
       hour: "2-digit", minute: "2-digit", second: "2-digit",
-      timeZoneName: "short" // ex.: GMT+1/UTC+1 (depende do ambiente)
+      timeZoneName: "short"
     });
 
-    const html = [];
+    atividadesCache = []; // reset cache
+
     snapAtivos.forEach(doc => {
       const d = doc.data();
 
@@ -166,13 +170,12 @@ async function carregarAtividadeRecenteSimplificada() {
       const precoCompra = Number(d.precoCompra || 0);
       const quantidade  = Number(d.quantidade || 0);
 
-      // Data completa (ex.: "1 de agosto de 2025, 00:00:00 GMT+1")
       let dataTxt = "sem data";
       if (d.dataCompra && typeof d.dataCompra.toDate === "function") {
         dataTxt = fmtDateL.format(d.dataCompra.toDate());
       }
 
-      html.push(`
+      atividadesCache.push(`
         <div class="activity-item">
           <div class="activity-left">
             <span class="activity-icon">🛒</span>
@@ -187,11 +190,35 @@ async function carregarAtividadeRecenteSimplificada() {
       `);
     });
 
-    cont.innerHTML = html.join("");
+    // Render inicial: só 4
+    renderAtividades(cont, 4);
+    atividadesExpandido = false;
+
+    // Ligar o botão "Ver Toda Atividade" (sem mexer no HTML: apanha o primeiro .btn.outline.full nessa card)
+    const btnVerTodos = document.querySelector(".dashboard .card.glass .btn.outline.full");
+    if (btnVerTodos) {
+      btnVerTodos.textContent = "Ver Toda Atividade";
+      btnVerTodos.onclick = () => {
+        atividadesExpandido = !atividadesExpandido;
+        if (atividadesExpandido) {
+          renderAtividades(cont, atividadesCache.length);
+          btnVerTodos.textContent = "Mostrar menos";
+        } else {
+          renderAtividades(cont, 4);
+          btnVerTodos.textContent = "Ver Toda Atividade";
+        }
+      };
+    }
+
   } catch (e) {
     console.error("Erro ao carregar atividade:", e);
     cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
   }
+}
+
+function renderAtividades(container, howMany) {
+  const slice = atividadesCache.slice(0, howMany);
+  container.innerHTML = slice.join("");
 }
 
 /* =========================
