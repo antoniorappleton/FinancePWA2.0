@@ -405,6 +405,15 @@ function setActiveChip(periodo) {
 // =========================
 
 // ---------- Helpers comuns ----------
+
+function keyStr(s){
+  return String(s ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "") // requer JS moderno
+    .trim()
+    .toLowerCase();
+}
+
 function euro(v){ return new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(v||0); }
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
@@ -537,7 +546,7 @@ function renderResultado(destEl, resultado, opts){
       </div>
       <p style="margin-top:.6rem">
         <strong>Total investido:</strong> ${euro(totalGasto)}
-        ${opts.inteiras && restante>0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
+        ${opts.inteiras && restante>0 ? `• <strong>Resto:</strong> ${euro(restante)}` : ``}
         <br/>
         <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte>1?"períodos":"período"}):</strong> ${euro(totalLucro)}
       </p>
@@ -548,7 +557,7 @@ function renderResultado(destEl, resultado, opts){
 // --- opções dropdowns
 const OPT_SETORES = [
   "", "ETF iTech","ETF Finance","ETF Energia","ETF Materiais",
-  "Alimentação","Automóvel","Bens de Consumo","Consumo Cíclico","Consumo Defensivo",
+  "Alimentação","Automóvel","Bens Consumidor","Consumo Cíclico","Consumo Defensivo",
   "Defesa","Energia","Finanças","Imobiliário","Indústria",
   "Infraestruturas / Energia","Materiais","Restauração","Saúde","Tecnologia","Telecomunicações"
 ];
@@ -702,7 +711,7 @@ function renderGoalList(arr){
         <div style="display:flex;align-items:center;gap:10px;flex:1;">
           <div>
             <div><strong>${a.nome}</strong> <span class="meta">(${a.ticker})</span></div>
-            <div class="meta">${setor} • ${mercado} · Preço: €${preco}</div>
+            <div class="meta">${setor} • ${mercado} • Preço: €${preco}</div>
           </div>
         </div>
         <button class="icon-btn goal-toggle" data-ticker="${a.ticker}" title="${selected?'Remover':'Adicionar'}">
