@@ -110,10 +110,6 @@ export async function initScreen() {
   await carregarAtividadeRecenteSimplificada();
 
   // 3) Botões
-  document.getElementById("btnNovaSimulacao")?.addEventListener("click", () => {
-    import("../main.js").then(({ navigateTo }) => navigateTo("simulador"));
-  });
-
   document.getElementById("btnOportunidades")?.addEventListener("click", openOportunidades);
   document.getElementById("opClose")?.addEventListener("click", closeOportunidades);
   document.getElementById("opModal")?.addEventListener("click", (e) => {
@@ -212,7 +208,7 @@ export async function initScreen() {
       alert("Não foi possível guardar. Tenta novamente.");
     }
   });
-
+  wireDashBuy();
 }
 
 /* =========================
@@ -847,4 +843,49 @@ function goalExitResultsMode() {
   if (!modal) return;
   modal.classList.remove("goal-show-results");
   showGoalStep(3);                            // regressa ao passo 3
+}
+
+//Compra acoes dashboard.js
+// Abre o modal "Adicionar Ação" já em modo COMPRA e limpa os campos
+function wireDashBuy() {
+  const btn        = document.getElementById("btnDashBuy");
+  const modal      = document.getElementById("addModal");
+  const form       = document.getElementById("addForm");
+  const tipoAcao   = document.getElementById("tipoAcao");
+  const labelPreco = document.getElementById("labelPreco");
+
+  const open = () => {
+    if (!modal) return;
+    modal.classList.remove("hidden");
+
+    // força COMPRA
+    if (tipoAcao) tipoAcao.value = "compra";
+    if (labelPreco) labelPreco.firstChild.textContent = "Preço de compra (€)";
+
+    // limpa campos do formulário
+    ["nomeAtivo","tickerAtivo","setorAtivo","mercadoAtivo","quantidadeAtivo","precoAtivo","objetivoAtivo"]
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  };
+
+  const close = () => {
+    if (!modal) return;
+    modal.classList.add("hidden");
+    form?.reset();
+    if (labelPreco) labelPreco.firstChild.textContent = "Preço da transação (€)";
+  };
+
+  // abrir via botão principal
+  btn?.addEventListener("click", open);
+
+  // fechos já existentes do modal "Adicionar Ação"
+  document.getElementById("addClose") ?.addEventListener("click", close);
+  document.getElementById("addCancel")?.addEventListener("click", close);
+  modal?.addEventListener("click", (e) => { if (e.target.id === "addModal") close(); });
+
+  // se o utilizador mudar entre compra/venda, atualiza o label
+  tipoAcao?.addEventListener("change", () => {
+    if (!labelPreco) return;
+    labelPreco.firstChild.textContent =
+      tipoAcao.value === "venda" ? "Preço de venda (€)" : "Preço de compra (€)";
+  });
 }
