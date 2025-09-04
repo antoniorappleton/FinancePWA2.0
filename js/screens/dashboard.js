@@ -557,7 +557,7 @@ function renderResultado(destEl, resultado, opts){
 // --- opções dropdowns
 const OPT_SETORES = [
   "", "ETF iTech","ETF Finance","ETF Energia","ETF Materiais",
-  "Alimentação","Automóvel","Bens Consumidor","Consumo Cíclico","Consumo Defensivo",
+  "Alimentação","Automóvel","Bens Consumidor","Consumo Cíclico","Consumo Defensivo","Criptomoedas",
   "Defesa","Energia","Finanças","Imobiliário","Indústria",
   "Infraestruturas / Energia","Materiais","Mineração (Ouro)","Restauração","Saúde","Tecnologia","Telecomunicações"
 ];
