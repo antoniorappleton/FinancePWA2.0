@@ -559,7 +559,7 @@ const OPT_SETORES = [
   "", "ETF iTech","ETF Finance","ETF Energia","ETF Materiais",
   "Alimentação","Automóvel","Bens Consumidor","Consumo Cíclico","Consumo Defensivo",
   "Defesa","Energia","Finanças","Imobiliário","Indústria",
-  "Infraestruturas / Energia","Materiais","Restauração","Saúde","Tecnologia","Telecomunicações"
+  "Infraestruturas / Energia","Materiais","Mineração (Ouro)","Restauração","Saúde","Tecnologia","Telecomunicações"
 ];
 const OPT_MERCADOS = ["", "Portugal","Europeu","Americano","Americano SP500"];
 const OPT_MESES = ["", "n/A","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];

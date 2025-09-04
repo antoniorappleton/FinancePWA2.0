@@ -12,8 +12,8 @@ export async function initScreen() {
   cont.innerHTML = "A carregar…";
 
   try {
-    // 1) Buscar movimentos e agrupar por ticker
-    const q = query(collection(db, "ativos"), orderBy("dataCompra", "desc"));
+    // 1) Buscar movimentos em ordem cronológica ASC para calcular cost basis corretamente
+    const q = query(collection(db, "ativos"), orderBy("dataCompra", "asc"));
     const snap = await getDocs(q);
 
     if (snap.empty) {
@@ -21,47 +21,75 @@ export async function initScreen() {
       return;
     }
 
-    const grupos = new Map();
+    // 1.1) Agrupar movimentos por ticker mantendo metadados
+    const movimentos = new Map(); // ticker -> [{dt,nome,setor,mercado,qtd,preco,objetivo}]
     snap.forEach(docu => {
       const d = docu.data();
       const ticker = String(d.ticker || "").toUpperCase();
       if (!ticker) return;
 
-      const qtd = toNum(d.quantidade);
-      const preco = toNum(d.precoCompra);
-      const invest = qtd * preco;
+      const dt = (d.dataCompra && typeof d.dataCompra.toDate === "function")
+        ? d.dataCompra.toDate()
+        : new Date(0);
 
-      const g = grupos.get(ticker) || {
-        ticker,
+      const arr = movimentos.get(ticker) || [];
+      arr.push({
+        dt,
         nome: d.nome || ticker,
         setor: d.setor || "-",
         mercado: d.mercado || "-",
-        qtd: 0,
-        investido: 0,
-        objetivo: 0,
-        anyObjSet: false,
-        lastDate: null,
-      };
+        qtd: Number(d.quantidade || 0),
+        preco: Number(d.precoCompra || 0),
+        objetivo: Number(d.objetivoFinanceiro || 0)
+      });
+      movimentos.set(ticker, arr);
+    });
 
-      g.qtd += qtd;
-      g.investido += invest;
+    // 1.2) Para cada ticker, calcular custo médio “running” (venda reduz custo pelo custo médio, não pelo preço de venda)
+    const grupos = new Map(); // ticker -> agregado final
+    movimentos.forEach((arr, ticker) => {
+      // arr já vem asc; se necessário: arr.sort((a,b)=>a.dt - b.dt);
 
-      const obj = toNum(d.objetivoFinanceiro);
-      if (!g.anyObjSet && obj > 0) {
-        g.objetivo = obj;
-        g.anyObjSet = true;
+      let totalQty = 0;
+      let totalCost = 0; // custo total (cost basis)
+      let anyObjSet = false;
+      let objetivo = 0;
+
+      let nome = ticker, setor = "-", mercado = "-";
+      let lastDate = null;
+
+      for (const m of arr) {
+        nome = m.nome || nome;
+        setor = m.setor || setor;
+        mercado = m.mercado || mercado;
+        if (!lastDate || (m.dt && m.dt > lastDate)) lastDate = m.dt;
+
+        if (!anyObjSet && m.objetivo > 0) { objetivo = m.objetivo; anyObjSet = true; }
+
+        const q = Number(m.qtd) || 0;
+        const p = Number(m.preco) || 0;
+
+        if (q > 0) {
+          // COMPRA: adiciona custo real
+          totalCost += q * p;
+          totalQty  += q;
+        } else if (q < 0 && totalQty > 0) {
+          // VENDA: retira custo médio das unidades vendidas
+          const sell = Math.min(-q, totalQty);
+          const avg  = totalQty > 0 ? (totalCost / totalQty) : 0;
+          totalQty  -= sell;
+          totalCost -= sell * avg;
+        }
       }
 
-      const dt = (d.dataCompra && typeof d.dataCompra.toDate === "function")
-        ? d.dataCompra.toDate()
-        : null;
-      if (!g.lastDate || (dt && dt > g.lastDate)) g.lastDate = dt;
-
-      g.nome = d.nome || g.nome;
-      g.setor = d.setor || g.setor;
-      g.mercado = d.mercado || g.mercado;
-
-      grupos.set(ticker, g);
+      grupos.set(ticker, {
+        ticker, nome, setor, mercado,
+        qtd: totalQty,
+        investido: totalCost, // custo base remanescente
+        objetivo,
+        anyObjSet,
+        lastDate
+      });
     });
 
     const gruposArr = Array.from(grupos.values());
@@ -133,12 +161,12 @@ export async function initScreen() {
                 <p class="muted">${g.setor} • ${g.mercado}</p>
                 <p class="muted">Última compra: ${dataTxt}</p>
                 <p class="muted">
-                  Qtd: <strong>${formatNum(g.qtd)}</strong> ·
-                  Preço médio: <strong>${fmtEUR.format(precoMedio || 0)}</strong> ·
+                  Qtd: <strong>${formatNum(g.qtd)}</strong> •
+                  Preço médio: <strong>${fmtEUR.format(precoMedio || 0)}</strong> •
                   Preço atual: <strong>${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</strong>
                 </p>
                 <p class="muted">
-                  Investido: <strong>${fmtEUR.format(g.investido || 0)}</strong> ·
+                  Investido: <strong>${fmtEUR.format(g.investido || 0)}</strong> •
                   Lucro atual: <strong>${fmtEUR.format(lucroAtual)}</strong>
                 </p>
 
@@ -150,7 +178,7 @@ export async function initScreen() {
                   ${barHTML}
                   <p class="muted">
                     TP2 necessário: <strong>${tp2Necessario ? fmtEUR.format(tp2Necessario) : "—"}</strong>
-                    ${taxa !== null ? `· Estimativa: <strong>${estimativa}</strong>` : ``}
+                    ${taxa !== null ? `• Estimativa: <strong>${estimativa}</strong>` : ``}
                   </p>
                 ` : `
                   <p class="muted">Sem objetivo definido para este ticker.</p>
@@ -288,7 +316,6 @@ function wireQuickActions(gruposArr){
       }
 
       closeModal();
-      // Recarrega o ecrã de portfólio
       location.reload();
     } catch (err) {
       console.error("❌ Erro ao guardar movimento:", err);
