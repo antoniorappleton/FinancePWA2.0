@@ -1,4 +1,113 @@
-<div class="section">
-  <div class="settings" data-screen-title="Configurações">
-  <!-- Preferências, modo escuro, etc -->
+<div class="page" data-screen-title="Configurações">
+  <div class="settings" style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px;">
+
+    <!-- Interface -->
+    <div class="card">
+      <div class="card-content" style="align-items:flex-start; gap:16px;">
+        <div style="flex:1;">
+          <p class="label">Interface</p>
+          <div class="form-grid">
+            <label>
+              Idioma
+              <select id="cfgLanguage">
+                <option value="pt-PT">Português (PT)</option>
+                <option value="en-US">English (US)</option>
+                <option value="es-ES">Español</option>
+              </select>
+            </label>
+
+            <label>
+              Moeda
+              <select id="cfgCurrency">
+                <option value="EUR">Euro (€)</option>
+                <option value="USD">Dólar ($)</option>
+                <option value="BRL">Real (R$)</option>
+              </select>
+            </label>
+
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <div>
+                <div><strong>Tema escuro</strong></div>
+                <div class="muted">Interface em modo escuro</div>
+              </div>
+              <!-- switch minimal (usa o CSS que já tens) -->
+              <label class="switch">
+                <input type="checkbox" id="cfgDarkMode" />
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notificações -->
+    <div class="card">
+      <div class="card-content" style="align-items:flex-start; gap:16px;">
+        <div style="flex:1;">
+          <p class="label">Notificações</p>
+          <div class="form-grid">
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Email</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgEmailNotifications" />
+                <span class="slider"></span>
+              </label>
+            </label>
+
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Push</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgPushNotifications" />
+                <span class="slider"></span>
+              </label>
+            </label>
+
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Relatórios semanais</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgWeeklyReports" />
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segurança -->
+    <div class="card">
+      <div class="card-content" style="align-items:flex-start; gap:16px;">
+        <div style="flex:1;">
+          <p class="label">Segurança</p>
+          <div class="form-grid">
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Autenticação de dois fatores</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgTwoFactor" />
+                <span class="slider"></span>
+              </label>
+            </label>
+
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Notificações de login</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgLoginNotifications" />
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ações -->
+    <div class="card">
+      <div class="card-content" style="justify-content:flex-end; gap:8px;">
+        <button class="btn outline" id="cfgCancel">Cancelar</button>
+        <button class="btn premium" id="cfgSave">Guardar configurações</button>
+      </div>
+    </div>
+
+  </div>
 </div>
