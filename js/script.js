@@ -15,5 +15,5 @@ function navigateTo(screen) {
 
 // Inicia na dashboard
 document.addEventListener("DOMContentLoaded", () => {
-  navigateTo("dashboard");
+  navigateTo("auth");
 });

@@ -8,15 +8,16 @@ export function navigateTo(screen) {
   fetch(`screens/${screen}.html`)
     .then((res) => res.text())
     .then((html) => {
-      // Injetar o HTML do screen
+      // Injetar HTML do screen
       screenContainer.innerHTML = html;
 
-      // Definir o título do header, lendo do atributo data-screen-title
+      // Classe de layout: auth oculta o footer
+      document.body.classList.toggle("auth-screen", screen === "auth");
+
+      // Título dinâmico
       const root = screenContainer.firstElementChild;
       const dynamicTitle = root?.getAttribute("data-screen-title");
-      if (screenTitleEl) {
-        screenTitleEl.textContent = dynamicTitle ?? "";
-      }
+      if (screenTitleEl) screenTitleEl.textContent = dynamicTitle ?? "";
 
       // Voltar ao topo
       window.scrollTo(0, 0);
@@ -31,8 +32,7 @@ export function navigateTo(screen) {
           }
         })
         .catch((err) => {
-          // Nem todos os screens precisam de JS — tratamos o erro de forma “silenciosa”
-          console.warn(`ℹ️ Sem JS específico para "${screen}" ou falha no import.`, err);
+          console.warn(`ℹ️ Sem JS para "${screen}" ou falha no import.`, err);
         });
     })
     .catch((err) => {
@@ -44,7 +44,7 @@ export function navigateTo(screen) {
 // Disponibilizar globalmente para onclick="navigateTo('...')"
 window.navigateTo = navigateTo;
 
-// Arranque na dashboard
+// Arranque na auth
 document.addEventListener("DOMContentLoaded", () => {
-  navigateTo("dashboard");
+  navigateTo("auth");
 });

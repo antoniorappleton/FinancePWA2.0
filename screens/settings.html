@@ -1,3 +1,7 @@
+<script type="module">
+  import { protectPage } from "./js/auth.js";
+  protectPage();
+</script>
 <div class="page" data-screen-title="Configurações">
   <div class="settings" style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px;">
 
@@ -106,6 +110,12 @@
       <div class="card-content" style="justify-content:flex-end; gap:8px;">
         <button class="btn outline" id="cfgCancel">Cancelar</button>
         <button class="btn premium" id="cfgSave">Guardar configurações</button>
+        <button class="btn outline" id="btnLogout">Sair</button>
+
+          <script type="module">
+            import { doLogout } from "../js/screens/auth.js";  <!-- caminho a partir de /screens -->
+            document.getElementById("btnLogout")?.addEventListener("click", doLogout);
+          </script>
       </div>
     </div>
 
