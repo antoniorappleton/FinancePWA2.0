@@ -1,3 +1,6 @@
+import { doLogout } from "./auth.js";
+document.getElementById("btnLogout")?.addEventListener("click", doLogout);
+
 // js/screens/settings.js
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -50,6 +53,8 @@ function applyTheme(dark) {
 
 export function initScreen() {
   // Elementos
+  const btnLogout = document.getElementById("btnLogout");
+  document.getElementById("btnLogout")?.addEventListener("click", doLogout);
   const elLanguage = document.getElementById("cfgLanguage");
   const elCurrency = document.getElementById("cfgCurrency");
   const elDark = document.getElementById("cfgDarkMode");

@@ -541,3 +541,8 @@ select:focus {
 }
 .goal-filters{ position: sticky; top: 0; padding-bottom: 6px; }
 .goal-selected, .goal-params{ padding: 10px; }
+
+body.auth-screen .footer-nav { 
+  display: none !important; 
+}
+body.auth-screen .footer-nav { display:none !important; }
