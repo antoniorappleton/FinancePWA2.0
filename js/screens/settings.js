@@ -37,6 +37,15 @@ function saveSettings(s) {
 function applyTheme(dark) {
   const mode = dark ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", mode);
+
+  // atualizar theme-color do mobile (opcional)
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = dark ? "#0b0e13" : "#ffffff";
+
+  // notificar a app inteira (outros screens podem ouvir este evento)
+  window.dispatchEvent(
+    new CustomEvent("app:theme-changed", { detail: { dark } })
+  );
 }
 
 export function initScreen() {
@@ -62,8 +71,14 @@ export function initScreen() {
     return;
   }
 
-  // Carrega estado atual
+  // Carrega estado atual (se não houver, segue sistema e grava já)
   let state = loadSettings();
+  if (!("darkMode" in state)) {
+    state.darkMode =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    saveSettings(state);
+  }
 
   // Preenche UI
   elLanguage.value = state.language;
@@ -112,8 +127,7 @@ export function initScreen() {
   // Botões
   btnSave.addEventListener("click", () => {
     saveSettings(state);
-    // se tiveres um toast global, chama-o aqui
-    // showToast("Configurações guardadas!");
+    // showToast?.("Configurações guardadas!");
   });
 
   btnCancel.addEventListener("click", () => {
@@ -133,4 +147,28 @@ export function initScreen() {
 
     applyTheme(state.darkMode);
   });
+
+  // (Opcional) Seguir alterações do sistema se o user nunca tocou no switch:
+  // só ativa se quiseres que mude automaticamente quando o sistema mudar
+  // e o user não “forçou” uma preferência.
+  try {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e) => {
+      // só respeita o sistema se o utilizador nunca mudou manualmente
+      const saved = loadSettings();
+      if (!("userForcedTheme" in saved) || !saved.userForcedTheme) {
+        state.darkMode = e.matches;
+        applyTheme(state.darkMode);
+        saveSettings(state);
+        elDark.checked = state.darkMode;
+      }
+    };
+    // marca que o user escolheu manualmente quando mexer no switch
+    elDark.addEventListener("change", () => {
+      const s = loadSettings();
+      s.userForcedTheme = true;
+      saveSettings(s);
+    });
+    mq.addEventListener?.("change", handler);
+  } catch {}
 }
