@@ -1,3 +1,10 @@
+/* =========================================================
+   APPFinance – style.css (versão consolidada e limpa)
+   - Modal "Definir Objetivo" compatível com o teu HTML (goal-wizard)
+   - Auth screen (login): 1 coluna no mobile + footer escondido
+   ========================================================= */
+
+/* ---------- Core tokens ---------- */
 :root{
   --background:#fff;
   --foreground:hsl(0 0% 4%);
@@ -26,12 +33,11 @@ body{
   color:var(--foreground);
 }
 
-/* ===== Layout base ===== */
+/* ---------- Layout base ---------- */
 #screenContainer{ padding-bottom:90px; } /* espaço p/ o footer */
-
 .page{ padding:1.5rem; padding-bottom:90px; }
 
-/* ===== Header fixo com logo ===== */
+/* ---------- Header fixo com logo ---------- */
 .app-header{
   position:sticky; top:0; z-index:10;
   display:flex; justify-content:space-between; align-items:center;
@@ -44,7 +50,7 @@ body{
   .header-logo{ width:36px; height:36px; }
 }
 
-/* ===== Dashboard ===== */
+/* ---------- Dashboard ---------- */
 .dashboard{ padding:1.5rem; }
 .dashboard-header{ margin-bottom:1.5rem; }
 .dashboard-header h1{ font-size:1.8rem; margin:0; }
@@ -76,7 +82,7 @@ body{
   display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
 }
 
-/* ===== Activity list ===== */
+/* ---------- Activity list ---------- */
 .tag{display:inline-block;font-size:.75rem;padding:2px 6px;border-radius:999px;margin-right:6px}
 .tag.compra{background:#e7f7ee;color:#117a39}
 .tag.venda{background:#ffe5e5;color:#a52121}
@@ -100,7 +106,7 @@ body{
   display:flex; justify-content:space-between; gap:.5rem;
 }
 
-/* ===== Barra “zero ao meio” ===== */
+/* ---------- Barra “zero ao meio” ---------- */
 .progress-dual{ margin-top:6px; }
 .progress-dual .track{
   position:relative; height:10px; border-radius:999px; overflow:hidden;
@@ -114,10 +120,10 @@ body{
   position:absolute; top:0; height:100%;
   transition:width .35s ease;
 }
-.progress-dual .fill.positive{ left:50%;  background:#22c55e; } /* cresce p/ direita */
-.progress-dual .fill.negative{ right:50%; background:#ef4444; } /* cresce p/ esquerda */
+.progress-dual .fill.positive{ left:50%;  background:#22c55e; }
+.progress-dual .fill.negative{ right:50%; background:#ef4444; }
 
-/* ===== Botões ===== */
+/* ---------- Botões ---------- */
 .btn{
   padding:.6rem 1rem; font-size:.9rem; border-radius:var(--radius);
   cursor:pointer; transition:var(--transition); margin-top:.6rem;
@@ -126,11 +132,10 @@ body{
 .btn.premium{ background:var(--primary); color:var(--primary-foreground); border:none; }
 .btn.outline{ background:transparent; border:1px solid var(--border); color:var(--foreground); }
 .btn.ghost{ background:transparent; color:var(--muted-foreground); border:none; }
-/* variação escura (simulador) */
 .btn.dark{ background:#111; color:#fff; border:none; box-shadow:0 4px 20px -2px rgba(0,0,0,.2); }
 .btn.dark:hover{ background:#333; }
 
-/* ===== Footer (responsivo e sem overflows) ===== */
+/* ---------- Footer ---------- */
 .footer-nav{
   position:fixed; left:0; right:0; bottom:0; z-index:999;
   display:flex; justify-content:space-around; align-items:stretch; gap:0;
@@ -144,16 +149,14 @@ body{
   font-size:12px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .footer-nav button i{ font-size:18px; }
-@media (hover:hover){
-  .footer-nav button:hover{ background:var(--muted); border-radius:10px; }
-}
+@media (hover:hover){ .footer-nav button:hover{ background:var(--muted); border-radius:10px; } }
 @media (max-width:380px){
   .footer-nav{ padding:4px 6px calc(env(safe-area-inset-bottom,0)+4px); }
   .footer-nav button{ font-size:11px; padding:6px 2px; }
   .footer-nav button i{ font-size:16px; }
 }
 
-/* ===== Simulador ===== */
+/* ---------- Simulador ---------- */
 .sim-layout{ display:grid; grid-template-columns:260px 1fr; gap:1rem; padding:1rem; }
 .sim-sidebar{ display:flex; flex-direction:column; gap:.6rem; }
 .sim-content{ min-height:400px; }
@@ -178,17 +181,18 @@ body{
 #tabelaSimulacoes{ width:100%; border-collapse:collapse; }
 #tabelaSimulacoes th,#tabelaSimulacoes td{ border-bottom:1px solid var(--border); padding:.5rem; text-align:left; }
 
-/* Chart container para evitar “empurrão” lateral */
+/* Chart container */
 .chart-wrap{ width:100%; height:300px; }
 .chart-wrap canvas{ display:block; width:100% !important; height:100% !important; }
 
+/* Mobile (global) – pode usar botões 50% */
 @media (max-width:820px){
   .sim-layout{ grid-template-columns:1fr; }
   .sim-sidebar{ flex-direction:row; flex-wrap:wrap; }
   .btn.full{ width:auto; flex:1 1 calc(50% - .6rem); text-align:center; }
 }
 
-/* ===== Modal: Top 10 Oportunidades ===== */
+/* ---------- Modal base ---------- */
 .modal.hidden{ display:none; }
 .modal{
   position:fixed; inset:0; z-index:1000;
@@ -214,6 +218,7 @@ body{
 }
 .chip.active,.chip:hover{ background:#2a2a2a; color:#fff; }
 
+/* (estilos antigos .top10-box mantidos p/ retrocompatibilidade) */
 .top10-box{ padding:8px 16px 16px; overflow:auto; }
 .top10-box ul{ list-style:none; margin:0; padding:0; }
 .top10-box li{
@@ -225,7 +230,7 @@ body{
 .top10-box .gain{ color:#5cd690; font-weight:600; }
 .top10-box .loss{ color:#f27575; font-weight:600; }
 
-/* ===== Atividade (página completa) ===== */
+/* ---------- Atividade (página completa) ---------- */
 .atividade-completa{ padding:20px; }
 .atividade-lista{ display:flex; flex-direction:column; gap:10px; }
 .atividade-item{
@@ -235,200 +240,87 @@ body{
 .atividade-item .muted{ color:#666; font-size:.9em; }
 .atividade-item .date{ font-size:.8em; color:#aaa; }
 
-/*dropdown*/
-/* Estilo geral dos dropdowns */
-select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--border-color, #ccc);
-  border-radius: 8px;
-  background-color: var(--input-bg, #fff);
-  color: var(--text-color, #333);
-  font-size: 14px;
-  appearance: none; /* remove setas padrão */
-  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 16px 16px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+/* ---------- Dropdown ---------- */
+select{
+  width:100%; padding:8px 12px; border:1px solid var(--border-color,#ccc);
+  border-radius:8px; background-color:var(--input-bg,#fff); color:var(--text-color,#333);
+  font-size:14px; appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat:no-repeat; background-position:right 10px center; background-size:16px 16px;
+  transition:border-color .2s, box-shadow .2s;
 }
+select:focus{ border-color:var(--accent-color,#0099ff); box-shadow:0 0 0 3px rgba(0,153,255,.15); outline:none; }
 
-select:focus {
-  border-color: var(--accent-color, #0099ff);
-  box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.15);
-  outline: none;
-}
-/* Botões outline e ghost personalizados */
+/* ---------- Botões outline/ghost ---------- */
 .btn.outline,
-.btn.ghost {
-  border: 1.5px solid #000; /* borda preta */
-  color: #000;
-  background-color: transparent;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* sombra leve */
-  transition: all 0.2s ease-in-out;
+.btn.ghost{
+  border:1.5px solid #000; color:#000; background-color:transparent;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  transition:all .2s ease-in-out;
 }
-
-/* Hover para dar destaque */
 .btn.outline:hover,
-.btn.ghost:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25); /* sombra mais intensa */
-  transform: translateY(-1px); /* efeito leve de levantar */
+.btn.ghost:hover{
+  background-color:rgba(0,0,0,.05);
+  box-shadow:0 4px 10px rgba(0,0,0,.25);
+  transform:translateY(-1px);
 }
-
-/* Quando clicado */
 .btn.outline:active,
-.btn.ghost:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+.btn.ghost:active{ transform:translateY(0); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+
+/* ---------- Botões do popup dentro do form-grid ---------- */
+#goalModal .form-grid button{
+  min-height:38px; padding:6px 12px; font-size:.9rem; border-radius:8px;
+}
+#goalModal .btn.outline{ border:1px solid #000; color:#000; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,.15); }
+#goalModal .btn.ghost{ border:1px solid transparent; color:#555; background:#f9f9f9; box-shadow:0 2px 5px rgba(0,0,0,.05); }
+
+/* =========================================================
+   OVERRIDES (colocar sempre no fim)
+   ========================================================= */
+
+/* --- Auth: esconder footer e forçar 1 coluna --- */
+body.auth-screen .footer-nav{ display:none !important; }
+body.auth-screen .actions-row{ display:flex; flex-direction:column; flex-wrap:nowrap; gap:.6rem; }
+body.auth-screen .btn.full{ width:100% !important; flex:0 0 auto !important; }
+body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
+
+/* --- Definir Objetivo: com o teu HTML (goal-wizard) --- */
+#goalModal{
+  --goal-header-h:56px;   /* .modal-header */
+  --actions-h:58px;       /* barra de botões inferior */
+  --selbar-h:46px;        /* barra Selecionadas (mobile) */
+}
+#goalModal .modal-dialog.modal-goal{ display:flex; flex-direction:column; max-height:92vh; }
+#goalModal .goal-wizard{
+  flex:1 1 auto; overflow:auto; padding:8px 16px 12px;
+  -webkit-overflow-scrolling:touch;
 }
 
-/*botões popup*/
-#goalModal .form-grid button {
-  min-height: 38px;
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  border-radius: 8px;
+/* Passo 2 – 2 colunas no desktop */
+#goalModal .goal-step[data-step="2"]{ display:flex; flex-direction:column; min-height:0; }
+#goalModal .goal-step[data-step="2"] .goal-columns-2{
+  display:grid; grid-template-columns:1.1fr 0.9fr; gap:12px; min-height:0;
+}
+#goalModal .goal-step[data-step="2"] .goal-list-wrap{
+  overflow:auto; min-height:260px; border:1px solid rgba(255,255,255,.08); border-radius:10px;
+}
+#goalModal .goal-step[data-step="2"] .goal-selected{
+  background:#1a1a1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px;
 }
 
-#goalModal .btn.outline {
-  border: 1px solid #000; /* preto como pediste para outros */
-  color: #000;
-  background: #fff;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+/* Lista do passo 2: texto + ação à direita */
+#goalModal .goal-list{ list-style:none; margin:0; padding:0; }
+#goalModal .goal-list li{
+  display:grid; grid-template-columns:1fr auto; align-items:center;
+  gap:12px; padding:10px 12px; border-bottom:1px dashed rgba(255,255,255,.08);
 }
-
-#goalModal .btn.ghost {
-  border: 1px solid transparent;
-  color: #555;
-  background: #f9f9f9;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+#goalModal .goal-list li .right{ min-width:40px; display:flex; align-items:center; justify-content:center; }
+#goalModal .goal-toggle{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06);
 }
-
-/* ---- Modal Definir Objetivo ---- */
-.modal-goal{ width:min(1100px,95vw); max-height:90vh; display:flex; flex-direction:column; }
-.modal-body.goal-grid{
-  display:grid; grid-template-columns: 1.1fr 0.9fr; gap:12px;
-  padding:12px 16px; overflow:auto;
-}
-@media (max-width:900px){
-  .modal-body.goal-grid{ grid-template-columns: 1fr; }
-}
-
-.goal-col{ min-height:0; display:flex; flex-direction:column; gap:10px; }
-.goal-filters{ position:sticky; top:0; background:#111; padding-bottom:6px; z-index:2; }
-.goal-list-wrap{ overflow:auto; border:1px solid rgba(255,255,255,.08); border-radius:10px; }
-.goal-list{ list-style:none; margin:0; padding:0; }
-.goal-list li{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:10px 12px; border-bottom:1px dashed rgba(255,255,255,.08);
-}
-.goal-list .meta{ color:#aaa; font-size:.85rem; }
-
-.goal-selected{ background:#1a1a1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px; }
-.goal-tags{ display:flex; flex-wrap:wrap; gap:6px; }
-.goal-tag{
-  background:#2a2a2a; color:#f1f1f1; border:1px solid rgba(255,255,255,.08);
-  padding:6px 10px; border-radius:999px; display:flex; align-items:center; gap:8px;
-}
-.goal-tag button{ background:transparent; border:0; color:#f88; cursor:pointer; }
-
-.goal-params{ background:#1a1a1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px; }
-.goal-actions{
-  position:sticky; bottom:0; padding:10px 0 0;
-  background:linear-gradient(180deg, rgba(17,17,17,0) 0%, #111 60%);
-  display:flex; justify-content:flex-end;
-}
-
-/* resultado em baixo, fora do grid, para ficar sempre visível ao scrolar conteúdo */
-.goal-result{ padding:10px 16px 16px; overflow:auto; max-height:40vh; }
-.goal-result .card{ background:#0f0f0f; border:1px solid rgba(255,255,255,.08); }
-
-.chk{ display:flex; align-items:center; gap:6px; color:#ddd; }
-
-/* botões outline com borda preta e sombra (como pediste) */
-.btn.outline.btn-black-shadow{
-  border:1px solid #000;
-  box-shadow:0 4px 12px rgba(0,0,0,.18);
-}
-
-/*resultado do filtro das ações escolhidas */
-/* Resultado dentro do modal Definir Objetivo */
-#goalResultado .card{
-  background: var(--card-bg, #17191c);
-  color: var(--fg, #eaeaea);
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.08);
-}
-
-#goalResultado table{
-  width: 100%;
-  border-collapse: collapse;
-}
-
-#goalResultado thead th{
-  text-align: left;
-  font-weight: 600;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,.18);
-  color: inherit;
-}
-
-#goalResultado tbody td{
-  padding: 10px 12px;
-  color: inherit;
-  border-bottom: 1px dashed rgba(255,255,255,.10);
-}
-
-#goalResultado tbody tr:nth-child(odd){
-  background: rgba(255,255,255,.03);
-}
-
-/* o pequeno resumo em baixo */
-#goalResultado p{
-  color: inherit;
-}
-/* Layout do modal Definir Objetivo */
-#goalModal .goal-grid{
-  display: grid;
-  grid-template-columns: minmax(340px, 1fr) minmax(320px, 420px);
-  gap: 16px;
-}
-
-/* Resultado ocupa a largura total, por baixo das duas colunas */
-#goalResultado{
-  grid-column: 1 / -1;
-  max-height: 45vh;
-  overflow: auto;
-  margin-top: 8px;
-}
-
-/* Cartão e tabela legíveis em dark */
-#goalResultado .card{
-  background: var(--card-bg, #17191c);
-  color: var(--fg, #e9e9e9);
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.08);
-}
-#goalResultado table{ width:100%; border-collapse:collapse; }
-#goalResultado thead th{
-  text-align:left; font-weight:600; padding:10px 12px;
-  border-bottom:1px solid rgba(255,255,255,.18); color:inherit;
-}
-#goalResultado tbody td{
-  padding:10px 12px; color:inherit;
-  border-bottom:1px dashed rgba(255,255,255,.10);
-}
-#goalResultado tbody tr:nth-child(odd){ background: rgba(255,255,255,.03); }
-
-/* Lista de ações – botão de toggle “＋/✓” */
-#goalListaAcoes .goal-toggle{
-  width: 34px; height: 34px; border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: inherit;
-}
-#goalListaAcoes .goal-toggle:hover{ filter: brightness(1.1); }
+#goalModal .goal-toggle:hover{ filter:brightness(1.08); }
 
 /* Responsivo */
 @media (max-width: 900px){
@@ -541,8 +433,3 @@ select:focus {
 }
 .goal-filters{ position: sticky; top: 0; padding-bottom: 6px; }
 .goal-selected, .goal-params{ padding: 10px; }
-
-body.auth-screen .footer-nav { 
-  display: none !important; 
-}
-body.auth-screen .footer-nav { display:none !important; }
