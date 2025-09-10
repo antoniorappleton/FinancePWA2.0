@@ -365,18 +365,128 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
 }
 .icon-btn.close:hover{ filter: brightness(1.08); }
 
-/* ---------------- Tema DARK ---------------- */
-:root[data-theme="dark"] {
+/* =========================================================
+   DARK MODE — header, botões, ícones, inputs, footer
+   (aplicar no fim do ficheiro para ter precedência)
+   ========================================================= */
+
+[data-theme="dark"]{
+  /* Paleta base */
   --background:#0b0e13;
-  --foreground:hsl(0 0% 96%);
-  --card:#1a1d24;
-  --card-foreground:hsl(0 0% 96%);
-  --primary:hsl(0 0% 96%);
-  --primary-foreground:hsl(0 0% 9%);
-  --muted:hsl(220 13% 20%);
-  --muted-foreground:hsl(0 0% 70%);
-  --border:hsl(220 13% 25%);
-  --shadow-card:0 4px 20px -2px rgba(0,0,0,.6);
+  --foreground:#e8edf3;
+
+  --card:#111418;
+  --card-foreground:#e8edf3;
+
+  --muted:#171b21;
+  --muted-foreground:#9aa7b5;
+
+  --border:#242c36;
+
+  --primary:#e8edf3;                 /* texto claro */
+  --primary-foreground:#0b0e13;      /* para CTAs sólidos */
+}
+
+/* Header escuro + texto/ícones brancos */
+[data-theme="dark"] .app-header{
+  background:var(--card);
+  color:var(--card-foreground);
+  border-bottom:1px solid var(--border);
+  box-shadow:none;
+}
+[data-theme="dark"] .app-header h1{ color:var(--card-foreground); }
+/* se o teu logo for escuro, comenta a linha abaixo; caso contrário mantém */
+[data-theme="dark"] .header-logo{ filter: brightness(0) invert(1); }
+
+/* Cards e elementos de UI */
+[data-theme="dark"] .card{
+  background:var(--card);
+  color:var(--card-foreground);
+  border:1px solid var(--border);
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+[data-theme="dark"] .icon-box{
+  background:rgba(255,255,255,.08);
+  color:#fff;
+}
+
+/* Listas/modais que já estavam escuros continuam coerentes */
+[data-theme="dark"] .modal-dialog{ background:#111418; color:#e8edf3; }
+[data-theme="dark"] .modal-header{ border-bottom:1px solid var(--border); }
+[data-theme="dark"] .top10-box li{ border-bottom:1px dashed rgba(255,255,255,.1); }
+
+/* Botões – outline/ghost à “vidro” branco */
+[data-theme="dark"] .btn.outline,
+[data-theme="dark"] .btn.ghost{
+  color:#fff;
+  border:1.5px solid rgba(255,255,255,.45);
+  background:transparent;
+  box-shadow:none;
+}
+[data-theme="dark"] .btn.outline:hover,
+[data-theme="dark"] .btn.ghost:hover{
+  background:rgba(255,255,255,.06);
+}
+[data-theme="dark"] .btn.premium{
+  background:#fff;              /* CTA sólido claro */
+  color:#111;                   /* texto escuro para contraste */
+  border:none;
+}
+
+/* Inputs/Selects coerentes no dark */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea{
+  background:#0f1216;
+  color:var(--foreground);
+  border:1px solid var(--border);
+}
+[data-theme="dark"] select:focus,
+[data-theme="dark"] input:focus{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(120,162,255,.15);
+  border-color:#789bff;
+}
+
+/* Footer nav escuro + ícones claros */
+[data-theme="dark"] .footer-nav{
+  background:var(--background);
+  border-top:1px solid var(--border);
+  box-shadow:0 -2px 10px rgba(0,0,0,.4);
+}
+[data-theme="dark"] .footer-nav button{ color:var(--foreground); }
+[data-theme="dark"] .footer-nav button i{ color:inherit; opacity:.95; }
+
+/* Tabelas e linhas divisórias */
+[data-theme="dark"] table thead th{
+  border-bottom:1px solid rgba(255,255,255,.14);
+  color:var(--foreground);
+}
+[data-theme="dark"] table tbody td{
+  border-bottom:1px dashed rgba(255,255,255,.08);
+}
+
+/* Tags / chips */
+[data-theme="dark"] .chip{ 
+  background:#1b1f26; 
+  color:#dfe6ee; 
+  border:1px solid rgba(255,255,255,.08);
+}
+[data-theme="dark"] .chip:hover{ background:#232a33; }
+
+/* “Ações Rápidas” – botões largos como no teu exemplo */
+[data-theme="dark"] .btn.full{
+  color:#fff;
+  border-color:rgba(255,255,255,.45);
+}
+/* Botão "Registar Compra" no modo escuro */
+[data-theme="dark"] #btnDashBuy {
+  background:#faf8f8 !important;
+  color:#100f0f !important;
+  border:1px solid #000 !important;
+}
+[data-theme="dark"] #btnDashBuy:hover {
+  background:#111 !important;
 }
 
 /*ver no telemóvel/*
