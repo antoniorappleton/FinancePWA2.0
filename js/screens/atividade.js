@@ -1,166 +1,216 @@
+// js/screens/atividade.js
 import { db } from "../firebase-config.js";
 import {
   collection, getDocs, query, orderBy, where,
   addDoc, serverTimestamp, deleteDoc, doc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-/* =========================
-   Estado e helpers globais
-   ========================= */
-let _setorChart = null;
-let _themeHandlerBound = null;
-
-/** Carrega Chart.js uma única vez, se necessário */
-function loadChartJsOnce() {
-  if (window.Chart) return Promise.resolve();
-  return new Promise((resolve, reject) => {
+/* ===============================
+   Carregar Chart.js on-demand
+   =============================== */
+async function ensureChartJS(){
+  if (window.Chart) return;
+  await new Promise((resolve, reject) => {
     const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/chart.js";
-    s.onload = () => resolve();
+    s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js";
+    s.onload = resolve;
     s.onerror = reject;
     document.head.appendChild(s);
   });
 }
 
-/** Tokens de tema para o gráfico */
-function getThemeTokens() {
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+/* ===============================
+   Paleta / Tema
+   =============================== */
+function isDark(){
+  return document.documentElement.getAttribute("data-theme") === "dark";
+}
+function chartColors(){
+  const dark = isDark();
   return {
-    isDark,
-    label: isDark ? "#eaeaea" : "#111",
-    bg: "transparent",
-    palette: isDark
-      ? ["#60a5fa","#34d399","#f472b6","#f59e0b","#a78bfa","#22d3ee","#fb7185","#f97316","#93c5fd","#4ade80"]
-      : ["#2563eb","#16a34a","#db2777","#d97706","#7c3aed","#0891b2","#e11d48","#ea580c","#3b82f6","#22c55e"],
+    grid: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)",
+    ticks: dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.7)",
+    title: dark ? "#fff" : "#111",
+    tooltipBg: dark ? "rgba(17,17,17,.95)" : "rgba(255,255,255,.95)",
+    tooltipFg: dark ? "#fff" : "#111",
   };
 }
+/* paleta para setores (12 cores suaves) */
+const PALETTE = [
+  "#4F46E5","#22C55E","#EAB308","#EF4444","#06B6D4","#F59E0B",
+  "#A855F7","#10B981","#3B82F6","#F472B6","#84CC16","#14B8A6"
+];
 
-/** Garante o painel de analytics + canvas antes da lista */
-function ensureAnalyticsPanel(listEl) {
-  if (document.getElementById("pfAnalytics")) return;
+/* manter as instâncias para destruir no re-render */
+const charts = { setores:null, top5:null, timeline:null };
 
-  const wrapper = document.createElement("div");
-  wrapper.id = "pfAnalytics";
-  wrapper.className = "dashboard-columns";
-  wrapper.style.marginBottom = "12px";
+/* ===============================
+   Render: Doughnut por setores
+   =============================== */
+function renderSetorDoughnut(setoresMap){
+  const el = document.getElementById("chartSetores");
+  if (!el) return;
+  charts.setores?.destroy();
 
-  wrapper.innerHTML = `
-    <div class="card premium">
-      <div class="card-content">
-        <div>
-          <p class="label">Valor Total Investido</p>
-          <p class="value" id="pfTotalInvestido">—</p>
-          <p class="subvalue muted">Somatório de posições ativas</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-coins"></i></div>
-      </div>
-    </div>
+  const labels = Array.from(setoresMap.keys());
+  const data   = Array.from(setoresMap.values());
 
-    <div class="card success">
-      <div class="card-content">
-        <div>
-          <p class="label">Lucro Atual</p>
-          <p class="value" id="pfLucroAtual">—</p>
-          <p class="subvalue muted" id="pfLucroPct">—</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-chart-line"></i></div>
-      </div>
-    </div>
-
-    <div class="card default">
-      <div class="card-content">
-        <div>
-          <p class="label">Posições Ativas</p>
-          <p class="value" id="pfPosicoes">0</p>
-          <p class="subvalue muted" id="pfTickersUnicos">Tickers únicos</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-briefcase"></i></div>
-      </div>
-    </div>
-
-    <div class="card info" id="setorChartCard">
-      <div class="card-content" style="flex-direction:column; align-items:stretch; gap:8px;">
-        <div>
-          <p class="label">Distribuição por Setor</p>
-          <p class="subvalue muted">Percentagem do valor investido</p>
-        </div>
-        <div style="width:100%;max-width:520px;">
-          <canvas id="setorChartCanvas" height="260"></canvas>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // insere o painel antes da lista
-  listEl.parentElement.insertBefore(wrapper, listEl);
-}
-
-/** Desenha/Atualiza o doughnut por setor */
-function renderSetorDoughnut(setoresMap) {
-  if (!document.getElementById("setorChartCanvas")) return;
-  if (!window.Chart) return;
-
-  const labels = [];
-  const data = [];
-  for (const [setor, valor] of setoresMap.entries()) {
-    labels.push(setor);
-    data.push(Number(valor || 0));
-  }
-
-  const card = document.getElementById("setorChartCard");
-  if (!labels.length) {
-    if (card) card.style.display = "none";
-    if (_setorChart) { _setorChart.destroy(); _setorChart = null; }
+  if (!labels.length){
+    // nada para mostrar
+    const ctx = el.getContext("2d");
+    ctx.clearRect(0,0,el.width, el.height);
     return;
-  } else {
-    if (card) card.style.display = "";
   }
 
-  const t = getThemeTokens();
-  const ctx = document.getElementById("setorChartCanvas").getContext("2d");
-
-  if (_setorChart) { _setorChart.destroy(); _setorChart = null; }
-
-  _setorChart = new Chart(ctx, {
+  charts.setores = new Chart(el, {
     type: "doughnut",
     data: {
       labels,
       datasets: [{
         data,
-        backgroundColor: labels.map((_, i) => t.palette[i % t.palette.length]),
-        borderColor: t.bg,
-        borderWidth: 2,
-        hoverOffset: 6,
-      }],
+        backgroundColor: labels.map((_,i)=>PALETTE[i % PALETTE.length]),
+        borderWidth: 1,
+      }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: "58%",
-      plugins: {
-        legend: {
-          position: "right",
-          labels: { color: t.label, boxWidth: 12, boxHeight: 12, usePointStyle: true },
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => {
-              const total = ctx.dataset.data.reduce((a, b) => a + b, 0) || 1;
-              const val = Number(ctx.parsed) || 0;
-              const pct = ((val / total) * 100).toFixed(1);
-              const fmt = new Intl.NumberFormat("pt-PT",{ style:"currency", currency:"EUR" });
-              return ` ${ctx.label}: ${fmt.format(val)} (${pct}%)`;
-            },
-          },
-        },
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:"bottom", labels:{ color: chartColors().ticks } },
+        tooltip:{
+          backgroundColor: chartColors().tooltipBg,
+          titleColor: chartColors().tooltipFg,
+          bodyColor: chartColors().tooltipFg,
+          callbacks:{
+            label: (ctx)=>{
+              const v = Number(ctx.parsed);
+              const total = data.reduce((a,b)=>a+b,0) || 1;
+              const pct = (v/total*100).toFixed(1);
+              return ` ${ctx.label}: €${v.toLocaleString("pt-PT",{minimumFractionDigits:2})} (${pct}%)`;
+            }
+          }
+        }
       },
-    },
+      cutout:"62%"
+    }
   });
 }
 
-/* =========================
-   Helpers numéricos/tempo
-   ========================= */
+/* ===============================
+   Render: Top 5 (Bar) por Investido
+   =============================== */
+function renderTop5Bar(gruposArr){
+  const el = document.getElementById("chartTop5");
+  if (!el) return;
+  charts.top5?.destroy();
+
+  // top 5 por valor investido (posições ativas)
+  const ativos = gruposArr.filter(g=>g.qtd>0)
+    .sort((a,b)=> (b.investido||0)-(a.investido||0))
+    .slice(0,5);
+
+  if (!ativos.length){
+    const ctx = el.getContext("2d");
+    ctx.clearRect(0,0,el.width, el.height);
+    return;
+  }
+
+  const labels = ativos.map(a=>`${a.ticker}`);
+  const invest = ativos.map(a=>a.investido||0);
+  const lucro  = ativos.map(a=>a.lucroAtual||0);
+
+  charts.top5 = new Chart(el, {
+    type:"bar",
+    data:{
+      labels,
+      datasets:[
+        { label:"Investido (€)", data:invest, backgroundColor:"#3B82F6" },
+        { label:"Lucro Atual (€)", data:lucro, backgroundColor:"#22C55E" }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      scales:{
+        x:{
+          ticks:{ color: chartColors().ticks },
+          grid:{ color: chartColors().grid }
+        },
+        y:{
+          ticks:{ color: chartColors().ticks },
+          grid:{ color: chartColors().grid }
+        }
+      },
+      plugins:{
+        legend:{ labels:{ color: chartColors().ticks }},
+        tooltip:{
+          backgroundColor: chartColors().tooltipBg,
+          titleColor: chartColors().tooltipFg,
+          bodyColor: chartColors().tooltipFg,
+          callbacks:{
+            label:(ctx)=>` ${ctx.dataset.label}: €${Number(ctx.parsed.y||0).toLocaleString("pt-PT",{minimumFractionDigits:2})}`
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ===============================
+   Render: Timeline (Line)
+   - Evolução do investido acumulado
+   - Avaliação “hoje” (quantidades atuais * preço atual) após cada movimento
+   =============================== */
+function renderTimeline(points){
+  const el = document.getElementById("chartTimeline");
+  if (!el) return;
+  charts.timeline?.destroy();
+
+  if (!points.length){
+    const ctx = el.getContext("2d");
+    ctx.clearRect(0,0,el.width, el.height);
+    return;
+  }
+
+  const labels   = points.map(p=>p.label);
+  const invested = points.map(p=>p.cumInvest);
+  const valueNow = points.map(p=>p.valueNow);
+
+  charts.timeline = new Chart(el,{
+    type:"line",
+    data:{
+      labels,
+      datasets:[
+        { label:"Investido acumulado (€)", data:invested, tension:.25, borderWidth:2 },
+        { label:"Avaliação atual (€)",     data:valueNow, tension:.25, borderWidth:2 }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      elements:{ point:{ radius:0 } },
+      scales:{
+        x:{ ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid }},
+        y:{ ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid }}
+      },
+      plugins:{
+        legend:{ labels:{ color: chartColors().ticks }},
+        tooltip:{
+          backgroundColor: chartColors().tooltipBg,
+          titleColor: chartColors().tooltipFg,
+          bodyColor: chartColors().tooltipFg,
+          callbacks:{
+            label:(ctx)=>` ${ctx.dataset.label}: €${Number(ctx.parsed.y||0).toLocaleString("pt-PT",{minimumFractionDigits:2})}`
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ===============================
+   Helpers (mantidos do teu código)
+   =============================== */
 function toNum(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
 function isFiniteNum(v){ return Number.isFinite(Number(v)); }
 function formatNum(n){ return Number(n || 0).toLocaleString("pt-PT"); }
@@ -171,7 +221,6 @@ async function fetchDividendInfoByTickers(tickers){
   const chunks = [];
   for (let i=0; i<tickers.length; i+=10) chunks.push(tickers.slice(i, i+10));
   for (const chunk of chunks){
-    if (!chunk.length) continue;
     const q = query(collection(db, "acoesDividendos"), where("ticker", "in", chunk));
     const snap = await getDocs(q);
     snap.forEach(docu => {
@@ -201,9 +250,9 @@ function estimateTime(currentPrice, targetPrice, growthPct, periodLabel) {
   return `${n.toFixed(1)} anos`;
 }
 
-/* =========================
-   Quick Actions (modal)
-   ========================= */
+/* ===============================
+   Quick Actions (mantido)
+   =============================== */
 function wireQuickActions(gruposArr){
   const byTicker = new Map(gruposArr.map(g => [g.ticker, g]));
   const $ = s => document.querySelector(s);
@@ -320,30 +369,31 @@ function wireQuickActions(gruposArr){
   });
 }
 
-/* =========================
-   INIT SCREEN
-   ========================= */
+/* ===============================
+   INIT (screen)
+   =============================== */
 export async function initScreen() {
   const cont = document.getElementById("listaAtividades");
   if (!cont) return;
 
   cont.innerHTML = "A carregar…";
+  await ensureChartJS(); // garante Chart.js antes de renderizar
 
   try {
-    const q = query(collection(db, "ativos"), orderBy("dataCompra", "desc"));
-    const snap = await getDocs(q);
-
-    // painel (KPI + gráfico) sempre presente
-    ensureAnalyticsPanel(cont);
-
-    if (snap.empty) {
+    // 1) Buscar movimentos e agrupar por ticker
+    const qSnap = await getDocs(query(collection(db, "ativos"), orderBy("dataCompra", "desc")));
+    if (qSnap.empty) {
       cont.innerHTML = `<p class="muted">Sem atividades ainda.</p>`;
-      // gráfico vazio desaparece automaticamente
+      // limpa e gráficos também
+      renderSetorDoughnut(new Map());
+      renderTop5Bar([]);
+      renderTimeline([]);
       return;
     }
 
     const grupos = new Map();
-    snap.forEach(docu => {
+    const movimentosAsc = []; // para timeline (vamos ordenar por data ascendente)
+    qSnap.forEach(docu => {
       const d = docu.data();
       const ticker = String(d.ticker || "").toUpperCase();
       if (!ticker) return;
@@ -363,7 +413,6 @@ export async function initScreen() {
         anyObjSet: false,
         lastDate: null,
       };
-
       g.qtd += qtd;
       g.investido += invest;
 
@@ -373,9 +422,7 @@ export async function initScreen() {
         g.anyObjSet = true;
       }
 
-      const dt = (d.dataCompra && typeof d.dataCompra.toDate === "function")
-        ? d.dataCompra.toDate()
-        : null;
+      const dt = (d.dataCompra && typeof d.dataCompra.toDate === "function") ? d.dataCompra.toDate() : null;
       if (!g.lastDate || (dt && dt > g.lastDate)) g.lastDate = dt;
 
       g.nome = d.nome || g.nome;
@@ -383,72 +430,101 @@ export async function initScreen() {
       g.mercado = d.mercado || g.mercado;
 
       grupos.set(ticker, g);
+
+      movimentosAsc.push({
+        date: dt || new Date(0),
+        ticker, qtd, preco
+      });
     });
 
-    const gruposArr = Array.from(grupos.values());
-
     // 2) Preços atuais
+    const gruposArr = Array.from(grupos.values());
     const tickers = gruposArr.map(g => g.ticker);
     const infoMap = await fetchDividendInfoByTickers(tickers);
 
     const fmtEUR  = new Intl.NumberFormat("pt-PT",{ style:"currency", currency:"EUR" });
     const fmtDate = new Intl.DateTimeFormat("pt-PT",{ year:"numeric", month:"short", day:"2-digit" });
 
-    // === KPIs + agregação por setor ===
-    let totalInvestido = 0;
-    let totalAtual = 0;
-    let posicoesAtivas = 0;
-    const setoresMap = new Map();
-
-    for (const g of gruposArr) {
-      if ((g.qtd || 0) <= 0) continue;
-      posicoesAtivas++;
-
-      const precoMedio = g.qtd > 0 ? (g.investido / g.qtd) : 0;
+    // Enriquecer grupos com lucroAtual (para gráficos/cards)
+    gruposArr.forEach(g=>{
       const info = infoMap.get(g.ticker) || {};
       const precoAtual = isFiniteNum(info.valorStock) ? Number(info.valorStock) : null;
+      const precoMedio = g.qtd > 0 ? (g.investido / g.qtd) : 0;
+      g.lucroAtual = (precoAtual !== null) ? (precoAtual - precoMedio) * g.qtd : 0;
+      g.precoAtual = precoAtual;
+    });
 
-      totalInvestido += g.investido || 0;
-      totalAtual += (precoAtual !== null ? (precoAtual * g.qtd) : g.investido || 0);
-
+    // 2.1) Agregar por setor (valor investido)
+    const setoresMap = new Map();
+    for (const g of gruposArr) {
+      if ((g.qtd || 0) <= 0) continue;
       const setor = g.setor || "—";
       const prev = setoresMap.get(setor) || 0;
       setoresMap.set(setor, prev + (g.investido || 0));
     }
 
-    const lucroTotal = totalAtual - totalInvestido;
-    const lucroPct = totalInvestido > 0 ? (lucroTotal / totalInvestido) * 100 : 0;
+    // 2.2) Cartões de resumo
+    const totalInvestido = gruposArr.filter(g=>g.qtd>0).reduce((a,g)=>a+(g.investido||0),0);
+    const lucroTotal     = gruposArr.filter(g=>g.qtd>0).reduce((a,g)=>a+(g.lucroAtual||0),0);
+    const numAtivos      = gruposArr.filter(g=>g.qtd>0).length;
+    const retornoPct     = totalInvestido ? (lucroTotal/totalInvestido*100) : 0;
 
-    // Preenche KPIs
-    document.getElementById("pfTotalInvestido").textContent = fmtEUR.format(totalInvestido || 0);
-    document.getElementById("pfLucroAtual").textContent = fmtEUR.format(lucroTotal || 0);
-    document.getElementById("pfLucroPct").textContent = isFinite(lucroPct) ? `${lucroPct.toFixed(1)}%` : "—";
-    document.getElementById("pfPosicoes").textContent = String(posicoesAtivas || 0);
-    document.getElementById("pfTickersUnicos").textContent = `${gruposArr.filter(g => g.qtd > 0).length} tickers únicos`;
+    const elTI = document.getElementById("prtTotalInvestido");
+    const elLT = document.getElementById("prtLucroTotal");
+    const elRP = document.getElementById("prtRetorno");
+    const elNA = document.getElementById("prtNumAtivos");
+    if (elTI) elTI.textContent = fmtEUR.format(totalInvestido);
+    if (elLT) elLT.textContent = fmtEUR.format(lucroTotal);
+    if (elRP) elRP.textContent = `${retornoPct.toFixed(1)}%`;
+    if (elNA) elNA.textContent = String(numAtivos);
 
-    // Garante Chart.js e renderiza gráfico
-    await loadChartJsOnce();
-    renderSetorDoughnut(setoresMap);
+    // 2.3) Timeline (ordena movimentos por data ascendente)
+    movimentosAsc.sort((a,b)=>a.date - b.date);
+    // map para qty corrente por ticker
+    const qtyNow = new Map();
+    const priceNow = new Map();
+    gruposArr.forEach(g=>{
+      if (isFiniteNum(g.precoAtual)) priceNow.set(g.ticker, Number(g.precoAtual));
+      qtyNow.set(g.ticker, 0);
+    });
 
-    // re-render no change de tema (remove handler antigo se existir)
-    if (_themeHandlerBound) {
-      window.removeEventListener("app:theme-changed", _themeHandlerBound);
+    let cumInvest = 0;
+    const timelinePoints = [];
+    for (const m of movimentosAsc){
+      const deltaInvest = Number(m.qtd) * Number(m.preco);
+      cumInvest += deltaInvest;
+
+      // atualiza qty corrente deste ticker até aqui
+      qtyNow.set(m.ticker, (qtyNow.get(m.ticker)||0) + m.qtd);
+
+      // avaliação “hoje” (quantidades após este movimento * preço atual de cada ticker)
+      let valueNow = 0;
+      qtyNow.forEach((q,tk)=>{
+        const p = priceNow.get(tk);
+        if (isFiniteNum(p)) valueNow += q * Number(p);
+      });
+
+      timelinePoints.push({
+        label: isFinite(m.date?.getTime?.()) ? fmtDate.format(m.date) : "",
+        cumInvest: cumInvest,
+        valueNow: valueNow
+      });
     }
-    _themeHandlerBound = () => renderSetorDoughnut(setoresMap);
-    window.addEventListener("app:theme-changed", _themeHandlerBound);
 
-    // === Lista de posições ===
+    // 3) Render GRÁFICOS
+    renderSetorDoughnut(setoresMap);
+    renderTop5Bar(gruposArr);
+    renderTimeline(timelinePoints);
+
+    // 4) Render LISTA (mantém o teu HTML por item)
     const html = gruposArr
       .filter(g => g.qtd > 0)
       .map(g => {
-        const info = infoMap.get(g.ticker) || {};
-        const precoAtual = isFiniteNum(info.valorStock) ? Number(info.valorStock) : null;
-
+        const precoAtual = g.precoAtual;
         const precoMedio = g.qtd > 0 ? (g.investido / g.qtd) : 0;
-        const lucroAtual = (precoAtual !== null)
-          ? (precoAtual - precoMedio) * g.qtd
-          : 0;
+        const lucroAtual = g.lucroAtual || 0;
 
+        // barra zero ao centro
         let pctText = "—";
         let barHTML = "";
         const objetivo = g.objetivo > 0 ? g.objetivo : 0;
@@ -472,7 +548,7 @@ export async function initScreen() {
           ? (precoMedio + (objetivo / g.qtd))
           : null;
 
-        const { taxa, periodLabel } = pickBestRate(info);
+        const { taxa, periodLabel } = pickBestRate(infoMap.get(g.ticker) || {});
         const estimativa = (tp2Necessario && precoAtual)
           ? estimateTime(precoAtual, tp2Necessario, taxa, periodLabel)
           : "—";
@@ -527,12 +603,26 @@ export async function initScreen() {
 
     cont.innerHTML = html.join("");
 
-    // 4) Ligações dos botões de ação rápida
+    // 5) Quick actions (mantido)
     wireQuickActions(gruposArr);
+
+    // 6) Re-render ao mudar de tema (remove anterior para não duplicar)
+    if (window.__prtThemeHandler){
+      window.removeEventListener("app:theme-changed", window.__prtThemeHandler);
+    }
+    window.__prtThemeHandler = () => {
+      renderSetorDoughnut(setoresMap);
+      renderTop5Bar(gruposArr);
+      renderTimeline(timelinePoints);
+    };
+    window.addEventListener("app:theme-changed", window.__prtThemeHandler);
 
   } catch (e) {
     console.error("Erro ao carregar atividades:", e);
-    ensureAnalyticsPanel(cont);
     cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
+    // ainda assim, não deixar os charts “sujos”
+    renderSetorDoughnut(new Map());
+    renderTop5Bar([]);
+    renderTimeline([]);
   }
 }

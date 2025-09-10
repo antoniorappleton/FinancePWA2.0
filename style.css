@@ -536,3 +536,17 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
 .goal-selected, .goal-params{ padding: 10px; }
 
 .settings hr { margin: 6px 0; opacity: .5; }
+/* === Portfólio (resumos + charts) === */
+.portfolio-summary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.portfolio-charts{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:1rem;
+  margin-bottom:1.25rem;
+}
+.portfolio-charts .card h3{ margin:0 0 .5rem; }
