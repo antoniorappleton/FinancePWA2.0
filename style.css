@@ -534,3 +534,5 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
 }
 .goal-filters{ position: sticky; top: 0; padding-bottom: 6px; }
 .goal-selected, .goal-params{ padding: 10px; }
+
+.settings hr { margin: 6px 0; opacity: .5; }

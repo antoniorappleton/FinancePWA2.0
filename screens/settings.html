@@ -1,11 +1,13 @@
 <!-- screens/settings.html -->
 <div class="page" data-screen-title="Configurações">
-  <div class="settings" style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px;">
-
+  <div
+    class="settings"
+    style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px"
+  >
     <!-- PERFIL -->
     <div class="card">
-      <div class="card-content" style="align-items:flex-start; gap:16px;">
-        <div style="flex:1;">
+      <div class="card-content" style="align-items: flex-start; gap: 16px">
+        <div style="flex: 1">
           <p class="label">Perfil</p>
           <div class="form-grid">
             <label>
@@ -15,7 +17,12 @@
 
             <label>
               Email (Firebase)
-              <input id="cfgEmail" type="email" placeholder="o.teu@email" disabled />
+              <input
+                id="cfgEmail"
+                type="email"
+                placeholder="o.teu@email"
+                disabled
+              />
             </label>
 
             <label>
@@ -23,18 +30,27 @@
               <input id="cfgPhone" type="tel" placeholder="+351 ..." />
             </label>
           </div>
-          <p class="muted" style="margin-top:6px">O email vem da tua conta Firebase.</p>
+          <p class="muted" style="margin-top: 6px">
+            O email vem da tua conta Firebase.
+          </p>
         </div>
       </div>
     </div>
 
     <!-- SEGURANÇA -->
     <div class="card">
-      <div class="card-content" style="align-items:flex-start; gap:16px;">
-        <div style="flex:1;">
+      <div class="card-content" style="align-items: flex-start; gap: 16px">
+        <div style="flex: 1">
           <p class="label">Segurança</p>
           <div class="form-grid">
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <span>Autenticação de dois fatores</span>
               <label class="switch">
                 <input type="checkbox" id="cfgTwoFactor" />
@@ -42,7 +58,14 @@
               </label>
             </label>
 
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <span>Notificações de login</span>
               <label class="switch">
                 <input type="checkbox" id="cfgLoginNotifications" />
@@ -54,13 +77,76 @@
       </div>
     </div>
 
+    <!-- Segurança: alteração de palavra-passe -->
+    <div class="form-grid" style="margin-top: 8px">
+      <label>
+        <span class="label"
+          >Palavra-passe atual
+          <small class="muted"
+            >(opcional, pode ser pedida p/ reautenticar)</small
+          ></span
+        >
+        <input
+          type="password"
+          id="cfgCurrentPass"
+          autocomplete="current-password"
+        />
+      </label>
+      <label>
+        <span class="label">Nova palavra-passe</span>
+        <input type="password" id="cfgNewPass" autocomplete="new-password" />
+      </label>
+      <label>
+        <span class="label">Confirmar nova palavra-passe</span>
+        <input type="password" id="cfgNewPass2" autocomplete="new-password" />
+      </label>
+    </div>
+    <div class="actions-row" style="justify-content: flex-end; gap: 8px">
+      <button class="btn outline" id="cfgChangePassBtn">
+        Alterar palavra-passe
+      </button>
+    </div>
+
+    <hr
+      style="
+        border: none;
+        border-top: 1px dashed var(--border);
+        opacity: 0.6;
+        margin: 8px 0;
+      "
+    />
+
+    <!-- Segurança: e-mail de recuperação -->
+    <div class="form-grid">
+      <label>
+        <span class="label">E-mail para recuperação</span>
+        <input
+          type="email"
+          id="cfgRecoveryEmail"
+          placeholder="o.teu@email.com"
+        />
+      </label>
+    </div>
+    <div class="actions-row" style="justify-content: flex-end; gap: 8px">
+      <button class="btn outline" id="cfgSendRecovery">
+        Enviar e-mail de recuperação
+      </button>
+    </div>
+
     <!-- NOTIFICAÇÕES -->
     <div class="card">
-      <div class="card-content" style="align-items:flex-start; gap:16px;">
-        <div style="flex:1;">
+      <div class="card-content" style="align-items: flex-start; gap: 16px">
+        <div style="flex: 1">
           <p class="label">Notificações</p>
           <div class="form-grid">
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <span>Email</span>
               <label class="switch">
                 <input type="checkbox" id="cfgEmailNotifications" />
@@ -68,7 +154,14 @@
               </label>
             </label>
 
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <span>Push</span>
               <label class="switch">
                 <input type="checkbox" id="cfgPushNotifications" />
@@ -76,7 +169,14 @@
               </label>
             </label>
 
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <span>Relatórios semanais</span>
               <label class="switch">
                 <input type="checkbox" id="cfgWeeklyReports" />
@@ -90,8 +190,8 @@
 
     <!-- INTERFACE -->
     <div class="card">
-      <div class="card-content" style="align-items:flex-start; gap:16px;">
-        <div style="flex:1;">
+      <div class="card-content" style="align-items: flex-start; gap: 16px">
+        <div style="flex: 1">
           <p class="label">Interface</p>
           <div class="form-grid">
             <label>
@@ -112,7 +212,14 @@
               </select>
             </label>
 
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <div>
                 <div><strong>Tema escuro</strong></div>
                 <div class="muted">Interface em modo escuro</div>
@@ -129,11 +236,18 @@
 
     <!-- PRIVACIDADE -->
     <div class="card">
-      <div class="card-content" style="align-items:flex-start; gap:16px;">
-        <div style="flex:1;">
+      <div class="card-content" style="align-items: flex-start; gap: 16px">
+        <div style="flex: 1">
           <p class="label">Privacidade</p>
           <div class="form-grid">
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <span>Partilha de dados</span>
               <label class="switch">
                 <input type="checkbox" id="cfgDataSharing" />
@@ -141,7 +255,14 @@
               </label>
             </label>
 
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+              "
+            >
               <span>Analytics (anónimo)</span>
               <label class="switch">
                 <input type="checkbox" id="cfgAnalytics" />
@@ -155,12 +276,11 @@
 
     <!-- AÇÕES -->
     <div class="card">
-      <div class="card-content" style="justify-content:flex-end; gap:8px;">
+      <div class="card-content" style="justify-content: flex-end; gap: 8px">
         <button class="btn outline" id="cfgCancel">Cancelar</button>
         <button class="btn premium" id="cfgSave">Guardar configurações</button>
         <button class="btn outline" id="btnLogout">Sair</button>
       </div>
     </div>
-
   </div>
 </div>

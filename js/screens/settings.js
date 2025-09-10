@@ -88,19 +88,14 @@ export function initScreen() {
     });
   }
 
-  // Carrega estado atual do storage
-let state = loadSettings();
-
-// Se não existir nenhuma preferência guardada, define pela primeira vez
-if (state.darkMode === undefined) {
-  state.darkMode =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  saveSettings(state);
-}
-
-// aplica imediatamente o tema já guardado
-applyTheme(state.darkMode);
+  // Carrega estado atual (se não houver, segue sistema e grava já)
+  let state = loadSettings();
+  if (!("darkMode" in state)) {
+    state.darkMode =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    saveSettings(state);
+  }
 
   // Preenche UI
   elLanguage.value = state.language;

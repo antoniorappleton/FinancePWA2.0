@@ -155,3 +155,4 @@ export async function doLogout() {
     window.navigateTo("auth");
   }
 }
+
