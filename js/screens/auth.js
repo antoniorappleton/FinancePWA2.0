@@ -50,6 +50,22 @@ async function doGoogle() {
 async function doReset(email) {
   await sendPasswordResetEmail(auth, email);
 }
+export function protectPage() {
+  const auth = getAuth(app);
+  return new Promise((resolve) => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      unsub();
+      if (!user) {
+        document.body.classList.add("auth-screen");
+        window.navigateTo?.("auth");
+        resolve(false);
+      } else {
+        document.body.classList.remove("auth-screen");
+        resolve(true);
+      }
+    });
+  });
+}
 
 export function initScreen() {
   // esconder footer e afins no ecrã de auth (aproveita o CSS existente)

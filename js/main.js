@@ -14,10 +14,8 @@ export function navigateTo(screen) {
       // Classe de layout: auth oculta o footer
       document.body.classList.toggle("auth-screen", screen === "auth");
 
-      // Título dinâmico
-      const root = screenContainer.firstElementChild;
-      const dynamicTitle = root?.getAttribute("data-screen-title");
-      if (screenTitleEl) screenTitleEl.textContent = dynamicTitle ?? "";
+      // Título dinâmico (atualiza #screenTitle e .app-header h1)
+      setHeaderTitleFromScreen(screenContainer);
 
       // Voltar ao topo
       window.scrollTo(0, 0);
@@ -48,3 +46,26 @@ window.navigateTo = navigateTo;
 document.addEventListener("DOMContentLoaded", () => {
   navigateTo("auth");
 });
+
+// --- Header title helper (global) ---
+export function setHeaderTitleFromScreen(root = document) {
+  const el = root.querySelector('[data-screen-title]');
+  const title = el?.getAttribute('data-screen-title')?.trim();
+  const h1 = document.querySelector('.app-header h1');
+  if (h1 && title) h1.textContent = title;
+}
+
+// expõe para uso inline nos screens que carregam via HTML estático
+window.setHeaderTitleFromScreen = setHeaderTitleFromScreen;
+
+// Se tens um router/navigateTo, chama SEMPRE após render:
+const _origNavigateTo = window.navigateTo;
+window.navigateTo = function (screen, ...args) {
+  const res = _origNavigateTo ? _origNavigateTo(screen, ...args) : undefined;
+  // dá tempo ao DOM para render; depois atualiza o header
+  queueMicrotask(() => setHeaderTitleFromScreen(document));
+  return res;
+};
+
+// Também atualiza ao carregar a página (ex: refresh direto num screen)
+document.addEventListener('DOMContentLoaded', () => setHeaderTitleFromScreen(document));

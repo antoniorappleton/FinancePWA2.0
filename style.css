@@ -365,27 +365,18 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
 }
 .icon-btn.close:hover{ filter: brightness(1.08); }
 
-/* resultado legível em tema escuro */
-#goalResultado .card{
-  background: var(--card-bg, #17191c);
-  color: var(--fg, #ececec);
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.08);
-}
-#goalResultado thead th{
-  text-align:left; font-weight:600; padding:10px 12px;
-  border-bottom:1px solid rgba(255,255,255,.18);
-}
-#goalResultado tbody td{
-  padding:10px 12px;
-  border-bottom:1px dashed rgba(255,255,255,.10);
-}
-#goalResultado tbody tr:nth-child(odd){ background: rgba(255,255,255,.03); }
-
-@media (max-width: 900px){
-  #goalModal.goal-show-results #goalResultado{
-    max-height: calc(92vh - 56px);
-  }
+/* ---------------- Tema DARK ---------------- */
+:root[data-theme="dark"] {
+  --background:#0b0e13;
+  --foreground:hsl(0 0% 96%);
+  --card:#1a1d24;
+  --card-foreground:hsl(0 0% 96%);
+  --primary:hsl(0 0% 96%);
+  --primary-foreground:hsl(0 0% 9%);
+  --muted:hsl(220 13% 20%);
+  --muted-foreground:hsl(0 0% 70%);
+  --border:hsl(220 13% 25%);
+  --shadow-card:0 4px 20px -2px rgba(0,0,0,.6);
 }
 
 /*ver no telemóvel/*

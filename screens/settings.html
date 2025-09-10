@@ -1,42 +1,51 @@
-<script type="module">
-  import { protectPage } from "./js/auth.js";
-  protectPage();
-</script>
+<!-- screens/settings.html -->
 <div class="page" data-screen-title="Configurações">
   <div class="settings" style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px;">
 
-    <!-- Interface -->
+    <!-- PERFIL -->
     <div class="card">
       <div class="card-content" style="align-items:flex-start; gap:16px;">
         <div style="flex:1;">
-          <p class="label">Interface</p>
+          <p class="label">Perfil</p>
           <div class="form-grid">
             <label>
-              Idioma
-              <select id="cfgLanguage">
-                <option value="pt-PT">Português (PT)</option>
-                <option value="en-US">English (US)</option>
-                <option value="es-ES">Español</option>
-              </select>
+              Nome completo
+              <input id="cfgName" type="text" placeholder="O teu nome" />
             </label>
 
             <label>
-              Moeda
-              <select id="cfgCurrency">
-                <option value="EUR">Euro (€)</option>
-                <option value="USD">Dólar ($)</option>
-                <option value="BRL">Real (R$)</option>
-              </select>
+              Email (Firebase)
+              <input id="cfgEmail" type="email" placeholder="o.teu@email" disabled />
+            </label>
+
+            <label>
+              Telefone
+              <input id="cfgPhone" type="tel" placeholder="+351 ..." />
+            </label>
+          </div>
+          <p class="muted" style="margin-top:6px">O email vem da tua conta Firebase.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEGURANÇA -->
+    <div class="card">
+      <div class="card-content" style="align-items:flex-start; gap:16px;">
+        <div style="flex:1;">
+          <p class="label">Segurança</p>
+          <div class="form-grid">
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Autenticação de dois fatores</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgTwoFactor" />
+                <span class="slider"></span>
+              </label>
             </label>
 
             <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-              <div>
-                <div><strong>Tema escuro</strong></div>
-                <div class="muted">Interface em modo escuro</div>
-              </div>
-              <!-- switch minimal (usa o CSS que já tens) -->
+              <span>Notificações de login</span>
               <label class="switch">
-                <input type="checkbox" id="cfgDarkMode" />
+                <input type="checkbox" id="cfgLoginNotifications" />
                 <span class="slider"></span>
               </label>
             </label>
@@ -45,7 +54,7 @@
       </div>
     </div>
 
-    <!-- Notificações -->
+    <!-- NOTIFICAÇÕES -->
     <div class="card">
       <div class="card-content" style="align-items:flex-start; gap:16px;">
         <div style="flex:1;">
@@ -79,24 +88,37 @@
       </div>
     </div>
 
-    <!-- Segurança -->
+    <!-- INTERFACE -->
     <div class="card">
       <div class="card-content" style="align-items:flex-start; gap:16px;">
         <div style="flex:1;">
-          <p class="label">Segurança</p>
+          <p class="label">Interface</p>
           <div class="form-grid">
-            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-              <span>Autenticação de dois fatores</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgTwoFactor" />
-                <span class="slider"></span>
-              </label>
+            <label>
+              Idioma
+              <select id="cfgLanguage">
+                <option value="pt-PT">Português (PT)</option>
+                <option value="en-US">English (US)</option>
+                <option value="es-ES">Español</option>
+              </select>
+            </label>
+
+            <label>
+              Moeda
+              <select id="cfgCurrency">
+                <option value="EUR">Euro (€)</option>
+                <option value="USD">Dólar ($)</option>
+                <option value="BRL">Real (R$)</option>
+              </select>
             </label>
 
             <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-              <span>Notificações de login</span>
+              <div>
+                <div><strong>Tema escuro</strong></div>
+                <div class="muted">Interface em modo escuro</div>
+              </div>
               <label class="switch">
-                <input type="checkbox" id="cfgLoginNotifications" />
+                <input type="checkbox" id="cfgDarkMode" />
                 <span class="slider"></span>
               </label>
             </label>
@@ -105,17 +127,38 @@
       </div>
     </div>
 
-    <!-- Ações -->
+    <!-- PRIVACIDADE -->
+    <div class="card">
+      <div class="card-content" style="align-items:flex-start; gap:16px;">
+        <div style="flex:1;">
+          <p class="label">Privacidade</p>
+          <div class="form-grid">
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Partilha de dados</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgDataSharing" />
+                <span class="slider"></span>
+              </label>
+            </label>
+
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+              <span>Analytics (anónimo)</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgAnalytics" />
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AÇÕES -->
     <div class="card">
       <div class="card-content" style="justify-content:flex-end; gap:8px;">
         <button class="btn outline" id="cfgCancel">Cancelar</button>
         <button class="btn premium" id="cfgSave">Guardar configurações</button>
         <button class="btn outline" id="btnLogout">Sair</button>
-
-          <script type="module">
-            import { doLogout } from "../js/screens/auth.js";  <!-- caminho a partir de /screens -->
-            document.getElementById("btnLogout")?.addEventListener("click", doLogout);
-          </script>
       </div>
     </div>
 

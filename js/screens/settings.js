@@ -1,7 +1,10 @@
-import { doLogout } from "./auth.js";
-document.getElementById("btnLogout")?.addEventListener("click", doLogout);
-
 // js/screens/settings.js
+
+// ⚠️ AJUSTA ESTE CAMINHO conforme a estrutura do teu projeto:
+// - Se este ficheiro está em js/screens/, usa "../auth.js" (como abaixo).
+// - Se estiver lado a lado com auth.js, usa "./auth.js".
+import { doLogout } from "./auth.js";
+
 const SETTINGS_STORAGE_KEY = "app.settings";
 
 const defaultSettings = {
@@ -15,11 +18,12 @@ const defaultSettings = {
   loginNotifications: true,
 
   // Interface
-  darkMode: false,
+  darkMode: false,          // mantém compat com versões antigas
   language: "pt-PT",
   currency: "EUR",
 };
 
+/* ---------------- helpers de storage ---------------- */
 function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
@@ -37,6 +41,7 @@ function saveSettings(s) {
   } catch {}
 }
 
+/* ---------------- tema (light/dark) ---------------- */
 function applyTheme(dark) {
   const mode = dark ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", mode);
@@ -46,34 +51,41 @@ function applyTheme(dark) {
   if (meta) meta.content = dark ? "#0b0e13" : "#ffffff";
 
   // notificar a app inteira (outros screens podem ouvir este evento)
-  window.dispatchEvent(
-    new CustomEvent("app:theme-changed", { detail: { dark } })
-  );
+  window.dispatchEvent(new CustomEvent("app:theme-changed", { detail: { dark } }));
 }
 
+/* ---------------- init do screen ---------------- */
 export function initScreen() {
+  // ⚠️ NUNCA fazer querySelector/getElementById fora do initScreen,
+  // porque o HTML do screen só existe depois da navegação injetar o markup.
+
   // Elementos
-  const btnLogout = document.getElementById("btnLogout");
-  document.getElementById("btnLogout")?.addEventListener("click", doLogout);
   const elLanguage = document.getElementById("cfgLanguage");
   const elCurrency = document.getElementById("cfgCurrency");
-  const elDark = document.getElementById("cfgDarkMode");
+  const elDark     = document.getElementById("cfgDarkMode");
 
-  const elEmail = document.getElementById("cfgEmailNotifications");
-  const elPush = document.getElementById("cfgPushNotifications");
+  const elEmailN = document.getElementById("cfgEmailNotifications");
+  const elPush   = document.getElementById("cfgPushNotifications");
   const elWeekly = document.getElementById("cfgWeeklyReports");
 
-  const el2FA = document.getElementById("cfgTwoFactor");
+  const el2FA   = document.getElementById("cfgTwoFactor");
   const elLogin = document.getElementById("cfgLoginNotifications");
 
-  const btnSave = document.getElementById("cfgSave");
+  const btnSave   = document.getElementById("cfgSave");
   const btnCancel = document.getElementById("cfgCancel");
+  const btnLogout = document.getElementById("btnLogout");
 
   if (!elLanguage || !elCurrency || !elDark || !btnSave || !btnCancel) {
-    console.warn(
-      "⚠️ settings.js: elementos não encontrados. Confirma o HTML dos IDs."
-    );
+    console.warn("⚠️ settings.js: elementos não encontrados. Confirma o HTML dos IDs.");
     return;
+  }
+
+  // 🔒 Logout — liga AQUI (agora o botão existe no DOM)
+  if (btnLogout) {
+    btnLogout.addEventListener("click", (e) => {
+      e.preventDefault();
+      doLogout(); // exportado do auth.js
+    });
   }
 
   // Carrega estado atual (se não houver, segue sistema e grava já)
@@ -88,14 +100,14 @@ export function initScreen() {
   // Preenche UI
   elLanguage.value = state.language;
   elCurrency.value = state.currency;
-  elDark.checked = !!state.darkMode;
+  elDark.checked   = !!state.darkMode;
 
-  elEmail.checked = !!state.emailNotifications;
-  elPush.checked = !!state.pushNotifications;
-  elWeekly.checked = !!state.weeklyReports;
+  if (elEmailN) elEmailN.checked = !!state.emailNotifications;
+  if (elPush)   elPush.checked   = !!state.pushNotifications;
+  if (elWeekly) elWeekly.checked = !!state.weeklyReports;
 
-  el2FA.checked = !!state.twoFactor;
-  elLogin.checked = !!state.loginNotifications;
+  if (el2FA)   el2FA.checked   = !!state.twoFactor;
+  if (elLogin) elLogin.checked = !!state.loginNotifications;
 
   // Aplica tema no arranque deste screen
   applyTheme(!!state.darkMode);
@@ -112,20 +124,20 @@ export function initScreen() {
     applyTheme(state.darkMode); // aplica imediatamente
   });
 
-  elEmail.addEventListener("change", () => {
-    state.emailNotifications = !!elEmail.checked;
+  elEmailN?.addEventListener("change", () => {
+    state.emailNotifications = !!elEmailN.checked;
   });
-  elPush.addEventListener("change", () => {
+  elPush?.addEventListener("change", () => {
     state.pushNotifications = !!elPush.checked;
   });
-  elWeekly.addEventListener("change", () => {
+  elWeekly?.addEventListener("change", () => {
     state.weeklyReports = !!elWeekly.checked;
   });
 
-  el2FA.addEventListener("change", () => {
+  el2FA?.addEventListener("change", () => {
     state.twoFactor = !!el2FA.checked;
   });
-  elLogin.addEventListener("change", () => {
+  elLogin?.addEventListener("change", () => {
     state.loginNotifications = !!elLogin.checked;
   });
 
@@ -141,21 +153,19 @@ export function initScreen() {
 
     elLanguage.value = state.language;
     elCurrency.value = state.currency;
-    elDark.checked = !!state.darkMode;
+    elDark.checked   = !!state.darkMode;
 
-    elEmail.checked = !!state.emailNotifications;
-    elPush.checked = !!state.pushNotifications;
-    elWeekly.checked = !!state.weeklyReports;
+    if (elEmailN) elEmailN.checked = !!state.emailNotifications;
+    if (elPush)   elPush.checked   = !!state.pushNotifications;
+    if (elWeekly) elWeekly.checked = !!state.weeklyReports;
 
-    el2FA.checked = !!state.twoFactor;
-    elLogin.checked = !!state.loginNotifications;
+    if (el2FA)   el2FA.checked   = !!state.twoFactor;
+    if (elLogin) elLogin.checked = !!state.loginNotifications;
 
     applyTheme(state.darkMode);
   });
 
-  // (Opcional) Seguir alterações do sistema se o user nunca tocou no switch:
-  // só ativa se quiseres que mude automaticamente quando o sistema mudar
-  // e o user não “forçou” uma preferência.
+  // (Opcional) Seguir alterações do sistema se o user nunca “forçou”
   try {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e) => {
