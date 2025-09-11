@@ -1,0 +1,67 @@
+<div class="page" data-screen-title="Mercado">
+  <div class="dashboard-header">
+    <p class="subtitle">Métricas detalhadas por ticker</p>
+  </div>
+
+  <!-- 📊 KPIs resumo -->
+  <div class="analysis-summary">
+    <div class="card info">
+      <div class="card-content">
+        <div>
+          <p class="label">P/E médio ponderado</p>
+          <p class="value" id="anPEpond">0.0</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-balance-scale"></i></div>
+      </div>
+    </div>
+    <div class="card success">
+      <div class="card-content">
+        <div>
+          <p class="label">Yield média ponderada</p>
+          <p class="value" id="anYieldPond">0%</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-percentage"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📈 Gráficos -->
+  <div class="analysis-charts">
+    <div class="card">
+      <h3>Yield vs P/E (Scatter)</h3>
+      <div class="chart-wrap"><canvas id="chartYieldPE"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h3>Calendário de Dividendos (12m)</h3>
+      <div class="chart-wrap"><canvas id="chartDivCal"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 📋 Tabela -->
+  <div class="card">
+    <h3>Tabela Valuation / Momentum</h3>
+    <div class="table-responsive">
+      <table class="analysis-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Yield</th>
+            <th>Yield 24m</th>
+            <th>P/E</th>
+            <th>Δ50d%</th>
+            <th>Δ200d%</th>
+            <th>1S</th>
+            <th>1M</th>
+            <th>1A</th>
+            <th>Periodicidade</th>
+            <th>Próx. mês</th>
+          </tr>
+        </thead>
+        <tbody id="analysisTableBody">
+          <!-- linhas via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
