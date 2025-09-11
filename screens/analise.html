@@ -1,67 +1,94 @@
-<div class="page" data-screen-title="Mercado">
+<div class="page" data-screen-title="Análise Fina">
   <div class="dashboard-header">
-    <p class="subtitle">Métricas detalhadas por ticker</p>
+    <p class="subtitle">Métricas detalhadas por ticker — base de dados completa</p>
   </div>
 
-  <!-- 📊 KPIs resumo -->
+  <!-- KPIs -->
   <div class="analysis-summary">
     <div class="card info">
       <div class="card-content">
         <div>
-          <p class="label">P/E médio ponderado</p>
-          <p class="value" id="anPEpond">0.0</p>
+          <p class="label">Nº de Tickers</p>
+          <p class="value" id="anTotalTickers">0</p>
         </div>
-        <div class="icon-box"><i class="fas fa-balance-scale"></i></div>
+        <div class="icon-box"><i class="fas fa-database"></i></div>
       </div>
     </div>
     <div class="card success">
       <div class="card-content">
         <div>
-          <p class="label">Yield média ponderada</p>
-          <p class="value" id="anYieldPond">0%</p>
+          <p class="label">Yield média (amostra)</p>
+          <p class="value" id="anYieldMedia">0%</p>
         </div>
         <div class="icon-box"><i class="fas fa-percentage"></i></div>
       </div>
     </div>
+    <div class="card premium">
+      <div class="card-content">
+        <div>
+          <p class="label">P/E médio (amostra)</p>
+          <p class="value" id="anPEmedio">0.0</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-balance-scale"></i></div>
+      </div>
+    </div>
   </div>
 
-  <!-- 📈 Gráficos -->
+  <!-- GRÁFICOS -->
   <div class="analysis-charts">
     <div class="card">
-      <h3>Yield vs P/E (Scatter)</h3>
-      <div class="chart-wrap"><canvas id="chartYieldPE"></canvas></div>
+      <h3>Distribuição por Setor (nº de tickers)</h3>
+      <div class="chart-wrap"><canvas id="anChartSetor"></canvas></div>
     </div>
-
     <div class="card">
-      <h3>Calendário de Dividendos (12m)</h3>
-      <div class="chart-wrap"><canvas id="chartDivCal"></canvas></div>
+      <h3>Distribuição por Mercado (nº de tickers)</h3>
+      <div class="chart-wrap"><canvas id="anChartMercado"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Yield vs P/E (scatter)</h3>
+      <div class="chart-wrap"><canvas id="anChartYieldPE"></canvas></div>
     </div>
   </div>
 
-  <!-- 📋 Tabela -->
+  <!-- TOOLBAR TABELA -->
   <div class="card">
-    <h3>Tabela Valuation / Momentum</h3>
-    <div class="table-responsive">
-      <table class="analysis-table">
-        <thead>
-          <tr>
-            <th>Ticker</th>
-            <th>Yield</th>
-            <th>Yield 24m</th>
-            <th>P/E</th>
-            <th>Δ50d%</th>
-            <th>Δ200d%</th>
-            <th>1S</th>
-            <th>1M</th>
-            <th>1A</th>
-            <th>Periodicidade</th>
-            <th>Próx. mês</th>
-          </tr>
-        </thead>
-        <tbody id="analysisTableBody">
-          <!-- linhas via JS -->
-        </tbody>
-      </table>
+    <div class="card-content" style="align-items:stretch; gap:12px;">
+      <div class="analysis-toolbar">
+        <input id="anSearch" type="search" placeholder="Pesquisar por ticker/nome…" />
+        <select id="anFiltroSetor"><option value="">Todos os setores</option></select>
+        <select id="anFiltroMercado"><option value="">Todos os mercados</option></select>
+        <select id="anOrdenar">
+          <option value="ticker.asc">Ticker (A→Z)</option>
+          <option value="yield.desc">Yield ↓</option>
+          <option value="pe.asc">P/E ↑</option>
+          <option value="delta200.desc">Δ200d% ↓</option>
+        </select>
+      </div>
+
+      <div class="table-responsive">
+        <table class="analysis-table">
+          <thead>
+            <tr>
+              <th data-sort="ticker">Ticker</th>
+              <th>Nome</th>
+              <th data-sort="yield">Yield</th>
+              <th>Yield 24m</th>
+              <th data-sort="pe">P/E</th>
+              <th>Δ50d%</th>
+              <th data-sort="delta200">Δ200d%</th>
+              <th>1S</th>
+              <th>1M</th>
+              <th>1A</th>
+              <th>Periodicidade</th>
+              <th>Mês típico</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody id="analysisTableBody">
+            <!-- linhas via JS -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

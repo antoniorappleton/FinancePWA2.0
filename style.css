@@ -601,3 +601,65 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
 @media (max-width: 600px){
   #prtHelpModal .prt-help-dialog{ width: 96vw; max-height: 90vh; }
 }
+
+/*Screen Analise*/
+/* ====== Análise Fina (screen) ====== */
+.analysis-summary{
+  display:grid; gap:1rem;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  margin-bottom:1rem;
+}
+.analysis-charts{
+  display:grid; gap:1rem;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  margin-bottom:1rem;
+}
+
+/* Toolbar */
+.analysis-toolbar{
+  display:flex; gap:.6rem; flex-wrap:wrap; width:100%;
+}
+.analysis-toolbar input[type="search"],
+.analysis-toolbar select{
+  padding:.55rem .7rem; border:1px solid var(--border);
+  border-radius:var(--radius); min-width:180px; background:var(--card);
+  color:var(--foreground);
+}
+
+/* Tabela pro */
+.table-responsive{ overflow:auto; border:1px solid var(--border); border-radius:var(--radius); }
+.analysis-table{ width:100%; border-collapse:separate; border-spacing:0; min-width:900px; }
+.analysis-table thead th{
+  position:sticky; top:0; background:var(--card);
+  font-weight:600; text-align:left; padding:.6rem .7rem;
+  border-bottom:1px solid var(--border);
+}
+.analysis-table tbody td{
+  padding:.55rem .7rem; border-bottom:1px solid var(--border); vertical-align:middle;
+}
+.analysis-table tbody tr:hover{ background:var(--muted); }
+
+/* Badges / status */
+.badge{
+  display:inline-block; padding:.2rem .5rem; border-radius:999px;
+  font-size:.75rem; line-height:1; border:1px solid transparent;
+}
+.badge.ok{ background:#e7f7ee; color:#117a39; border-color:#a9e0c1; }
+.badge.warn{ background:#fff4e5; color:#a15f00; border-color:#f7d6a5; }
+.badge.danger{ background:#ffe5e5; color:#a52121; border-color:#f2b0b0; }
+.badge.muted{ background:#f1f1f1; color:#666; border-color:#e2e2e2; }
+.badge.up{ background:#e7f7ee; color:#117a39; border-color:#a9e0c1; }
+.badge.down{ background:#ffe5e5; color:#a52121; border-color:#f2b0b0; }
+
+.up{ color:#117a39; font-weight:600; }
+.down{ color:#a52121; font-weight:600; }
+
+.dot{
+  display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle;
+}
+.dot-green{ background:#22c55e; }
+.dot-amber{ background:#f59e0b; }
+.dot-red{ background:#ef4444; }
+
+/* Dark-mode small tune */
+[data-theme="dark"] .analysis-table thead th{ background:#121212; }
