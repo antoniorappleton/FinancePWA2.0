@@ -3,7 +3,7 @@
     <p class="subtitle">Todos os ativos em carteira</p>
   </div>
 
-  <!-- 📊 RESUMO -->
+  <!-- 🧭 KPIs -->
   <div class="portfolio-summary">
     <div class="card premium">
       <div class="card-content">
@@ -18,8 +18,8 @@
     <div class="card success">
       <div class="card-content">
         <div>
-          <p class="label">Lucro Total</p>
-          <p class="value" id="prtLucroTotal">€0,00</p>
+          <p class="label">Rendimento anual esperado</p>
+          <p class="value" id="prtRendimentoAnual">€0,00</p>
         </div>
         <div class="icon-box"><i class="fas fa-wallet"></i></div>
       </div>
@@ -28,7 +28,7 @@
     <div class="card info">
       <div class="card-content">
         <div>
-          <p class="label">% Retorno</p>
+          <p class="label">Retorno global (P/L%)</p>
           <p class="value" id="prtRetorno">0%</p>
         </div>
         <div class="icon-box"><i class="fas fa-chart-line"></i></div>
@@ -38,15 +38,15 @@
     <div class="card default">
       <div class="card-content">
         <div>
-          <p class="label">Ativos em carteira</p>
-          <p class="value" id="prtNumAtivos">0</p>
+          <p class="label">Exposição acima da SMA200</p>
+          <p class="value" id="prtExpSMA200">0%</p>
         </div>
-        <div class="icon-box"><i class="fas fa-layer-group"></i></div>
+        <div class="icon-box"><i class="fas fa-trending-up"></i></div>
       </div>
     </div>
   </div>
 
-  <!-- 📈 GRÁFICOS -->
+  <!-- 📈 GRÁFICOS (linha 1: Setores + Mercado) -->
   <div class="portfolio-charts">
     <div class="card">
       <h3>Distribuição por Setores</h3>
@@ -54,13 +54,34 @@
     </div>
 
     <div class="card">
+      <h3>Distribuição por Mercado</h3>
+      <div class="chart-wrap"><canvas id="chartMercados"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 📈 GRÁFICOS (linha 2: Top5 Investido + Top5 Yield) -->
+  <div class="portfolio-charts">
+    <div class="card">
       <h3>Top 5 por Valor Investido</h3>
       <div class="chart-wrap"><canvas id="chartTop5"></canvas></div>
     </div>
 
     <div class="card">
+      <h3>Top 5 por Yield</h3>
+      <div class="chart-wrap"><canvas id="chartTop5Yield"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 📈 GRÁFICOS (linha 3: Timeline + Calendário Dividendos) -->
+  <div class="portfolio-charts">
+    <div class="card">
       <h3>Evolução (Investido vs Avaliação Atual)</h3>
       <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h3>Calendário de Dividendos (12 meses)</h3>
+      <div class="chart-wrap"><canvas id="chartDivCalendario"></canvas></div>
     </div>
   </div>
 
@@ -68,5 +89,5 @@
   <div id="listaAtividades"></div>
 </div>
 
-<!-- Modal QUICK BUY/SELL (mantém igual ao teu) -->
-<!-- ... o teu modal pfAddModal aqui sem alterações ... -->
+<!-- Modal QUICK BUY/SELL (mantém o teu modal existente) -->
+<!-- ... o teu #pfAddModal aqui, sem alterações ... -->
