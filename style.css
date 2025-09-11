@@ -663,3 +663,41 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
 
 /* Dark-mode small tune */
 [data-theme="dark"] .analysis-table thead th{ background:#121212; }
+/* Toolbar acima da tabela — ocupa a largura da card */
+.analysis-toolbar{
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+
+/* Cada linha ocupa 100% */
+.analysis-toolbar .toolbar-row{
+  width: 100%;
+  display: block;
+}
+
+/* Campos compridos (largura total por defeito) */
+.analysis-toolbar input[type="search"],
+.analysis-toolbar select{
+  width: 100%;
+  padding: .55rem .7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Grid para filtros — em mobile empilha; em desktop distribui */
+.analysis-toolbar .toolbar-grid{
+  display: grid;
+  grid-template-columns: 1fr;   /* mobile: 1 por linha */
+  gap: .6rem;
+  margin-top: .6rem;
+}
+
+/* Desktop: 3 colunas largas (continuam “compridos” porque a grid ocupa a largura da tabela) */
+@media (min-width: 900px){
+  .analysis-toolbar .toolbar-grid{
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+  }
+}
