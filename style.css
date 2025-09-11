@@ -550,3 +550,54 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
   margin-bottom:1.25rem;
 }
 .portfolio-charts .card h3{ margin:0 0 .5rem; }
+/* === Modal Ajuda Portfólio: maior + scroll interno === */
+#prtHelpModal .prt-help-dialog{
+  width: min(900px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* header fixo no topo do diálogo ao rolar */
+#prtHelpModal .modal-header{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: inherit;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+/* corpo que rola */
+#prtHelpModal .help-body{
+  flex: 1 1 auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 0;
+}
+
+/* barra de ações fixa no fundo do diálogo */
+#prtHelpModal .help-actions{
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  min-height: 56px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(17,17,17,0) 0%, rgba(17,17,17,.96) 60%);
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+/* tema claro */
+:root:not([data-theme="dark"]) #prtHelpModal .help-actions{
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(5, 5, 5, 0.96) 60%);
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+:root:not([data-theme="dark"]) #prtHelpModal .modal-header{
+  border-bottom: 1px solid rgba(0,0,0,.06);
+}
+
+/* mobile */
+@media (max-width: 600px){
+  #prtHelpModal .prt-help-dialog{ width: 96vw; max-height: 90vh; }
+}

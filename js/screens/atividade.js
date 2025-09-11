@@ -374,7 +374,9 @@ export async function initScreen() {
 
   try {
     // 1) Buscar movimentos e agrupar por ticker
-    const qSnap = await getDocs(query(collection(db, "ativos"), orderBy("dataCompra", "desc")));
+    const qSnap = await getDocs(
+      query(collection(db, "ativos"), orderBy("dataCompra", "desc"))
+    );
     if (qSnap.empty) {
       cont.innerHTML = `<p class="muted">Sem atividades ainda.</p>`;
       renderSetorDoughnut(new Map());
@@ -388,7 +390,7 @@ export async function initScreen() {
 
     const grupos = new Map();
     const movimentosAsc = [];
-    qSnap.forEach(docu => {
+    qSnap.forEach((docu) => {
       const d = docu.data();
       const ticker = String(d.ticker || "").toUpperCase();
       if (!ticker) return;
@@ -410,9 +412,15 @@ export async function initScreen() {
       g.investido += invest;
 
       const obj = toNum(d.objetivoFinanceiro);
-      if (!g.anyObjSet && obj > 0) { g.objetivo = obj; g.anyObjSet = true; }
+      if (!g.anyObjSet && obj > 0) {
+        g.objetivo = obj;
+        g.anyObjSet = true;
+      }
 
-      const dt = (d.dataCompra && typeof d.dataCompra.toDate === "function") ? d.dataCompra.toDate() : null;
+      const dt =
+        d.dataCompra && typeof d.dataCompra.toDate === "function"
+          ? d.dataCompra.toDate()
+          : null;
       if (!g.lastDate || (dt && dt > g.lastDate)) g.lastDate = dt;
 
       g.nome = d.nome || g.nome;
@@ -426,33 +434,51 @@ export async function initScreen() {
     const gruposArr = Array.from(grupos.values());
 
     // 2) Info de cota / dividendos
-    const tickers = gruposArr.map(g => g.ticker);
+    const tickers = gruposArr.map((g) => g.ticker);
     const infoMap = await fetchDividendInfoByTickers(tickers);
 
-    const fmtEUR  = new Intl.NumberFormat("pt-PT",{ style:"currency", currency:"EUR" });
-    const fmtDate = new Intl.DateTimeFormat("pt-PT",{ year:"numeric", month:"short", day:"2-digit" });
+    const fmtEUR = new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    });
+    const fmtDate = new Intl.DateTimeFormat("pt-PT", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
 
     // Enriquecer grupos com métricas para gráficos/cards
     const rowsForYield = []; // para Top5 Yield
-    gruposArr.forEach(g=>{
+    gruposArr.forEach((g) => {
       const info = infoMap.get(g.ticker) || {};
-      const precoAtual = isFiniteNum(info.valorStock) ? Number(info.valorStock) : null;
-      const precoMedio = g.qtd > 0 ? (g.investido / g.qtd) : 0;
-      g.lucroAtual = (precoAtual !== null) ? (precoAtual - precoMedio) * g.qtd : 0;
+      const precoAtual = isFiniteNum(info.valorStock)
+        ? Number(info.valorStock)
+        : null;
+      const precoMedio = g.qtd > 0 ? g.investido / g.qtd : 0;
+      g.lucroAtual =
+        precoAtual !== null ? (precoAtual - precoMedio) * g.qtd : 0;
       g.precoAtual = precoAtual;
 
       // yields & valuation
       const dividendo = toNum(info.dividendo);
-      const dmed24    = toNum(info.dividendoMedio24m);
-      const pe        = isFiniteNum(info.peRatio) ? Number(info.peRatio) : null;
-      const sma50     = isFiniteNum(info.sma50) ? Number(info.sma50) : null;
-      const sma200    = isFiniteNum(info.sma200) ? Number(info.sma200) : null;
+      const dmed24 = toNum(info.dividendoMedio24m);
+      const pe = isFiniteNum(info.peRatio) ? Number(info.peRatio) : null;
+      const sma50 = isFiniteNum(info.sma50) ? Number(info.sma50) : null;
+      const sma200 = isFiniteNum(info.sma200) ? Number(info.sma200) : null;
 
-      const yCur   = (precoAtual && dividendo>0) ? (dividendo / precoAtual) : null;      // 0..1
-      const y24m   = (precoAtual && dmed24>0)    ? (dmed24 / precoAtual)    : null;      // 0..1
-      g._yCur = yCur; g._y24m = y24m; g._pe = pe; g._sma50 = sma50; g._sma200 = sma200;
+      const yCur = precoAtual && dividendo > 0 ? dividendo / precoAtual : null; // 0..1
+      const y24m = precoAtual && dmed24 > 0 ? dmed24 / precoAtual : null; // 0..1
+      g._yCur = yCur;
+      g._y24m = y24m;
+      g._pe = pe;
+      g._sma50 = sma50;
+      g._sma200 = sma200;
 
-      rowsForYield.push({ ticker:g.ticker, active:(g.qtd>0), yieldCur: yCur });
+      rowsForYield.push({
+        ticker: g.ticker,
+        active: g.qtd > 0,
+        yieldCur: yCur,
+      });
     });
 
     // 2.1) Distribuições
@@ -461,24 +487,28 @@ export async function initScreen() {
     for (const g of gruposArr) {
       if ((g.qtd || 0) <= 0) continue;
       const setor = g.setor || "—";
-      setoresMap.set(setor, (setoresMap.get(setor)||0) + (g.investido||0));
+      setoresMap.set(setor, (setoresMap.get(setor) || 0) + (g.investido || 0));
       const merc = g.mercado || "—";
-      mercadosMap.set(merc, (mercadosMap.get(merc)||0) + (g.investido||0));
+      mercadosMap.set(merc, (mercadosMap.get(merc) || 0) + (g.investido || 0));
     }
 
     // 2.2) KPIs agregados
-    const totalInvestido = gruposArr.filter(g=>g.qtd>0).reduce((a,g)=>a+(g.investido||0),0);
-    const lucroTotal     = gruposArr.filter(g=>g.qtd>0).reduce((a,g)=>a+(g.lucroAtual||0),0);
-    const retornoPct     = totalInvestido ? (lucroTotal/totalInvestido*100) : 0;
+    const totalInvestido = gruposArr
+      .filter((g) => g.qtd > 0)
+      .reduce((a, g) => a + (g.investido || 0), 0);
+    const lucroTotal = gruposArr
+      .filter((g) => g.qtd > 0)
+      .reduce((a, g) => a + (g.lucroAtual || 0), 0);
+    const retornoPct = totalInvestido ? (lucroTotal / totalInvestido) * 100 : 0;
 
     // rendimento anual esperado
     let rendimentoAnual = 0;
     const eurosMes = new Array(12).fill(0); // calendário 12m
-    for (const g of gruposArr){
+    for (const g of gruposArr) {
       if (g.qtd <= 0) continue;
       const info = infoMap.get(g.ticker) || {};
-      const div  = toNum(info.dividendo);
-      const per  = info.periodicidade;
+      const div = toNum(info.dividendo);
+      const per = info.periodicidade;
       const mesT = info.mes;
       const payN = pagamentosAno(per);
       const anualTicker = g.qtd * div * payN;
@@ -486,17 +516,18 @@ export async function initScreen() {
 
       // distribuir pelos meses estimados
       const meses = mesesPagos(per, mesT);
-      for (const m of meses){
+      for (const m of meses) {
         eurosMes[m] += g.qtd * div;
       }
     }
 
     // exposição acima da SMA200 (peso por investido)
     let somaPesosAcima = 0;
-    for (const g of gruposArr){
+    for (const g of gruposArr) {
       if (g.qtd <= 0 || !totalInvestido) continue;
-      const w = (g.investido||0) / totalInvestido;
-      const p = g.precoAtual, s200 = g._sma200;
+      const w = (g.investido || 0) / totalInvestido;
+      const p = g.precoAtual,
+        s200 = g._sma200;
       if (isFiniteNum(p) && isFiniteNum(s200) && Number(p) > Number(s200)) {
         somaPesosAcima += w;
       }
@@ -514,24 +545,29 @@ export async function initScreen() {
     if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
 
     // 2.3) Timeline (como já tinhas)
-    movimentosAsc.sort((a,b)=>a.date - b.date);
-    const qtyNow = new Map(); const priceNow = new Map();
-    gruposArr.forEach(g=>{
-      if (isFiniteNum(g.precoAtual)) priceNow.set(g.ticker, Number(g.precoAtual));
+    movimentosAsc.sort((a, b) => a.date - b.date);
+    const qtyNow = new Map();
+    const priceNow = new Map();
+    gruposArr.forEach((g) => {
+      if (isFiniteNum(g.precoAtual))
+        priceNow.set(g.ticker, Number(g.precoAtual));
       qtyNow.set(g.ticker, 0);
     });
     let cumInvest = 0;
     const timelinePoints = [];
-    for (const m of movimentosAsc){
+    for (const m of movimentosAsc) {
       const deltaInvest = Number(m.qtd) * Number(m.preco);
       cumInvest += deltaInvest;
-      qtyNow.set(m.ticker, (qtyNow.get(m.ticker)||0) + m.qtd);
+      qtyNow.set(m.ticker, (qtyNow.get(m.ticker) || 0) + m.qtd);
       let valueNow = 0;
-      qtyNow.forEach((q,tk)=>{ const p = priceNow.get(tk); if (isFiniteNum(p)) valueNow += q * Number(p); });
+      qtyNow.forEach((q, tk) => {
+        const p = priceNow.get(tk);
+        if (isFiniteNum(p)) valueNow += q * Number(p);
+      });
       timelinePoints.push({
         label: isFinite(m.date?.getTime?.()) ? fmtDate.format(m.date) : "",
         cumInvest: cumInvest,
-        valueNow: valueNow
+        valueNow: valueNow,
       });
     }
 
@@ -545,11 +581,11 @@ export async function initScreen() {
 
     // 4) Render LISTA com badges extra
     const html = gruposArr
-      .filter(g => g.qtd > 0)
-      .map(g => {
+      .filter((g) => g.qtd > 0)
+      .map((g) => {
         const info = infoMap.get(g.ticker) || {};
         const precoAtual = g.precoAtual;
-        const precoMedio = g.qtd > 0 ? (g.investido / g.qtd) : 0;
+        const precoMedio = g.qtd > 0 ? g.investido / g.qtd : 0;
         const lucroAtual = g.lucroAtual || 0;
 
         // barra zero ao centro (teu código)
@@ -565,47 +601,77 @@ export async function initScreen() {
           barHTML = `
             <div class="progress-dual">
               <div class="track">
-                <div class="fill ${positive ? "positive" : "negative"}" style="width:${sideWidthPct}%"></div>
+                <div class="fill ${
+                  positive ? "positive" : "negative"
+                }" style="width:${sideWidthPct}%"></div>
                 <div class="zero"></div>
               </div>
             </div>
           `;
         }
 
-        const tp2Necessario = (objetivo > 0 && g.qtd > 0)
-          ? (precoMedio + (objetivo / g.qtd))
-          : null;
+        const tp2Necessario =
+          objetivo > 0 && g.qtd > 0 ? precoMedio + objetivo / g.qtd : null;
 
         const { taxa, periodLabel } = pickBestRate(info);
-        const estimativa = (tp2Necessario && precoAtual)
-          ? estimateTime(precoAtual, tp2Necessario, taxa, periodLabel)
-          : "—";
+        const estimativa =
+          tp2Necessario && precoAtual
+            ? estimateTime(precoAtual, tp2Necessario, taxa, periodLabel)
+            : "—";
 
         const dataTxt = g.lastDate ? fmtDate.format(g.lastDate) : "sem data";
 
         // badges rápidas
-        const yCur = g._yCur;    // 0..1
-        const y24  = g._y24m;    // 0..1
-        const pe   = g._pe;
-        const s50  = g._sma50;
+        const yCur = g._yCur; // 0..1
+        const y24 = g._y24m; // 0..1
+        const pe = g._pe;
+        const s50 = g._sma50;
         const s200 = g._sma200;
 
-        const yPct = isFiniteNum(yCur) ? (yCur*100).toFixed(2) + "%" : "—";
-        const y24Pct = isFiniteNum(y24) ? (y24*100).toFixed(2) + "%" : "—";
-        const yBadge = (isFiniteNum(yCur) && isFiniteNum(y24))
-          ? (yCur > y24 ? "↑ acima da média" : "↓ abaixo da média") : "";
-        const peBadge = (isFiniteNum(pe))
-          ? (pe < 15 ? "Barato" : pe <= 25 ? "Justo" : "Caro") : "—";
-        const d50 = (isFiniteNum(s50) && isFiniteNum(precoAtual)) ? ((precoAtual - s50)/s50*100) : null;
-        const d200= (isFiniteNum(s200) && isFiniteNum(precoAtual)) ? ((precoAtual - s200)/s200*100) : null;
+        const yPct = isFiniteNum(yCur) ? (yCur * 100).toFixed(2) + "%" : "—";
+        const y24Pct = isFiniteNum(y24) ? (y24 * 100).toFixed(2) + "%" : "—";
+        const yBadge =
+          isFiniteNum(yCur) && isFiniteNum(y24)
+            ? yCur > y24
+              ? "↑ acima da média"
+              : "↓ abaixo da média"
+            : "";
+        const peBadge = isFiniteNum(pe)
+          ? pe < 15
+            ? "Barato"
+            : pe <= 25
+            ? "Justo"
+            : "Caro"
+          : "—";
+        const d50 =
+          isFiniteNum(s50) && isFiniteNum(precoAtual)
+            ? ((precoAtual - s50) / s50) * 100
+            : null;
+        const d200 =
+          isFiniteNum(s200) && isFiniteNum(precoAtual)
+            ? ((precoAtual - s200) / s200) * 100
+            : null;
 
-        const d50Txt = (d50===null) ? "—" : `${d50.toFixed(1)}%`;
-        const d200Txt= (d200===null)? "—" : `${d200.toFixed(1)}%`;
+        const d50Txt = d50 === null ? "—" : `${d50.toFixed(1)}%`;
+        const d200Txt = d200 === null ? "—" : `${d200.toFixed(1)}%`;
 
         const stopLight =
-          (isFiniteNum(precoAtual) && isFiniteNum(s200) && precoAtual < s200 && Number(info.taxaCrescimento_1mes||0) < 0) ? "🔴" :
-          ((isFiniteNum(precoAtual) && isFiniteNum(s200) && precoAtual < s200) || Number(info.taxaCrescimento_1mes||0) < 0) ? "🟡" :
-          ((isFiniteNum(precoAtual) && isFiniteNum(s200) && precoAtual > s200) && Number(info.taxaCrescimento_1mes||0) > 0) ? "🟢" : "⚪️";
+          isFiniteNum(precoAtual) &&
+          isFiniteNum(s200) &&
+          precoAtual < s200 &&
+          Number(info.taxaCrescimento_1mes || 0) < 0
+            ? "🔴"
+            : (isFiniteNum(precoAtual) &&
+                isFiniteNum(s200) &&
+                precoAtual < s200) ||
+              Number(info.taxaCrescimento_1mes || 0) < 0
+            ? "🟡"
+            : isFiniteNum(precoAtual) &&
+              isFiniteNum(s200) &&
+              precoAtual > s200 &&
+              Number(info.taxaCrescimento_1mes || 0) > 0
+            ? "🟢"
+            : "⚪️";
 
         // ações
         const actions = `
@@ -620,12 +686,16 @@ export async function initScreen() {
           <p class="muted" style="margin-top:.4rem">
             ${stopLight} Yield: <strong>${yPct}</strong> (${yBadge || "—"}) •
             Yield 24m: <strong>${y24Pct}</strong> •
-            P/E: <strong>${isFiniteNum(pe)? pe.toFixed(2) : "—"} (${peBadge})</strong> •
+            P/E: <strong>${
+              isFiniteNum(pe) ? pe.toFixed(2) : "—"
+            } (${peBadge})</strong> •
             Δ50d: <strong>${d50Txt}</strong> •
             Δ200d: <strong>${d200Txt}</strong>
           </p>
           <p class="muted">
-            ${String(info.periodicidade||"n/A")} • paga em <strong>${String(info.mes||"n/A")}</strong>
+            ${String(info.periodicidade || "n/A")} • paga em <strong>${String(
+          info.mes || "n/A"
+        )}</strong>
           </p>
         `;
 
@@ -634,32 +704,52 @@ export async function initScreen() {
             <div class="activity-left">
               <span class="activity-icon">📦</span>
               <div>
-                <p><strong>${g.nome}</strong> <span class="muted">(${g.ticker})</span></p>
+                <p><strong>${g.nome}</strong> <span class="muted">(${
+          g.ticker
+        })</span></p>
                 <p class="muted">${g.setor} • ${g.mercado}</p>
                 <p class="muted">Última compra: ${dataTxt}</p>
                 <p class="muted">
                   Qtd: <strong>${formatNum(g.qtd)}</strong> ·
-                  Preço médio: <strong>${fmtEUR.format(precoMedio || 0)}</strong> ·
-                  Preço atual: <strong>${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</strong>
+                  Preço médio: <strong>${fmtEUR.format(
+                    precoMedio || 0
+                  )}</strong> ·
+                  Preço atual: <strong>${
+                    precoAtual !== null ? fmtEUR.format(precoAtual) : "—"
+                  }</strong>
                 </p>
                 <p class="muted">
-                  Investido: <strong>${fmtEUR.format(g.investido || 0)}</strong> ·
+                  Investido: <strong>${fmtEUR.format(
+                    g.investido || 0
+                  )}</strong> ·
                   Lucro atual: <strong>${fmtEUR.format(lucroAtual)}</strong>
                 </p>
 
-                ${objetivo > 0 ? `
+                ${
+                  objetivo > 0
+                    ? `
                   <div class="activity-meta">
-                    <span>Objetivo (lucro): <strong>${fmtEUR.format(objetivo)}</strong></span>
+                    <span>Objetivo (lucro): <strong>${fmtEUR.format(
+                      objetivo
+                    )}</strong></span>
                     <span>${pctText}</span>
                   </div>
                   ${barHTML}
                   <p class="muted">
-                    TP2 necessário: <strong>${tp2Necessario ? fmtEUR.format(tp2Necessario) : "—"}</strong>
-                    ${taxa !== null ? `· Estimativa: <strong>${estimativa}</strong>` : ``}
+                    TP2 necessário: <strong>${
+                      tp2Necessario ? fmtEUR.format(tp2Necessario) : "—"
+                    }</strong>
+                    ${
+                      taxa !== null
+                        ? `· Estimativa: <strong>${estimativa}</strong>`
+                        : ``
+                    }
                   </p>
-                ` : `
+                `
+                    : `
                   <p class="muted">Sem objetivo definido para este ticker.</p>
-                `}
+                `
+                }
 
                 ${analysis}
                 ${actions}
@@ -675,7 +765,7 @@ export async function initScreen() {
     wireQuickActions(gruposArr);
 
     // 6) Re-render ao mudar de tema (com guard)
-    if (window.__prtThemeHandler){
+    if (window.__prtThemeHandler) {
       window.removeEventListener("app:theme-changed", window.__prtThemeHandler);
     }
     window.__prtThemeHandler = () => {
@@ -689,6 +779,11 @@ export async function initScreen() {
     };
     window.addEventListener("app:theme-changed", window.__prtThemeHandler);
 
+    // Popup Métricas - Explicação
+    // Ajuda das Métricas: ligar handlers e mostrar ao entrar
+    wirePortfolioHelpModal();
+    showPortfolioHelp(/* force = */ true); // ← abre SEMPRE quando entras neste ecrã
+
     // 7) Auto-clean quando saíres do ecrã
     const observer = new MutationObserver(() => {
       if (!document.getElementById("chartSetores")) {
@@ -699,14 +794,16 @@ export async function initScreen() {
         charts.timeline?.destroy?.();
         charts.divCal?.destroy?.();
         if (window.__prtThemeHandler) {
-          window.removeEventListener("app:theme-changed", window.__prtThemeHandler);
+          window.removeEventListener(
+            "app:theme-changed",
+            window.__prtThemeHandler
+          );
           window.__prtThemeHandler = null;
         }
         observer.disconnect();
       }
     });
-    observer.observe(document.body, { childList:true, subtree:true });
-
+    observer.observe(document.body, { childList: true, subtree: true });
   } catch (e) {
     console.error("Erro ao carregar atividades:", e);
     cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
@@ -717,4 +814,53 @@ export async function initScreen() {
     renderTimeline([]);
     renderDividendoCalendario12m(new Array(12).fill(0));
   }
+}
+
+/* Métricas Popup */
+/* ========= Ajuda das Métricas (popup) ========= */
+const HELP_KEY = "prt.help.dismissed";
+
+function wirePortfolioHelpModal() {
+  const modal   = document.getElementById("prtHelpModal");
+  if (!modal || modal.__wired) return;
+  modal.__wired = true;
+
+  const closeBtn = document.getElementById("prtHelpClose");
+  const okBtn    = document.getElementById("prtHelpOK");
+  const laterBtn = document.getElementById("prtHelpLater");
+  const dontShow = document.getElementById("prtHelpDontShow");
+
+  const close = (persist) => {
+    if (persist && dontShow?.checked) {
+      try { localStorage.setItem(HELP_KEY, "1"); } catch {}
+    }
+    modal.classList.add("hidden");
+  };
+
+  closeBtn?.addEventListener("click", () => close(false));
+  laterBtn?.addEventListener("click", () => close(false));
+  okBtn?.addEventListener("click", () => close(true));
+
+  // fecha ao clicar fora do diálogo
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close(false);
+  });
+
+  // fecha com ESC
+  document.addEventListener("keydown", (e) => {
+    if (modal.classList.contains("hidden")) return;
+    if (e.key === "Escape") close(false);
+  });
+}
+
+function showPortfolioHelp(force = false) {
+  const modal = document.getElementById("prtHelpModal");
+  if (!modal) return;
+  // se NÃO for force e o user marcou "não mostrar", não abre
+  if (!force) {
+    try {
+      if (localStorage.getItem(HELP_KEY) === "1") return;
+    } catch {}
+  }
+  modal.classList.remove("hidden");
 }
