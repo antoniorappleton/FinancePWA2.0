@@ -701,3 +701,56 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
     grid-template-columns: repeat(3, minmax(240px, 1fr));
   }
 }
+/* Wrapper com scroll vertical */
+.table-scroll {
+  max-height: 115vh;     /* ajusta ao teu layout */
+  overflow: auto;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+}
+
+/* Cabeçalho fixo */
+.fine-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--card-bg, #fff);
+  box-shadow: 0 1px 0 rgba(0,0,0,.08);
+}
+
+/* Tabela base (ajusta ao teu design) */
+.fine-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+}
+.fine-table th, .fine-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  white-space: nowrap;
+}
+.fine-table tbody tr:hover {
+  background: var(--row-hover, rgba(0,0,0,.03));
+}
+
+/* Dark mode */
+:root[data-theme="dark"] .fine-table thead th {
+  background: var(--card-bg, #0f172a);
+  box-shadow: 0 1px 0 rgba(255,255,255,.08) inset;
+}
+:root[data-theme="dark"] .fine-table tbody tr:hover {
+  background: rgba(255,255,255,.04);
+}
+
+/* (Opcional) 1ª coluna fixa */
+.fine-table .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 6; /* acima do thead */
+  background: var(--card-bg, #fff);
+  border-right: 1px solid var(--border, #e5e7eb);
+}
+:root[data-theme="dark"] .fine-table .sticky-col {
+  background: var(--card-bg, #0f172a);
+}
