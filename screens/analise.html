@@ -50,44 +50,51 @@
     </div>
   </div>
 
-  <!-- TOOLBAR TABELA -->
   <div class="card">
-    <div class="card-content" style="align-items:stretch; gap:12px;">
-      <div class="analysis-toolbar">
-        <input id="anSearch" type="search" placeholder="Pesquisar por ticker/nome…" />
-        <select id="anFiltroSetor"><option value="">Todos os setores</option></select>
-        <select id="anFiltroMercado"><option value="">Todos os mercados</option></select>
-        <select id="anOrdenar">
-          <option value="ticker.asc">Ticker (A→Z)</option>
-          <option value="yield.desc">Yield ↓</option>
-          <option value="pe.asc">P/E ↑</option>
-          <option value="delta200.desc">Δ200d% ↓</option>
-        </select>
-      </div>
+  <!-- 🔎 TOOLBAR POR CIMA DA TABELA -->
+  <div class="analysis-toolbar">
+    <!-- Linha 1: pesquisa (sempre 100%) -->
+    <div class="toolbar-row">
+      <input id="anSearch" type="search" placeholder="Pesquisar por ticker / nome…" />
+    </div>
 
-      <div class="table-responsive">
-        <table class="analysis-table">
-          <thead>
-            <tr>
-              <th data-sort="ticker">Ticker</th>
-              <th>Nome</th>
-              <th data-sort="yield">Yield</th>
-              <th>Yield 24m</th>
-              <th data-sort="pe">P/E</th>
-              <th>Δ50d%</th>
-              <th data-sort="delta200">Δ200d%</th>
-              <th>1S</th>
-              <th>1M</th>
-              <th>1A</th>
-              <th>Periodicidade</th>
-              <th>Mês típico</th>
-              <th>Notas</th>
-            </tr>
-          </thead>
-          <tbody id="analysisTableBody">
-            <!-- linhas via JS -->
-          </tbody>
-        </table>
+    <!-- Linha 2: filtros + ordenar (100%; em desktop distribui em colunas largas) -->
+    <div class="toolbar-row toolbar-grid">
+      <select id="anFiltroSetor"    title="Filtrar por setor"><option value="">Todos os setores</option></select>
+      <select id="anFiltroMercado"  title="Filtrar por mercado"><option value="">Todos os mercados</option></select>
+      <select id="anOrdenar"        title="Ordenar resultados">
+        <option value="ticker.asc">Ticker (A→Z)</option>
+        <option value="yield.desc">Yield ↓</option>
+        <option value="pe.asc">P/E ↑</option>
+        <option value="delta200.desc">Δ200d% ↓</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+        <div class="table-responsive">
+          <table class="analysis-table">
+            <thead>
+              <tr>
+                <th data-sort="ticker">Ticker</th>
+                <th>Nome</th>
+                <th data-sort="yield">Yield</th>
+                <th>Yield 24m</th>
+                <th data-sort="pe">P/E</th>
+                <th>Δ50d%</th>
+                <th data-sort="delta200">Δ200d%</th>
+                <th>1S</th>
+                <th>1M</th>
+                <th>1A</th>
+                <th>Periodicidade</th>
+                <th>Mês típico</th>
+                <th>Notas</th>
+              </tr>
+            </thead>
+            <tbody id="analysisTableBody"></tbody>
+          </table>
+        </div>
+      </div>
       </div>
     </div>
   </div>
