@@ -1,101 +1,208 @@
-<div class="page" data-screen-title="Análise Fina">
+<div class="page" data-screen-title="Análises">
   <div class="dashboard-header">
-    <p class="subtitle">Métricas detalhadas por ticker — base de dados completa</p>
+    <p class="subtitle">Visão global dos tickers (base de dados)</p>
   </div>
 
-  <!-- KPIs -->
-  <div class="analysis-summary">
-    <div class="card info">
-      <div class="card-content">
-        <div>
-          <p class="label">Nº de Tickers</p>
-          <p class="value" id="anTotalTickers">0</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-database"></i></div>
-      </div>
-    </div>
-    <div class="card success">
-      <div class="card-content">
-        <div>
-          <p class="label">Yield média (amostra)</p>
-          <p class="value" id="anYieldMedia">0%</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-percentage"></i></div>
-      </div>
-    </div>
-    <div class="card premium">
-      <div class="card-content">
-        <div>
-          <p class="label">P/E médio (amostra)</p>
-          <p class="value" id="anPEmedio">0.0</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-balance-scale"></i></div>
-      </div>
-    </div>
+  <!-- FILTROS / PESQUISA -->
+  <!-- TOOLBAR / PESQUISA POR CIMA DA TABELA -->
+<div class="card analysis-toolbar" style="margin-bottom:12px;">
+  <div class="toolbar-row">
+    <label>
+      Pesquisa (Ticker / Nome)
+      <input id="anlSearch" type="search" placeholder="ex.: AAPL, Apple..." />
+    </label>
   </div>
-
-  <!-- GRÁFICOS -->
-  <div class="analysis-charts">
-    <div class="card">
-      <h3>Distribuição por Setor (nº de tickers)</h3>
-      <div class="chart-wrap"><canvas id="anChartSetor"></canvas></div>
-    </div>
-    <div class="card">
-      <h3>Distribuição por Mercado (nº de tickers)</h3>
-      <div class="chart-wrap"><canvas id="anChartMercado"></canvas></div>
-    </div>
-    <div class="card">
-      <h3>Yield vs P/E (scatter)</h3>
-      <div class="chart-wrap"><canvas id="anChartYieldPE"></canvas></div>
-    </div>
-  </div>
-
-  <div class="card">
-  <!-- 🔎 TOOLBAR POR CIMA DA TABELA -->
-  <div class="analysis-toolbar">
-    <!-- Linha 1: pesquisa (sempre 100%) -->
-    <div class="toolbar-row">
-      <input id="anSearch" type="search" placeholder="Pesquisar por ticker / nome…" />
-    </div>
-
-    <!-- Linha 2: filtros + ordenar (100%; em desktop distribui em colunas largas) -->
-    <div class="toolbar-row toolbar-grid">
-      <select id="anFiltroSetor"    title="Filtrar por setor"><option value="">Todos os setores</option></select>
-      <select id="anFiltroMercado"  title="Filtrar por mercado"><option value="">Todos os mercados</option></select>
-      <select id="anOrdenar"        title="Ordenar resultados">
-        <option value="ticker.asc">Ticker (A→Z)</option>
-        <option value="yield.desc">Yield ↓</option>
-        <option value="pe.asc">P/E ↑</option>
-        <option value="delta200.desc">Δ200d% ↓</option>
+  <div class="toolbar-grid">
+    <label>
+      Setor
+      <select id="anlSetor"><option value="">Todos</option></select>
+    </label>
+    <label>
+      Mercado
+      <select id="anlMercado"><option value="">Todos</option></select>
+    </label>
+    <label>
+      Periodicidade
+      <select id="anlPeriodo">
+        <option value="">Todas</option>
+        <option>Mensal</option>
+        <option>Trimestral</option>
+        <option>Semestral</option>
+        <option>Anual</option>
+        <option>n/A</option>
       </select>
+    </label>
+  </div>
+  <div style="margin-top:.6rem;">
+    <button class="btn outline" id="anlReset">Limpar filtros</button>
+  </div>
+</div>
+
+
+  <!-- GRÁFICOS: Setor / Mercado / Top Yield -->
+  <div class="portfolio-charts" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+    <div class="card">
+      <h3>Distribuição por Setor</h3>
+      <div class="chart-wrap"><canvas id="anlChartSetor"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Distribuição por Mercado</h3>
+      <div class="chart-wrap"><canvas id="anlChartMercado"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Top 5 por Yield</h3>
+      <div class="chart-wrap"><canvas id="anlChartTopYield"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CALENDÁRIO DE DIVIDENDOS (12 MESES) -->
+  <div class="card" style="margin-top:12px;">
+    <div class="card-content" style="display:block;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <h3 style="margin:0;">Calendário de Dividendos (12 meses)</h3>
+        <div class="muted" style="font-size:.9rem;">Células preenchidas indicam meses típicos de pagamento; valor ≈ pagamento estimado</div>
+      </div>
+
+      <div class="dividend-heatmap">
+        <div class="heatmap-header">
+          <div class="cell sticky-col"></div>
+          <div class="months">
+            <div class="cell">Jan</div><div class="cell">Fev</div><div class="cell">Mar</div>
+            <div class="cell">Abr</div><div class="cell">Mai</div><div class="cell">Jun</div>
+            <div class="cell">Jul</div><div class="cell">Ago</div><div class="cell">Set</div>
+            <div class="cell">Out</div><div class="cell">Nov</div><div class="cell">Dez</div>
+          </div>
+        </div>
+        <div id="anlHeatmapBody" class="heatmap-body"></div>
+      </div>
+
+      <div class="muted" style="margin-top:6px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="legend-box" style="background:var(--chart-fill-weak)"></span> estimado baixo
+        </span>
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="legend-box" style="background:var(--chart-fill-med)"></span> estimado médio
+        </span>
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="legend-box" style="background:var(--chart-fill-strong)"></span> estimado alto
+        </span>
+      </div>
     </div>
   </div>
 
   <!-- TABELA -->
-        <div class="table-responsive">
-          <table class="analysis-table">
-            <thead>
-              <tr>
-                <th data-sort="ticker">Ticker</th>
-                <th>Nome</th>
-                <th data-sort="yield">Yield</th>
-                <th>Yield 24m</th>
-                <th data-sort="pe">P/E</th>
-                <th>Δ50d%</th>
-                <th data-sort="delta200">Δ200d%</th>
-                <th>1S</th>
-                <th>1M</th>
-                <th>1A</th>
-                <th>Periodicidade</th>
-                <th>Mês típico</th>
-                <th>Notas</th>
-              </tr>
-            </thead>
-            <tbody id="analysisTableBody"></tbody>
-          </table>
-        </div>
-      </div>
+  <div class="card" style="margin-top:12px;">
+  <div class="card-content" style="display:block;">
+    <div class="table-scroll">
+      <table class="fine-table analysis-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Ticker</th>
+              <th>Nome</th>
+              <th>Setor</th>
+              <th>Mercado</th>
+              <th>Yield</th>
+              <th>Yield 24m</th>
+              <th>P/E</th>
+              <th>Δ50d%</th>
+              <th>Δ200d%</th>
+              <th>1S</th>
+              <th>1M</th>
+              <th>1A</th>
+              <th>Periodicidade</th>
+              <th>Mês típico</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody id="anlTableBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
+
+<!-- estilos específicos do heatmap -->
+<style>
+  .dividend-heatmap {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .dividend-heatmap .cell {
+    padding: 8px 10px;
+    border-right: 1px solid var(--border, #e5e7eb);
+    white-space: nowrap;
+  }
+  .dividend-heatmap .heatmap-header {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    background: var(--muted-bg, rgba(0,0,0,.03));
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .dividend-heatmap .months {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(64px, 1fr));
+  }
+  .dividend-heatmap .heatmap-body {
+    max-height: 420px;
+    overflow: auto;
+  }
+  .dividend-heatmap .row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    border-top: 1px solid var(--border, #e5e7eb);
+  }
+  .dividend-heatmap .row .months {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(64px, 1fr));
+  }
+  .dividend-heatmap .sticky-col {
+    position: sticky;
+    left: 0;
+    background: var(--card, #fff);
+    z-index: 2;
+    border-right: 1px solid var(--border, #e5e7eb);
+  }
+
+  /* intensidade por valor estimado por pagamento */
+  :root {
+    --chart-fill-weak:   rgba(34,197,94,.25);
+    --chart-fill-med:    rgba(34,197,94,.55);
+    --chart-fill-strong: rgba(34,197,94,.85);
+  }
+  [data-theme="dark"] {
+    --chart-fill-weak:   rgba(34,197,94,.25);
+    --chart-fill-med:    rgba(34,197,94,.55);
+    --chart-fill-strong: rgba(34,197,94,.85);
+  }
+
+  .cell.pay-weak   { background: var(--chart-fill-weak); }
+  .cell.pay-med    { background: var(--chart-fill-med); }
+  .cell.pay-strong { background: var(--chart-fill-strong); }
+
+  .cell.tt { position: relative; cursor: help; }
+  .cell.tt:hover::after {
+    content: attr(data-tt);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 110%;
+    background: var(--popover, #111);
+    color: #fff;
+    padding: 6px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-size: 12px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* tabela */
+  .table.nice { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .table.nice thead th { position: sticky; top: 0; background: var(--card,#fff); z-index: 3; }
+  .table.nice th, .table.nice td { padding: 10px 12px; border-bottom: 1px solid var(--border, #e5e7eb); }
+  .table.nice .sticky-col { position: sticky; left: 0; background: var(--card,#fff); z-index: 2; }
+  .table-scroll { overflow:auto; border:1px solid var(--border,#e5e7eb); border-radius:12px; }
+</style>
