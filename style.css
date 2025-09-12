@@ -698,6 +698,23 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
   border-radius: 12px;
 }
 .fine-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
+.fine-table th, .fine-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  white-space: nowrap;
+}
+.fine-table thead th { position: sticky; top: 0; z-index: 5; background: var(--card-bg, #fff); box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+.fine-table tbody tr:hover { background: var(--row-hover, rgba(0,0,0,.03)); }
+
+/* 1ª coluna fixa */
+.fine-table .sticky-col {
+  position: sticky; left: 0; z-index: 6;
+  background: var(--card-bg, #fff);
+  border-right: 1px solid var(--border, #e5e7eb);
+}
+
+/* Dark-mode ajustes */
+[data-theme="dark"] .analysis-table thead th{ background:#121212; }
 :root[data-theme="dark"] .fine-table thead th {
   background: var(--card-bg, #0f172a);
   box-shadow: 0 1px 0 rgba(255,255,255,.08) inset;
