@@ -233,7 +233,16 @@ function renderHeatmap(rows) {
   body.removeEventListener("scroll", onScroll);
   body.addEventListener("scroll", onScroll, { passive: true });
 }
+function hookHeatmapScrollSync() {
+  const body = document.getElementById("anlHeatmapBody");
+  const head = document.getElementById("anlHeatmapHeaderScroll");
+  if (!body || !head) return;
 
+  // sincroniza header quando o utilizador faz scroll no body
+  body.addEventListener("scroll", () => {
+    head.scrollLeft = body.scrollLeft;
+  }, { passive: true });
+}
 /* Tabela */
 function renderTable(rows) {
   const tb = document.getElementById("anlTableBody");
@@ -373,6 +382,7 @@ function applyFilters() {
   rows = sortRows(rows);
   renderCharts(rows);
   renderHeatmap(rows);
+  hookHeatmapScrollSync();
   renderTable(rows);
 
   const selAll = document.getElementById("anlSelectAll");
