@@ -1,0 +1,247 @@
+<!-- screens/analise.html -->
+<div class="page" data-screen-title="Análises">
+  <div class="dashboard-header">
+    <p class="subtitle">Visão das Ações em Base Dados</p>
+  </div>
+
+  <!-- TOOLBAR / PESQUISA E FILTROS -->
+  <div class="card analysis-toolbar" style="margin-bottom:12px;">
+    <div class="toolbar-row">
+      <label>
+        Pesquisa (Ticker / Nome)
+        <input id="anlSearch" type="search" placeholder="ex.: AAPL, Apple..." />
+      </label>
+    </div>
+    <div class="toolbar-grid">
+      <label>
+        Setor
+        <select id="anlSetor"><option value="">Todos</option></select>
+      </label>
+      <label>
+        Mercado
+        <select id="anlMercado"><option value="">Todos</option></select>
+      </label>
+      <label>
+        Periodicidade
+        <select id="anlPeriodo">
+          <option value="">Todas</option>
+          <option>Mensal</option>
+          <option>Trimestral</option>
+          <option>Semestral</option>
+          <option>Anual</option>
+          <option>n/A</option>
+        </select>
+      </label>
+    </div>
+    <div style="margin-top:.6rem;">
+      <button class="btn outline" id="anlReset">Limpar filtros</button>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <div class="portfolio-charts" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+    <div class="card">
+      <h3>Distribuição por Setor</h3>
+      <div class="chart-wrap"><canvas id="anlChartSetor"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Distribuição por Mercado</h3>
+      <div class="chart-wrap"><canvas id="anlChartMercado"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Top 5 por Yield</h3>
+      <div class="chart-wrap"><canvas id="anlChartTopYield"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CALENDÁRIO DE DIVIDENDOS -->
+  <div class="card" style="margin-top:12px;">
+    <div class="card-content" style="display:block;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <h3 style="margin:0;">Calendário de Dividendos (12 meses)</h3>
+        <div class="muted" style="font-size:.9rem;">Células preenchidas indicam meses típicos de pagamento; valor ≈ pagamento estimado</div>
+      </div>
+
+      <div class="dividend-heatmap">
+        <div class="heatmap-header">
+          <div class="cell sticky-col"></div>
+          <div class="months">
+            <div class="cell">Jan</div><div class="cell">Fev</div><div class="cell">Mar</div>
+            <div class="cell">Abr</div><div class="cell">Mai</div><div class="cell">Jun</div>
+            <div class="cell">Jul</div><div class="cell">Ago</div><div class="cell">Set</div>
+            <div class="cell">Out</div><div class="cell">Nov</div><div class="cell">Dez</div>
+          </div>
+        </div>
+        <div id="anlHeatmapBody" class="heatmap-body"></div>
+      </div>
+
+      <div class="muted" style="margin-top:6px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="legend-box" style="background:var(--chart-fill-weak)"></span> estimado baixo
+        </span>
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="legend-box" style="background:var(--chart-fill-med)"></span> estimado médio
+        </span>
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="legend-box" style="background:var(--chart-fill-strong)"></span> estimado alto
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+  <div class="card" style="margin-top:12px;">
+    <div class="card-content" style="display:block;">
+
+      <!-- Seleção + Simulador -->
+      <div class="analysis-toolbar" style="padding: .6rem 1rem; border: 0; background: transparent;">
+        <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+          <button class="btn outline" id="anlSimular">Usar no simulador</button>
+          <button class="btn ghost" id="anlClearSel">Limpar seleção</button>
+          <span class="muted">Selecionados: <strong id="anlSelCount">0</strong></span>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="fine-table analysis-table" id="anlTable">
+          <thead>
+            <tr>
+              <th class="sticky-col" style="width:44px">
+                <input type="checkbox" id="anlSelectAll" title="Selecionar todos os filtrados" />
+              </th>
+              <th data-sort="ticker"  class="sortable sticky-col">Ticker</th>
+              <th data-sort="nome"    class="sortable">Nome</th>
+              <th data-sort="setor"   class="sortable">Setor</th>
+              <th data-sort="mercado" class="sortable">Mercado</th>
+              <th data-sort="yield"   class="sortable">Yield</th>
+              <th data-sort="yield24" class="sortable">Yield 24m</th>
+              <th data-sort="divPer"  class="sortable">Dividendo/pag.</th>
+              <th data-sort="divAnual" class="sortable">Dividendo/ano</th>
+              <th data-sort="pe"      class="sortable">P/E</th>
+              <th data-sort="delta50" class="sortable">Δ50d%</th>
+              <th data-sort="delta200"class="sortable">Δ200d%</th>
+              <th data-sort="g1w"     class="sortable">1S</th>
+              <th data-sort="g1m"     class="sortable">1M</th>
+              <th data-sort="g1y"     class="sortable">1A</th>
+              <th data-sort="periodicidade" class="sortable">Periodicidade</th>
+              <th data-sort="mes"     class="sortable">Mês típico</th>
+              <th data-sort="observacao" class="sortable">Notas</th>
+            </tr>
+          </thead>
+          <tbody id="anlTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Simulação (copiado do Dashboard) -->
+<div id="anlSimModal" class="modal hidden">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3>Simular investimento (lucro máximo)</h3>
+      <button class="icon-btn" id="anlSimClose" title="Fechar">✖</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid">
+        <label>
+          Investimento total (€)
+          <input id="anlSimInvest" type="number" min="1" step="0.01" placeholder="Ex.: 1000" />
+        </label>
+        <label>
+          Horizonte (anos)
+          <input id="anlSimHoriz" type="number" min="1" step="1" value="1" />
+        </label>
+        <label>
+          Período de crescimento
+          <select id="anlSimPeriodo">
+            <option value="1s">1 semana</option>
+            <option value="1m" selected>1 mês</option>
+            <option value="1a">1 ano</option>
+          </select>
+        </label>
+        <label style="display:flex; align-items:center; gap:.5rem; margin-top:.6rem;">
+          <input id="anlSimIncluiDiv" type="checkbox" checked />
+          Incluir dividendos no cálculo do lucro
+        </label>
+      </div>
+
+      <div class="actions-row" style="justify-content:flex-end; position:sticky; bottom:0; background:var(--card,#fff); padding-top:8px;">
+        <button class="btn outline" id="anlSimCalcular">Calcular</button>
+        <button class="btn premium" id="anlSimExportar">Exportar para simulador</button>
+      </div>
+
+      <div id="anlSimResultado" style="margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- estilos do heatmap + modal -->
+<style>
+  .dividend-heatmap { border: 1px solid var(--border, #e5e7eb); border-radius: 12px; overflow: hidden; }
+  .dividend-heatmap .cell { padding: 8px 10px; border-right: 1px solid var(--border, #e5e7eb); white-space: nowrap; }
+  .dividend-heatmap .heatmap-header { display: grid; grid-template-columns: 220px 1fr; background: var(--muted-bg, rgba(0,0,0,.03)); position: sticky; top: 0; z-index: 1; }
+  .dividend-heatmap .months { display: grid; grid-template-columns: repeat(12, minmax(64px, 1fr)); }
+  .dividend-heatmap .heatmap-body { max-height: 420px; overflow: auto; }
+  .dividend-heatmap .row { display: grid; grid-template-columns: 220px 1fr; border-top: 1px solid var(--border, #e5e7eb); }
+  .dividend-heatmap .row .months { display: grid; grid-template-columns: repeat(12, minmax(64px, 1fr)); }
+  .dividend-heatmap .sticky-col { position: sticky; left: 0; background: var(--card, #fff); z-index: 2; border-right: 1px solid var(--border, #e5e7eb); }
+  .dividend-heatmap .tt { position: relative; }
+  .dividend-heatmap .tt:hover::after {
+    content: attr(data-tt);
+    position: absolute; bottom: 100%; left: 0; transform: translateY(-4px);
+    background: rgba(0,0,0,.85); color:#fff; font-size: 12px; padding: 6px 8px; border-radius: 6px; white-space: nowrap;
+  }
+  .pay-weak{ background: rgba(34,197,94,.18); }
+  .pay-med{ background: rgba(34,197,94,.38); }
+  .pay-strong{ background: rgba(34,197,94,.58); color:#fff; }
+
+  #anlTable thead th.sortable { cursor:pointer; user-select:none; }
+  #anlTable thead th.sorted-asc::after { content:" ↑"; opacity:.7; }
+  #anlTable thead th.sorted-desc::after { content:" ↓"; opacity:.7; }
+
+  .badge { display:inline-block; padding:2px 6px; border-radius:999px; font-size:.75rem; }
+  .badge.ok{ background:#e6f7ee; color:#106f3a; }
+  .badge.warn{ background:#fff3cd; color:#7c5b00; }
+  .badge.danger{ background:#fde2e2; color:#8a1f1f; }
+  .badge.muted{ background:#f2f2f2; color:#666; }
+  .badge.up{ background:#e6f7ee; color:#106f3a; }
+  .badge.down{ background:#fde2e2; color:#8a1f1f; }
+
+  .up{ color:#106f3a; }
+  .down{ color:#8a1f1f; }
+
+  /* Modal (scroll e dark-mode) */
+  .modal.hidden{ display:none; }
+  .modal{ position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; }
+  .modal-dialog{
+    width:min(780px,92vw); max-height:90vh;
+    display:flex; flex-direction:column;
+    border-radius:14px; overflow:hidden;
+    background:var(--card,#fff); color:var(--card-foreground,#111);
+    border:1px solid var(--border,#e5e7eb); box-shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  .modal-header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 16px; border-bottom:1px solid var(--border,#e5e7eb);
+    background:var(--background,#fff);
+    position:sticky; top:0; z-index:2;
+  }
+  .modal-body{ padding:14px 16px; overflow:auto; }
+  .icon-btn{ background:transparent; border:0; font-size:18px; cursor:pointer; color:inherit; }
+  #anlSimModal .form-grid input, #anlSimModal .form-grid select{
+    padding:.6rem .7rem; border-radius:10px;
+    border:1px solid var(--border,#e5e7eb);
+    background:var(--card,#fff); color:var(--card-foreground,#111);
+  }
+  [data-theme="dark"] .modal-dialog{ background:#111; color:#fff; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] .modal-header{ background:#111; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] #anlSimModal .form-grid input, 
+  [data-theme="dark"] #anlSimModal .form-grid select{
+    background:#1a1a1a; color:#eee; border-color:rgba(255,255,255,.12);
+  }
+  .tabela-scroll-wrapper{ overflow:auto; }
+</style>
+
+<script type="module" src="./analise.js"></script>

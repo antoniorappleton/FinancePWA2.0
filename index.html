@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="theme-color" content="#4CAF50" />
+    <title>APPFinance</title>
+  </head>
+  <body class="auth-screen">
+    
+    <!-- HEADER COM TÍTULO E LOGO -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 id="screenTitle"></h1>
+      </div>
+      <div class="header-right">
+        <img src="icons/icon-192.png" alt="Logo" class="header-logo" />
+      </div>
+    </header>
+
+    <div id="screenContainer">A carregar...</div>
+    <footer class="footer-nav">
+      <button onclick="navigateTo('dashboard')">
+        <i class="fas fa-clock"></i><span>Dashboard</span>
+      </button>
+      <button onclick="navigateTo('simulador')">
+        <i class="fas fa-calculator"></i><span>Simulador</span>
+      </button>
+      <button onclick="navigateTo('atividade')">
+        <i class="fas fa-chart-line"></i><span>Portfólio</span>
+      </button>
+      <button onclick="navigateTo('analise')">
+        <i class="fas fa-dollar"></i><span>Mercado</span>
+      </button>
+      <button onclick="navigateTo('settings')">
+        <i class="fas fa-cog"></i><span>Configurações</span>
+      </button>
+    </footer>
+
+    <!-- Apenas um script principal (com type="module") -->
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

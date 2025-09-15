@@ -1,0 +1,36 @@
+<!-- screens/auth.html -->
+<section class="page" data-screen-title="Autenticação">
+  <div style="max-width: 420px; margin: 24px auto;">
+    <div class="card">
+      <div class="card-content" style="align-items:flex-start; gap:12px;">
+        <div>
+          <div class="label"></div>
+          <div class="value" style="font-size:1.4rem;">Entrar ou criar conta</div>
+          <div class="subvalue">Acede ao teu portefólio e simuladores especializados.</div>
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-top:12px;">
+        <div style="grid-column:1 / -1;">
+          <label class="label" for="authEmail">Email</label>
+          <input id="authEmail" type="email" placeholder="ex: nome@exemplo.com" required />
+        </div>
+        <div style="grid-column:1 / -1;">
+          <label class="label" for="authPassword">Palavra-passe</label>
+          <input id="authPassword" type="password" placeholder="••••••••" required />
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button id="btnSignIn" class="btn premium full">Entrar</button>
+        <button id="btnRegister" class="btn outline full">Criar conta</button>
+        <button id="btnGoogle" class="btn ghost full">
+          <i class="fa-brands fa-google"></i> Entrar com Google
+        </button>
+        <button id="btnReset" class="btn ghost full">Recuperar palavra-passe</button>
+      </div>
+
+      <div id="authMsg" class="subvalue" style="margin-top:6px;"></div>
+    </div>
+  </div>
+</section>

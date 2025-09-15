@@ -1,0 +1,207 @@
+<div class="dashboard" data-screen-title="Dashboard">
+  <div class="dashboard-header">
+    <div class="dashboard-title">
+      <p class="subtitle">Visão geral do seu portfólio de investimentos</p>
+    </div>
+  </div>
+
+  <div class="metrics-grid">
+    <div class="card premium">
+      <div class="card-content">
+        <div>
+          <p class="label">Valor Total Investido</p>
+          <p class="value valor-total" id="valorTotal">€0.00</p>
+          <p id="valorCarteira" class="subvalue muted">—</p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-coins"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card success">
+      <div class="card-content">
+        <div>
+          <p class="label">Retorno Total</p>
+          <p class="value retorno-total" id="retornoTotal">0%</p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-chart-line"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card info">
+      <div class="card-content">
+        <div>
+          <p class="label">Lucro Total</p>
+          <p class="value lucro-total" id="lucroTotal">€0.00</p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-wallet"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card default">
+      <div class="card-content">
+        <div>
+          <p class="label">Posições Ativas</p>
+          <p class="value posicoes-ativas" id="posicoesAtivas">0</p>
+          <p class="subvalue">
+            Objetivos:
+            <span class="objetivos-financeiros" id="objetivosFinanceiros">0/0</span>
+          </p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-bullseye"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="card warning">
+      <div class="card-content">
+        <div>
+          <p class="label">Taxa de Sucesso</p>
+          <p class="value taxa-sucesso" id="taxaSucesso">0%</p>
+          <p class="subvalue">Objetivo Total: <span id="objetivoTotal">€0.00</span></p>
+        </div>
+        <div class="icon-box">
+          <i class="fas fa-rocket"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-columns">
+    <div class="card glass">
+      <h3>Atividade Recente (compra/venda)</h3>
+      <div id="atividadeRecente"></div>
+      <button class="btn outline full" onclick="navigateTo('atividade')">
+        Ver Toda Atividade
+      </button>
+    </div>
+
+    <div class="card glass">
+      <h3>Ações Rápidas</h3>
+      <button class="btn premium full" id="btnDashBuy">Registar Compra</button>
+      <button class="btn outline full" id="btnOportunidades">Analisar Oportunidades</button>
+      <button class="btn outline full" id="btnAddAcao">Adicionar Ação</button>
+      <!-- ❌ Removido: <button class="btn ghost full" id="btnObjetivo">Planear investimento</button> -->
+    </div>
+  </div>
+
+  <!-- POPUP: Top 10 Oportunidades -->
+  <div id="opModal" class="modal hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Top 10 Oportunidades</h3>
+        <button class="icon-btn" id="opClose" title="Fechar">✖</button>
+      </div>
+
+      <div class="modal-toolbar">
+        <button class="chip" data-periodo="1s">1 semana</button>
+        <button class="chip" data-periodo="1m">1 mês</button>
+        <button class="chip" data-periodo="1ano">1 ano</button>
+      </div>
+
+      <div class="top10-box">
+        <ul id="listaTop10"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Adicionar Ação -->
+  <div id="addModal" class="modal hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Adicionar Ação</h3>
+        <button class="icon-btn" id="addClose" title="Fechar">✖</button>
+      </div>
+
+      <form id="addForm" style="padding:14px 16px">
+        <div class="form-grid">
+          <label>
+            Tipo de operação
+            <select id="tipoAcao" required>
+              <option value="compra" selected>Compra</option>
+              <option value="venda">Venda</option>
+            </select>
+          </label>
+
+          <label>
+            Nome
+            <input id="nomeAtivo" type="text" placeholder="Ex.: Apple Inc." required />
+          </label>
+
+          <label>
+            Ticker
+            <input id="tickerAtivo" type="text" placeholder="Ex.: AAPL" required />
+          </label>
+
+          <label>
+            Setor
+            <select id="setorAtivo" required>
+              <option value="">Selecione um Setor</option>
+              <option value="ETF iTech">ETF iTech</option>
+              <option value="ETF Finance">ETF Finance</option>
+              <option value="ETF Energia">ETF Energia</option>
+              <option value="ETF Materiais">ETF Materiais</option>
+              <option value="Alimentação">Alimentação</option>
+              <option value="Automóvel">Automóvel</option>
+              <option value="Bens Consumidor">Bens Consumidor</option>
+              <option value="Consumo Cíclico">Consumo Cíclico</option>
+              <option value="Consumo Defensivo">Consumo Defensivo</option>
+              <option value="Criptomoedas">Criptomoedas</option>
+              <option value="Defesa">Defesa</option>
+              <option value="Energia">Energia</option>
+              <option value="Finanças">Finanças</option>
+              <option value="Imobiliário">Imobiliário</option>
+              <option value="Indústria">Indústria</option>
+              <option value="Infraestruturas / Energia">Infraestruturas / Energia</option>
+              <option value="Materiais">Materiais</option>
+              <option value="Mineração (Ouro)">Mineração (Ouro)</option>
+              <option value="Restauração">Restauração</option>
+              <option value="Saúde">Saúde</option>
+              <option value="Tecnologia">Tecnologia</option>
+              <option value="Telecomunicações">Telecomunicações</option>
+            </select>
+          </label>
+
+          <label>
+            Mercado
+            <select id="mercadoAtivo" required>
+              <option value="">Seleciona o Mercado</option>
+              <option value="Portugal">Portugal</option>
+              <option value="Europeu">Europeu</option>
+              <option value="Americano">Americano</option>
+              <option value="Americano SP500">Americano SP500</option>
+            </select>
+          </label>
+
+          <label>
+            Quantidade
+            <input id="quantidadeAtivo" type="number" step="0.0001" min="0.0001" required />
+          </label>
+
+          <label id="labelPreco">
+            Preço da transação (€)
+            <input id="precoAtivo" type="number" step="0.0001" min="0" required />
+          </label>
+
+          <label>
+            Objetivo financeiro (€) <small class="muted">(opcional)</small>
+            <input id="objetivoAtivo" type="number" step="0.01" min="0" />
+          </label>
+        </div>
+
+        <div class="actions-row" style="margin-top:12px">
+          <button type="submit" class="btn premium">Guardar</button>
+          <button type="button" class="btn outline" id="addCancel">Cancelar</button>
+        </div>
+
+        <p class="muted" style="margin-top:8px">A data/hora é registada automaticamente.</p>
+      </form>
+    </div>
+  </div>
+</div>

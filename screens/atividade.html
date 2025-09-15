@@ -1,0 +1,149 @@
+<div class="page" data-screen-title="Portfólio">
+  <div class="dashboard-header">
+    <p class="subtitle">Todos os ativos em carteira</p>
+  </div>
+
+  <!-- 🧭 KPIs -->
+  <div class="portfolio-summary">
+    <div class="card premium">
+      <div class="card-content">
+        <div>
+          <p class="label">Valor Total Investido</p>
+          <p class="value" id="prtTotalInvestido">€0,00</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-coins"></i></div>
+      </div>
+    </div>
+
+    <div class="card success">
+      <div class="card-content">
+        <div>
+          <p class="label">Dividendos anuais esperado</p>
+          <p class="value" id="prtRendimentoAnual">€0,00</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-wallet"></i></div>
+      </div>
+    </div>
+
+    <div class="card info">
+      <div class="card-content">
+        <div>
+          <p class="label">Retorno global (P/L%)</p>
+          <p class="value" id="prtRetorno">0%</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+      </div>
+    </div>
+
+    <div class="card default">
+      <div class="card-content">
+        <div>
+          <p class="label">Exposição acima da SMA200</p>
+          <p class="value" id="prtExpSMA200">0%</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-trending-up"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📈 GRÁFICOS (linha 1: Setores + Mercado) -->
+  <div class="portfolio-charts">
+    <div class="card">
+      <h3>Distribuição por Setores</h3>
+      <div class="chart-wrap"><canvas id="chartSetores"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h3>Distribuição por Mercado</h3>
+      <div class="chart-wrap"><canvas id="chartMercados"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 📈 GRÁFICOS (linha 2: Top5 Investido + Top5 Yield) -->
+  <div class="portfolio-charts">
+    <div class="card">
+      <h3>Top 5 por Valor Investido</h3>
+      <div class="chart-wrap"><canvas id="chartTop5"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h3>Top 5 por Yield</h3>
+      <div class="chart-wrap"><canvas id="chartTop5Yield"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 📈 GRÁFICOS (linha 3: Timeline + Calendário Dividendos) -->
+  <div class="portfolio-charts">
+    <div class="card">
+      <h3>Evolução (Investido vs Avaliação Atual)</h3>
+      <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h3>Calendário de Dividendos (12 meses)</h3>
+      <div class="chart-wrap"><canvas id="chartDivCalendario"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 🔎 LISTA -->
+  <div id="listaAtividades"></div>
+</div>
+
+<!-- Modal QUICK BUY/SELL (mantém o teu modal existente) -->
+<!-- ... o teu #pfAddModal aqui, sem alterações ... -->
+<!-- 📘 Ajuda das Métricas -->
+<div id="prtHelpModal" class="modal hidden">
+  <!-- nota: acrescentei a classe prt-help-dialog -->
+  <div class="modal-dialog prt-help-dialog">
+    <div class="modal-header">
+      <h3>Como ler este ecrã</h3>
+      <button class="icon-btn" id="prtHelpClose" title="Fechar">✖</button>
+    </div>
+
+    <!-- corpo rolável -->
+    <div class="help-body">
+      <div class="page" style="padding:14px">
+        <div class="muted" style="display:grid; gap:.6rem; line-height:1.4">
+          <div><strong>Valor Total Investido</strong> — soma de todo o capital investido nas posições ativas.</div>
+          <div><strong>Rendimento anual esperado</strong> — estimativa: Σ(qtd × dividendo × pagamentos/ano) por ativo, de acordo com a periodicidade.</div>
+          <div><strong>Retorno global (P/L%)</strong> — (Avaliação atual − Investido) / Investido.</div>
+          <div><strong>Exposição acima da SMA200</strong> — percentagem do portefólio (ponderada pelo investidor) com preço acima da média móvel 200.</div>
+
+          <hr>
+
+          <div><strong>Distribuição por Setores / Mercado</strong> — donuts com o peso investido por categoria.</div>
+          <div><strong>Top 5 por Investido</strong> — barras com as maiores posições (investido e lucro atual).</div>
+          <div><strong>Top 5 por Yield</strong> — barras horizontais ordenadas por dividend yield atual.</div>
+          <div><strong>Evolução</strong> — linha “Investido acumulado” vs “Avaliação atual”.</div>
+          <div><strong>Calendário de Dividendos (12m)</strong> — soma estimada de € por mês, com base no mês típico e periodicidade.</div>
+
+          <hr>
+
+          <div><strong>Badges por ativo</strong>:
+            <ul style="margin:.3rem 0 0 1.1rem">
+              <li><em>Yield</em> (dividendo/valorStock) e <em>Yield 24m</em> (média 24m) → indica se está ↑ acima ou ↓ abaixo da média.</li>
+              <li><em>P/E</em> (faixas: &lt;15 barato, 15–25 justo, &gt;25 caro).</li>
+              <li><em>Δ50d / Δ200d</em> — variação vs. SMA 50/200.</li>
+              <li><em>Semáforo</em> — tendência rápida (🟢/🟡/🔴) com base em SMA200 e crescimento de 1 mês.</li>
+              <li><em>TP2 &amp; ETA</em> — preço alvo e estimativa de tempo para lá chegar (usando a melhor taxa disponível).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ações fixas em baixo -->
+    <div class="actions-row help-actions" style="justify-content:space-between">
+      <label class="muted" style="display:flex; align-items:center; gap:.5rem">
+        <input type="checkbox" id="prtHelpDontShow">
+        Não mostrar novamente neste dispositivo
+      </label>
+
+      <div>
+        <button class="btn outline" id="prtHelpLater">Fechar</button>
+        <button class="btn premium" id="prtHelpOK">Percebi</button>
+      </div>
+    </div>
+  </div>
+</div>
+

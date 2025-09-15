@@ -1,0 +1,749 @@
+/* =========================================================
+   APPFinance – style.css (versão consolidada e limpa)
+   - Modal "Definir Objetivo" compatível com o teu HTML (goal-wizard)
+   - Auth screen (login): 1 coluna no mobile + footer escondido
+   ========================================================= */
+
+/* ---------- Core tokens ---------- */
+:root{
+  --background:#fff;
+  --foreground:hsl(0 0% 4%);
+  --card:#fff;
+  --card-foreground:hsl(0 0% 4%);
+  --primary:hsl(0 0% 9%);
+  --primary-foreground:hsl(0 0% 98%);
+  --muted:hsl(0 0% 96.1%);
+  --muted-foreground:hsl(0 0% 45.1%);
+  --border:hsl(0 0% 89.8%);
+  --radius:.75rem;
+  --shadow-card:0 4px 20px -2px rgba(0,0,0,.1);
+  --transition:all .3s ease;
+}
+
+*,
+*::before,
+*::after{ box-sizing:border-box; }
+
+html,body{ overflow-y:scroll; }
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial;
+  background:var(--background);
+  color:var(--foreground);
+}
+
+/* ---------- Layout base ---------- */
+#screenContainer{ padding-bottom:90px; } /* espaço p/ o footer */
+.page{ padding:1.5rem; padding-bottom:90px; }
+
+/* ---------- Header fixo com logo ---------- */
+.app-header{
+  position:sticky; top:0; z-index:10;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:.75rem 1rem; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.08);
+}
+.app-header h1{ margin:0; font-size:1.6rem; }
+.header-logo{ width:48px; height:48px; object-fit:contain; }
+@media (max-width:600px){
+  .app-header h1{ font-size:1.2rem; }
+  .header-logo{ width:36px; height:36px; }
+}
+
+/* ---------- Dashboard ---------- */
+.dashboard{ padding:1.5rem; }
+.dashboard-header{ margin-bottom:1.5rem; }
+.dashboard-header h1{ font-size:1.8rem; margin:0; }
+.subtitle{ color:var(--muted-foreground); font-size:.95rem; }
+
+.metrics-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1rem; margin-bottom:2rem;
+}
+.card{
+  background:var(--card); color:var(--card-foreground);
+  padding:1rem; border-radius:var(--radius); box-shadow:var(--shadow-card);
+  transition:var(--transition);
+}
+.card-content{ display:flex; justify-content:space-between; align-items:center; }
+.label{ font-size:.85rem; color:var(--muted-foreground); }
+.value{ font-size:1.25rem; font-weight:700; }
+.subvalue{ font-size:.8rem; color:var(--muted-foreground); }
+.icon-box{
+  background:var(--muted); padding:.6rem; border-radius:var(--radius); font-size:1.2rem;
+}
+.card.premium .icon-box{ background:hsl(0 0% 95%); }
+.card.success .icon-box{ background:hsl(142 69% 92%); }
+.card.info    .icon-box{ background:hsl(0 0% 92%); }
+.card.default .icon-box{ background:hsl(0 0% 90%); }
+
+/* Colunas inferiores (Atividade / Ações rápidas) */
+.dashboard-columns{
+  display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+}
+
+/* ---------- Activity list ---------- */
+.tag{display:inline-block;font-size:.75rem;padding:2px 6px;border-radius:999px;margin-right:6px}
+.tag.compra{background:#e7f7ee;color:#117a39}
+.tag.venda{background:#ffe5e5;color:#a52121}
+
+.activity-item{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:.75rem; margin-bottom:.6rem;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+}
+.activity-left{ display:flex; gap:.75rem; align-items:flex-start; }
+.activity-icon{
+  display:inline-flex; width:36px; height:36px; align-items:center; justify-content:center;
+  border-radius:50%; background:var(--muted); font-size:1rem;
+}
+.muted{ font-size:.85rem; color:var(--muted-foreground); }
+.date{ font-size:.75rem; color:var(--muted-foreground); }
+
+/* meta + barra */
+.activity-meta{
+  margin-top:6px; font-size:.85rem; color:var(--muted-foreground);
+  display:flex; justify-content:space-between; gap:.5rem;
+}
+
+/* ---------- Barra “zero ao meio” ---------- */
+.progress-dual{ margin-top:6px; }
+.progress-dual .track{
+  position:relative; height:10px; border-radius:999px; overflow:hidden;
+  background:linear-gradient(90deg,#ffe5e5 0%,#ffe5e5 50%,#e7f7ee 50%,#e7f7ee 100%);
+}
+.progress-dual .zero{
+  position:absolute; left:50%; top:-3px; bottom:-3px; width:2px;
+  transform:translateX(-1px); background:rgba(0,0,0,.25);
+}
+.progress-dual .fill{
+  position:absolute; top:0; height:100%;
+  transition:width .35s ease;
+}
+.progress-dual .fill.positive{ left:50%;  background:#22c55e; }
+.progress-dual .fill.negative{ right:50%; background:#ef4444; }
+
+/* ---------- Botões ---------- */
+.btn{
+  padding:.6rem 1rem; font-size:.9rem; border-radius:var(--radius);
+  cursor:pointer; transition:var(--transition); margin-top:.6rem;
+}
+.btn.full{ width:100%; text-align:center; }
+.btn.premium{ background:var(--primary); color:var(--primary-foreground); border:none; }
+.btn.outline{ background:transparent; border:1px solid var(--border); color:var(--foreground); }
+.btn.ghost{ background:transparent; color:var(--muted-foreground); border:none; }
+.btn.dark{ background:#111; color:#fff; border:none; box-shadow:0 4px 20px -2px rgba(0,0,0,.2); }
+.btn.dark:hover{ background:#333; }
+
+/* ---------- Footer ---------- */
+.footer-nav{
+  position:fixed; left:0; right:0; bottom:0; z-index:999;
+  display:flex; justify-content:space-around; align-items:stretch; gap:0;
+  padding:6px 8px calc(env(safe-area-inset-bottom,0) + 6px);
+  background:var(--background); border-top:1px solid var(--border);
+  box-shadow:0 -2px 10px rgba(0,0,0,.12);
+}
+.footer-nav button{
+  flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; padding:8px 4px; border:0; background:transparent;
+  font-size:12px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.footer-nav button i{ font-size:18px; }
+@media (hover:hover){ .footer-nav button:hover{ background:var(--muted); border-radius:10px; } }
+@media (max-width:380px){
+  .footer-nav{ padding:4px 6px calc(env(safe-area-inset-bottom,0)+4px); }
+  .footer-nav button{ font-size:11px; padding:6px 2px; }
+  .footer-nav button i{ font-size:16px; }
+}
+
+/* ---------- Simulador ---------- */
+.sim-layout{ display:grid; grid-template-columns:260px 1fr; gap:1rem; padding:1rem; }
+.sim-sidebar{ display:flex; flex-direction:column; gap:.6rem; }
+.sim-content{ min-height:400px; }
+
+.panel{
+  display:none; background:var(--card); border-radius:var(--radius);
+  box-shadow:var(--shadow-card); padding:1rem;
+}
+.panel.active{ display:block; }
+
+.actions-row{ display:flex; gap:.5rem; flex-wrap:wrap; margin:.6rem 0 1rem; }
+.form-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:.6rem; margin:.8rem 0;
+}
+.form-grid input{
+  padding:.6rem .7rem; border-radius:var(--radius); border:1px solid var(--border);
+}
+.quick-buttons{ display:flex; gap:.5rem; margin:.4rem 0 .8rem; }
+
+.tabela-scroll-wrapper{ overflow-x:auto; margin-top:.6rem; }
+#tabelaSimulacoes{ width:100%; border-collapse:collapse; }
+#tabelaSimulacoes th,#tabelaSimulacoes td{ border-bottom:1px solid var(--border); padding:.5rem; text-align:left; }
+
+/* Chart container */
+.chart-wrap{ width:100%; height:300px; }
+.chart-wrap canvas{ display:block; width:100% !important; height:100% !important; }
+
+/* Mobile (global) – pode usar botões 50% */
+@media (max-width:820px){
+  .sim-layout{ grid-template-columns:1fr; }
+  .sim-sidebar{ flex-direction:row; flex-wrap:wrap; }
+  .btn.full{ width:auto; flex:1 1 calc(50% - .6rem); text-align:center; }
+}
+
+/* ---------- Modal base ---------- */
+.modal.hidden{ display:none; }
+.modal{
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(0,0,0,.45); backdrop-filter:blur(2px);
+  display:flex; align-items:center; justify-content:center;
+}
+.modal-dialog{
+  width:min(680px,92vw); max-height:80vh; overflow:hidden;
+  background:#111; color:#fff; border-radius:14px;
+  box-shadow:0 8px 30px rgba(0,0,0,.4);
+  display:flex; flex-direction:column;
+}
+.modal-header{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.08);
+}
+.icon-btn{ background:transparent; border:0; color:#aaa; font-size:18px; cursor:pointer; }
+.icon-btn:hover{ color:#fff; }
+.modal-toolbar{ display:flex; gap:8px; padding:12px 16px; flex-wrap:wrap; }
+.chip{
+  background:#1c1c1c; color:#ddd; border:1px solid rgba(255,255,255,.08);
+  border-radius:999px; padding:6px 12px; cursor:pointer;
+}
+.chip.active,.chip:hover{ background:#2a2a2a; color:#fff; }
+
+/* (estilos antigos .top10-box mantidos p/ retrocompatibilidade) */
+.top10-box{ padding:8px 16px 16px; overflow:auto; }
+.top10-box ul{ list-style:none; margin:0; padding:0; }
+.top10-box li{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1px dashed rgba(255,255,255,.08);
+}
+.top10-box .left{ display:flex; gap:8px; align-items:baseline; }
+.top10-box .ticker{ color:#aaa; font-size:.9rem; }
+.top10-box .gain{ color:#5cd690; font-weight:600; }
+.top10-box .loss{ color:#f27575; font-weight:600; }
+
+/* ---------- Atividade (página completa) ---------- */
+.atividade-completa{ padding:20px; }
+.atividade-lista{ display:flex; flex-direction:column; gap:10px; }
+.atividade-item{
+  border:1px solid #ddd; padding:12px; border-radius:8px; background:#f9f9f9;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.atividade-item .muted{ color:#666; font-size:.9em; }
+.atividade-item .date{ font-size:.8em; color:#aaa; }
+
+/* ---------- Dropdown ---------- */
+select{
+  width:100%; padding:8px 12px; border:1px solid var(--border-color,#ccc);
+  border-radius:8px; background-color:var(--input-bg,#fff); color:var(--text-color,#333);
+  font-size:14px; appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat:no-repeat; background-position:right 10px center; background-size:16px 16px;
+  transition:border-color .2s, box-shadow .2s;
+}
+select:focus{ border-color:var(--accent-color,#0099ff); box-shadow:0 0 0 3px rgba(0,153,255,.15); outline:none; }
+
+/* ---------- Botões outline/ghost ---------- */
+.btn.outline,
+.btn.ghost{
+  border:1.5px solid #000; color:#000; background-color:transparent;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  transition:all .2s ease-in-out;
+}
+.btn.outline:hover,
+.btn.ghost:hover{
+  background-color:rgba(0,0,0,.05);
+  box-shadow:0 4px 10px rgba(0,0,0,.25);
+  transform:translateY(-1px);
+}
+.btn.outline:active,
+.btn.ghost:active{ transform:translateY(0); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+
+/* ---------- Botões do popup dentro do form-grid ---------- */
+#goalModal .form-grid button{
+  min-height:38px; padding:6px 12px; font-size:.9rem; border-radius:8px;
+}
+#goalModal .btn.outline{ border:1px solid #000; color:#000; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,.15); }
+#goalModal .btn.ghost{ border:1px solid transparent; color:#555; background:#f9f9f9; box-shadow:0 2px 5px rgba(0,0,0,.05); }
+
+/* =========================================================
+   OVERRIDES (colocar sempre no fim)
+   ========================================================= */
+
+/* --- Auth: esconder footer e forçar 1 coluna --- */
+body.auth-screen .footer-nav{ display:none !important; }
+body.auth-screen .actions-row{ display:flex; flex-direction:column; flex-wrap:nowrap; gap:.6rem; }
+body.auth-screen .btn.full{ width:100% !important; flex:0 0 auto !important; }
+body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
+
+/* --- Definir Objetivo: com o teu HTML (goal-wizard) --- */
+#goalModal{
+  --goal-header-h:56px;   /* .modal-header */
+  --actions-h:58px;       /* barra de botões inferior */
+  --selbar-h:46px;        /* barra Selecionadas (mobile) */
+}
+#goalModal .modal-dialog.modal-goal{ display:flex; flex-direction:column; max-height:92vh; }
+#goalModal .goal-wizard{
+  flex:1 1 auto; overflow:auto; padding:8px 16px 12px;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* Passo 2 – 2 colunas no desktop */
+#goalModal .goal-step[data-step="2"]{ display:flex; flex-direction:column; min-height:0; }
+#goalModal .goal-step[data-step="2"] .goal-columns-2{
+  display:grid; grid-template-columns:1.1fr 0.9fr; gap:12px; min-height:0;
+}
+#goalModal .goal-step[data-step="2"] .goal-list-wrap{
+  overflow:auto; min-height:260px; border:1px solid rgba(255,255,255,.08); border-radius:10px;
+}
+#goalModal .goal-step[data-step="2"] .goal-selected{
+  background:#1a1a1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px;
+}
+
+/* Lista do passo 2: texto + ação à direita */
+#goalModal .goal-list{ list-style:none; margin:0; padding:0; }
+#goalModal .goal-list li{
+  display:grid; grid-template-columns:1fr auto; align-items:center;
+  gap:12px; padding:10px 12px; border-bottom:1px dashed rgba(255,255,255,.08);
+}
+#goalModal .goal-list li .right{ min-width:40px; display:flex; align-items:center; justify-content:center; }
+#goalModal .goal-toggle{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06);
+}
+#goalModal .goal-toggle:hover{ filter:brightness(1.08); }
+
+/* Responsivo */
+@media (max-width: 900px){
+  #goalModal .goal-grid{ grid-template-columns: 1fr; }
+  #goalResultado{ max-height: 50vh; }
+}
+/* quando queremos ver apenas o resultado */
+#goalModal.goal-show-results .goal-grid { display: none; }     /* esconde filtros + lista */
+#goalModal.goal-show-results #goalResultado{
+  display: block;
+  grid-column: 1 / -1;
+  height: auto;
+  max-height: calc(90vh - 64px);
+  overflow: auto;
+  margin-top: 0;
+}
+
+/* barra fixa com X para voltar */
+.goal-results-bar{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(10,10,12,.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.goal-results-bar .title{ font-weight: 600; opacity: .95; }
+
+/* botão X */
+.icon-btn.close{
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  font-size: 20px; line-height: 1;
+  display: grid; place-items: center;
+}
+.icon-btn.close:hover{ filter: brightness(1.08); }
+
+/* =========================================================
+   DARK MODE — header, botões, ícones, inputs, footer
+   (aplicar no fim do ficheiro para ter precedência)
+   ========================================================= */
+
+[data-theme="dark"]{
+  /* Paleta base */
+  --background:#0b0e13;
+  --foreground:#e8edf3;
+
+  --card:#111418;
+  --card-foreground:#e8edf3;
+
+  --muted:#171b21;
+  --muted-foreground:#9aa7b5;
+
+  --border:#242c36;
+
+  --primary:#e8edf3;                 /* texto claro */
+  --primary-foreground:#0b0e13;      /* para CTAs sólidos */
+}
+
+/* Header escuro + texto/ícones brancos */
+[data-theme="dark"] .app-header{
+  background:var(--card);
+  color:var(--card-foreground);
+  border-bottom:1px solid var(--border);
+  box-shadow:none;
+}
+[data-theme="dark"] .app-header h1{ color:var(--card-foreground); }
+/* se o teu logo for escuro, comenta a linha abaixo; caso contrário mantém */
+[data-theme="dark"] .header-logo{ filter: brightness(0) invert(1); }
+
+/* Cards e elementos de UI */
+[data-theme="dark"] .card{
+  background:var(--card);
+  color:var(--card-foreground);
+  border:1px solid var(--border);
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+[data-theme="dark"] .icon-box{
+  background:rgba(255,255,255,.08);
+  color:#fff;
+}
+
+/* Listas/modais que já estavam escuros continuam coerentes */
+[data-theme="dark"] .modal-dialog{ background:#111418; color:#e8edf3; }
+[data-theme="dark"] .modal-header{ border-bottom:1px solid var(--border); }
+[data-theme="dark"] .top10-box li{ border-bottom:1px dashed rgba(255,255,255,.1); }
+
+/* Botões – outline/ghost à “vidro” branco */
+[data-theme="dark"] .btn.outline,
+[data-theme="dark"] .btn.ghost{
+  color:#fff;
+  border:1.5px solid rgba(255,255,255,.45);
+  background:transparent;
+  box-shadow:none;
+}
+[data-theme="dark"] .btn.outline:hover,
+[data-theme="dark"] .btn.ghost:hover{
+  background:rgba(255,255,255,.06);
+}
+[data-theme="dark"] .btn.premium{
+  background:#fff;              /* CTA sólido claro */
+  color:#111;                   /* texto escuro para contraste */
+  border:none;
+}
+
+/* Inputs/Selects coerentes no dark */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea{
+  background:#0f1216;
+  color:var(--foreground);
+  border:1px solid var(--border);
+}
+[data-theme="dark"] select:focus,
+[data-theme="dark"] input:focus{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(120,162,255,.15);
+  border-color:#789bff;
+}
+
+/* Footer nav escuro + ícones claros */
+[data-theme="dark"] .footer-nav{
+  background:var(--background);
+  border-top:1px solid var(--border);
+  box-shadow:0 -2px 10px rgba(0,0,0,.4);
+}
+[data-theme="dark"] .footer-nav button{ color:var(--foreground); }
+[data-theme="dark"] .footer-nav button i{ color:inherit; opacity:.95; }
+
+/* Tabelas e linhas divisórias */
+[data-theme="dark"] table thead th{
+  border-bottom:1px solid rgba(255,255,255,.14);
+  color:var(--foreground);
+}
+[data-theme="dark"] table tbody td{
+  border-bottom:1px dashed rgba(255,255,255,.08);
+}
+
+/* Tags / chips */
+[data-theme="dark"] .chip{ 
+  background:#1b1f26; 
+  color:#dfe6ee; 
+  border:1px solid rgba(255,255,255,.08);
+}
+[data-theme="dark"] .chip:hover{ background:#232a33; }
+
+/* “Ações Rápidas” – botões largos como no teu exemplo */
+[data-theme="dark"] .btn.full{
+  color:#fff;
+  border-color:rgba(255,255,255,.45);
+}
+/* Botão "Registar Compra" no modo escuro */
+[data-theme="dark"] #btnDashBuy {
+  background:#faf8f8 !important;
+  color:#100f0f !important;
+  border:1px solid #000 !important;
+}
+[data-theme="dark"] #btnDashBuy:hover {
+  background:#111 !important;
+}
+
+/*ver no telemóvel/*
+/* --- Mobile fixes para o modal Definir Objetivo --- */
+
+/* garante que o content do modal pode rolar bem em mobile */
+.modal-dialog,
+.modal-goal { max-height: 90vh; }
+
+.modal-body.goal-grid{
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0; /* crucial para filhos com overflow funcionarem */
+}
+
+/* cada coluna pode encolher e deixar o filho com overflow controlar a rolagem */
+.goal-col{
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* <- importante em layouts com grid/flex */
+}
+
+/* a LISTA passa a ocupar o espaço disponível e tem altura mínima útil */
+.goal-list-wrap{
+  flex: 1 1 auto;           /* ocupa o espaço que sobrar */
+  min-height: 220px;        /* não fica “colada” a 0px */
+  max-height: 50vh;         /* evita passar o viewport */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* em ecrãs estreitos, dá um pouco mais de ar à lista */
+@media (max-width: 900px){
+  #goalModal .goal-grid{ grid-template-columns: 1fr; }
+  .goal-list-wrap{ max-height: 55vh; }
+}
+
+/* quando entras no modo de resultado, continua tudo ok */
+#goalModal.goal-show-results .goal-grid { display: none; }
+#goalModal.goal-show-results #goalResultado{
+  display: block;
+  height: auto;
+  max-height: calc(90vh - 56px);
+  overflow: auto;
+}
+.goal-filters{ position: sticky; top: 0; padding-bottom: 6px; }
+.goal-selected, .goal-params{ padding: 10px; }
+
+.settings hr { margin: 6px 0; opacity: .5; }
+/* === Portfólio (resumos + charts) === */
+.portfolio-summary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.portfolio-charts{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:1rem;
+  margin-bottom:1.25rem;
+}
+.portfolio-charts .card h3{ margin:0 0 .5rem; }
+/* === Modal Ajuda Portfólio: maior + scroll interno === */
+#prtHelpModal .prt-help-dialog{
+  width: min(900px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* header fixo no topo do diálogo ao rolar */
+#prtHelpModal .modal-header{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: inherit;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+/* corpo que rola */
+#prtHelpModal .help-body{
+  flex: 1 1 auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 0;
+}
+
+/* barra de ações fixa no fundo do diálogo */
+#prtHelpModal .help-actions{
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  min-height: 56px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(17,17,17,0) 0%, rgba(17,17,17,.96) 60%);
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+/* tema claro */
+:root:not([data-theme="dark"]) #prtHelpModal .help-actions{
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(5, 5, 5, 0.96) 60%);
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+:root:not([data-theme="dark"]) #prtHelpModal .modal-header{
+  border-bottom: 1px solid rgba(0,0,0,.06);
+}
+
+/* mobile */
+@media (max-width: 600px){
+  #prtHelpModal .prt-help-dialog{ width: 96vw; max-height: 90vh; }
+}
+
+/*Screen Analise*/
+/* ====== Análise Fina (screen) ====== */
+.analysis-summary{
+  display:grid; gap:1rem;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  margin-bottom:1rem;
+}
+.analysis-charts{
+  display:grid; gap:1rem;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  margin-bottom:1rem;
+}
+
+/* Toolbar */
+.analysis-toolbar{
+  display:flex; gap:.6rem; flex-wrap:wrap; width:100%;
+}
+.analysis-toolbar input[type="search"],
+.analysis-toolbar select{
+  padding:.55rem .7rem; border:1px solid var(--border);
+  border-radius:var(--radius); min-width:180px; background:var(--card);
+  color:var(--foreground);
+}
+
+/* Tabela pro */
+.table-responsive{ overflow:auto; border:1px solid var(--border); border-radius:var(--radius); }
+.analysis-table{ width:100%; border-collapse:separate; border-spacing:0; min-width:900px; }
+.analysis-table thead th{
+  position:sticky; top:0; background:var(--card);
+  font-weight:600; text-align:left; padding:.6rem .7rem;
+  border-bottom:1px solid var(--border);
+}
+.analysis-table tbody td{
+  padding:.55rem .7rem; border-bottom:1px solid var(--border); vertical-align:middle;
+}
+.analysis-table tbody tr:hover{ background:var(--muted); }
+
+/* ===== Badges / status ===== */
+.badge{
+  display:inline-block; padding:.2rem .5rem; border-radius:999px;
+  font-size:.75rem; line-height:1; border:1px solid transparent;
+}
+.badge.ok{ background:#e7f7ee; color:#117a39; border-color:#a9e0c1; }
+.badge.warn{ background:#fff4e5; color:#a15f00; border-color:#f7d6a5; }
+.badge.danger{ background:#ffe5e5; color:#a52121; border-color:#f2b0b0; }
+.badge.muted{ background:#f1f1f1; color:#666; border-color:#e2e2e2; }
+.badge.up{ background:#e7f7ee; color:#117a39; border-color:#a9e0c1; }
+.badge.down{ background:#ffe5e5; color:#a52121; border-color:#f2b0b0; }
+
+.up{ color:#117a39; font-weight:600; }
+.down{ color:#a52121; font-weight:600; }
+
+.dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; }
+.dot-green{ background:#22c55e; }
+.dot-amber{ background:#f59e0b; }
+.dot-red{ background:#ef4444; }
+
+/* ===== Toolbar acima da tabela ===== */
+.analysis-toolbar{
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.analysis-toolbar .toolbar-row{
+  width: 100%;
+  display: block;
+}
+.analysis-toolbar input[type="search"],
+.analysis-toolbar select{
+  width: 100%;
+  padding: .55rem .7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--foreground);
+}
+.analysis-toolbar .toolbar-grid{
+  display: grid;
+  grid-template-columns: 1fr;   /* mobile */
+  gap: .6rem;
+  margin-top: .6rem;
+}
+@media (min-width: 900px){
+  .analysis-toolbar .toolbar-grid{
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+  }
+}
+
+/* ===== Tabela com header fixo / scroll ===== */
+.table-scroll {
+  max-height: 115vh;       /* ajusta ao teu layout */
+  overflow: auto;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+}
+.fine-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.95rem; }
+.fine-table th, .fine-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  white-space: nowrap;
+}
+.fine-table thead th { position: sticky; top: 0; z-index: 5; background: var(--card-bg, #fff); box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+.fine-table tbody tr:hover { background: var(--row-hover, rgba(0,0,0,.03)); }
+
+/* 1ª coluna fixa */
+.fine-table .sticky-col {
+  position: sticky; left: 0; z-index: 6;
+  background: var(--card-bg, #fff);
+  border-right: 1px solid var(--border, #e5e7eb);
+}
+
+/* Dark-mode ajustes */
+[data-theme="dark"] .analysis-table thead th{ background:#121212; }
+:root[data-theme="dark"] .fine-table thead th {
+  background: var(--card-bg, #0f172a);
+  box-shadow: 0 1px 0 rgba(255,255,255,.08) inset;
+}
+:root[data-theme="dark"] .fine-table tbody tr:hover { background: rgba(255,255,255,.04); }
+:root[data-theme="dark"] .fine-table .sticky-col { background: var(--card-bg, #0f172a); }
+
+/* ===== Heatmap (mantém o que já tinhas; incluo aqui p/ conveniência) ===== */
+.dividend-heatmap { border: 1px solid var(--border, #e5e7eb); border-radius: 12px; overflow: hidden; }
+.dividend-heatmap .cell { padding: 8px 10px; border-right: 1px solid var(--border, #e5e7eb); white-space: nowrap; }
+.dividend-heatmap .heatmap-header { display: grid; grid-template-columns: 220px 1fr; background: var(--muted-bg, rgba(0,0,0,.03)); position: sticky; top: 0; z-index: 1; }
+.dividend-heatmap .months { display: grid; grid-template-columns: repeat(12, minmax(64px, 1fr)); }
+.dividend-heatmap .heatmap-body { max-height: 420px; overflow: auto; }
+.dividend-heatmap .row { display: grid; grid-template-columns: 220px 1fr; border-top: 1px solid var(--border, #e5e7eb); }
+.dividend-heatmap .row .months { display: grid; grid-template-columns: repeat(12, minmax(64px, 1fr)); }
+.dividend-heatmap .sticky-col { position: sticky; left: 0; background: var(--card, #fff); z-index: 2; border-right: 1px solid var(--border, #e5e7eb); }
+:root{ --chart-fill-weak: rgba(34,197,94,.25); --chart-fill-med: rgba(34,197,94,.55); --chart-fill-strong: rgba(34,197,94,.85); }
+[data-theme="dark"]{ --chart-fill-weak: rgba(34,197,94,.25); --chart-fill-med: rgba(34,197,94,.55); --chart-fill-strong: rgba(34,197,94,.85); }
+.cell.pay-weak{ background: var(--chart-fill-weak); }
+.cell.pay-med{ background: var(--chart-fill-med); }
+.cell.pay-strong{ background: var(--chart-fill-strong); }
+.cell.tt{ position: relative; cursor: help; }
+.cell.tt:hover::after{
+  content: attr(data-tt);
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 110%;
+  background: var(--popover, #111); color: #fff; padding: 6px 8px; border-radius: 6px;
+  white-space: nowrap; font-size: 12px; z-index: 10; pointer-events: none;
+}
+.sortable{ cursor:pointer; }
+.sortable::after{ content:" ⇅"; opacity:.4; }
+.sortable.sorted-asc::after{ content:" ↑"; opacity:1; }
+.sortable.sorted-desc::after{ content:" ↓"; opacity:1; }
