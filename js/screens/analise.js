@@ -1,10 +1,6 @@
 // screens/analise.js
 import { db } from "../firebase-config.js";
-import {
-  collection,
-  getDocs,
-  query,
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 /* ===============================
    Chart.js on-demand
@@ -19,74 +15,47 @@ async function ensureChartJS() {
     document.head.appendChild(s);
   });
 }
-const isDark = () =>
-  document.documentElement.getAttribute("data-theme") === "dark";
+const isDark = () => document.documentElement.getAttribute("data-theme") === "dark";
 const chartColors = () => ({
   grid: isDark() ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)",
   ticks: isDark() ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.7)",
   tooltipBg: isDark() ? "rgba(17,17,17,.95)" : "rgba(255,255,255,.95)",
   tooltipFg: isDark() ? "#fff" : "#111",
 });
-const PALETTE = [
-  "#4F46E5", "#22C55E", "#EAB308", "#EF4444",
-  "#06B6D4", "#F59E0B", "#A855F7", "#10B981",
-  "#3B82F6", "#F472B6", "#84CC16", "#14B8A6",
-];
+const PALETTE = ["#4F46E5","#22C55E","#EAB308","#EF4444","#06B6D4","#F59E0B","#A855F7","#10B981","#3B82F6","#F472B6","#84CC16","#14B8A6"];
+const charts = { setor: null, mercado: null, topYield: null };
 
 /* ===============================
-   BLOCO DE CONFIG DO ALGORITMO
-   (mexe aqui à vontade)
+   Helpers
    =============================== */
-export const ANALISE_CFG = {
-  // pesos do score final
-  pesos: {
-    retornoEuro: 0.45,
-    tendenciaSMA: 0.25,
-    valoracaoPE: 0.25,
-    risco: 0.05,
-  },
-
-  // ANUALIZAÇÃO + LIMITES (conservadores)
-  annualCaps: { min: -0.80, max: 0.60 }, // -80% .. +60% por ano (após anualizar)
-
-  // mistura de taxas p/ reduzir ruído (antes de anualizar)
-  blend: {
-    use: true,
-    pesos: { prefer: 0.6, aux1: 0.25, aux2: 0.15 },
-  },
-
-  // limites de concentração
-  maxPctPorTicker: 0.35,           // 0 = sem limite
-  fallbackUsarRestoNoMelhor: true, // investe o resto no melhor (se sobrar)
-  usarInteirosPorDefeito: false,   // se UI não tiver checkboxes
-
-  // sinais técnicos
-  smaSignal: { peso50: 1.0, peso200: 1.0, bonus: +0.02, malus: -0.02 },
-  peBands: { barato: 15, justo: 25 },
-
-  debug: { logSelecao: false, logScore: false },
-};
-window.ANALISE_CFG = ANALISE_CFG;
-
-/* ===============================
-   Helpers (dividendos e formato)
-   =============================== */
-const mesesPT = [
-  "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
-];
+const mesesPT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const mesToIdx = new Map(mesesPT.map((m, i) => [m, i]));
-const toNum = (v) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
-const fmtEUR = (n) =>
-  Number(n || 0).toLocaleString("pt-PT", {
-    style: "currency",
-    currency: "EUR",
-  });
+const toNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const fmtEUR = (n) => Number(n || 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
+// normalização leve para rótulos (evita duplicados tipo “Americano” vs “Americano ”)
+function stripWeirdSpaces(s) {
+  return String(s ?? "")
+    .replace(/\u00A0/g, " ")       // NBSP
+    .replace(/[\u200B-\u200D]/g,"")// zero-width
+    .replace(/\s+/g," ")
+    .trim();
+}
+function canonLabel(s){ return stripWeirdSpaces(s); }
+
+/* ===============================
+   Dividendos
+   =============================== */
+function anualizarDividendo(dividendoPorPagamento, periodicidade) {
+  const d = toNum(dividendoPorPagamento);
+  const p = String(periodicidade || "").toLowerCase();
+  if (d <= 0) return 0;
+  if (p === "mensal") return d * 12;
+  if (p === "trimestral") return d * 4;
+  if (p === "semestral") return d * 2;
+  return d; // anual ou n/a
+}
 function pagamentosAno(periodicidade) {
   const p = String(periodicidade || "");
   if (p === "Mensal") return 12;
@@ -95,56 +64,29 @@ function pagamentosAno(periodicidade) {
   if (p === "Anual") return 1;
   return 0;
 }
-function mesesPagamento(periodicidade, mesTipicoIdx) {
-  if (!Number.isFinite(mesTipicoIdx)) return [];
-  if (periodicidade === "Mensal")
-    return Array.from({ length: 12 }, (_, i) => i);
-  if (periodicidade === "Trimestral")
-    return [0, 3, 6, 9].map((k) => (mesTipicoIdx + k) % 12);
-  if (periodicidade === "Semestral")
-    return [0, 6].map((k) => (mesTipicoIdx + k) % 12);
-  if (periodicidade === "Anual") return [mesTipicoIdx];
-  return [];
-}
-
-/* ======== Dividendos robustos ======== */
 function anualPreferido(doc) {
-  const anualAlpha = toNum(doc.dividendoMedio24m);
-  if (anualAlpha > 0) return anualAlpha;
-
-  const total24 = toNum(doc.totalDiv24m);
-  if (total24 > 0) return total24 / 2;
-
-  const pAno = pagamentosAno(String(doc.periodicidade || ""));
-  const d = toNum(doc.dividendo);
-  if (pAno > 0 && d > 0) return d * pAno;
-
-  return d > 0 ? d : 0;
+  const d24 = toNum(doc.dividendoMedio24m);
+  if (d24 > 0) return d24; // anual (média 24m)
+  return anualizarDividendo(doc.dividendo, doc.periodicidade);
 }
 function perPayment(doc) {
-  const total24 = toNum(doc.totalDiv24m);
-  const pagos24 = toNum(doc.dividendosPagos24m);
-  if (total24 > 0 && pagos24 > 0) return total24 / pagos24;
-
+  const base = toNum(doc.dividendo); // por pagamento
+  if (base > 0) return base;
   const anual = anualPreferido(doc);
-  const pAno = pagamentosAno(String(doc.periodicidade || ""));
-  if (anual > 0 && pAno > 0) return anual / pAno;
-
-  return toNum(doc.dividendo);
+  const pAno = pagamentosAno(doc.periodicidade);
+  return pAno > 0 ? anual / pAno : 0;
+}
+function computeYieldPct(annualDividend, valorStock) {
+  if (!Number.isFinite(annualDividend) || !Number.isFinite(valorStock) || valorStock <= 0) return 0;
+  return (annualDividend / valorStock) * 100;
 }
 
 /* ===============================
-   Seleção
+   Seleção / Ordenação / Tabela / Heatmap
    =============================== */
 const selectedTickers = new Set();
-const updateSelCount = () => {
-  const el = document.getElementById("anlSelCount");
-  if (el) el.textContent = String(selectedTickers.size);
-};
+const updateSelCount = () => { const el = document.getElementById("anlSelCount"); if (el) el.textContent = String(selectedTickers.size); };
 
-/* ===============================
-   Ordenação
-   =============================== */
 let sortKey = null;
 let sortDir = "desc";
 const SORT_ACCESSORS = {
@@ -178,207 +120,137 @@ function sortRows(rows) {
   });
 }
 function markSortedHeader() {
-  document.querySelectorAll("#anlTable thead th.sortable").forEach((th) => {
-    th.classList.remove("sorted-asc", "sorted-desc");
-  });
+  document.querySelectorAll("#anlTable thead th.sortable").forEach((th) => th.classList.remove("sorted-asc", "sorted-desc"));
   if (sortKey) {
-    const th = document.querySelector(
-      `#anlTable thead th[data-sort="${sortKey}"]`
-    );
+    const th = document.querySelector(`#anlTable thead th[data-sort="${sortKey}"]`);
     if (th) th.classList.add(sortDir === "asc" ? "sorted-asc" : "sorted-desc");
   }
 }
 
-/* ===============================
-   Charts (gerais)
-   =============================== */
+/* Charts (gerais) */
 function renderDonut(elId, dataMap) {
   const el = document.getElementById(elId);
   if (!el) return null;
   const labels = Array.from(dataMap.keys());
   const data = Array.from(dataMap.values());
+  if (!data.length) { el.parentElement?.classList.add("muted"); return null; }
   return new Chart(el, {
     type: "doughnut",
-    data: {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
-          borderWidth: 1,
-        },
-      ],
-    },
+    data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1 }] },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: "62%",
+      responsive: true, maintainAspectRatio: false, cutout: "62%",
       plugins: {
         legend: { position: "bottom", labels: { color: chartColors().ticks } },
         tooltip: {
-          backgroundColor: chartColors().tooltipBg,
-          titleColor: chartColors().tooltipFg,
-          bodyColor: chartColors().tooltipFg,
-          callbacks: {
-            label: (ctx) => {
-              const total = data.reduce((a, b) => a + b, 0) || 1;
-              const v = Number(ctx.parsed);
-              const pct = ((v / total) * 100).toFixed(1);
-              return ` ${ctx.label}: ${pct}%`;
-            },
-          },
-        },
-      },
-    },
+          backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
+          callbacks: { label: (ctx) => {
+            const total = data.reduce((a, b) => a + b, 0) || 1;
+            const v = Number(ctx.parsed); const pct = ((v / total) * 100).toFixed(1);
+            return ` ${ctx.label}: ${pct}%`;
+          } }
+        }
+      }
+    }
   });
 }
 function renderTopYield(elId, rows) {
   const el = document.getElementById(elId);
   if (!el) return null;
-  const top = [...rows]
-    .filter((r) => Number.isFinite(r.yield) && r.yield > 0)
-    .sort((a, b) => b.yield - a.yield)
-    .slice(0, 5);
+  const top = [...rows].filter((r) => Number.isFinite(r.yield) && r.yield > 0).sort((a, b) => b.yield - a.yield).slice(0, 5);
+  if (!top.length) return null;
   return new Chart(el, {
     type: "bar",
-    data: {
-      labels: top.map((r) => r.ticker),
-      datasets: [
-        {
-          label: "Yield (%)",
-          data: top.map((r) => r.yield),
-          backgroundColor: "#22C55E",
-        },
-      ],
-    },
+    data: { labels: top.map((r) => r.ticker), datasets: [{ label: "Yield (%)", data: top.map((r) => r.yield), backgroundColor: "#22C55E" }] },
     options: {
-      indexAxis: "y",
-      responsive: true,
-      maintainAspectRatio: false,
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
       scales: {
-        x: {
-          ticks: { color: chartColors().ticks },
-          grid: { color: chartColors().grid },
-        },
-        y: {
-          ticks: { color: chartColors().ticks },
-          grid: { color: chartColors().grid },
-        },
+        x: { ticks: { color: chartColors().ticks }, grid: { color: chartColors().grid } },
+        y: { ticks: { color: chartColors().ticks }, grid: { color: chartColors().grid } },
       },
       plugins: {
         legend: { labels: { color: chartColors().ticks } },
         tooltip: {
-          backgroundColor: chartColors().tooltipBg,
-          titleColor: chartColors().tooltipFg,
-          bodyColor: chartColors().tooltipFg,
-          callbacks: {
-            label: (ctx) =>
-              ` ${ctx.dataset.label}: ${ctx.parsed.x.toFixed(2)}%`,
-          },
+          backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
+          callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.x.toFixed(2)}%` },
         },
       },
     },
   });
 }
-const charts = { setor: null, mercado: null, topYield: null };
 function renderCharts(rows) {
   const groupBy = (key) => {
     const map = new Map();
     rows.forEach((r) => {
-      const k = r[key] || "—";
+      const k = canonLabel(r[key] || "—");
       map.set(k, (map.get(k) || 0) + 1);
     });
     return map;
   };
-  charts.setor?.destroy();
-  charts.mercado?.destroy();
-  charts.topYield?.destroy();
+  charts.setor?.destroy(); charts.mercado?.destroy(); charts.topYield?.destroy();
   charts.setor = renderDonut("anlChartSetor", groupBy("setor"));
   charts.mercado = renderDonut("anlChartMercado", groupBy("mercado"));
   charts.topYield = renderTopYield("anlChartTopYield", rows);
 }
 
-/* ===============================
-   Heatmap (dividendo por pagamento)
-   =============================== */
+/* Heatmap */
+function mesesPagamento(periodicidade, mesTipicoIdx) {
+  if (!Number.isFinite(mesTipicoIdx)) return [];
+  if (periodicidade === "Mensal") return Array.from({ length: 12 }, (_, i) => i);
+  if (periodicidade === "Trimestral") return [0,3,6,9].map((k) => (mesTipicoIdx + k) % 12);
+  if (periodicidade === "Semestral") return [0,6].map((k) => (mesTipicoIdx + k) % 12);
+  if (periodicidade === "Anual") return [mesTipicoIdx];
+  return [];
+}
 function renderHeatmap(rows) {
   const body = document.getElementById("anlHeatmapBody");
-  const headMonths = document.getElementById("anlHeatmapHeaderMonths"); // opcional
-  if (!body) return;
+  const headMonths = document.getElementById("anlHeatmapHeaderMonths");
+  if (!body || !headMonths) return;
 
-  const values = rows
-    .map((r) => perPayment(r))
-    .filter((v) => v > 0)
-    .sort((a, b) => a - b);
+  const values = rows.map((r) => perPayment(r)).filter((v) => v > 0).sort((a, b) => a - b);
   const q1 = values.length ? values[Math.floor(values.length * 0.33)] : 0.01;
   const q2 = values.length ? values[Math.floor(values.length * 0.66)] : 0.02;
 
-  body.innerHTML = rows
-    .map((r) => {
-      const per = String(r.periodicidade || "n/A");
-      const idxMes = mesToIdx.get(String(r.mes || ""));
-      const meses = mesesPagamento(per, idxMes);
-      const porPagamento = perPayment(r);
-      const klass =
-        porPagamento > 0
-          ? porPagamento <= q1
-            ? "pay-weak"
-            : porPagamento <= q2
-            ? "pay-med"
-            : "pay-strong"
-          : "";
-      const cells = Array.from({ length: 12 }, (_, m) => {
-        if (!meses.includes(m)) return `<div class="cell"></div>`;
-        const tt = `${r.ticker} • ${mesesPT[m]} • ~${fmtEUR(
-          porPagamento
-        )} por pagamento`;
-        return `<div class="cell tt ${klass}" data-tt="${tt}">${
-          porPagamento ? fmtEUR(porPagamento) : ""
-        }</div>`;
-      }).join("");
-      const nome = r.nome ? ` <span class="muted">— ${r.nome}</span>` : "";
-      return `
+  body.innerHTML = rows.map((r) => {
+    const per = String(r.periodicidade || "n/A");
+    const idxMes = mesToIdx.get(String(r.mes || ""));
+    const meses = mesesPagamento(per, idxMes);
+    const perPay = perPayment(r);
+    const klass = perPay > 0 ? (perPay <= q1 ? "pay-weak" : perPay <= q2 ? "pay-med" : "pay-strong") : "";
+    const cells = Array.from({ length: 12 }, (_, m) => {
+      if (!meses.includes(m)) return `<div class="cell"></div>`;
+      const tt = `${r.ticker} • ${mesesPT[m]} • ~${fmtEUR(perPay)}`;
+      return `<div class="cell tt ${klass}" data-tt="${tt}">${perPay ? fmtEUR(perPay) : ""}</div>`;
+    }).join("");
+    const nome = r.nome ? ` <span class="muted">— ${r.nome}</span>` : "";
+    return `
       <div class="row">
         <div class="cell sticky-col"><strong>${r.ticker}</strong>${nome}</div>
         <div class="months">${cells}</div>
-      </div>
-    `;
-    })
-    .join("");
+      </div>`;
+  }).join("");
 
-  if (headMonths) {
-    const onScroll = (e) => { headMonths.scrollLeft = e.target.scrollLeft; };
-    body.removeEventListener("scroll", onScroll);
-    body.addEventListener("scroll", onScroll, { passive: true });
-  }
+  const onScroll = (e) => { headMonths.scrollLeft = e.target.scrollLeft; };
+  body.removeEventListener("scroll", onScroll);
+  body.addEventListener("scroll", onScroll, { passive: true });
 }
 
-/* ===============================
-   Tabela
-   =============================== */
+/* Tabela */
 function renderTable(rows) {
   const tb = document.getElementById("anlTableBody");
   if (!tb) return;
+
   const badgePE = (pe) => {
-    const p = Number(pe);
-    if (!Number.isFinite(p) || p <= 0)
-      return `<span class="badge muted">—</span>`;
-    if (p < 15) return `<span class="badge ok">${p.toFixed(2)} Barato</span>`;
-    if (p <= 25)
-      return `<span class="badge warn">${p.toFixed(2)} Justo</span>`;
-    return `<span class="badge danger">${p.toFixed(2)} Caro</span>`;
+    if (!Number.isFinite(pe) || pe <= 0) return `<span class="badge muted">—</span>`;
+    if (pe < 15) return `<span class="badge ok">${pe.toFixed(2)} Barato</span>`;
+    if (pe <= 25) return `<span class="badge warn">${pe.toFixed(2)} Justo</span>`;
+    return `<span class="badge danger">${pe.toFixed(2)} Caro</span>`;
   };
   const badgeYield = (y, y24) => {
     if (!Number.isFinite(y)) return `<span class="badge muted">—</span>`;
-    let base = "muted";
-    if (y >= 6) base = "warn";
-    else if (y >= 2) base = "ok";
+    let base = "muted"; if (y >= 6) base = "warn"; else if (y >= 2) base = "ok";
     const curr = `<span class="badge ${base}">${y.toFixed(2)}%</span>`;
     if (Number.isFinite(y24)) {
-      const comp =
-        y - y24 >= 0
-          ? `<span class="badge up">↑ acima da média</span>`
-          : `<span class="badge down">↓ abaixo da média</span>`;
+      const comp = y - y24 >= 0 ? `<span class="badge up">↑ acima da média</span>` : `<span class="badge down">↓ abaixo da média</span>`;
       return `${curr} ${comp}`;
     }
     return curr;
@@ -390,18 +262,15 @@ function renderTable(rows) {
     return `<span class="${cls}">${sign}${v.toFixed(2)}%</span>`;
   };
 
-  tb.innerHTML = rows
-    .map((r) => {
-      const checked = selectedTickers.has(r.ticker) ? "checked" : "";
-      const y = Number.isFinite(r.yield) ? r.yield : null;
-      const y24 = Number.isFinite(r.yield24) ? r.yield24 : null;
-      const divPerTxt = r.divPer > 0 ? fmtEUR(r.divPer) : "—";
-      const divAnualTxt = r.divAnual > 0 ? fmtEUR(r.divAnual) : "—";
-      return `
+  tb.innerHTML = rows.map((r) => {
+    const checked = selectedTickers.has(r.ticker) ? "checked" : "";
+    const y = Number.isFinite(r.yield) ? r.yield : null;
+    const y24 = Number.isFinite(r.yield24) ? r.yield24 : null;
+    const divPerTxt = r.divPer > 0 ? fmtEUR(r.divPer) : "—";
+    const divAnualTxt = r.divAnual > 0 ? fmtEUR(r.divAnual) : "—";
+    return `
       <tr>
-        <td class="sticky-col">
-          <input type="checkbox" class="anlRowSel" data-ticker="${r.ticker}" ${checked} />
-        </td>
+        <td class="sticky-col"><input type="checkbox" class="anlRowSel" data-ticker="${r.ticker}" ${checked} /></td>
         <td class="sticky-col"><strong>${r.ticker}</strong></td>
         <td>${r.nome || "—"}</td>
         <td>${r.setor || "—"}</td>
@@ -419,10 +288,8 @@ function renderTable(rows) {
         <td>${r.periodicidade || "—"}</td>
         <td>${r.mes || "—"}</td>
         <td>${r.observacao || "—"}</td>
-      </tr>
-    `;
-    })
-    .join("");
+      </tr>`;
+  }).join("");
 
   tb.querySelectorAll(".anlRowSel").forEach((ch) => {
     ch.addEventListener("change", (e) => {
@@ -436,7 +303,7 @@ function renderTable(rows) {
 }
 
 /* ===============================
-   Dados (Firestore)
+   Firestore
    =============================== */
 let ALL_ROWS = [];
 async function fetchAcoes() {
@@ -446,45 +313,42 @@ async function fetchAcoes() {
     const d = doc.data();
     const ticker = String(d.ticker || "").toUpperCase();
     if (!ticker) return;
+
     const valor = toNum(d.valorStock);
-
     const anual = anualPreferido(d);
-    const porPag = perPayment(d);
-    const y = (Number.isFinite(anual) && valor > 0) ? (anual / valor) * 100 : null;
-
-    const peField = Number.isFinite(d.pe) ? Number(d.pe) :
-                    Number.isFinite(d.peRatio) ? Number(d.peRatio) : null;
+    const y = computeYieldPct(anual, valor);
 
     rows.push({
       ticker,
       nome: d.nome || "",
-      setor: d.setor || "",
-      mercado: d.mercado || "",
+      setor: canonLabel(d.setor || ""),
+      mercado: canonLabel(d.mercado || ""),
       valorStock: valor,
 
-      dividendo: toNum(d.dividendo),
-      dividendoMedio24m: toNum(d.dividendoMedio24m),
-      totalDiv24m: toNum(d.totalDiv24m),
-      dividendosPagos24m: toNum(d.dividendosPagos24m),
+      // dividendos
+      dividendo: toNum(d.dividendo),                 // por pagamento
+      dividendoMedio24m: toNum(d.dividendoMedio24m), // anual (média 24m)
       periodicidade: d.periodicidade || "",
       mes: d.mes || "",
       observacao: d.observacao || "",
 
-      divPer: porPag,
+      // derivados
+      divPer: perPayment(d),
       divAnual: anual,
       yield: Number.isFinite(y) ? y : null,
+
+      // crescimento
+      g1w: Number.isFinite(d.taxaCrescimento_1semana) ? Number(d.taxaCrescimento_1semana) : 0,
+      g1m: Number.isFinite(d.taxaCrescimento_1mes) ? Number(d.taxaCrescimento_1mes) : 0,
+      g1y: Number.isFinite(d.taxaCrescimento_1ano) ? Number(d.taxaCrescimento_1ano) : 0,
+
+      // valuation/tecnicos
       yield24: Number.isFinite(d.yield24) ? Number(d.yield24) : null,
-
-      pe: peField,
-      peRatio: peField,
-      sma50: Number.isFinite(d.sma50) ? Number(d.sma50) : null,
-      sma200: Number.isFinite(d.sma200) ? Number(d.sma200) : null,
-
-      delta50: Number.isFinite(d.delta50) ? Number(d.delta50) : null,
-      delta200: Number.isFinite(d.delta200) ? Number(d.delta200) : null,
-      g1w: Number.isFinite(d.taxaCrescimento_1semana) ? Number(d.taxaCrescimento_1semana) : null,
-      g1m: Number.isFinite(d.taxaCrescimento_1mes) ? Number(d.taxaCrescimento_1mes) : null,
-      g1y: Number.isFinite(d.taxaCrescimento_1ano) ? Number(d.taxaCrescimento_1ano) : null,
+      pe: Number.isFinite(d.pe) ? Number(d.pe) : (Number.isFinite(d.peRatio) ? Number(d.peRatio) : null),
+      delta50: Number.isFinite(d.delta50) ? Number(d.delta50) : 0,
+      delta200: Number.isFinite(d.delta200) ? Number(d.delta200) : 0,
+      sma50: Number.isFinite(d.sma50) ? Number(d.sma50) : (Number.isFinite(d.SMA50) ? Number(d.SMA50) : null),
+      sma200: Number.isFinite(d.sma200) ? Number(d.sma200) : (Number.isFinite(d.SMA200) ? Number(d.SMA200) : null),
     });
   });
   ALL_ROWS = rows;
@@ -493,12 +357,7 @@ async function fetchAcoes() {
 /* ===============================
    Filtros
    =============================== */
-const keyStr = (s) =>
-  String(s ?? "")
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim()
-    .toLowerCase();
+const keyStr = (s) => String(s ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").trim().toLowerCase();
 function applyFilters() {
   const term = keyStr(document.getElementById("anlSearch")?.value || "");
   const setor = document.getElementById("anlSetor")?.value || "";
@@ -506,10 +365,7 @@ function applyFilters() {
   const periodo = document.getElementById("anlPeriodo")?.value || "";
 
   let rows = [...ALL_ROWS];
-  if (term)
-    rows = rows.filter(
-      (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term)
-    );
+  if (term) rows = rows.filter((r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term));
   if (setor) rows = rows.filter((r) => r.setor === setor);
   if (mercado) rows = rows.filter((r) => r.mercado === mercado);
   if (periodo) rows = rows.filter((r) => (r.periodicidade || "") === periodo);
@@ -520,9 +376,7 @@ function applyFilters() {
   renderTable(rows);
 
   const selAll = document.getElementById("anlSelectAll");
-  if (selAll)
-    selAll.checked =
-      rows.length > 0 && rows.every((r) => selectedTickers.has(r.ticker));
+  if (selAll) selAll.checked = rows.length > 0 && rows.every((r) => selectedTickers.has(r.ticker));
 }
 function populateFilters() {
   const setorSel = document.getElementById("anlSetor");
@@ -534,291 +388,198 @@ function populateFilters() {
   });
   const addOpts = (sel, values) => {
     const cur = sel.value;
-    sel.innerHTML =
-      `<option value="">Todos</option>` +
-      [...values].sort().map((v) => `<option>${v}</option>`).join("");
+    sel.innerHTML = `<option value="">Todos</option>` + [...values].sort().map((v) => `<option>${v}</option>`).join("");
     sel.value = cur || "";
   };
   if (setorSel) addOpts(setorSel, setSet);
   if (mercadoSel) addOpts(mercadoSel, merSet);
 }
 
-/* ============================================================
-   ===  ALGORITMO DE SIMULAÇÃO — SECÇÃO EDITÁVEL            ===
-   ============================================================ */
+/* ==========================================================
+   =  ALGORITMO LUCRO MÁXIMO 2.0  =
+   ========================================================== */
+const MAX_PCT_POR_TICKER = 0.35;
 
-/**
- * Mistura g1w/g1m/g1y consoante período escolhido (sem converter para fração).
- */
-function _campoPrefer(periodo){
-  if (periodo==="1s") return "g1w";
-  if (periodo==="1m") return "g1m";
+function campoCrescimentoPreferido(periodoSel) {
+  if (periodoSel === "1s") return "g1w";
+  if (periodoSel === "1m") return "g1m";
   return "g1y";
 }
-function _blendPct(row, periodo){
-  if (!ANALISE_CFG.blend.use){
-    return Number(row[_campoPrefer(periodo)] || 0);
+function melhorTaxaCrescimento(row, prefer) {
+  const ordem = [prefer, "g1m", "g1w", "g1y"];
+  for (const k of ordem) {
+    const v = Number(row?.[k] ?? 0);
+    if (Number.isFinite(v) && v !== 0) return v;
   }
-  const all = { g1w:Number(row.g1w||0), g1m:Number(row.g1m||0), g1y:Number(row.g1y||0) };
-  const order = periodo==="1s" ? ["g1w","g1m","g1y"] : periodo==="1m" ? ["g1m","g1w","g1y"] : ["g1y","g1m","g1w"];
-  const { prefer, aux1, aux2 } = ANALISE_CFG.blend.pesos;
-  return prefer*all[order[0]] + aux1*all[order[1]] + aux2*all[order[2]];
+  return 0;
 }
-
-/**
- * Annualiza de forma conservadora e aplica "hard cap" anual.
- * - 1s → r_annual = (1 + r_w)^52 - 1
- * - 1m → r_annual = (1 + r_m)^12 - 1
- * - 1a → r_annual = r_y
- * Onde r_* são frações (ex.: 0.0614).
- */
-function _estimateAnnualRate(row, periodo){
-  const pct = _blendPct(row, periodo); // ex.: 6.14 (%)
-  const r = Number(pct||0) / 100;      // fração
-  let rAnnual;
-  if (periodo === "1s") rAnnual = Math.pow(1 + r, 52) - 1;
-  else if (periodo === "1m") rAnnual = Math.pow(1 + r, 12) - 1;
-  else rAnnual = r; // 1a
-
-  // Hard-cap anual conservador
-  rAnnual = clamp(rAnnual, ANALISE_CFG.annualCaps.min, ANALISE_CFG.annualCaps.max);
-  return rAnnual; // fração anual
-}
-
-/**
- * Métricas por ação (por unidade).
- * Composição ANUAL por número de anos (horizonte).
- */
-function calcularMetricasBase(acao, { periodo="1m", horizonte=1, incluirDiv=true }={}){
-  const preco = toNum(acao.valorStock);
-  if (!(preco>0)) return null;
-
+function calcularMetricasBase(acao, { periodo = "1m", horizonte = 1, incluirDiv = true } = {}) {
+  const precoAtual = toNum(acao.valorStock);
   const anualDiv = toNum(acao.divAnual ?? anualPreferido(acao));
+  const prefer = campoCrescimentoPreferido(periodo);
+  const taxaPct = melhorTaxaCrescimento(acao, prefer);
+  const r = clamp(taxaPct / 100, -0.95, 5);
+  const h = Math.max(1, Number(horizonte || 1));
 
-  const rAnnual = _estimateAnnualRate(acao, periodo); // fração anual já limitada
-  const anos = Math.max(1, Number(horizonte||1));
-  const mult = Math.pow(1 + rAnnual, anos);
+  // linear (conservador)
+  const valorizacaoNoHorizonte = precoAtual * r * h;
+  const dividendosNoHorizonte = incluirDiv ? anualDiv * h : 0;
+  const lucroUnidade = dividendosNoHorizonte + valorizacaoNoHorizonte;
+  const retornoPorEuro = precoAtual > 0 ? lucroUnidade / precoAtual : 0;
 
-  const valorizacao = preco * (mult - 1);
-  const divHorizonte = incluirDiv ? anualDiv * anos : 0;
+  return { preco: precoAtual, dividendoAnual: anualDiv, taxaPct, totalDividendos: dividendosNoHorizonte, valorizacao: valorizacaoNoHorizonte, lucroUnidade, retornoPorEuro };
+}
+function scorePE(pe) {
+  if (!Number.isFinite(pe) || pe <= 0) return 0.5;
+  if (pe <= 12) return 1.0;
+  if (pe <= 15) return 0.85;
+  if (pe <= 20) return 0.7;
+  if (pe <= 25) return 0.5;
+  if (pe <= 30) return 0.35;
+  return 0.2;
+}
+function scoreTrend(preco, sma50, sma200) {
+  let t = 0;
+  if (Number.isFinite(preco) && Number.isFinite(sma50) && preco > sma50) t += 0.2;
+  if (Number.isFinite(preco) && Number.isFinite(sma200) && preco > sma200) t += 0.3;
+  if (Number.isFinite(sma50) && Number.isFinite(sma200) && sma50 > sma200) t += 0.1;
+  return clamp(t, 0, 0.6);
+}
+function percentile(arr, p) { if (!arr.length) return 0; const a = [...arr].sort((x, y) => x - y); const idx = Math.floor((a.length - 1) * clamp(p, 0, 1)); return a[idx]; }
 
-  const lucroUnidade   = divHorizonte + valorizacao;
-  const retornoPorEuro = preco>0 ? (lucroUnidade / preco) : 0;
+function prepararCandidatos(rows, { periodo, horizonte, incluirDiv, modoEstrito = false }) {
+  let cands = rows.map((a) => ({ ...a, metrics: calcularMetricasBase(a, { periodo, horizonte, incluirDiv }) }))
+    .filter((c) => c.metrics.preco > 0 && isFinite(c.metrics.lucroUnidade) && c.metrics.lucroUnidade > 0);
+  if (!cands.length) return [];
 
+  const rets = cands.map((c) => c.metrics.retornoPorEuro).filter((x) => x > 0 && isFinite(x));
+  const p99 = Math.max(percentile(rets, 0.99), 1e-9);
+
+  cands = cands.map((c) => {
+    const R = clamp(c.metrics.retornoPorEuro / p99, 0, 1);
+    if (modoEstrito) return { ...c, score: R, __R: R, __V: 0, __T: 0, __Rsk: 0 };
+    const V = scorePE(c.pe);
+    const T = scoreTrend(c.metrics.preco, c.sma50, c.sma200);
+    const Rsk = 1.0;
+    const score = 0.55 * R + 0.15 * V + 0.25 * T + 0.05 * Rsk;
+    return { ...c, score, __R: R, __V: V, __T: T, __Rsk: Rsk };
+  }).filter((c) => c.score > 0);
+
+  return cands;
+}
+function makeLinha(c, qtd) {
+  const investido = qtd * c.metrics.preco;
   return {
-    preco,
-    dividendoAnual: anualDiv,
-    taxaPct: rAnnual * 100, // guarda como % anual equivalente (já limitada)
-    totalDividendos: divHorizonte,
-    valorizacao,
-    lucroUnidade,
-    retornoPorEuro,
+    nome: c.nome, ticker: c.ticker, preco: c.metrics.preco, quantidade: qtd, investido,
+    lucro: qtd * c.metrics.lucroUnidade, taxaPct: c.metrics.taxaPct, dividendoAnual: c.metrics.dividendoAnual,
+    divAnualAlloc: qtd * c.metrics.dividendoAnual, divPeriodoAlloc: qtd * c.metrics.totalDividendos, valorizAlloc: qtd * c.metrics.valorizacao,
   };
 }
+function sumarizar(linhas, investimento, gasto) {
+  const totalLucro = linhas.reduce((s, l) => s + l.lucro, 0);
+  const totalDivAnual = linhas.reduce((s, l) => s + l.divAnualAlloc, 0);
+  const totalDivPeriodo = linhas.reduce((s, l) => s + l.divPeriodoAlloc, 0);
+  const totalValoriz = linhas.reduce((s, l) => s + l.valorizAlloc, 0);
+  return { linhas, totalLucro, totalGasto: gasto, totalDivAnual, totalDivPeriodo, totalValoriz, restante: Math.max(0, investimento - gasto) };
+}
+function distribuirFracoes_porScore(cands, investimento) {
+  const somaScore = cands.reduce((s, c) => s + c.score, 0);
+  if (!(somaScore > 0)) return { linhas: [], totalLucro: 0, totalGasto: 0, totalDivAnual: 0, totalDivPeriodo: 0, totalValoriz: 0, restante: investimento };
 
-function scoreAcao(acaoComMetrics){
-  const { pesos, smaSignal, peBands } = ANALISE_CFG;
-  const m = acaoComMetrics.metrics;
-  const rE = m.retornoPorEuro;
-
-  let bonus = 0;
-  if (Number.isFinite(acaoComMetrics.sma50) && acaoComMetrics.valorStock > acaoComMetrics.sma50) bonus += smaSignal.bonus * smaSignal.peso50;
-  if (Number.isFinite(acaoComMetrics.sma200) && acaoComMetrics.valorStock > acaoComMetrics.sma200) bonus += smaSignal.bonus * smaSignal.peso200;
-  if (Number.isFinite(acaoComMetrics.sma50) && acaoComMetrics.valorStock < acaoComMetrics.sma50) bonus += smaSignal.malus * smaSignal.peso50;
-  if (Number.isFinite(acaoComMetrics.sma200) && acaoComMetrics.valorStock < acaoComMetrics.sma200) bonus += smaSignal.malus * smaSignal.peso200;
-
-  const pe = Number(acaoComMetrics.pe ?? acaoComMetrics.peRatio ?? NaN);
-  let val = 0;
-  if (Number.isFinite(pe)){
-    if (pe < peBands.barato) val = +0.03;
-    else if (pe > peBands.justo) val = -0.02;
+  if (!MAX_PCT_POR_TICKER || MAX_PCT_POR_TICKER <= 0) {
+    const linhas = cands.map((c) => {
+      const propor = c.score / somaScore;
+      const investido = investimento * propor;
+      const qtd = investido / c.metrics.preco;
+      if (!(qtd > 0 && isFinite(qtd))) return null;
+      return makeLinha(c, qtd);
+    }).filter(Boolean);
+    const gasto = linhas.reduce((s, l) => s + l.investido, 0);
+    return sumarizar(linhas, investimento, gasto);
   }
 
-  const risco = (Number(acaoComMetrics.g1m||0) < 0) ? -0.01 : 0;
-
-  return pesos.retornoEuro*rE + pesos.tendenciaSMA*bonus + pesos.valoracaoPE*val + pesos.risco*risco;
-}
-
-/* ===== Distribuição: frações ===== */
-function distribuirFracoes_porScore(cands, investimento){
-  const capPct = Math.max(0, Number(ANALISE_CFG.maxPctPorTicker||0));
-  const capValor = capPct > 0 ? investimento * capPct : Infinity;
-
-  const scores = cands.map(c => Math.max(0, c.score));
-  const soma = scores.reduce((a,b)=>a+b,0);
-
-  let linhas = cands.map((c, i) => {
-    const share = soma>0 ? (scores[i] / soma) : (1 / cands.length);
-    let investido = investimento * share;
-    investido = Math.min(investido, capValor);
-    const qtd = investido / c.metrics.preco;
-
-    return {
-      nome: c.nome, ticker: c.ticker, preco: c.metrics.preco,
-      quantidade: qtd, investido,
-      lucro: qtd * c.metrics.lucroUnidade,
-      taxaPct: c.metrics.taxaPct,
-      dividendoAnual: c.metrics.dividendoAnual,
-      divAnualAlloc: qtd * c.metrics.dividendoAnual,
-      divPeriodoAlloc: qtd * c.metrics.totalDividendos,
-      valorizAlloc: qtd * c.metrics.valorizacao,
-    };
-  });
-
-  // recorte por teto (se algum excedeu por arredondamentos)
-  linhas = linhas.map(l => {
-    if (l.investido > capValor) {
-      const fator = capValor / l.investido;
-      l.investido = capValor;
-      l.quantidade *= fator;
-      l.lucro *= fator;
-      l.divAnualAlloc *= fator;
-      l.divPeriodoAlloc *= fator;
-      l.valorizAlloc *= fator;
-    }
-    return l;
-  });
-
-  let totalGasto = linhas.reduce((s,l)=>s+l.investido,0);
-  let restante = Math.max(0, investimento - totalGasto);
-
-  if (ANALISE_CFG.fallbackUsarRestoNoMelhor && restante > 0 && cands.length){
-    const best = cands[0]; // já ordenados
-    const qtd = restante / best.metrics.preco;
-    const idx = linhas.findIndex(l => l.ticker === best.ticker);
-    if (idx >= 0){
-      const l = linhas[idx];
-      l.investido += restante;
-      l.quantidade += qtd;
-      l.lucro += qtd * best.metrics.lucroUnidade;
-      l.divAnualAlloc += qtd * best.metrics.dividendoAnual;
-      l.divPeriodoAlloc += qtd * best.metrics.totalDividendos;
-      l.valorizAlloc += qtd * best.metrics.valorizacao;
-    } else {
-      linhas.push({
-        nome: best.nome, ticker: best.ticker, preco: best.metrics.preco,
-        quantidade: qtd, investido: restante,
-        lucro: qtd * best.metrics.lucroUnidade,
-        taxaPct: best.metrics.taxaPct,
-        dividendoAnual: best.metrics.dividendoAnual,
-        divAnualAlloc: qtd * best.metrics.dividendoAnual,
-        divPeriodoAlloc: qtd * best.metrics.totalDividendos,
-        valorizAlloc: qtd * best.metrics.valorizacao,
-      });
-    }
-    totalGasto += restante;
-    restante = 0;
-  }
-
-  const totalLucro = linhas.reduce((s,l)=>s+l.lucro,0);
-  const totalDivAnual = linhas.reduce((s,l)=>s+l.divAnualAlloc,0);
-  const totalDivPeriodo = linhas.reduce((s,l)=>s+l.divPeriodoAlloc,0);
-  const totalValoriz = linhas.reduce((s,l)=>s+l.valorizAlloc,0);
-
-  return { linhas, totalLucro, totalGasto, totalDivAnual, totalDivPeriodo, totalValoriz, restante };
-}
-
-/* ===== Distribuição: inteiros (greedy) ===== */
-function distribuirInteiros_greedy(cands, investimento){
-  const capPct = Math.max(0, Number(ANALISE_CFG.maxPctPorTicker||0));
-  const capValor = capPct > 0 ? investimento * capPct : Infinity;
-
-  const linhasMap = new Map();
   let restante = investimento;
-  const MAX_ITERS = 5000;
-  let it = 0;
+  const linhas = [];
+  const ord = [...cands].sort((a, b) => b.score - a.score);
+  const capAbs = MAX_PCT_POR_TICKER * investimento;
 
-  while (restante > 0 && it < MAX_ITERS){
-    it++;
-    let comprou = false;
-    for (const c of cands){
-      const preco = c.metrics.preco;
-      if (preco <= 0 || restante < preco) continue;
-
-      const atual = linhasMap.get(c.ticker);
-      const investidoAtual = atual ? atual.investido : 0;
-      if (investidoAtual + preco > capValor) continue;
-
-      const qtd = 1;
-      const lucroAdd = c.metrics.lucroUnidade;
-      const divAnAdd = c.metrics.dividendoAnual;
-      const divPerAdd = c.metrics.totalDividendos;
-      const valAdd = c.metrics.valorizacao;
-
-      if (!atual){
-        linhasMap.set(c.ticker, {
-          nome: c.nome, ticker: c.ticker, preco,
-          quantidade: qtd, investido: preco,
-          lucro: lucroAdd,
-          taxaPct: c.metrics.taxaPct,
-          dividendoAnual: c.metrics.dividendoAnual,
-          divAnualAlloc: divAnAdd,
-          divPeriodoAlloc: divPerAdd,
-          valorizAlloc: valAdd,
-        });
-      } else {
-        atual.quantidade += qtd;
-        atual.investido += preco;
-        atual.lucro += lucroAdd;
-        atual.divAnualAlloc += divAnAdd;
-        atual.divPeriodoAlloc += divPerAdd;
-        atual.valorizAlloc += valAdd;
-      }
-      restante -= preco;
-      comprou = true;
+  for (const c of ord) {
+    const investAlvo = (c.score / somaScore) * investimento;
+    const investido = Math.min(investAlvo, capAbs, restante);
+    if (investido <= 0) continue;
+    const qtd = investido / c.metrics.preco;
+    if (qtd > 0 && isFinite(qtd)) {
+      linhas.push(makeLinha(c, qtd));
+      restante -= investido;
       if (restante <= 0) break;
     }
-    if (!comprou) break;
   }
+  if (restante > 0) {
+    for (const c of ord) {
+      const ja = linhas.find((l) => l.ticker === c.ticker);
+      const jaInvest = ja ? ja.investido : 0;
+      const margem = Math.max(0, capAbs - jaInvest);
+      if (margem <= 0) continue;
 
-  const linhas = Array.from(linhasMap.values());
-  const totalGasto = linhas.reduce((s,l)=>s+l.investido,0);
-  const totalLucro = linhas.reduce((s,l)=>s+l.lucro,0);
-  const totalDivAnual = linhas.reduce((s,l)=>s+l.divAnualAlloc,0);
-  const totalDivPeriodo = linhas.reduce((s,l)=>s+l.divPeriodoAlloc,0);
-  const totalValoriz = linhas.reduce((s,l)=>s+l.valorizAlloc,0);
+      const investido = Math.min(margem, restante);
+      if (investido <= 0) continue;
 
-  return { linhas, totalLucro, totalGasto, totalDivAnual, totalDivPeriodo, totalValoriz, restante };
+      const qtd = investido / c.metrics.preco;
+      if (!(qtd > 0 && isFinite(qtd))) continue;
+
+      if (ja) {
+        ja.quantidade += qtd; ja.investido += investido; ja.lucro += qtd * c.metrics.lucroUnidade;
+        ja.divAnualAlloc += qtd * c.metrics.dividendoAnual; ja.divPeriodoAlloc += qtd * c.metrics.totalDividendos; ja.valorizAlloc += qtd * c.metrics.valorizacao;
+      } else {
+        linhas.push(makeLinha(c, qtd));
+      }
+      restante -= investido;
+      if (restante <= 0) break;
+    }
+  }
+  const gasto = investimento - restante;
+  return sumarizar(linhas, investimento, gasto);
 }
+function distribuirInteiros_porScore(cands, investimento) {
+  const soma = cands.reduce((s, c) => s + c.score, 0);
+  if (!(soma > 0)) return { linhas: [], totalLucro: 0, totalGasto: 0, totalDivAnual: 0, totalDivPeriodo: 0, totalValoriz: 0, restante: investimento };
 
-/* ===== Pipeline principal de simulação ===== */
-function simularInvestimento(rowsSelecionadas, investimento, { periodo="1m", horizonte=1, incluirDiv=true, usarInteiros=false }={}){
-  const comMetrics = rowsSelecionadas.map(a => {
-    const metrics = calcularMetricasBase(a, { periodo, horizonte, incluirDiv });
-    return metrics ? { ...a, metrics } : null;
-  }).filter(Boolean);
+  const ordered = [...cands].sort((a, b) => b.score - a.score);
+  const base = ordered.map((c) => {
+    const propor = c.score / soma;
+    const investAlvo = investimento * propor;
+    const qtd = Math.max(0, Math.floor(c.metrics.preco > 0 ? investAlvo / c.metrics.preco : 0));
+    return { c, qtd };
+  });
 
-  comMetrics.forEach(a => a.score = scoreAcao(a));
-  comMetrics.sort((a,b)=> b.score - a.score);
+  let gasto = base.reduce((s, x) => s + x.qtd * x.c.metrics.preco, 0);
+  let restante = investimento - gasto;
 
-  if (ANALISE_CFG.debug.logScore) {
-    console.table(
-      comMetrics.map(a => ({
-        t: a.ticker,
-        score: Number(a.score).toFixed(2),
-        r_per_eur: Number(a.metrics.retornoPorEuro).toFixed(2),
-        r_annual_pct: Number(a.metrics.taxaPct).toFixed(2),
-      }))
-    );
+  while (true) {
+    let escolhido = null;
+    for (const cand of ordered) {
+      if (cand.metrics.preco <= restante && cand.metrics.lucroUnidade > 0) { escolhido = cand; break; }
+    }
+    if (!escolhido) break;
+    const reg = base.find((x) => x.c === escolhido);
+    if (!reg) break;
+    reg.qtd += 1;
+    gasto += escolhido.metrics.preco;
+    restante = investimento - gasto;
+    if (!ordered.some((o) => o.metrics.preco <= restante && o.metrics.lucroUnidade > 0)) break;
   }
 
-  if (usarInteiros) {
-    return distribuirInteiros_greedy(comMetrics, investimento);
-  }
-  return distribuirFracoes_porScore(comMetrics, investimento);
+  const linhas = base.filter(({ qtd }) => qtd > 0).map(({ c, qtd }) => makeLinha(c, qtd));
+  return sumarizar(linhas, investimento, gasto);
 }
 
 /* ===============================
-   UI: Simulador (modal)
+   Modal (open/close + render)
    =============================== */
-function openSimModal() {
-  document.getElementById("anlSimModal")?.classList.remove("hidden");
-}
-function closeSimModal() {
-  document.getElementById("anlSimModal")?.classList.add("hidden");
-}
+function openSimModal() { document.getElementById("anlSimModal")?.classList.remove("hidden"); }
+function closeSimModal() { document.getElementById("anlSimModal")?.classList.add("hidden"); }
 
-function renderResultadoSimulacao(res, meta) {
+function renderResultadoSimulacao(res) {
   const cont = document.getElementById("anlSimResultado");
   if (!cont) return;
 
@@ -827,40 +588,49 @@ function renderResultadoSimulacao(res, meta) {
     return;
   }
 
-  const retornoPct = res.totalGasto > 0 ? (res.totalLucro / res.totalGasto) * 100 : 0;
-  const header =
-    `<p><strong>Horizonte:</strong> ${meta.horizonte} ${meta.horizonte>1?"anos":"ano"}<br/>
-      <strong>Período de crescimento:</strong> ${meta.periodo==="1s"?"1 semana":meta.periodo==="1m"?"1 mês":"1 ano"}<br/>
-      <strong>Dividendos:</strong> ${meta.incluirDiv ? "incluídos" : "excluídos"}</p>`;
+  const horizonte = Number(document.getElementById("anlSimHoriz")?.value || 1);
+  const periodoSel = document.getElementById("anlSimPeriodo")?.value || "1m";
+  const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
+  const periodoLabel = periodoSel === "1s" ? "1 semana" : periodoSel === "1m" ? "1 mês" : "1 ano";
 
-  const rows = res.linhas.map(l => `
-    <tr>
-      <td><strong>${l.ticker}</strong></td>
-      <td>${l.nome || "—"}</td>
-      <td>${fmtEUR(l.preco)}</td>
-      <td>${l.quantidade.toFixed(2)}</td>
-      <td>${fmtEUR(l.investido)}</td>
-      <td>${fmtEUR(l.lucro)}</td>
-      <td>${fmtEUR(l.divAnualAlloc)}</td>
-      <td>${fmtEUR(l.divPeriodoAlloc)}</td>
-      <td>${fmtEUR(l.valorizAlloc)}</td>
-    </tr>
-  `).join("");
+  const retornoTotal = res.totalDivPeriodo + res.totalValoriz;
+  const retornoPct = res.totalGasto > 0 ? (retornoTotal / res.totalGasto) * 100 : 0;
+
+  const rows = res.linhas.filter((l) => l.quantidade > 0 && l.investido > 0).map((l) => {
+    const lucroLinha = l.divPeriodoAlloc + l.valorizAlloc;
+    const noGrowth = Math.abs(l.valorizAlloc) < 1e-8;
+    return `
+      <tr>
+        <td><strong>${l.ticker}</strong></td>
+        <td>${l.nome || "—"}</td>
+        <td>${fmtEUR(l.preco)}</td>
+        <td>${Number(l.quantidade).toFixed(2)}</td>
+        <td>${fmtEUR(l.investido)}</td>
+        <td>${fmtEUR(lucroLinha)}${noGrowth ? ` <span class="badge muted" title="Sem valorização (taxa=0)">r=0%</span>` : ""}</td>
+        <td>${fmtEUR(l.divAnualAlloc)}</td>
+        <td>${fmtEUR(l.divPeriodoAlloc)}</td>
+        <td>${fmtEUR(l.valorizAlloc)}</td>
+      </tr>`;
+  }).join("");
 
   cont.innerHTML = `
-    ${header}
+    <div class="card" style="margin-bottom:10px;">
+      <div class="card-content" style="display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
+        <div><strong>Horizonte:</strong> ${horizonte} ${horizonte === 1 ? "ano" : "anos"}</div>
+        <div><strong>Período de crescimento:</strong> ${periodoLabel}</div>
+        <div><strong>Dividendos:</strong> ${incluirDiv ? "incluídos" : "excluídos"}</div>
+      </div>
+    </div>
+
     <div class="tabela-scroll-wrapper">
       <table class="fine-table" style="width:100%">
         <thead>
           <tr>
-            <th>Ticker</th>
-            <th>Nome</th>
-            <th>Preço</th>
-            <th>Qtd.</th>
+            <th>Ticker</th><th>Nome</th><th>Preço</th><th>Qtd.</th>
             <th>Investido</th>
-            <th>Lucro estimado</th>
+            <th>Lucro estimado (= Div. no horizonte + Valorização)</th>
             <th>Dividendo anual (aloc.)</th>
-            <th>Dividendos no horizonte</th>
+            <th>Dividendos no horizonte (h=${horizonte})</th>
             <th>Valorização no horizonte</th>
           </tr>
         </thead>
@@ -869,7 +639,7 @@ function renderResultadoSimulacao(res, meta) {
           <tr>
             <th colspan="4" style="text-align:right;">Totais</th>
             <th>${fmtEUR(res.totalGasto)}</th>
-            <th>${fmtEUR(res.totalLucro)}</th>
+            <th>${fmtEUR(retornoTotal)}</th>
             <th>${fmtEUR(res.totalDivAnual)}</th>
             <th>${fmtEUR(res.totalDivPeriodo)}</th>
             <th>${fmtEUR(res.totalValoriz)}</th>
@@ -880,14 +650,14 @@ function renderResultadoSimulacao(res, meta) {
 
     <div class="card" style="margin-top:10px;">
       <div class="card-content" style="display:flex; gap:16px; flex-wrap:wrap;">
-        <div><strong>Retorno total (€):</strong> ${fmtEUR(res.totalLucro)}</div>
+        <div><strong>Retorno total (€):</strong> ${fmtEUR(retornoTotal)}</div>
         <div><strong>Retorno total (%):</strong> ${retornoPct.toFixed(2)}%</div>
         <div><strong>Dividendos anuais (soma aloc.):</strong> ${fmtEUR(res.totalDivAnual)}</div>
         <div><strong>Dividendos no horizonte:</strong> ${fmtEUR(res.totalDivPeriodo)}</div>
         <div><strong>Valorização no horizonte:</strong> ${fmtEUR(res.totalValoriz)}</div>
+        ${res.restante > 0 ? `<div><strong>Restante não investido:</strong> ${fmtEUR(res.restante)}</div>` : ""}
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 /* === Pizza: distribuição por setor (selecionados) === */
@@ -901,34 +671,28 @@ async function renderSelectedSectorChart(rowsSelecionadas){
 
   const map = new Map();
   rowsSelecionadas.forEach(r=>{
-    const k = r.setor || "—";
+    const k = canonLabel(r.setor || "—");
     map.set(k, (map.get(k)||0) + 1);
   });
   const labels = Array.from(map.keys());
   const data   = Array.from(map.values());
+  if (!data.length){ wrap.classList.add("muted"); return; }
   const colors = labels.map((_,i)=> PALETTE[i % PALETTE.length]);
 
   chartSelSetor = new Chart(el, {
     type: "doughnut",
     data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: "62%",
+      responsive: true, maintainAspectRatio: true, cutout: "62%",
       plugins:{
         legend: { position: "bottom", labels: { color: chartColors().ticks } },
         tooltip:{
-          backgroundColor: chartColors().tooltipBg,
-          titleColor: chartColors().tooltipFg,
-          bodyColor: chartColors().tooltipFg,
-          callbacks:{
-            label: (ctx)=>{
-              const total = data.reduce((a,b)=>a+b,0) || 1;
-              const v = Number(ctx.parsed);
-              const pct = ((v/total)*100).toFixed(1);
-              return ` ${ctx.label}: ${v} (${pct}%)`;
-            }
-          }
+          backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
+          callbacks:{ label: (ctx)=>{
+            const total = data.reduce((a,b)=>a+b,0) || 1;
+            const v = Number(ctx.parsed); const pct = ((v/total)*100).toFixed(1);
+            return ` ${ctx.label}: ${v} (${pct}%)`;
+          } }
         }
       }
     }
@@ -939,20 +703,20 @@ async function renderSelectedSectorChart(rowsSelecionadas){
    INIT
    =============================== */
 export async function initScreen() {
+  console.log("[analise] init…");
   await ensureChartJS();
+  if (!db) { console.error("Firebase DB não inicializado!"); return; }
+
   await fetchAcoes();
   populateFilters();
 
-  // Ordenação por cabeçalho
+  // Ordenação
   document.querySelectorAll("#anlTable thead th.sortable").forEach((th) => {
     th.addEventListener("click", () => {
       const key = th.getAttribute("data-sort");
       if (!key) return;
       if (sortKey === key) sortDir = sortDir === "asc" ? "desc" : "asc";
-      else {
-        sortKey = key;
-        sortDir = key === "pe" ? "asc" : "desc";
-      }
+      else { sortKey = key; sortDir = key === "pe" ? "asc" : "desc"; }
       markSortedHeader();
       applyFilters();
     });
@@ -979,18 +743,12 @@ export async function initScreen() {
     const mercado = document.getElementById("anlMercado")?.value || "";
     const periodo = document.getElementById("anlPeriodo")?.value || "";
     let rows = [...ALL_ROWS];
-    if (term)
-      rows = rows.filter(
-        (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term)
-      );
+    if (term) rows = rows.filter((r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term));
     if (setor) rows = rows.filter((r) => r.setor === setor);
     if (mercado) rows = rows.filter((r) => r.mercado === mercado);
     if (periodo) rows = rows.filter((r) => (r.periodicidade || "") === periodo);
 
-    rows.forEach((r) => {
-      if (check) selectedTickers.add(r.ticker);
-      else selectedTickers.delete(r.ticker);
-    });
+    rows.forEach((r) => { if (check) selectedTickers.add(r.ticker); else selectedTickers.delete(r.ticker); });
     updateSelCount();
     renderTable(sortRows(rows));
   });
@@ -1001,92 +759,65 @@ export async function initScreen() {
     applyFilters();
   });
 
-  // Abrir modal simulação
-  document.getElementById("anlSimular")?.addEventListener("click", () => {
+  // Abrir modal + pizza dos selecionados
+  document.getElementById("anlSimular")?.addEventListener("click", async () => {
+    if (selectedTickers.size === 0) { alert("Seleciona pelo menos uma ação para simular."); return; }
     const selecionadas = ALL_ROWS.filter(r => selectedTickers.has(r.ticker));
-    renderSelectedSectorChart(selecionadas);
+    await renderSelectedSectorChart(selecionadas);
     openSimModal();
-
-    // Torna as checkboxes mutuamente exclusivas
-    const chkTotal = document.getElementById("anlSimInvestirTotal");
-    const chkInteiros = document.getElementById("anlSimInteiros");
-    if (chkTotal && chkInteiros) {
-      const sync = (src) => {
-        if (src === chkTotal && chkTotal.checked) chkInteiros.checked = false;
-        if (src === chkInteiros && chkInteiros.checked) chkTotal.checked = false;
-        // Default: se nenhuma marcada, assume Total (frações)
-        if (!chkTotal.checked && !chkInteiros.checked) chkTotal.checked = true;
-      };
-      chkTotal.addEventListener("change", () => sync(chkTotal));
-      chkInteiros.addEventListener("change", () => sync(chkInteiros));
-      // estado inicial seguro
-      if (!chkTotal.checked && !chkInteiros.checked) chkTotal.checked = true;
-      if (chkTotal.checked && chkInteiros.checked) chkInteiros.checked = false;
-    }
   });
 
-  // Fechar modal simulação
+  // Fechar modal
   document.getElementById("anlSimClose")?.addEventListener("click", closeSimModal);
-  document.getElementById("anlSimModal")?.addEventListener("click", (e) => {
-    if (e.target.id === "anlSimModal") closeSimModal();
-  });
+  document.getElementById("anlSimModal")?.addEventListener("click", (e) => { if (e.target.id === "anlSimModal") closeSimModal(); });
+
+  // Exclusividade das opções
+  const cbTotal = document.getElementById("anlSimInvestirTotal");
+  const cbInteiro = document.getElementById("anlSimInteiros");
+  cbTotal?.addEventListener("change", () => { if (cbTotal.checked) cbInteiro && (cbInteiro.checked = false); else cbInteiro && (cbInteiro.checked = true); });
+  cbInteiro?.addEventListener("change", () => { if (cbInteiro.checked) cbTotal && (cbTotal.checked = false); else cbTotal && (cbTotal.checked = true); });
 
   // Calcular simulação
-  document.getElementById("anlSimCalcular")?.addEventListener("click", () => {
+  document.getElementById("anlSimCalcular")?.addEventListener("click", async () => {
     const investimento = Number(document.getElementById("anlSimInvest")?.value || 0);
     const horizonte = Number(document.getElementById("anlSimHoriz")?.value || 1);
-    const periodoSel = document.getElementById("anlSimPeriodo")?.value || "1m";
+    const periodo = document.getElementById("anlSimPeriodo")?.value || "1m";
     const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
+    const usarFracoes = !!document.getElementById("anlSimInvestirTotal")?.checked;
+    const apenasInteiros = !!document.getElementById("anlSimInteiros")?.checked;
+    const modoEstrito = !!document.getElementById("anlSimEstrito")?.checked;
 
-    const chkTotal = document.getElementById("anlSimInvestirTotal");
-    const chkInteiros = document.getElementById("anlSimInteiros");
-    // lógica: se "Inteiros" está checked, então usarInteiros=true; caso contrário, frações
-    const usarInteiros = !!(chkInteiros && chkInteiros.checked);
-
-    if (!(investimento > 0)) {
-      alert("Indica um investimento total válido.");
-      return;
-    }
+    if (!(investimento > 0)) { alert("Indica um investimento total válido."); return; }
 
     const selecionadas = ALL_ROWS.filter((r) => selectedTickers.has(r.ticker));
-    if (!selecionadas.length) {
-      alert("Seleciona pelo menos um ticker.");
-      return;
-    }
+    let candidatos = prepararCandidatos(selecionadas, { periodo, horizonte, incluirDiv, modoEstrito });
+    if (candidatos.length === 0) { alert("Nenhum ativo com retorno positivo ou dados válidos para este cenário."); return; }
 
-    const res = simularInvestimento(selecionadas, investimento, {
-      periodo: periodoSel, horizonte, incluirDiv, usarInteiros
-    });
-    renderResultadoSimulacao(res, { periodo: periodoSel, horizonte, incluirDiv });
-    renderSelectedSectorChart(selecionadas);
+    const res = (apenasInteiros && !usarFracoes) ? distribuirInteiros_porScore(candidatos, investimento)
+                                                 : distribuirFracoes_porScore(candidatos, investimento);
+
+    await renderSelectedSectorChart(selecionadas);
+    renderResultadoSimulacao(res);
   });
 
-  // Exportar para simulador
+  // Exportar seleção
   document.getElementById("anlSimExportar")?.addEventListener("click", () => {
-    const selecionadas = ALL_ROWS.filter((r) =>
-      selectedTickers.has(r.ticker)
-    ).map((r) => ({
-      ticker: r.ticker,
-      nome: r.nome,
-      preco: r.valorStock,
-      divPer: r.divPer,
-      divAnual: r.divAnual,
-      periodicidade: r.periodicidade,
-      mes: r.mes,
-      yield: r.yield,
+    const selecionadas = ALL_ROWS.filter((r) => selectedTickers.has(r.ticker)).map((r) => ({
+      ticker: r.ticker, nome: r.nome, preco: r.valorStock, divPer: r.divPer, divAnual: r.divAnual,
+      periodicidade: r.periodicidade, mes: r.mes, yield: r.yield,
     }));
     localStorage.setItem("simulacaoSelecionados", JSON.stringify(selecionadas));
     alert(`Exportado ${selecionadas.length} tickers. Podes abrir o ecrã do simulador.`);
     closeSimModal();
   });
 
-  // Primeira renderização
+  // Render inicial
   markSortedHeader();
   applyFilters();
 }
 
-/* Auto-init seguro (se o router não chamar initScreen) */
+/* Auto-init seguro */
 if (!window.__ANL_AUTO_INIT__) {
   window.__ANL_AUTO_INIT__ = true;
-  initScreen().catch(console.error);
+  initScreen().catch((e)=>{ console.error("[analise] init error", e); });
 }

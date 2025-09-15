@@ -43,10 +43,7 @@
   </div>
 
   <!-- GRÁFICOS -->
-  <div
-    class="portfolio-charts"
-    style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px"
-  >
+  <div class="portfolio-charts three-cols">
     <div class="card">
       <h3>Distribuição por Setor</h3>
       <div class="chart-wrap"><canvas id="anlChartSetor"></canvas></div>
@@ -64,73 +61,28 @@
   <!-- CALENDÁRIO DE DIVIDENDOS -->
   <div class="card" style="margin-top: 12px">
     <div class="card-content" style="display: block">
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 6px;
-        "
-      >
-        <h3 style="margin: 0">Calendário de Dividendos (12 meses)</h3>
-        <div class="muted" style="font-size: 0.9rem">
-          Células preenchidas indicam meses típicos de pagamento; valor ≈
-          pagamento estimado
-        </div>
+      <div class="dividend-header">
+        <h3>Calendário de Dividendos (12 meses)</h3>
+        <div class="muted">Células preenchidas indicam meses típicos de pagamento; valor ≈ pagamento estimado</div>
       </div>
 
       <div class="dividend-heatmap">
         <div class="heatmap-header">
           <div class="cell sticky-col"></div>
           <div class="months" id="anlHeatmapHeaderMonths">
-            <div class="cell">Jan</div>
-            <div class="cell">Fev</div>
-            <div class="cell">Mar</div>
-            <div class="cell">Abr</div>
-            <div class="cell">Mai</div>
-            <div class="cell">Jun</div>
-            <div class="cell">Jul</div>
-            <div class="cell">Ago</div>
-            <div class="cell">Set</div>
-            <div class="cell">Out</div>
-            <div class="cell">Nov</div>
-            <div class="cell">Dez</div>
+            <div class="cell">Jan</div><div class="cell">Fev</div><div class="cell">Mar</div>
+            <div class="cell">Abr</div><div class="cell">Mai</div><div class="cell">Jun</div>
+            <div class="cell">Jul</div><div class="cell">Ago</div><div class="cell">Set</div>
+            <div class="cell">Out</div><div class="cell">Nov</div><div class="cell">Dez</div>
           </div>
         </div>
         <div id="anlHeatmapBody" class="heatmap-body"></div>
       </div>
 
-      <div
-        class="muted"
-        style="
-          margin-top: 6px;
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          flex-wrap: wrap;
-        "
-      >
-        <span style="display: inline-flex; align-items: center; gap: 6px">
-          <span
-            class="legend-box"
-            style="background: var(--chart-fill-weak)"
-          ></span>
-          estimado baixo
-        </span>
-        <span style="display: inline-flex; align-items: center; gap: 6px">
-          <span
-            class="legend-box"
-            style="background: var(--chart-fill-med)"
-          ></span>
-          estimado médio
-        </span>
-        <span style="display: inline-flex; align-items: center; gap: 6px">
-          <span
-            class="legend-box"
-            style="background: var(--chart-fill-strong)"
-          ></span>
-          estimado alto
-        </span>
+      <div class="legend muted">
+        <span class="legend-item"><span class="legend-box weak"></span> estimado baixo</span>
+        <span class="legend-item"><span class="legend-box med"></span> estimado médio</span>
+        <span class="legend-item"><span class="legend-box strong"></span> estimado alto</span>
       </div>
     </div>
   </div>
@@ -138,24 +90,11 @@
   <!-- TABELA -->
   <div class="card" style="margin-top: 12px">
     <div class="card-content" style="display: block">
-      <!-- Seleção + Simulador -->
-      <div
-        class="analysis-toolbar"
-        style="padding: 0.6rem 1rem; border: 0; background: transparent"
-      >
-        <div
-          style="
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            flex-wrap: wrap;
-          "
-        >
+      <div class="analysis-toolbar compact">
+        <div class="left-actions">
           <button class="btn outline" id="anlSimular">Usar no simulador</button>
           <button class="btn ghost" id="anlClearSel">Limpar seleção</button>
-          <span class="muted"
-            >Selecionados: <strong id="anlSelCount">0</strong></span
-          >
+          <span class="muted">Selecionados: <strong id="anlSelCount">0</strong></span>
         </div>
       </div>
 
@@ -164,11 +103,7 @@
           <thead>
             <tr>
               <th class="sticky-col" style="width: 44px">
-                <input
-                  type="checkbox"
-                  id="anlSelectAll"
-                  title="Selecionar todos os filtrados"
-                />
+                <input type="checkbox" id="anlSelectAll" title="Selecionar todos os filtrados"/>
               </th>
               <th data-sort="ticker" class="sortable sticky-col">Ticker</th>
               <th data-sort="nome" class="sortable">Nome</th>
@@ -196,7 +131,7 @@
   </div>
 </div>
 
-<!-- MODAL: Simulação (com opções de investimento) -->
+<!-- MODAL: Simulação -->
 <div id="anlSimModal" class="modal hidden">
   <div class="modal-dialog">
     <div class="modal-header">
@@ -208,17 +143,11 @@
       <div class="form-grid">
         <label>
           Investimento total (€)
-          <input
-            id="anlSimInvest"
-            type="number"
-            min="1"
-            step="0.01"
-            placeholder="Ex.: 1000"
-          />
+          <input id="anlSimInvest" type="number" min="1" step="0.01" placeholder="Ex.: 1000"/>
         </label>
         <label>
           Horizonte (anos)
-          <input id="anlSimHoriz" type="number" min="1" step="1" value="1" />
+          <input id="anlSimHoriz" type="number" min="1" step="1" value="1"/>
         </label>
         <label>
           Período de crescimento
@@ -229,18 +158,17 @@
           </select>
         </label>
 
-        <!-- ✅ Opções de investimento -->
         <div class="sim-options">
           <label class="chk-inline">
-            <input id="anlSimInvestirTotal" type="checkbox" checked />
+            <input id="anlSimInvestirTotal" type="checkbox" checked/>
             Usar investimento total (frações permitidas)
           </label>
           <label class="chk-inline">
-            <input id="anlSimInteiros" type="checkbox" />
+            <input id="anlSimInteiros" type="checkbox"/>
             Apenas ações completas (sem frações)
           </label>
           <label class="chk-inline push-right">
-            <input id="anlSimIncluiDiv" type="checkbox" checked />
+            <input id="anlSimIncluiDiv" type="checkbox" checked/>
             Incluir dividendos
           </label>
         </div>
@@ -261,251 +189,80 @@
   </div>
 </div>
 
-<!-- estilos do heatmap + modal -->
 <style>
-  .dividend-heatmap {
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 12px;
-    overflow: hidden;
+  .portfolio-charts.three-cols{
+    display:grid; gap:12px;
+    grid-template-columns: repeat(3, minmax(0,1fr));
   }
-  .dividend-heatmap .cell {
-    padding: 8px 10px;
-    border-right: 1px solid var(--border, #e5e7eb);
-    white-space: nowrap;
+  @media (max-width: 980px){
+    .portfolio-charts.three-cols{ grid-template-columns: 1fr; }
   }
-  .dividend-heatmap .heatmap-header {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    background: var(--muted-bg, rgba(0, 0, 0, 0.03));
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-  .dividend-heatmap .months {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(64px, 1fr));
-  }
-  .dividend-heatmap .heatmap-body {
-    max-height: 420px;
-    overflow: auto;
-  }
-  .dividend-heatmap .row {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    border-top: 1px solid var(--border, #e5e7eb);
-  }
-  .dividend-heatmap .row .months {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(64px, 1fr));
-  }
-  .dividend-heatmap .sticky-col {
-    position: sticky;
-    left: 0;
-    background: var(--card, #fff);
-    z-index: 2;
-    border-right: 1px solid var(--border, #e5e7eb);
-  }
-  .dividend-heatmap .tt {
-    position: relative;
-  }
-  .dividend-heatmap .tt:hover::after {
-    content: attr(data-tt);
-    position: absolute;
-    bottom: 100%;
-    left: 0;
-    transform: translateY(-4px);
-    background: rgba(0, 0, 0, 0.85);
-    color: #fff;
-    font-size: 12px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    white-space: nowrap;
-  }
-  .pay-weak {
-    background: rgba(34, 197, 94, 0.18);
-  }
-  .pay-med {
-    background: rgba(34, 197, 94, 0.38);
-  }
-  .pay-strong {
-    background: rgba(34, 197, 94, 0.58);
-    color: #fff;
-  }
+  .chart-wrap{ height:260px; }
+  .chart-wrap canvas{ width:100% !important; height:100% !important; }
 
-  #anlTable thead th.sortable {
-    cursor: pointer;
-    user-select: none;
-  }
-  #anlTable thead th.sorted-asc::after {
-    content: " ↑";
-    opacity: 0.7;
-  }
-  #anlTable thead th.sorted-desc::after {
-    content: " ↓";
-    opacity: 0.7;
-  }
+  .dividend-header{ display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:6px; }
+  .legend{ margin-top:6px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .legend-item{ display:inline-flex; align-items:center; gap:6px; }
+  .legend-box{ width:14px; height:14px; border-radius:4px; display:inline-block; }
+  .legend-box.weak{ background: rgba(34,197,94,.18); }
+  .legend-box.med{ background: rgba(34,197,94,.38); }
+  .legend-box.strong{ background: rgba(34,197,94,.58); }
 
-  .badge {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-  }
-  .badge.ok {
-    background: #e6f7ee;
-    color: #106f3a;
-  }
-  .badge.warn {
-    background: #fff3cd;
-    color: #7c5b00;
-  }
-  .badge.danger {
-    background: #fde2e2;
-    color: #8a1f1f;
-  }
-  .badge.muted {
-    background: #f2f2f2;
-    color: #666;
-  }
-  .badge.up {
-    background: #e6f7ee;
-    color: #106f3a;
-  }
-  .badge.down {
-    background: #fde2e2;
-    color: #8a1f1f;
-  }
+  .dividend-heatmap{ border:1px solid var(--border,#e5e7eb); border-radius:12px; overflow:hidden; }
+  .dividend-heatmap .cell{ padding:8px 10px; border-right:1px solid var(--border,#e5e7eb); white-space:nowrap; }
+  .dividend-heatmap .heatmap-header{ display:grid; grid-template-columns:220px 1fr; background:var(--muted-bg,rgba(0,0,0,.03)); position:sticky; top:0; z-index:1; }
+  .dividend-heatmap .months{ display:grid; grid-template-columns:repeat(12, minmax(64px,1fr)); }
+  .dividend-heatmap .heatmap-body{ max-height:420px; overflow:auto; }
+  .dividend-heatmap .row{ display:grid; grid-template-columns:220px 1fr; border-top:1px solid var(--border,#e5e7eb); }
+  .dividend-heatmap .row .months{ display:grid; grid-template-columns:repeat(12, minmax(64px,1fr)); }
+  .dividend-heatmap .sticky-col{ position:sticky; left:0; background:var(--card,#fff); z-index:2; border-right:1px solid var(--border,#e5e7eb); }
+  .dividend-heatmap .tt{ position:relative; }
+  .dividend-heatmap .tt:hover::after{ content:attr(data-tt); position:absolute; bottom:100%; left:0; transform:translateY(-4px); background:rgba(0,0,0,.85); color:#fff; font-size:12px; padding:6px 8px; border-radius:6px; white-space:nowrap; }
+  .pay-weak{ background: rgba(34,197,94,.18); }
+  .pay-med{  background: rgba(34,197,94,.38); }
+  .pay-strong{ background: rgba(34,197,94,.58); color:#fff; }
 
-  .up {
-    color: #106f3a;
-  }
-  .down {
-    color: #8a1f1f;
-  }
+  .table-scroll{ overflow:auto; max-height: 62vh; }
+  #anlTable thead th{ position:sticky; top:0; z-index:3; background:var(--card,#fff); }
+  #anlTable thead th.sortable{ cursor:pointer; user-select:none; }
+  #anlTable thead th.sorted-asc::after{ content:" ↑"; opacity:.7; }
+  #anlTable thead th.sorted-desc::after{ content:" ↓"; opacity:.7; }
+  #anlTable .sticky-col{ position:sticky; left:0; z-index:2; background:var(--card,#fff); }
+  #anlTable th.sticky-col:nth-child(2), #anlTable td.sticky-col:nth-child(2){ left:44px; } /* checkbox col = 44px */
 
-  /* Modal */
-  .modal.hidden {
-    display: none;
-  }
-  .modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-dialog {
-    width: min(820px, 92vw);
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    border-radius: 14px;
-    overflow: hidden;
-    background: var(--card, #fff);
-    color: var(--card-foreground, #111);
-    border: 1px solid var(--border, #e5e7eb);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-  }
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border, #e5e7eb);
-    background: var(--background, #fff);
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-  .modal-body {
-    padding: 14px 16px;
-    overflow: auto;
-  }
-  .icon-btn {
-    background: transparent;
-    border: 0;
-    font-size: 18px;
-    cursor: pointer;
-    color: inherit;
-  }
-  #anlSimModal .form-grid input,
-  #anlSimModal .form-grid select {
-    padding: 0.6rem 0.7rem;
-    border-radius: 10px;
-    border: 1px solid var(--border, #e5e7eb);
-    background: var(--card, #fff);
-    color: var(--card-foreground, #111);
-  }
+  .badge{ display:inline-block; padding:2px 6px; border-radius:999px; font-size:.75rem; }
+  .badge.ok{ background:#e6f7ee; color:#106f3a; }
+  .badge.warn{ background:#fff3cd; color:#7c5b00; }
+  .badge.danger{ background:#fde2e2; color:#8a1f1f; }
+  .badge.muted{ background:#f2f2f2; color:#666; }
+  .badge.up{ background:#e6f7ee; color:#106f3a; }
+  .badge.down{ background:#fde2e2; color:#8a1f1f; }
+  .up{ color:#106f3a; } .down{ color:#8a1f1f; }
 
-  /* Opções do simulador */
-  .sim-options {
-    display: flex;
-    gap: 18px;
-    align-items: center;
-    flex-wrap: wrap;
-    grid-column: 1 / -1;
-    margin-top: 0.4rem;
-  }
-  .chk-inline {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .push-right {
-    margin-left: auto;
-  }
+  .modal.hidden{ display:none; }
+  .modal{ position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; }
+  .modal-dialog{ width:min(820px,92vw); max-height:90vh; display:flex; flex-direction:column; border-radius:14px; overflow:hidden; background:var(--card,#fff); color:var(--card-foreground,#111); border:1px solid var(--border,#e5e7eb); box-shadow:0 8px 30px rgba(0,0,0,.35); }
+  .modal-header{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--border,#e5e7eb); background:var(--background,#fff); position:sticky; top:0; z-index:2; }
+  .modal-body{ padding:14px 16px; overflow:auto; }
+  .icon-btn{ background:transparent; border:0; font-size:18px; cursor:pointer; color:inherit; }
+  #anlSimModal .form-grid input, #anlSimModal .form-grid select{ padding:.6rem .7rem; border-radius:10px; border:1px solid var(--border,#e5e7eb); background:var(--card,#fff); color:var(--card-foreground,#111); }
 
-  /* Dark mode */
-  [data-theme="dark"] .modal-dialog {
-    background: #111;
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-  [data-theme="dark"] .modal-header {
-    background: #111;
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-  [data-theme="dark"] #anlSimModal .form-grid input,
-  [data-theme="dark"] #anlSimModal .form-grid select {
-    background: #1a1a1a;
-    color: #eee;
-    border-color: rgba(255, 255, 255, 0.12);
-  }
+  .sim-options{ display:flex; gap:18px; align-items:center; flex-wrap:wrap; grid-column:1 / -1; margin-top:.4rem; }
+  .chk-inline{ display:flex; align-items:center; gap:.5rem; }
+  .push-right{ margin-left:auto; }
 
-  .tabela-scroll-wrapper {
-    overflow: auto;
-  }
-  .actions-row.sticky-actions {
-    display: flex;
-    gap: 0.6rem;
-    justify-content: flex-end;
-    position: sticky;
-    bottom: 0;
-    background: var(--card, #fff);
-    padding-top: 8px;
-  }
+  [data-theme="dark"] .modal-dialog{ background:#111; color:#fff; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] .modal-header{ background:#111; border-color:rgba(255,255,255,.08); }
+  [data-theme="dark"] #anlSimModal .form-grid input, [data-theme="dark"] #anlSimModal .form-grid select{ background:#1a1a1a; color:#eee; border-color:rgba(255,255,255,.12); }
 
-  /*gráfico de setores (seleção)*/
+  .tabela-scroll-wrapper{ overflow:auto; }
+  .actions-row.sticky-actions{ display:flex; gap:.6rem; justify-content:flex-end; position:sticky; bottom:0; background:var(--card,#fff); padding-top:8px; }
+
   /* pizza mobile-first */
-.pie-wrap{
-  width:100%;
-  max-width:420px;   /* cabe num telemóvel em pé */
-  margin:10px auto; 
-  padding:10px;
-}
-.pie-wrap canvas{
-  width:100% !important;
-  height:auto !important;
-  max-height:300px;  /* limita a altura para não “comer” o ecrã */
-}
-@media (max-width:480px){
-  .pie-wrap{ max-width:360px; }
-  .pie-wrap canvas{ max-height:260px; }
-}
-
+  .pie-wrap{ width:100%; max-width:420px; margin:10px auto; padding:10px; }
+  .pie-wrap canvas{ width:100% !important; height:auto !important; max-height:300px; }
+  @media (max-width:480px){ .pie-wrap{ max-width:360px; } .pie-wrap canvas{ max-height:260px; } }
 </style>
 
+<!-- ajusta o caminho conforme a tua estrutura -->
 <script type="module" src="./analise.js"></script>
