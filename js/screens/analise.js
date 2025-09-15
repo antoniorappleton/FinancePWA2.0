@@ -84,6 +84,7 @@ function anualizarDividendo(dividendoPorPagamento, periodicidade) {
   if (p === "semestral") return d * 2;
   return d; // anual ou n/a
 }
+
 function pagamentosAno(periodicidade) {
   const p = String(periodicidade || "");
   if (p === "Mensal") return 12;
@@ -92,18 +93,39 @@ function pagamentosAno(periodicidade) {
   if (p === "Anual") return 1;
   return 0;
 }
+
 function anualPreferido(doc) {
-  const d24 = toNum(doc.dividendoMedio24m);
-  if (d24 > 0) return d24; // anual (média 24m), se houver
-  return anualizarDividendo(doc.dividendo, doc.periodicidade);
+  // 1) melhor fonte: média anual 24m se existir
+  const anualAlpha = toNum(doc.dividendoMedio24m);
+  if (anualAlpha > 0) return anualAlpha;
+
+  // 2) total 24m → anual
+  const total24 = toNum(doc.totalDiv24m);
+  if (total24 > 0) return total24 / 2;
+
+  // 3) fallback: se 'dividendo' veio por pagamento + periodicidade → anualiza
+  const pAno = pagamentosAno(String(doc.periodicidade || ""));
+  const d = toNum(doc.dividendo);
+  if (pAno > 0 && d > 0) return d * pAno;
+
+  // 4) último recurso
+  return d > 0 ? d : 0;
 }
 function perPayment(doc) {
-  const base = toNum(doc.dividendo); // por pagamento
-  if (base > 0) return base;
+  // 1) melhor: eventos reais últimos 24m
+  const total24 = toNum(doc.totalDiv24m);
+  const pagos24 = toNum(doc.dividendosPagos24m);
+  if (total24 > 0 && pagos24 > 0) return total24 / pagos24;
+
+  // 2) se temos anual e periodicidade, divide pelo nº de pagamentos/ano
   const anual = anualPreferido(doc);
-  const pAno = pagamentosAno(doc.periodicidade);
-  return pAno > 0 ? anual / pAno : 0;
+  const pAno = pagamentosAno(String(doc.periodicidade || ""));
+  if (anual > 0 && pAno > 0) return anual / pAno;
+
+  // 3) fallback: usa 'dividendo' como veio (assumimos por pagamento)
+  return toNum(doc.dividendo);
 }
+
 function computeYieldPct(annualDividend, valorStock) {
   if (
     !Number.isFinite(annualDividend) ||
@@ -273,9 +295,13 @@ function mesesPagamento(periodicidade, mesTipicoIdx) {
   if (periodicidade === "Anual") return [mesTipicoIdx];
   return [];
 }
+
 function renderHeatmap(rows) {
   const body = document.getElementById("anlHeatmapBody");
-  if (!body) return;
+  const headMonths = document.getElementById("anlHeatmapHeaderMonths");
+  if (!body || !headMonths) return;
+
+  // escala de cor com base no pagamento por evento (não no anual)
   const values = rows
     .map((r) => perPayment(r))
     .filter((v) => v > 0)
@@ -288,22 +314,26 @@ function renderHeatmap(rows) {
       const per = String(r.periodicidade || "n/A");
       const idxMes = mesToIdx.get(String(r.mes || ""));
       const meses = mesesPagamento(per, idxMes);
-      const perPay = perPayment(r);
+      const porPagamento = perPayment(r); // <<-- valor correto por célula
       const klass =
-        perPay > 0
-          ? perPay <= q1
+        porPagamento > 0
+          ? porPagamento <= q1
             ? "pay-weak"
-            : perPay <= q2
+            : porPagamento <= q2
             ? "pay-med"
             : "pay-strong"
           : "";
+
       const cells = Array.from({ length: 12 }, (_, m) => {
         if (!meses.includes(m)) return `<div class="cell"></div>`;
-        const tt = `${r.ticker} • ${mesesPT[m]} • ~${fmtEUR(perPay)}`;
+        const tt = `${r.ticker} • ${mesesPT[m]} • ~${fmtEUR(
+          porPagamento
+        )} por pagamento`;
         return `<div class="cell tt ${klass}" data-tt="${tt}">${
-          perPay ? fmtEUR(perPay) : ""
+          porPagamento ? fmtEUR(porPagamento) : ""
         }</div>`;
       }).join("");
+
       const nome = r.nome ? ` <span class="muted">— ${r.nome}</span>` : "";
       return `
       <div class="row">
@@ -313,6 +343,13 @@ function renderHeatmap(rows) {
     `;
     })
     .join("");
+
+  // sincronizar scroll horizontal: corpo ↔ cabeçalho
+  const onScroll = (e) => {
+    headMonths.scrollLeft = e.target.scrollLeft;
+  };
+  body.removeEventListener("scroll", onScroll); // garante prevent dup
+  body.addEventListener("scroll", onScroll, { passive: true });
 }
 
 /* Tabela */

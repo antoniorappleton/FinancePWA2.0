@@ -723,19 +723,89 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
 :root[data-theme="dark"] .fine-table .sticky-col { background: var(--card-bg, #0f172a); }
 
 /* ===== Heatmap (mantém o que já tinhas; incluo aqui p/ conveniência) ===== */
-.dividend-heatmap { border: 1px solid var(--border, #e5e7eb); border-radius: 12px; overflow: hidden; }
-.dividend-heatmap .cell { padding: 8px 10px; border-right: 1px solid var(--border, #e5e7eb); white-space: nowrap; }
-.dividend-heatmap .heatmap-header { display: grid; grid-template-columns: 220px 1fr; background: var(--muted-bg, rgba(0,0,0,.03)); position: sticky; top: 0; z-index: 1; }
-.dividend-heatmap .months { display: grid; grid-template-columns: repeat(12, minmax(64px, 1fr)); }
-.dividend-heatmap .heatmap-body { max-height: 420px; overflow: auto; }
-.dividend-heatmap .row { display: grid; grid-template-columns: 220px 1fr; border-top: 1px solid var(--border, #e5e7eb); }
-.dividend-heatmap .row .months { display: grid; grid-template-columns: repeat(12, minmax(64px, 1fr)); }
-.dividend-heatmap .sticky-col { position: sticky; left: 0; background: var(--card, #fff); z-index: 2; border-right: 1px solid var(--border, #e5e7eb); }
-:root{ --chart-fill-weak: rgba(34,197,94,.25); --chart-fill-med: rgba(34,197,94,.55); --chart-fill-strong: rgba(34,197,94,.85); }
-[data-theme="dark"]{ --chart-fill-weak: rgba(34,197,94,.25); --chart-fill-med: rgba(34,197,94,.55); --chart-fill-strong: rgba(34,197,94,.85); }
-.cell.pay-weak{ background: var(--chart-fill-weak); }
-.cell.pay-med{ background: var(--chart-fill-med); }
+/* ===== Heatmap responsivo (substitui o bloco antigo) ===== */
+.dividend-heatmap {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  overflow: hidden;
+  /* larguras base (ajustadas nas media queries) */
+  --name-col: 220px;
+  --cell-w: 72px;
+}
+
+/* Ajustes progressivos para ecrãs menores */
+@media (max-width: 1024px){
+  .dividend-heatmap { --name-col: 200px; --cell-w: 60px; }
+}
+@media (max-width: 768px){
+  .dividend-heatmap { --name-col: 180px; --cell-w: 48px; }
+}
+@media (max-width: 480px){
+  .dividend-heatmap { --name-col: 160px; --cell-w: 44px; }
+}
+
+.dividend-heatmap .cell {
+  padding: 8px 10px;
+  border-right: 1px solid var(--border, #e5e7eb);
+  white-space: nowrap;
+}
+
+.dividend-heatmap .heatmap-header {
+  display: grid;
+  grid-template-columns: var(--name-col) 1fr;
+  background: var(--muted-bg, rgba(0,0,0,.03));
+  position: sticky; top: 0; z-index: 1;
+}
+
+/* Grelha dos meses — força largura mínima para permitir scroll horizontal no mobile */
+.dividend-heatmap .months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(var(--cell-w), 1fr));
+  min-width: calc(12 * var(--cell-w));
+}
+
+.dividend-heatmap .heatmap-body {
+  max-height: 420px;
+  overflow: auto; /* vertical + horizontal */
+  -webkit-overflow-scrolling: touch; /* scroll suave no iOS */
+}
+
+.dividend-heatmap .row {
+  display: grid;
+  grid-template-columns: var(--name-col) 1fr;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.dividend-heatmap .row .months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(var(--cell-w), 1fr));
+  min-width: calc(12 * var(--cell-w));
+}
+
+/* Primeira coluna fixa à esquerda */
+.dividend-heatmap .sticky-col {
+  position: sticky; left: 0;
+  background: var(--card, #fff);
+  z-index: 2;
+  border-right: 1px solid var(--border, #e5e7eb);
+}
+
+/* Cores/intensidades (mantém a tua paleta) */
+:root{
+  --chart-fill-weak: rgba(34,197,94,.25);
+  --chart-fill-med:  rgba(34,197,94,.55);
+  --chart-fill-strong: rgba(34,197,94,.85);
+}
+[data-theme="dark"]{
+  --chart-fill-weak: rgba(34,197,94,.25);
+  --chart-fill-med:  rgba(34,197,94,.55);
+  --chart-fill-strong: rgba(34,197,94,.85);
+}
+.cell.pay-weak{   background: var(--chart-fill-weak); }
+.cell.pay-med{    background: var(--chart-fill-med); }
 .cell.pay-strong{ background: var(--chart-fill-strong); }
+
+/* Tooltip (mantém) */
 .cell.tt{ position: relative; cursor: help; }
 .cell.tt:hover::after{
   content: attr(data-tt);
