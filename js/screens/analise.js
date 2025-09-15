@@ -242,6 +242,14 @@ function hookHeatmapScrollSync() {
   body.addEventListener("scroll", () => {
     head.scrollLeft = body.scrollLeft;
   }, { passive: true });
+  // opcional: ir para o fim (Dezembro) na 1ª renderização
+  setTimeout(() => {
+  const maxX = body.scrollWidth - body.clientWidth;
+  if (maxX > 0) {
+    body.scrollLeft = maxX;
+    head.scrollLeft = maxX;
+  }
+}, 0);
 }
 /* Tabela */
 function renderTable(rows) {
