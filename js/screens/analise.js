@@ -10,9 +10,7 @@ async function ensureChartJS() {
   await new Promise((resolve, reject) => {
     const s = document.createElement("script");
     s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js";
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
+    s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
   });
 }
 const isDark = () => document.documentElement.getAttribute("data-theme") === "dark";
@@ -26,15 +24,16 @@ const PALETTE = ["#4F46E5","#22C55E","#EAB308","#EF4444","#06B6D4","#F59E0B","#A
 const charts = { setor: null, mercado: null, topYield: null };
 
 /* ===============================
-   Helpers (formato)
+   Helpers
    =============================== */
 const mesesPT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const mesToIdx = new Map(mesesPT.map((m, i) => [m, i]));
 const toNum = (v)=>{ const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const fmtEUR = (n)=> Number(n || 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
+const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
 
 /* ===============================
-   Regras de dividendos (iguais ao Dashboard)
+   Dividendos
    =============================== */
 function anualizarDividendo(dividendoPorPagamento, periodicidade) {
   const d = toNum(dividendoPorPagamento);
@@ -53,73 +52,77 @@ function pagamentosAno(periodicidade) {
   if (p === "Anual") return 1;
   return 0;
 }
+function anualPreferido(doc){
+  const d24 = toNum(doc.dividendoMedio24m);
+  if (d24 > 0) return d24;                     // anual (média 24m), se houver
+  return anualizarDividendo(doc.dividendo, doc.periodicidade);
+}
 function perPayment(doc){
-  // se existir "dividendo" por pagamento no doc, usa; senão derivado do anual
-  const base = toNum(doc.dividendo);
+  const base = toNum(doc.dividendo);           // por pagamento (se existir)
   if (base > 0) return base;
   const anual = anualPreferido(doc);
   const pAno = pagamentosAno(doc.periodicidade);
   return pAno > 0 ? anual / pAno : 0;
 }
-function anualPreferido(doc){
-  // preferir dividendoMedio24m (anual) se existir; senão anualizar "dividendo"
-  const d24 = toNum(doc.dividendoMedio24m);
-  if (d24 > 0) return d24;
-  return anualizarDividendo(doc.dividendo, doc.periodicidade);
+function computeYieldPct(annualDividend, valorStock){
+  if (!Number.isFinite(annualDividend) || !Number.isFinite(valorStock) || valorStock<=0) return 0;
+  return (annualDividend / valorStock) * 100;
 }
 
 /* ===============================
-   Crescimento (mesma estratégia do Dashboard)
+   Crescimento  ❗ FIX: usar g1w/g1m/g1y (normalizados)
    =============================== */
 function campoCrescimentoPreferido(periodoSel) {
-  if (periodoSel === "1s") return "taxaCrescimento_1semana";
-  if (periodoSel === "1m") return "taxaCrescimento_1mes";
-  return "taxaCrescimento_1ano";
+  if (periodoSel === "1s") return "g1w";
+  if (periodoSel === "1m") return "g1m";
+  return "g1y";
 }
-function melhorTaxaCrescimento(docAcao, prefer) {
-  const ordem = [prefer, "taxaCrescimento_1mes", "taxaCrescimento_1semana", "taxaCrescimento_1ano"];
+function melhorTaxaCrescimento(rowNormalizada, prefer) {
+  // rowNormalizada tem g1w/g1m/g1y já calculados ao carregar da BD
+  const ordem = [prefer, "g1m", "g1w", "g1y"];
   for (const k of ordem) {
-    const v = Number(docAcao?.[k] ?? 0);
-    if (v !== 0) return v; // usa a primeira disponível ≠ 0
+    const v = Number(rowNormalizada?.[k] ?? 0);
+    if (v !== 0 && Number.isFinite(v)) return v;
   }
   return 0;
 }
-const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
 
 /* ===============================
-   Cálculo por ação (portado do Dashboard)
+   Métricas por AÇÃO (linear)
+   Lucro por unidade (por ANO) = Dividendo anual + (Preço × taxa)
+   No horizonte h anos: multiplicamos por h.
    =============================== */
 function calcularMetricasAcao(acao, { periodo="1m", horizonte=1, incluirDiv=true } = {}) {
   const precoAtual = toNum(acao.valorStock);
-  const anualDiv   = anualPreferido(acao); // anual por ação
-  const prefer = campoCrescimentoPreferido(periodo);
-  const taxaPct = melhorTaxaCrescimento(acao, prefer); // %
-  const r = clamp(taxaPct/100, -0.95, 5);
-  const h = Math.max(1, Number(horizonte||1));
+  const anualDiv   = anualPreferido(acao);     // €/ação/ano
+  const prefer     = campoCrescimentoPreferido(periodo);
+  const taxaPct    = melhorTaxaCrescimento(acao, prefer); // % já dos campos g1*
+  const r          = clamp(taxaPct/100, -0.95, 5);        // clamp por segurança
+  const h          = Math.max(1, Number(horizonte||1));
 
-  const mult = Math.pow(1+r, h);
-  const valorizacaoPorAcao = precoAtual * (mult - 1);
+  // Linear
+  const growthPorAno = precoAtual * r;               // €/ação/ano
+  const valorizacaoNoHorizonte = growthPorAno * h;   // linear
+  const dividendosNoHorizonte  = incluirDiv ? (anualDiv * h) : 0;
 
-  const dividendosNoHorizontePorAcao = incluirDiv ? anualDiv * h : 0;
-
-  const lucroUnidade = dividendosNoHorizontePorAcao + valorizacaoPorAcao;
+  const lucroUnidade = dividendosNoHorizonte + valorizacaoNoHorizonte;
   const retornoPorEuro = precoAtual > 0 ? (lucroUnidade / precoAtual) : 0;
 
   return {
     preco: precoAtual,
-    dividendoAnual: anualDiv,
+    dividendoAnual: anualDiv,             // €/ação/ano
     taxaPct,
-    totalDividendos: dividendosNoHorizontePorAcao,
-    valorizacao: valorizacaoPorAcao,
+    totalDividendos: dividendosNoHorizonte, // €/ação no horizonte
+    valorizacao: valorizacaoNoHorizonte,    // €/ação no horizonte
     lucroUnidade,
     retornoPorEuro
   };
 }
 
 /* ===============================
-   Distribuição (igual ao Dashboard: proporção por retorno/€)
+   Distribuição — FRAÇÕES (gasta tudo)
    =============================== */
-function distribuirFracoes(acoes, investimento){
+function distribuirFracoesFracionadas(acoes, investimento){
   const soma = acoes.reduce((s,a)=>s + a.metrics.retornoPorEuro, 0);
   if (soma <= 0) {
     return { linhas: [], totalLucro: 0, totalGasto: 0, totalDivAnual: 0, totalDivPeriodo: 0, totalValoriz: 0, restante: investimento };
@@ -156,25 +159,76 @@ function distribuirFracoes(acoes, investimento){
 }
 
 /* ===============================
-   Yield (apenas para gráficos/tabela)
+   Distribuição — APENAS INTEIROS (greedy top-up)
    =============================== */
-function computeYieldPct(annualDividend, valorStock){
-  if (!Number.isFinite(annualDividend) || !Number.isFinite(valorStock) || valorStock<=0) return 0;
-  return (annualDividend / valorStock) * 100;
+function distribuirFracoesInteiras(acoes, investimento){
+  const soma = acoes.reduce((s,a)=>s + a.metrics.retornoPorEuro, 0);
+  if (soma <= 0) {
+    return { linhas: [], totalLucro: 0, totalGasto: 0, totalDivAnual: 0, totalDivPeriodo: 0, totalValoriz: 0, restante: investimento };
+  }
+
+  const ordered = [...acoes].sort((a,b)=>b.metrics.retornoPorEuro - a.metrics.retornoPorEuro);
+
+  // alvo proporcional + arredonda
+  const base = ordered.map(a=>{
+    const propor      = a.metrics.retornoPorEuro / soma;
+    const investAlvo  = investimento * propor;
+    const preco       = a.metrics.preco;
+    const qtd         = Math.max(0, Math.floor(preco > 0 ? investAlvo / preco : 0));
+    return { a, qtd };
+  });
+
+  let gasto = base.reduce((s,x)=> s + x.qtd * x.a.metrics.preco, 0);
+  let restante = investimento - gasto;
+
+  // greedy top-up
+  while (true){
+    const idx = ordered.findIndex(o => o.metrics.preco <= restante);
+    if (idx === -1) break;
+    const found = base.find(x => x.a === ordered[idx]);
+    if (!found) break;
+    found.qtd += 1;
+    gasto += ordered[idx].metrics.preco;
+    restante = investimento - gasto;
+    if (restante < Math.min(...ordered.map(o => o.metrics.preco))) break;
+  }
+
+  const linhas = base.map(({a, qtd})=>{
+    const investido       = qtd * a.metrics.preco;
+    const lucro           = qtd * a.metrics.lucroUnidade;
+    const divAnualAlloc   = qtd * a.metrics.dividendoAnual;
+    const divPeriodoAlloc = qtd * a.metrics.totalDividendos;
+    const valorizAlloc    = qtd * a.metrics.valorizacao;
+    return {
+      nome: a.nome, ticker: a.ticker,
+      preco: a.metrics.preco,
+      quantidade: qtd,
+      investido,
+      lucro,
+      taxaPct: a.metrics.taxaPct,
+      dividendoAnual: a.metrics.dividendoAnual,
+      divAnualAlloc, divPeriodoAlloc, valorizAlloc
+    };
+  });
+
+  const totalLucro      = linhas.reduce((s,l)=>s + l.lucro, 0);
+  const totalGasto      = linhas.reduce((s,l)=>s + l.investido, 0);
+  const totalDivAnual   = linhas.reduce((s,l)=>s + l.divAnualAlloc, 0);
+  const totalDivPeriodo = linhas.reduce((s,l)=>s + l.divPeriodoAlloc, 0);
+  const totalValoriz    = linhas.reduce((s,l)=>s + l.valorizAlloc, 0);
+
+  return { linhas, totalLucro, totalGasto, totalDivAnual, totalDivPeriodo, totalValoriz, restante: Math.max(0, investimento - totalGasto) };
 }
 
 /* ===============================
-   Seleção + Ordenação + Tabela/Heatmap (inalterado)
+   Seleção / Ordenação / Tabela / Heatmap
    =============================== */
 const selectedTickers = new Set();
 const updateSelCount = ()=>{ const el = document.getElementById("anlSelCount"); if (el) el.textContent = String(selectedTickers.size); };
 
 let sortKey = null, sortDir = "desc";
 const SORT_ACCESSORS = {
-  ticker: r => r.ticker,
-  nome: r => r.nome || "",
-  setor: r => r.setor || "",
-  mercado: r => r.mercado || "",
+  ticker: r => r.ticker, nome: r => r.nome || "", setor: r => r.setor || "", mercado: r => r.mercado || "",
   yield: r => Number.isFinite(r.yield) ? r.yield : -Infinity,
   yield24: r => Number.isFinite(r.yield24) ? r.yield24 : -Infinity,
   divPer: r => Number.isFinite(r.divPer) ? r.divPer : -Infinity,
@@ -185,9 +239,7 @@ const SORT_ACCESSORS = {
   g1w: r => Number.isFinite(r.g1w) ? r.g1w : -Infinity,
   g1m: r => Number.isFinite(r.g1m) ? r.g1m : -Infinity,
   g1y: r => Number.isFinite(r.g1y) ? r.g1y : -Infinity,
-  periodicidade: r => r.periodicidade || "",
-  mes: r => r.mes || "",
-  observacao: r => r.observacao || "",
+  periodicidade: r => r.periodicidade || "", mes: r => r.mes || "", observacao: r => r.observacao || "",
 };
 function sortRows(rows){
   if (!sortKey) return rows;
@@ -201,21 +253,16 @@ function sortRows(rows){
   });
 }
 function markSortedHeader(){
-  document.querySelectorAll('#anlTable thead th.sortable').forEach(th=>{
-    th.classList.remove('sorted-asc','sorted-desc');
-  });
+  document.querySelectorAll('#anlTable thead th.sortable').forEach(th=> th.classList.remove('sorted-asc','sorted-desc'));
   if (sortKey){
     const th = document.querySelector(`#anlTable thead th[data-sort="${sortKey}"]`);
     if (th) th.classList.add(sortDir === 'asc' ? 'sorted-asc' : 'sorted-desc');
   }
 }
 
-/* ===============================
-   Gráficos / Heatmap / Tabela (mesmo que já tinhas)
-   =============================== */
+/* Charts */
 function renderDonut(elId, dataMap) {
-  const el = document.getElementById(elId);
-  if (!el) return null;
+  const el = document.getElementById(elId); if (!el) return null;
   const labels = Array.from(dataMap.keys());
   const data = Array.from(dataMap.values());
   return new Chart(el, {
@@ -223,48 +270,36 @@ function renderDonut(elId, dataMap) {
     data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1 }]},
     options: {
       responsive: true, maintainAspectRatio: false, cutout: "62%",
-      plugins: {
-        legend: { position: "bottom", labels: { color: chartColors().ticks } },
+      plugins: { legend: { position: "bottom", labels: { color: chartColors().ticks } },
         tooltip: { backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
           callbacks: { label: (ctx) => {
             const total = data.reduce((a, b) => a + b, 0) || 1;
-            const v = Number(ctx.parsed);
-            const pct = ((v / total) * 100).toFixed(1);
+            const v = Number(ctx.parsed); const pct = ((v / total) * 100).toFixed(1);
             return ` ${ctx.label}: ${pct}%`;
-          } }
-        }
-      }
+          } } } }
     }
   });
 }
 function renderTopYield(elId, rows) {
-  const el = document.getElementById(elId);
-  if (!el) return null;
+  const el = document.getElementById(elId); if (!el) return null;
   const top = [...rows].filter(r => Number.isFinite(r.yield) && r.yield > 0).sort((a,b)=>b.yield-a.yield).slice(0,5);
   return new Chart(el, {
     type: "bar",
     data: { labels: top.map(r=>r.ticker), datasets: [{ label:"Yield (%)", data: top.map(r=>r.yield), backgroundColor:"#22C55E" }]},
     options: {
       indexAxis:"y", responsive:true, maintainAspectRatio:false,
-      scales: {
-        x: { ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid } },
-        y: { ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid } },
-      },
+      scales: { x: { ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid } },
+               y: { ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid } } },
       plugins: { legend:{ labels:{ color: chartColors().ticks } },
         tooltip:{ backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
-          callbacks:{ label:(ctx)=>` ${ctx.dataset.label}: ${ctx.parsed.x.toFixed(2)}%` }
-        }
-      }
+          callbacks:{ label:(ctx)=>` ${ctx.dataset.label}: ${ctx.parsed.x.toFixed(2)}%` } } }
     }
   });
 }
 function renderCharts(rows) {
   const groupBy = (key) => {
     const map = new Map();
-    rows.forEach(r => {
-      const k = r[key] || "—";
-      map.set(k, (map.get(k) || 0) + 1);
-    });
+    rows.forEach(r => { const k = r[key] || "—"; map.set(k, (map.get(k) || 0) + 1); });
     return map;
   };
   charts.setor?.destroy(); charts.mercado?.destroy(); charts.topYield?.destroy();
@@ -272,6 +307,8 @@ function renderCharts(rows) {
   charts.mercado = renderDonut("anlChartMercado", groupBy("mercado"));
   charts.topYield = renderTopYield("anlChartTopYield", rows);
 }
+
+/* Heatmap */
 function mesesPagamento(periodicidade, mesTipicoIdx) {
   if (!Number.isFinite(mesTipicoIdx)) return [];
   if (periodicidade === "Mensal")     return Array.from({ length: 12 }, (_, i) => i);
@@ -281,8 +318,7 @@ function mesesPagamento(periodicidade, mesTipicoIdx) {
   return [];
 }
 function renderHeatmap(rows) {
-  const body = document.getElementById("anlHeatmapBody");
-  if (!body) return;
+  const body = document.getElementById("anlHeatmapBody"); if (!body) return;
   const values = rows.map(r => perPayment(r)).filter(v => v > 0).sort((a,b)=>a-b);
   const q1 = values.length ? values[Math.floor(values.length * 0.33)] : 0.01;
   const q2 = values.length ? values[Math.floor(values.length * 0.66)] : 0.02;
@@ -307,9 +343,10 @@ function renderHeatmap(rows) {
     `;
   }).join("");
 }
+
+/* Tabela */
 function renderTable(rows) {
-  const tb = document.getElementById("anlTableBody");
-  if (!tb) return;
+  const tb = document.getElementById("anlTableBody"); if (!tb) return;
 
   const badgePE = (pe) => {
     if (!Number.isFinite(pe) || pe <= 0) return `<span class="badge muted">—</span>`;
@@ -319,9 +356,7 @@ function renderTable(rows) {
   };
   const badgeYield = (y, y24) => {
     if (!Number.isFinite(y)) return `<span class="badge muted">—</span>`;
-    let base = "muted";
-    if (y >= 6) base = "warn";
-    else if (y >= 2) base = "ok";
+    let base = "muted"; if (y >= 6) base = "warn"; else if (y >= 2) base = "ok";
     const curr = `<span class="badge ${base}">${y.toFixed(2)}%</span>`;
     if (Number.isFinite(y24)) {
       const comp = (y - y24) >= 0 ? `<span class="badge up">↑ acima da média</span>` : `<span class="badge down">↓ abaixo da média</span>`;
@@ -368,7 +403,6 @@ function renderTable(rows) {
     `;
   }).join("");
 
-  // liga checkboxes
   tb.querySelectorAll(".anlRowSel").forEach(ch => {
     ch.addEventListener("change", (e)=>{
       const t = e.target.getAttribute("data-ticker");
@@ -381,7 +415,7 @@ function renderTable(rows) {
 }
 
 /* ===============================
-   Dados (Firestore)
+   Firestore
    =============================== */
 let ALL_ROWS = [];
 async function fetchAcoes() {
@@ -410,17 +444,19 @@ async function fetchAcoes() {
 
       // derivados
       divPer: perPayment(d),
-      divAnual: anual,           // anual por ação
+      divAnual: anual,
       yield: Number.isFinite(y) ? y : null,
 
-      // extra (se existir)
+      // ❗ Normalizados para g1w/g1m/g1y (é ISTO que o algoritmo vai usar)
+      g1w: Number.isFinite(d.taxaCrescimento_1semana) ? Number(d.taxaCrescimento_1semana) : 0,
+      g1m: Number.isFinite(d.taxaCrescimento_1mes)    ? Number(d.taxaCrescimento_1mes)    : 0,
+      g1y: Number.isFinite(d.taxaCrescimento_1ano)    ? Number(d.taxaCrescimento_1ano)    : 0,
+
+      // outros
       yield24: Number.isFinite(d.yield24) ? Number(d.yield24) : null,
       pe: Number.isFinite(d.pe) ? Number(d.pe) : null,
       delta50: Number.isFinite(d.delta50) ? Number(d.delta50) : null,
       delta200: Number.isFinite(d.delta200) ? Number(d.delta200) : null,
-      g1w: Number.isFinite(d.taxaCrescimento_1semana) ? Number(d.taxaCrescimento_1semana) : null,
-      g1m: Number.isFinite(d.taxaCrescimento_1mes) ? Number(d.taxaCrescimento_1mes) : null,
-      g1y: Number.isFinite(d.taxaCrescimento_1ano) ? Number(d.taxaCrescimento_1ano) : null,
     });
   });
   ALL_ROWS = rows;
@@ -465,7 +501,7 @@ function populateFilters() {
 }
 
 /* ===============================
-   UI: Simulador (modal)
+   Modal (open/close + render)
    =============================== */
 function openSimModal(){ document.getElementById("anlSimModal")?.classList.remove("hidden"); }
 function closeSimModal(){ document.getElementById("anlSimModal")?.classList.add("hidden"); }
@@ -479,33 +515,25 @@ function renderResultadoSimulacao(res){
     return;
   }
 
-  // Lê controlos do modal para mostrar contexto
   const horizonte  = Number(document.getElementById("anlSimHoriz")?.value || 1);
   const periodoSel = document.getElementById("anlSimPeriodo")?.value || "1m";
   const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
+  const periodoLabel = periodoSel === "1s" ? "1 semana" : periodoSel === "1m" ? "1 mês" : "1 ano";
 
-  const periodoLabel = periodoSel === "1s" ? "1 semana"
-                      : periodoSel === "1m" ? "1 mês" : "1 ano";
-
-  // Recalcula o retorno% só a partir dos totais (mais robusto)
-  const totalGasto = res.totalGasto || 0;
-  const retornoPct = totalGasto > 0 ? ((res.totalDivPeriodo + res.totalValoriz) / totalGasto) * 100 : 0;
+  const retornoTotal = res.totalDivPeriodo + res.totalValoriz;
+  const retornoPct   = res.totalGasto > 0 ? (retornoTotal / res.totalGasto) * 100 : 0;
 
   const rows = res.linhas.map(l => {
-    const lucroLinha = l.divPeriodoAlloc + l.valorizAlloc; // soma explícita na UI
-    const noGrowth = Math.abs(l.valorizAlloc) < 1e-8;      // badge se não há valorização
-
+    const lucroLinha = l.divPeriodoAlloc + l.valorizAlloc;
+    const noGrowth = Math.abs(l.valorizAlloc) < 1e-8;
     return `
       <tr>
         <td><strong>${l.ticker}</strong></td>
         <td>${l.nome || "—"}</td>
         <td>${fmtEUR(l.preco)}</td>
-        <td>${l.quantidade.toFixed(4)}</td>
+        <td>${Number(l.quantidade).toFixed(4)}</td>
         <td>${fmtEUR(l.investido)}</td>
-        <td>
-          ${fmtEUR(lucroLinha)}
-          ${noGrowth ? ` <span class="badge muted" title="Sem valorização (taxa=0)">r=0%</span>` : ""}
-        </td>
+        <td>${fmtEUR(lucroLinha)}${noGrowth ? ` <span class="badge muted" title="Sem valorização (taxa=0)">r=0%</span>` : ""}</td>
         <td>${fmtEUR(l.divAnualAlloc)}</td>
         <td>${fmtEUR(l.divPeriodoAlloc)}</td>
         <td>${fmtEUR(l.valorizAlloc)}</td>
@@ -542,7 +570,7 @@ function renderResultadoSimulacao(res){
           <tr>
             <th colspan="4" style="text-align:right;">Totais</th>
             <th>${fmtEUR(res.totalGasto)}</th>
-            <th>${fmtEUR(res.totalDivPeriodo + res.totalValoriz)}</th>
+            <th>${fmtEUR(retornoTotal)}</th>
             <th>${fmtEUR(res.totalDivAnual)}</th>
             <th>${fmtEUR(res.totalDivPeriodo)}</th>
             <th>${fmtEUR(res.totalValoriz)}</th>
@@ -553,34 +581,33 @@ function renderResultadoSimulacao(res){
 
     <div class="card" style="margin-top:10px;">
       <div class="card-content" style="display:flex; gap:16px; flex-wrap:wrap;">
-        <div><strong>Retorno total (€):</strong> ${fmtEUR(res.totalDivPeriodo + res.totalValoriz)}</div>
+        <div><strong>Retorno total (€):</strong> ${fmtEUR(retornoTotal)}</div>
         <div><strong>Retorno total (%):</strong> ${retornoPct.toFixed(2)}%</div>
         <div><strong>Dividendos anuais (soma aloc.):</strong> ${fmtEUR(res.totalDivAnual)}</div>
         <div><strong>Dividendos no horizonte:</strong> ${fmtEUR(res.totalDivPeriodo)}</div>
         <div><strong>Valorização no horizonte:</strong> ${fmtEUR(res.totalValoriz)}</div>
+        ${res.restante > 0 ? `<div><strong>Restante não investido:</strong> ${fmtEUR(res.restante)}</div>` : "" }
       </div>
     </div>
   `;
 }
 
-
 /* ===============================
-   INIT (exposto ao router)
+   INIT
    =============================== */
 export async function initScreen() {
   await ensureChartJS();
   await fetchAcoes();
   populateFilters();
 
-  // Ordenação por cabeçalho
+  // Ordenação
   document.querySelectorAll('#anlTable thead th.sortable').forEach(th=>{
     th.addEventListener("click", ()=>{
       const key = th.getAttribute("data-sort");
       if (!key) return;
       if (sortKey === key) sortDir = (sortDir === 'asc') ? 'desc' : 'asc';
       else { sortKey = key; sortDir = (key === "pe") ? "asc" : "desc"; }
-      markSortedHeader();
-      applyFilters();
+      markSortedHeader(); applyFilters();
     });
   });
 
@@ -612,35 +639,35 @@ export async function initScreen() {
     if (periodo) rows = rows.filter(r => (r.periodicidade || "") === periodo);
 
     rows.forEach(r => { if (check) selectedTickers.add(r.ticker); else selectedTickers.delete(r.ticker); });
-    updateSelCount();
-    renderTable(sortRows(rows));
+    updateSelCount(); renderTable(sortRows(rows));
   });
 
   document.getElementById("anlClearSel")?.addEventListener("click", ()=>{
-    selectedTickers.clear();
-    updateSelCount();
-    applyFilters();
+    selectedTickers.clear(); updateSelCount(); applyFilters();
   });
 
-  // Abrir modal (copiado do Dashboard)
+  // Abrir/Fechar modal
   document.getElementById("anlSimular")?.addEventListener("click", ()=>{
-    if (selectedTickers.size === 0) {
-      alert("Seleciona pelo menos uma ação para simular.");
-      return;
-    }
+    if (selectedTickers.size === 0) { alert("Seleciona pelo menos uma ação para simular."); return; }
     openSimModal();
   });
-
-  // Fechar modal
   document.getElementById("anlSimClose")?.addEventListener("click", closeSimModal);
   document.getElementById("anlSimModal")?.addEventListener("click", (e)=>{ if (e.target.id === "anlSimModal") closeSimModal(); });
 
-  // Calcular simulação (algoritmo do Dashboard)
+  // Exclusividade das opções
+  const cbTotal   = document.getElementById("anlSimInvestirTotal");
+  const cbInteiro = document.getElementById("anlSimInteiros");
+  cbTotal?.addEventListener("change", ()=>{ if (cbTotal.checked) cbInteiro.checked = false; else cbInteiro.checked = true; });
+  cbInteiro?.addEventListener("change", ()=>{ if (cbInteiro.checked) cbTotal.checked = false; else cbTotal.checked = true; });
+
+  // Calcular simulação
   document.getElementById("anlSimCalcular")?.addEventListener("click", ()=>{
     const investimento = Number(document.getElementById("anlSimInvest")?.value || 0);
     const horizonte    = Number(document.getElementById("anlSimHoriz")?.value || 1);
     const periodo      = document.getElementById("anlSimPeriodo")?.value || "1m";
     const incluirDiv   = !!document.getElementById("anlSimIncluiDiv")?.checked;
+    const usarFracoes  = !!document.getElementById("anlSimInvestirTotal")?.checked;
+    const apenasInteiros = !!document.getElementById("anlSimInteiros")?.checked;
 
     if (!(investimento>0)){ alert("Indica um investimento total válido."); return; }
 
@@ -652,11 +679,14 @@ export async function initScreen() {
 
     if (acoes.length === 0){ alert("Sem métricas suficientes nas ações selecionadas."); return; }
 
-    const res = distribuirFracoes(acoes, investimento);
+    const res = (apenasInteiros && !usarFracoes)
+      ? distribuirFracoesInteiras(acoes, investimento)
+      : distribuirFracoesFracionadas(acoes, investimento);
+
     renderResultadoSimulacao(res);
   });
 
-  // Exportar para simulador
+  // Exportar seleção
   document.getElementById("anlSimExportar")?.addEventListener("click", ()=>{
     const selecionadas = ALL_ROWS.filter(r => selectedTickers.has(r.ticker))
       .map(r => ({
@@ -669,11 +699,10 @@ export async function initScreen() {
   });
 
   // Render inicial
-  markSortedHeader();
-  applyFilters();
+  markSortedHeader(); applyFilters();
 }
 
-/* Auto-init (se o router não chamar explicitamente) */
+/* Auto-init */
 if (!window.__ANL_AUTO_INIT__) {
   window.__ANL_AUTO_INIT__ = true;
   initScreen().catch(console.error);

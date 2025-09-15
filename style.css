@@ -743,7 +743,3 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
   background: var(--popover, #111); color: #fff; padding: 6px 8px; border-radius: 6px;
   white-space: nowrap; font-size: 12px; z-index: 10; pointer-events: none;
 }
-.sortable{ cursor:pointer; }
-.sortable::after{ content:" ⇅"; opacity:.4; }
-.sortable.sorted-asc::after{ content:" ↑"; opacity:1; }
-.sortable.sorted-desc::after{ content:" ↓"; opacity:1; }

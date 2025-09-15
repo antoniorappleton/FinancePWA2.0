@@ -92,7 +92,6 @@
   <!-- TABELA -->
   <div class="card" style="margin-top:12px;">
     <div class="card-content" style="display:block;">
-
       <!-- Seleção + Simulador -->
       <div class="analysis-toolbar" style="padding: .6rem 1rem; border: 0; background: transparent;">
         <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
@@ -135,7 +134,7 @@
   </div>
 </div>
 
-<!-- MODAL: Simulação (copiado do Dashboard) -->
+<!-- MODAL: Simulação (com opções de investimento) -->
 <div id="anlSimModal" class="modal hidden">
   <div class="modal-dialog">
     <div class="modal-header">
@@ -161,13 +160,25 @@
             <option value="1a">1 ano</option>
           </select>
         </label>
-        <label style="display:flex; align-items:center; gap:.5rem; margin-top:.6rem;">
-          <input id="anlSimIncluiDiv" type="checkbox" checked />
-          Incluir dividendos no cálculo do lucro
-        </label>
+
+        <!-- ✅ Opções de investimento -->
+        <div class="sim-options">
+          <label class="chk-inline">
+            <input id="anlSimInvestirTotal" type="checkbox" checked />
+            Usar investimento total (frações permitidas)
+          </label>
+          <label class="chk-inline">
+            <input id="anlSimInteiros" type="checkbox" />
+            Apenas ações completas (sem frações)
+          </label>
+          <label class="chk-inline push-right">
+            <input id="anlSimIncluiDiv" type="checkbox" checked />
+            Incluir dividendos
+          </label>
+        </div>
       </div>
 
-      <div class="actions-row" style="justify-content:flex-end; position:sticky; bottom:0; background:var(--card,#fff); padding-top:8px;">
+      <div class="actions-row sticky-actions">
         <button class="btn outline" id="anlSimCalcular">Calcular</button>
         <button class="btn premium" id="anlSimExportar">Exportar para simulador</button>
       </div>
@@ -212,11 +223,11 @@
   .up{ color:#106f3a; }
   .down{ color:#8a1f1f; }
 
-  /* Modal (scroll e dark-mode) */
+  /* Modal */
   .modal.hidden{ display:none; }
   .modal{ position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; }
   .modal-dialog{
-    width:min(780px,92vw); max-height:90vh;
+    width:min(820px,92vw); max-height:90vh;
     display:flex; flex-direction:column;
     border-radius:14px; overflow:hidden;
     background:var(--card,#fff); color:var(--card-foreground,#111);
@@ -235,13 +246,28 @@
     border:1px solid var(--border,#e5e7eb);
     background:var(--card,#fff); color:var(--card-foreground,#111);
   }
+
+  /* Opções do simulador */
+  .sim-options{
+    display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+    grid-column: 1 / -1; margin-top:.4rem;
+  }
+  .chk-inline{ display:flex; align-items:center; gap:.5rem; }
+  .push-right{ margin-left:auto; }
+
+  /* Dark mode */
   [data-theme="dark"] .modal-dialog{ background:#111; color:#fff; border-color:rgba(255,255,255,.08); }
   [data-theme="dark"] .modal-header{ background:#111; border-color:rgba(255,255,255,.08); }
   [data-theme="dark"] #anlSimModal .form-grid input, 
   [data-theme="dark"] #anlSimModal .form-grid select{
     background:#1a1a1a; color:#eee; border-color:rgba(255,255,255,.12);
   }
+
   .tabela-scroll-wrapper{ overflow:auto; }
+  .actions-row.sticky-actions{
+    display:flex; gap:.6rem; justify-content:flex-end;
+    position:sticky; bottom:0; background:var(--card,#fff); padding-top:8px;
+  }
 </style>
 
 <script type="module" src="./analise.js"></script>
