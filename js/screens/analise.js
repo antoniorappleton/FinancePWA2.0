@@ -40,9 +40,9 @@ const PALETTE = [
 export const ANALISE_CFG = {
   // pesos do score final
   pesos: {
-    retornoEuro: 0.55,
+    retornoEuro: 0.45,
     tendenciaSMA: 0.25,
-    valoracaoPE: 0.15,
+    valoracaoPE: 0.25,
     risco: 0.05,
   },
 
