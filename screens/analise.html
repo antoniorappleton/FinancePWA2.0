@@ -70,34 +70,31 @@
       </div>
 
       <div class="dividend-heatmap">
-        <div class="heatmap-header">
-          <div class="cell sticky-col"></div>
+          <div class="heatmap-header">
+            <div class="cell sticky-col"></div>
 
-          <!-- NOVO: contentor que podemos “scrollar” por JS -->
-          <div
-            class="months-scroll"
-            id="anlHeatmapHeaderScroll"
-            aria-hidden="true"
-          >
-            <div class="months" id="anlHeatmapHeaderMonths">
-              <div class="cell">Jan</div>
-              <div class="cell">Fev</div>
-              <div class="cell">Mar</div>
-              <div class="cell">Abr</div>
-              <div class="cell">Mai</div>
-              <div class="cell">Jun</div>
-              <div class="cell">Jul</div>
-              <div class="cell">Ago</div>
-              <div class="cell">Set</div>
-              <div class="cell">Out</div>
-              <div class="cell">Nov</div>
-              <div class="cell">Dez</div>
-            </div>
+        <!-- ✅ wrapper com scroll horizontal e o id que o JS espera -->
+        <div id="anlHeatmapHeaderScroll" class="months-scroll">
+          <div class="months" id="anlHeatmapHeaderMonths">
+            <div class="cell">Jan</div>
+            <div class="cell">Fev</div>
+            <div class="cell">Mar</div>
+            <div class="cell">Abr</div>
+            <div class="cell">Mai</div>
+            <div class="cell">Jun</div>
+            <div class="cell">Jul</div>
+            <div class="cell">Ago</div>
+            <div class="cell">Set</div>
+            <div class="cell">Out</div>
+            <div class="cell">Nov</div>
+            <div class="cell">Dez</div>
           </div>
         </div>
-
-        <div id="anlHeatmapBody" class="heatmap-body"></div>
       </div>
+
+      <div id="anlHeatmapBody" class="heatmap-body"></div>
+      </div>
+
 
       <div class="legend muted">
         <span class="legend-item"
