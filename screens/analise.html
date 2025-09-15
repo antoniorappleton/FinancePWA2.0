@@ -248,9 +248,12 @@
 
       <div class="actions-row sticky-actions">
         <button class="btn outline" id="anlSimCalcular">Calcular</button>
-        <button class="btn premium" id="anlSimExportar">
-          Exportar para simulador
-        </button>
+        <button class="btn premium" id="anlSimExportar">Exportar para simulador</button>
+      </div>
+
+      <!-- DISTRIBUIÇÃO POR SETOR (tickers selecionados) -->
+      <div id="anlSelSectorChartWrap" class="pie-wrap">
+        <canvas id="anlSelSectorChart"></canvas>
       </div>
 
       <div id="anlSimResultado" style="margin-top: 10px"></div>
@@ -484,6 +487,25 @@
     background: var(--card, #fff);
     padding-top: 8px;
   }
+
+  /*gráfico de setores (seleção)*/
+  /* pizza mobile-first */
+.pie-wrap{
+  width:100%;
+  max-width:420px;   /* cabe num telemóvel em pé */
+  margin:10px auto; 
+  padding:10px;
+}
+.pie-wrap canvas{
+  width:100% !important;
+  height:auto !important;
+  max-height:300px;  /* limita a altura para não “comer” o ecrã */
+}
+@media (max-width:480px){
+  .pie-wrap{ max-width:360px; }
+  .pie-wrap canvas{ max-height:260px; }
+}
+
 </style>
 
 <script type="module" src="./analise.js"></script>

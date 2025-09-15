@@ -968,6 +968,52 @@ function renderResultadoSimulacao(res) {
     </div>
   `;
 }
+let chartSelSetor = null;
+// === Pizza: distribuição por setor (selecionados) ===
+async function renderSelectedSectorChart(rowsSelecionadas){
+  await ensureChartJS();
+  const el = document.getElementById("anlSelSectorChart");
+  if (!el) return;
+  chartSelSetor?.destroy();
+
+  // conta setores
+  const map = new Map();
+  rowsSelecionadas.forEach(r=>{
+    const k = r.setor || "—";
+    map.set(k, (map.get(k)||0) + 1);
+  });
+  const labels = Array.from(map.keys());
+  const data   = Array.from(map.values());
+
+  // paleta já existente (PALETTE); se quiseres cores diferentes, recicla
+  const colors = labels.map((_,i)=> PALETTE[i % PALETTE.length]);
+
+  chartSelSetor = new Chart(el, {
+    type: "doughnut",
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: "62%",
+      plugins:{
+        legend: { position: "bottom", labels: { color: chartColors().ticks } },
+        tooltip:{
+          backgroundColor: chartColors().tooltipBg,
+          titleColor: chartColors().tooltipFg,
+          bodyColor: chartColors().tooltipFg,
+          callbacks:{
+            label: (ctx)=>{
+              const total = data.reduce((a,b)=>a+b,0) || 1;
+              const v = Number(ctx.parsed);
+              const pct = ((v/total)*100).toFixed(1);
+              return ` ${ctx.label}: ${v} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
 
 /* ===============================
    INIT
@@ -1075,7 +1121,8 @@ export async function initScreen() {
     );
     const periodo = document.getElementById("anlSimPeriodo")?.value || "1m";
     const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
-    const usarFracoes = !!document.getElementById("anlSimInvestirTotal")?.checked;
+    const usarFracoes = !!document.getElementById("anlSimInvestirTotal")
+      ?.checked;
     const apenasInteiros = !!document.getElementById("anlSimInteiros")?.checked;
     const modoEstrito = !!document.getElementById("anlSimEstrito")?.checked; // opcional
 
@@ -1093,7 +1140,9 @@ export async function initScreen() {
     });
 
     if (candidatos.length === 0) {
-      alert("Nenhum ativo com retorno positivo ou dados válidos para este cenário.");
+      alert(
+        "Nenhum ativo com retorno positivo ou dados válidos para este cenário."
+      );
       return;
     }
 
@@ -1103,6 +1152,8 @@ export async function initScreen() {
         : distribuirFracoes_porScore(candidatos, investimento);
 
     renderResultadoSimulacao(res);
+    // alimentar a pizza com as linhas selecionadas (não os resultados por alocação)
+    renderSelectedSectorChart(selecionadas);
   });
 
   // Exportar seleção (para futuro simulador)
