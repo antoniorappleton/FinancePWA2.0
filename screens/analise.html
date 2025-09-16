@@ -37,7 +37,7 @@
         </select>
       </label>
     </div>
-    <div style="margin-top: 0.6rem">
+    <div style="margin-top: 0.6rem; display:flex; gap:.5rem; flex-wrap:wrap;">
       <button class="btn outline" id="anlReset">Limpar filtros</button>
     </div>
   </div>
@@ -69,19 +69,36 @@
       </div>
 
       <div class="dividend-heatmap">
-        <div class="heatmap-header" id="anlHeatmapHeaderScroll">
+        <div class="heatmap-header">
           <div class="cell sticky-col"></div>
           <div class="months" id="anlHeatmapHeaderMonths">
-            <div class="cell">Jan</div><div class="cell">Fev</div><div class="cell">Mar</div><div class="cell">Abr</div><div class="cell">Mai</div><div class="cell">Jun</div><div class="cell">Jul</div><div class="cell">Ago</div><div class="cell">Set</div><div class="cell">Out</div><div class="cell">Nov</div><div class="cell">Dez</div>
+            <div class="cell">Jan</div>
+            <div class="cell">Fev</div>
+            <div class="cell">Mar</div>
+            <div class="cell">Abr</div>
+            <div class="cell">Mai</div>
+            <div class="cell">Jun</div>
+            <div class="cell">Jul</div>
+            <div class="cell">Ago</div>
+            <div class="cell">Set</div>
+            <div class="cell">Out</div>
+            <div class="cell">Nov</div>
+            <div class="cell">Dez</div>
           </div>
         </div>
         <div id="anlHeatmapBody" class="heatmap-body"></div>
       </div>
 
       <div class="legend">
-        <span class="legend-item"><span class="legend-box weak"></span> estimado baixo</span>
-        <span class="legend-item"><span class="legend-box med"></span> estimado médio</span>
-        <span class="legend-item"><span class="legend-box strong"></span> estimado alto</span>
+        <span class="legend-item">
+          <span class="legend-box weak"></span> estimado baixo
+        </span>
+        <span class="legend-item">
+          <span class="legend-box med"></span> estimado médio
+        </span>
+        <span class="legend-item">
+          <span class="legend-box strong"></span> estimado alto
+        </span>
       </div>
     </div>
   </div>
@@ -91,7 +108,7 @@
     <div class="card-content" style="display: block">
       <!-- Seleção + Simulador -->
       <div class="analysis-toolbar" style="padding: 0.6rem 1rem; border: 0; background: transparent">
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
           <button class="btn outline" id="anlSimular">Usar no simulador</button>
           <button class="btn ghost" id="anlClearSel">Limpar seleção</button>
           <span class="muted">Selecionados: <strong id="anlSelCount">0</strong></span>
@@ -138,7 +155,6 @@
       <h3>Simular investimento (lucro máximo)</h3>
       <button class="icon-btn" id="anlSimClose" title="Fechar">✖</button>
     </div>
-
     <div class="modal-body">
       <div class="form-grid">
         <label>
@@ -176,10 +192,9 @@
 
       <div class="actions-row sticky-actions">
         <button class="btn outline" id="anlSimCalcular">Calcular</button>
-        <button class="btn premium" id="anlSimPdf">Download PDF</button>
+        <button class="btn" id="anlExportPdf">Exportar PDF (seleção)</button>
       </div>
 
-      <!-- DISTRIBUIÇÃO POR SETOR (tickers selecionados) -->
       <div id="anlSelSectorChartWrap" class="pie-wrap">
         <canvas id="anlSelSectorChart"></canvas>
       </div>
@@ -189,12 +204,11 @@
   </div>
 </div>
 
-<!-- estilos essenciais (mantém os teus globais) -->
+<!-- estilos essenciais -->
 <style>
   .portfolio-charts.three-cols{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
   @media (max-width:980px){.portfolio-charts.three-cols{grid-template-columns:1fr}}
-  .chart-wrap{height:260px}
-  .chart-wrap canvas{width:100%!important;height:100%!important}
+  .chart-wrap{height:260px}.chart-wrap canvas{width:100%!important;height:100%!important}
 
   .dividend-header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:6px}
   .legend{margin-top:6px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -214,9 +228,7 @@
   .dividend-heatmap .sticky-col{position:sticky;left:0;background:var(--card,#fff);z-index:2;border-right:1px solid var(--border,#e5e7eb)}
   .dividend-heatmap .tt{position:relative}
   .dividend-heatmap .tt:hover::after{content:attr(data-tt);position:absolute;bottom:100%;left:0;transform:translateY(-4px);background:rgba(0,0,0,.85);color:#fff;font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap}
-  .pay-weak{background:rgba(34,197,94,.18)}
-  .pay-med{background:rgba(34,197,94,.38)}
-  .pay-strong{background:rgba(34,197,94,.58);color:#fff}
+  .pay-weak{background:rgba(34,197,94,.18)}.pay-med{background:rgba(34,197,94,.38)}.pay-strong{background:rgba(34,197,94,.58);color:#fff}
 
   .table-scroll{overflow:auto;max-height:62vh}
   #anlTable thead th{position:sticky;top:0;z-index:3;background:var(--card,#fff)}
@@ -224,7 +236,7 @@
   #anlTable thead th.sorted-asc::after{content:" ↑";opacity:.7}
   #anlTable thead th.sorted-desc::after{content:" ↓";opacity:.7}
   #anlTable .sticky-col{position:sticky;left:0;z-index:2;background:var(--card,#fff)}
-  #anlTable th.sticky-col:nth-child(2),#anlTable td.sticky-col:nth-child(2){left:44px} /* checkbox col = 44px */
+  #anlTable th.sticky-col:nth-child(2),#anlTable td.sticky-col:nth-child(2){left:44px}
 
   .badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:.75rem}
   .badge.ok{background:#e6f7ee;color:#106f3a}
@@ -233,8 +245,7 @@
   .badge.muted{background:#f2f2f2;color:#666}
   .badge.up{background:#e6f7ee;color:#106f3a}
   .badge.down{background:#fde2e2;color:#8a1f1f}
-  .up{color:#106f3a}
-  .down{color:#8a1f1f}
+  .up{color:#106f3a}.down{color:#8a1f1f}
 
   .modal.hidden{display:none}
   .modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center}
@@ -243,17 +254,43 @@
   .modal-body{padding:14px 16px;overflow:auto}
   .icon-btn{background:transparent;border:0;font-size:18px;cursor:pointer;color:inherit}
   #anlSimModal .form-grid input,#anlSimModal .form-grid select{padding:.6rem .7rem;border-radius:10px;border:1px solid var(--border,#e5e7eb);background:var(--card,#fff);color:var(--card-foreground,#111)}
-  .sim-options{display:flex;gap:18px;align-items:center;flex-wrap:wrap;grid-column:1 / -1;margin-top:.4rem}
+
+  .sim-options{display:flex;gap:18px;align-items:center;flex-wrap:wrap;grid-column:1/-1;margin-top:.4rem}
   .chk-inline{display:flex;align-items:center;gap:.5rem}
   .push-right{margin-left:auto}
+
   [data-theme="dark"] .modal-dialog{background:#111;color:#fff;border-color:rgba(255,255,255,.08)}
   [data-theme="dark"] .modal-header{background:#111;border-color:rgba(255,255,255,.08)}
   [data-theme="dark"] #anlSimModal .form-grid input,[data-theme="dark"] #anlSimModal .form-grid select{background:#1a1a1a;color:#eee;border-color:rgba(255,255,255,.12)}
+
   .tabela-scroll-wrapper{overflow:auto}
   .actions-row.sticky-actions{display:flex;gap:.6rem;justify-content:flex-end;position:sticky;bottom:0;background:var(--card,#fff);padding-top:8px}
+
   .pie-wrap{width:100%;max-width:420px;margin:10px auto;padding:10px}
   .pie-wrap canvas{width:100%!important;height:auto!important;max-height:300px}
   @media (max-width:480px){.pie-wrap{max-width:360px}.pie-wrap canvas{max-height:260px}}
+  .dividend-heatmap .months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(64px, 1fr));
+}
+.dividend-heatmap .row .months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(64px, 1fr));
+}
+.dividend-heatmap .months {
+  display: grid;
+  grid-template-columns: repeat(12, 110px); /* 12 colunas fixas → scroll X */
+}
+.dividend-heatmap .row .months {
+  display: grid;
+  grid-template-columns: repeat(12, 110px);
+}
+
 </style>
 
+<!-- deps para PDF (carregadas on-demand no JS também, aqui só por fallback rápido) -->
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js"></script>
+
+<!-- MÓDULO -->
 <script type="module" src="./analise.js"></script>
