@@ -26,6 +26,29 @@ const PALETTE = ["#4F46E5","#22C55E","#EAB308","#EF4444","#06B6D4","#F59E0B","#A
 const charts = { setor: null, mercado: null, topYield: null };
 
 /* ===============================
+   jsPDF (on-demand) + autotable
+   =============================== */
+async function ensureJsPDF() {
+  if (window.jspdf && window.jspdf.jsPDF && window.jspdf_autotable) return;
+  // jsPDF
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  // autoTable plugin
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+/* ===============================
    Helpers
    =============================== */
 const mesesPT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -34,7 +57,7 @@ const toNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 const fmtEUR = (n) => Number(n || 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-// normalização leve para rótulos (evita duplicados tipo “Americano” vs “Americano ”)
+// normalização leve para rótulos
 function stripWeirdSpaces(s) {
   return String(s ?? "")
     .replace(/\u00A0/g, " ")       // NBSP
@@ -138,6 +161,7 @@ function renderDonut(elId, dataMap) {
     type: "doughnut",
     data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1 }] },
     options: {
+      animation: false, // evita “tremer”
       responsive: true, maintainAspectRatio: false, cutout: "62%",
       plugins: {
         legend: { position: "bottom", labels: { color: chartColors().ticks } },
@@ -162,6 +186,7 @@ function renderTopYield(elId, rows) {
     type: "bar",
     data: { labels: top.map((r) => r.ticker), datasets: [{ label: "Yield (%)", data: top.map((r) => r.yield), backgroundColor: "#22C55E" }] },
     options: {
+      animation: false,
       indexAxis: "y", responsive: true, maintainAspectRatio: false,
       scales: {
         x: { ticks: { color: chartColors().ticks }, grid: { color: chartColors().grid } },
@@ -237,20 +262,13 @@ function hookHeatmapScrollSync() {
   const body = document.getElementById("anlHeatmapBody");
   const head = document.getElementById("anlHeatmapHeaderScroll");
   if (!body || !head) return;
-
-  // sincroniza header quando o utilizador faz scroll no body
-  body.addEventListener("scroll", () => {
-    head.scrollLeft = body.scrollLeft;
-  }, { passive: true });
-  // opcional: ir para o fim (Dezembro) na 1ª renderização
+  body.addEventListener("scroll", () => { head.scrollLeft = body.scrollLeft; }, { passive: true });
   setTimeout(() => {
-  const maxX = body.scrollWidth - body.clientWidth;
-  if (maxX > 0) {
-    body.scrollLeft = maxX;
-    head.scrollLeft = maxX;
-  }
-}, 0);
+    const maxX = body.scrollWidth - body.clientWidth;
+    if (maxX > 0) { body.scrollLeft = maxX; head.scrollLeft = maxX; }
+  }, 0);
 }
+
 /* Tabela */
 function renderTable(rows) {
   const tb = document.getElementById("anlTableBody");
@@ -439,8 +457,7 @@ function calcularMetricasBase(acao, { periodo = "1m", horizonte = 1, incluirDiv 
   const r = clamp(taxaPct / 100, -0.95, 5);
   const h = Math.max(1, Number(horizonte || 1));
 
-  // linear (conservador)
-  const valorizacaoNoHorizonte = precoAtual * r * h;
+  const valorizacaoNoHorizonte = precoAtual * r * h; // linear (conservador)
   const dividendosNoHorizonte = incluirDiv ? anualDiv * h : 0;
   const lucroUnidade = dividendosNoHorizonte + valorizacaoNoHorizonte;
   const retornoPorEuro = precoAtual > 0 ? lucroUnidade / precoAtual : 0;
@@ -678,87 +695,160 @@ function renderResultadoSimulacao(res) {
     </div>`;
 }
 
-/* === Pizza: distribuição por setor (selecionados) — com dedupe e sem tremuras === */
+/* === Pizza: distribuição por setor (selecionados) === */
 let chartSelSetor = null;
-
-function dedupeByTicker(rows) {
-  const map = new Map();
-  for (const r of rows) {
-    if (!map.has(r.ticker)) map.set(r.ticker, r);
-  }
-  return [...map.values()];
-}
-
-async function renderSelectedSectorChart(rowsSelecionadas) {
+async function renderSelectedSectorChart(rowsSelecionadas){
   await ensureChartJS();
   const wrap = document.getElementById("anlSelSectorChartWrap");
   const el = document.getElementById("anlSelSectorChart");
   if (!wrap || !el) return;
+  chartSelSetor?.destroy();
 
-  // destruir chart anterior
-  if (chartSelSetor) {
-    chartSelSetor.destroy();
-    chartSelSetor = null;
-  }
-
-  // ✅ dedupe por ticker para não contar linhas repetidas
-  const uniq = dedupeByTicker(rowsSelecionadas);
-
-  // mapear setores (normalizados) → contagem
+  // contar setores apenas dos selecionados
   const map = new Map();
-  for (const r of uniq) {
-    const raw = r.setor && String(r.setor).trim() ? r.setor : "Sem setor";
-    const k = canonLabel(raw);
-    map.set(k, (map.get(k) || 0) + 1);
-  }
-
+  rowsSelecionadas.forEach(r=>{
+    const k = canonLabel(r.setor || "—");
+    map.set(k, (map.get(k)||0) + 1);
+  });
   const labels = Array.from(map.keys());
-  const data = Array.from(map.values());
-  if (!data.length) {
-    wrap.classList.add("muted");
-    return;
-  } else {
-    wrap.classList.remove("muted");
-  }
+  const data   = Array.from(map.values());
+  if (!data.length){ wrap.classList.add("muted"); return; }
+  const colors = labels.map((_,i)=> PALETTE[i % PALETTE.length]);
 
-  // Para evitar flicker: criar só quando o canvas já tem dimensão
-  // (modal aberto) + desligar animações/resizes agressivos
   chartSelSetor = new Chart(el, {
     type: "doughnut",
-    data: {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
-          borderWidth: 1,
-        },
-      ],
-    },
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      resizeDelay: 200, // suaviza recalculo
-      animation: { duration: 0 }, // sem animação => sem “tremuras”
-      transitions: { active: { animation: { duration: 0 } } },
-      plugins: {
+      animation: false, // evita “tremer”
+      responsive: true, maintainAspectRatio: true, cutout: "62%",
+      plugins:{
         legend: { position: "bottom", labels: { color: chartColors().ticks } },
-        tooltip: {
-          backgroundColor: chartColors().tooltipBg,
-          titleColor: chartColors().tooltipFg,
-          bodyColor: chartColors().tooltipFg,
-          callbacks: {
-            label: (ctx) => {
-              const total = data.reduce((a, b) => a + b, 0) || 1;
-              const v = Number(ctx.parsed);
-              const pct = ((v / total) * 100).toFixed(1);
-              return ` ${ctx.label}: ${v} (${pct}%)`;
-            },
-          },
-        },
-      },
-    },
+        tooltip:{
+          backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
+          callbacks:{ label: (ctx)=>{
+            const total = data.reduce((a,b)=>a+b,0) || 1;
+            const v = Number(ctx.parsed); const pct = ((v/total)*100).toFixed(1);
+            return ` ${ctx.label}: ${v} (${pct}%)`;
+          } }
+        }
+      }
+    }
   });
+}
+
+/* ===============================
+   PDF – geração local (sem backend)
+   =============================== */
+async function gerarPDFSimulacao(res, meta, rowsSelecionadas) {
+  await ensureJsPDF();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p", "pt", "a4");
+  const margin = 36; // 0.5in
+  let y = margin;
+
+  const titulo = "Simulação de investimento";
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(titulo, margin, y);
+  y += 22;
+
+  // meta
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  const metaParts = [];
+  if (meta?.horizonte) metaParts.push(`Horizonte: ${meta.horizonte} ${meta.horizonte===1?"ano":"anos"}`);
+  if (meta?.periodoLabel) metaParts.push(`Período: ${meta.periodoLabel}`);
+  if (meta?.incluiDiv != null) metaParts.push(`Dividendos: ${meta.incluiDiv ? "incluídos":"excluídos"}`);
+  doc.text(metaParts.join("  •  "), margin, y);
+  y += 16;
+
+  // Gráfico pizza (canvas → imagem)
+  const pieCanvas = document.getElementById("anlSelSectorChart");
+  if (pieCanvas) {
+    try {
+      const imgData = pieCanvas.toDataURL("image/png", 1.0);
+      const imgW = 220; // px no PDF
+      const imgH = 220;
+      doc.addImage(imgData, "PNG", margin, y, imgW, imgH, "", "FAST");
+      // legenda simples (labels + percentagens)
+      const chart = chartSelSetor;
+      if (chart) {
+        const labels = chart.data.labels || [];
+        const vals = (chart.data.datasets?.[0]?.data || []).map(Number);
+        const total = vals.reduce((a,b)=>a+b,0) || 1;
+        const legendX = margin + imgW + 16;
+        let legendY = y + 6;
+        doc.setFontSize(11);
+        labels.forEach((lab, i) => {
+          const pct = ((vals[i] / total) * 100).toFixed(1) + "%";
+          // caixinha de cor
+          const color = chart.data.datasets[0].backgroundColor[i % chart.data.datasets[0].backgroundColor.length];
+          doc.setFillColor(color);
+          doc.rect(legendX, legendY - 9, 10, 10, "F");
+          doc.setTextColor(0,0,0);
+          doc.text(`${lab} — ${pct}`, legendX + 16, legendY);
+          legendY += 16;
+        });
+      }
+      y += imgH + 16;
+    } catch (_) {
+      // se falhar, ignora o gráfico
+    }
+  }
+
+  // Totais
+  const retornoTotal = (res.totalDivPeriodo || 0) + (res.totalValoriz || 0);
+  const retornoPct = res.totalGasto > 0 ? (retornoTotal / res.totalGasto) * 100 : 0;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Totais", margin, y);
+  y += 14;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  const totais = [
+    `Investido: ${fmtEUR(res.totalGasto)}`,
+    `Dividendos (anual): ${fmtEUR(res.totalDivAnual)}`,
+    `Dividendos (horiz.): ${fmtEUR(res.totalDivPeriodo)}`,
+    `Valorização: ${fmtEUR(res.totalValoriz)}`,
+    `Retorno total (€): ${fmtEUR(retornoTotal)}`,
+    `Retorno total (%): ${retornoPct.toFixed(2)}%`,
+  ];
+  totais.forEach((t) => { doc.text(t, margin, y); y += 14; });
+  y += 6;
+
+  // Tabela (autoTable)
+  const head = [["Ticker","Nome","Preço","Qtd.","Investido","Div. anual","Div. horiz.","Valoriz.","Lucro"]];
+  const body = res.linhas
+    .filter((l) => l.quantidade > 0 && l.investido > 0)
+    .map((l) => [
+      String(l.ticker || ""),
+      String(l.nome || ""),
+      fmtEUR(l.preco || 0),
+      (Number(l.quantidade||0)).toFixed(2),
+      fmtEUR(l.investido || 0),
+      fmtEUR(l.divAnualAlloc || 0),
+      fmtEUR(l.divPeriodoAlloc || 0),
+      fmtEUR(l.valorizAlloc || 0),
+      fmtEUR(l.lucro || 0),
+    ]);
+
+  // @ts-ignore (plugin global)
+  doc.autoTable({
+    startY: y,
+    head,
+    body,
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 4 },
+    headStyles: { fillColor: [245,245,245], textColor: [0,0,0] },
+    margin: { left: margin, right: margin },
+    theme: "grid",
+  });
+
+  // download
+  const dd = new Date();
+  const pad = (n)=> String(n).padStart(2,"0");
+  const fname = `simulacao_${dd.getFullYear()}-${pad(dd.getMonth()+1)}-${pad(dd.getDate())}.pdf`;
+  doc.save(fname);
 }
 
 /* ===============================
@@ -767,10 +857,7 @@ async function renderSelectedSectorChart(rowsSelecionadas) {
 export async function initScreen() {
   console.log("[analise] init…");
   await ensureChartJS();
-  if (!db) {
-    console.error("Firebase DB não inicializado!");
-    return;
-  }
+  if (!db) { console.error("Firebase DB não inicializado!"); return; }
 
   await fetchAcoes();
   populateFilters();
@@ -781,10 +868,7 @@ export async function initScreen() {
       const key = th.getAttribute("data-sort");
       if (!key) return;
       if (sortKey === key) sortDir = sortDir === "asc" ? "desc" : "asc";
-      else {
-        sortKey = key;
-        sortDir = key === "pe" ? "asc" : "desc";
-      }
+      else { sortKey = key; sortDir = key === "pe" ? "asc" : "desc"; }
       markSortedHeader();
       applyFilters();
     });
@@ -793,12 +877,8 @@ export async function initScreen() {
   // Filtros
   document.getElementById("anlSearch")?.addEventListener("input", applyFilters);
   document.getElementById("anlSetor")?.addEventListener("change", applyFilters);
-  document
-    .getElementById("anlMercado")
-    ?.addEventListener("change", applyFilters);
-  document
-    .getElementById("anlPeriodo")
-    ?.addEventListener("change", applyFilters);
+  document.getElementById("anlMercado")?.addEventListener("change", applyFilters);
+  document.getElementById("anlPeriodo")?.addEventListener("change", applyFilters);
   document.getElementById("anlReset")?.addEventListener("click", () => {
     document.getElementById("anlSearch").value = "";
     document.getElementById("anlSetor").value = "";
@@ -815,18 +895,12 @@ export async function initScreen() {
     const mercado = document.getElementById("anlMercado")?.value || "";
     const periodo = document.getElementById("anlPeriodo")?.value || "";
     let rows = [...ALL_ROWS];
-    if (term)
-      rows = rows.filter(
-        (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term)
-      );
+    if (term) rows = rows.filter((r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term));
     if (setor) rows = rows.filter((r) => r.setor === setor);
     if (mercado) rows = rows.filter((r) => r.mercado === mercado);
     if (periodo) rows = rows.filter((r) => (r.periodicidade || "") === periodo);
 
-    rows.forEach((r) => {
-      if (check) selectedTickers.add(r.ticker);
-      else selectedTickers.delete(r.ticker);
-    });
+    rows.forEach((r) => { if (check) selectedTickers.add(r.ticker); else selectedTickers.delete(r.ticker); });
     updateSelCount();
     renderTable(sortRows(rows));
   });
@@ -838,110 +912,65 @@ export async function initScreen() {
   });
 
   // Abrir modal + pizza dos selecionados
-  // Abrir modal + pizza dos selecionados (ordem invertida para evitar flicker)
   document.getElementById("anlSimular")?.addEventListener("click", async () => {
-    if (selectedTickers.size === 0) {
-      alert("Seleciona pelo menos uma ação para simular.");
-      return;
-    }
-    openSimModal(); // ← abre primeiro
-
-    // Espera 1 frame para o canvas ter dimensão
-    requestAnimationFrame(async () => {
-      const selecionadas = ALL_ROWS.filter((r) =>
-        selectedTickers.has(r.ticker)
-      );
-      await renderSelectedSectorChart(selecionadas);
-    });
+    if (selectedTickers.size === 0) { alert("Seleciona pelo menos uma ação para simular."); return; }
+    const selecionadas = ALL_ROWS.filter(r => selectedTickers.has(r.ticker));
+    await renderSelectedSectorChart(selecionadas);
+    openSimModal();
   });
 
   // Fechar modal
-  document
-    .getElementById("anlSimClose")
-    ?.addEventListener("click", closeSimModal);
-  document.getElementById("anlSimModal")?.addEventListener("click", (e) => {
-    if (e.target.id === "anlSimModal") closeSimModal();
-  });
+  document.getElementById("anlSimClose")?.addEventListener("click", closeSimModal);
+  document.getElementById("anlSimModal")?.addEventListener("click", (e) => { if (e.target.id === "anlSimModal") closeSimModal(); });
 
   // Exclusividade das opções
   const cbTotal = document.getElementById("anlSimInvestirTotal");
   const cbInteiro = document.getElementById("anlSimInteiros");
-  cbTotal?.addEventListener("change", () => {
-    if (cbTotal.checked) cbInteiro && (cbInteiro.checked = false);
-    else cbInteiro && (cbInteiro.checked = true);
-  });
-  cbInteiro?.addEventListener("change", () => {
-    if (cbInteiro.checked) cbTotal && (cbTotal.checked = false);
-    else cbTotal && (cbTotal.checked = true);
-  });
+  cbTotal?.addEventListener("change", () => { if (cbTotal.checked) cbInteiro && (cbInteiro.checked = false); else cbInteiro && (cbInteiro.checked = true); });
+  cbInteiro?.addEventListener("change", () => { if (cbInteiro.checked) cbTotal && (cbTotal.checked = false); else cbTotal && (cbTotal.checked = true); });
 
   // Calcular simulação
-  document
-    .getElementById("anlSimCalcular")
-    ?.addEventListener("click", async () => {
-      const investimento = Number(
-        document.getElementById("anlSimInvest")?.value || 0
-      );
-      const horizonte = Number(
-        document.getElementById("anlSimHoriz")?.value || 1
-      );
-      const periodo = document.getElementById("anlSimPeriodo")?.value || "1m";
-      const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
-      const usarFracoes = !!document.getElementById("anlSimInvestirTotal")
-        ?.checked;
-      const apenasInteiros =
-        !!document.getElementById("anlSimInteiros")?.checked;
-      const modoEstrito = !!document.getElementById("anlSimEstrito")?.checked;
+  document.getElementById("anlSimCalcular")?.addEventListener("click", async () => {
+    const investimento = Number(document.getElementById("anlSimInvest")?.value || 0);
+    const horizonte = Number(document.getElementById("anlSimHoriz")?.value || 1);
+    const periodo = document.getElementById("anlSimPeriodo")?.value || "1m";
+    const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
+    const usarFracoes = !!document.getElementById("anlSimInvestirTotal")?.checked;
+    const apenasInteiros = !!document.getElementById("anlSimInteiros")?.checked;
+    const modoEstrito = !!document.getElementById("anlSimEstrito")?.checked;
 
-      if (!(investimento > 0)) {
-        alert("Indica um investimento total válido.");
-        return;
-      }
+    if (!(investimento > 0)) { alert("Indica um investimento total válido."); return; }
 
-      const selecionadas = ALL_ROWS.filter((r) =>
-        selectedTickers.has(r.ticker)
-      );
-      let candidatos = prepararCandidatos(selecionadas, {
-        periodo,
+    const selecionadas = ALL_ROWS.filter((r) => selectedTickers.has(r.ticker));
+    let candidatos = prepararCandidatos(selecionadas, { periodo, horizonte, incluirDiv, modoEstrito });
+    if (candidatos.length === 0) { alert("Nenhum ativo com retorno positivo ou dados válidos para este cenário."); return; }
+
+    const res = (apenasInteiros && !usarFracoes) ? distribuirInteiros_porScore(candidatos, investimento)
+                                                 : distribuirFracoes_porScore(candidatos, investimento);
+
+    await renderSelectedSectorChart(selecionadas);
+    renderResultadoSimulacao(res);
+
+    // Guardar último resultado na janela (para exportar PDF)
+    window.__ANL_LAST_SIM__ = {
+      res,
+      meta: {
         horizonte,
-        incluirDiv,
-        modoEstrito,
-      });
-      if (candidatos.length === 0) {
-        alert(
-          "Nenhum ativo com retorno positivo ou dados válidos para este cenário."
-        );
-        return;
-      }
+        periodoLabel: (periodo === "1s" ? "1 semana" : periodo === "1m" ? "1 mês" : "1 ano"),
+        incluiDiv: incluirDiv
+      },
+      selecionadas
+    };
+  });
 
-      const res =
-        apenasInteiros && !usarFracoes
-          ? distribuirInteiros_porScore(candidatos, investimento)
-          : distribuirFracoes_porScore(candidatos, investimento);
-
-      await renderSelectedSectorChart(selecionadas);
-      renderResultadoSimulacao(res);
-    });
-
-  // Exportar seleção
-  document.getElementById("anlSimExportar")?.addEventListener("click", () => {
-    const selecionadas = ALL_ROWS.filter((r) =>
-      selectedTickers.has(r.ticker)
-    ).map((r) => ({
-      ticker: r.ticker,
-      nome: r.nome,
-      preco: r.valorStock,
-      divPer: r.divPer,
-      divAnual: r.divAnual,
-      periodicidade: r.periodicidade,
-      mes: r.mes,
-      yield: r.yield,
-    }));
-    localStorage.setItem("simulacaoSelecionados", JSON.stringify(selecionadas));
-    alert(
-      `Exportado ${selecionadas.length} tickers. Podes abrir o ecrã do simulador.`
-    );
-    closeSimModal();
+  // Download PDF (sem backend)
+  document.getElementById("anlSimPdf")?.addEventListener("click", async () => {
+    const store = window.__ANL_LAST_SIM__;
+    if (!store || !store.res || !store.res.linhas?.length) {
+      alert("Calcula a simulação primeiro.");
+      return;
+    }
+    await gerarPDFSimulacao(store.res, store.meta, store.selecionadas);
   });
 
   // Render inicial
