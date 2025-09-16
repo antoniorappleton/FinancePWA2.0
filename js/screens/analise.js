@@ -678,42 +678,86 @@ function renderResultadoSimulacao(res) {
     </div>`;
 }
 
-/* === Pizza: distribuição por setor (selecionados) === */
+/* === Pizza: distribuição por setor (selecionados) — com dedupe e sem tremuras === */
 let chartSelSetor = null;
-async function renderSelectedSectorChart(rowsSelecionadas){
+
+function dedupeByTicker(rows) {
+  const map = new Map();
+  for (const r of rows) {
+    if (!map.has(r.ticker)) map.set(r.ticker, r);
+  }
+  return [...map.values()];
+}
+
+async function renderSelectedSectorChart(rowsSelecionadas) {
   await ensureChartJS();
   const wrap = document.getElementById("anlSelSectorChartWrap");
   const el = document.getElementById("anlSelSectorChart");
   if (!wrap || !el) return;
-  chartSelSetor?.destroy();
 
+  // destruir chart anterior
+  if (chartSelSetor) {
+    chartSelSetor.destroy();
+    chartSelSetor = null;
+  }
+
+  // ✅ dedupe por ticker para não contar linhas repetidas
+  const uniq = dedupeByTicker(rowsSelecionadas);
+
+  // mapear setores (normalizados) → contagem
   const map = new Map();
-  rowsSelecionadas.forEach(r=>{
-    const k = canonLabel(r.setor || "—");
-    map.set(k, (map.get(k)||0) + 1);
-  });
-  const labels = Array.from(map.keys());
-  const data   = Array.from(map.values());
-  if (!data.length){ wrap.classList.add("muted"); return; }
-  const colors = labels.map((_,i)=> PALETTE[i % PALETTE.length]);
+  for (const r of uniq) {
+    const raw = r.setor && String(r.setor).trim() ? r.setor : "Sem setor";
+    const k = canonLabel(raw);
+    map.set(k, (map.get(k) || 0) + 1);
+  }
 
+  const labels = Array.from(map.keys());
+  const data = Array.from(map.values());
+  if (!data.length) {
+    wrap.classList.add("muted");
+    return;
+  } else {
+    wrap.classList.remove("muted");
+  }
+
+  // Para evitar flicker: criar só quando o canvas já tem dimensão
+  // (modal aberto) + desligar animações/resizes agressivos
   chartSelSetor = new Chart(el, {
     type: "doughnut",
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
+          borderWidth: 1,
+        },
+      ],
+    },
     options: {
-      responsive: true, maintainAspectRatio: true, cutout: "62%",
-      plugins:{
+      responsive: true,
+      maintainAspectRatio: true,
+      resizeDelay: 200, // suaviza recalculo
+      animation: { duration: 0 }, // sem animação => sem “tremuras”
+      transitions: { active: { animation: { duration: 0 } } },
+      plugins: {
         legend: { position: "bottom", labels: { color: chartColors().ticks } },
-        tooltip:{
-          backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
-          callbacks:{ label: (ctx)=>{
-            const total = data.reduce((a,b)=>a+b,0) || 1;
-            const v = Number(ctx.parsed); const pct = ((v/total)*100).toFixed(1);
-            return ` ${ctx.label}: ${v} (${pct}%)`;
-          } }
-        }
-      }
-    }
+        tooltip: {
+          backgroundColor: chartColors().tooltipBg,
+          titleColor: chartColors().tooltipFg,
+          bodyColor: chartColors().tooltipFg,
+          callbacks: {
+            label: (ctx) => {
+              const total = data.reduce((a, b) => a + b, 0) || 1;
+              const v = Number(ctx.parsed);
+              const pct = ((v / total) * 100).toFixed(1);
+              return ` ${ctx.label}: ${v} (${pct}%)`;
+            },
+          },
+        },
+      },
+    },
   });
 }
 
@@ -723,7 +767,10 @@ async function renderSelectedSectorChart(rowsSelecionadas){
 export async function initScreen() {
   console.log("[analise] init…");
   await ensureChartJS();
-  if (!db) { console.error("Firebase DB não inicializado!"); return; }
+  if (!db) {
+    console.error("Firebase DB não inicializado!");
+    return;
+  }
 
   await fetchAcoes();
   populateFilters();
@@ -734,7 +781,10 @@ export async function initScreen() {
       const key = th.getAttribute("data-sort");
       if (!key) return;
       if (sortKey === key) sortDir = sortDir === "asc" ? "desc" : "asc";
-      else { sortKey = key; sortDir = key === "pe" ? "asc" : "desc"; }
+      else {
+        sortKey = key;
+        sortDir = key === "pe" ? "asc" : "desc";
+      }
       markSortedHeader();
       applyFilters();
     });
@@ -743,8 +793,12 @@ export async function initScreen() {
   // Filtros
   document.getElementById("anlSearch")?.addEventListener("input", applyFilters);
   document.getElementById("anlSetor")?.addEventListener("change", applyFilters);
-  document.getElementById("anlMercado")?.addEventListener("change", applyFilters);
-  document.getElementById("anlPeriodo")?.addEventListener("change", applyFilters);
+  document
+    .getElementById("anlMercado")
+    ?.addEventListener("change", applyFilters);
+  document
+    .getElementById("anlPeriodo")
+    ?.addEventListener("change", applyFilters);
   document.getElementById("anlReset")?.addEventListener("click", () => {
     document.getElementById("anlSearch").value = "";
     document.getElementById("anlSetor").value = "";
@@ -761,12 +815,18 @@ export async function initScreen() {
     const mercado = document.getElementById("anlMercado")?.value || "";
     const periodo = document.getElementById("anlPeriodo")?.value || "";
     let rows = [...ALL_ROWS];
-    if (term) rows = rows.filter((r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term));
+    if (term)
+      rows = rows.filter(
+        (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term)
+      );
     if (setor) rows = rows.filter((r) => r.setor === setor);
     if (mercado) rows = rows.filter((r) => r.mercado === mercado);
     if (periodo) rows = rows.filter((r) => (r.periodicidade || "") === periodo);
 
-    rows.forEach((r) => { if (check) selectedTickers.add(r.ticker); else selectedTickers.delete(r.ticker); });
+    rows.forEach((r) => {
+      if (check) selectedTickers.add(r.ticker);
+      else selectedTickers.delete(r.ticker);
+    });
     updateSelCount();
     renderTable(sortRows(rows));
   });
@@ -778,54 +838,109 @@ export async function initScreen() {
   });
 
   // Abrir modal + pizza dos selecionados
+  // Abrir modal + pizza dos selecionados (ordem invertida para evitar flicker)
   document.getElementById("anlSimular")?.addEventListener("click", async () => {
-    if (selectedTickers.size === 0) { alert("Seleciona pelo menos uma ação para simular."); return; }
-    const selecionadas = ALL_ROWS.filter(r => selectedTickers.has(r.ticker));
-    await renderSelectedSectorChart(selecionadas);
-    openSimModal();
+    if (selectedTickers.size === 0) {
+      alert("Seleciona pelo menos uma ação para simular.");
+      return;
+    }
+    openSimModal(); // ← abre primeiro
+
+    // Espera 1 frame para o canvas ter dimensão
+    requestAnimationFrame(async () => {
+      const selecionadas = ALL_ROWS.filter((r) =>
+        selectedTickers.has(r.ticker)
+      );
+      await renderSelectedSectorChart(selecionadas);
+    });
   });
 
   // Fechar modal
-  document.getElementById("anlSimClose")?.addEventListener("click", closeSimModal);
-  document.getElementById("anlSimModal")?.addEventListener("click", (e) => { if (e.target.id === "anlSimModal") closeSimModal(); });
+  document
+    .getElementById("anlSimClose")
+    ?.addEventListener("click", closeSimModal);
+  document.getElementById("anlSimModal")?.addEventListener("click", (e) => {
+    if (e.target.id === "anlSimModal") closeSimModal();
+  });
 
   // Exclusividade das opções
   const cbTotal = document.getElementById("anlSimInvestirTotal");
   const cbInteiro = document.getElementById("anlSimInteiros");
-  cbTotal?.addEventListener("change", () => { if (cbTotal.checked) cbInteiro && (cbInteiro.checked = false); else cbInteiro && (cbInteiro.checked = true); });
-  cbInteiro?.addEventListener("change", () => { if (cbInteiro.checked) cbTotal && (cbTotal.checked = false); else cbTotal && (cbTotal.checked = true); });
+  cbTotal?.addEventListener("change", () => {
+    if (cbTotal.checked) cbInteiro && (cbInteiro.checked = false);
+    else cbInteiro && (cbInteiro.checked = true);
+  });
+  cbInteiro?.addEventListener("change", () => {
+    if (cbInteiro.checked) cbTotal && (cbTotal.checked = false);
+    else cbTotal && (cbTotal.checked = true);
+  });
 
   // Calcular simulação
-  document.getElementById("anlSimCalcular")?.addEventListener("click", async () => {
-    const investimento = Number(document.getElementById("anlSimInvest")?.value || 0);
-    const horizonte = Number(document.getElementById("anlSimHoriz")?.value || 1);
-    const periodo = document.getElementById("anlSimPeriodo")?.value || "1m";
-    const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
-    const usarFracoes = !!document.getElementById("anlSimInvestirTotal")?.checked;
-    const apenasInteiros = !!document.getElementById("anlSimInteiros")?.checked;
-    const modoEstrito = !!document.getElementById("anlSimEstrito")?.checked;
+  document
+    .getElementById("anlSimCalcular")
+    ?.addEventListener("click", async () => {
+      const investimento = Number(
+        document.getElementById("anlSimInvest")?.value || 0
+      );
+      const horizonte = Number(
+        document.getElementById("anlSimHoriz")?.value || 1
+      );
+      const periodo = document.getElementById("anlSimPeriodo")?.value || "1m";
+      const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
+      const usarFracoes = !!document.getElementById("anlSimInvestirTotal")
+        ?.checked;
+      const apenasInteiros =
+        !!document.getElementById("anlSimInteiros")?.checked;
+      const modoEstrito = !!document.getElementById("anlSimEstrito")?.checked;
 
-    if (!(investimento > 0)) { alert("Indica um investimento total válido."); return; }
+      if (!(investimento > 0)) {
+        alert("Indica um investimento total válido.");
+        return;
+      }
 
-    const selecionadas = ALL_ROWS.filter((r) => selectedTickers.has(r.ticker));
-    let candidatos = prepararCandidatos(selecionadas, { periodo, horizonte, incluirDiv, modoEstrito });
-    if (candidatos.length === 0) { alert("Nenhum ativo com retorno positivo ou dados válidos para este cenário."); return; }
+      const selecionadas = ALL_ROWS.filter((r) =>
+        selectedTickers.has(r.ticker)
+      );
+      let candidatos = prepararCandidatos(selecionadas, {
+        periodo,
+        horizonte,
+        incluirDiv,
+        modoEstrito,
+      });
+      if (candidatos.length === 0) {
+        alert(
+          "Nenhum ativo com retorno positivo ou dados válidos para este cenário."
+        );
+        return;
+      }
 
-    const res = (apenasInteiros && !usarFracoes) ? distribuirInteiros_porScore(candidatos, investimento)
-                                                 : distribuirFracoes_porScore(candidatos, investimento);
+      const res =
+        apenasInteiros && !usarFracoes
+          ? distribuirInteiros_porScore(candidatos, investimento)
+          : distribuirFracoes_porScore(candidatos, investimento);
 
-    await renderSelectedSectorChart(selecionadas);
-    renderResultadoSimulacao(res);
-  });
+      await renderSelectedSectorChart(selecionadas);
+      renderResultadoSimulacao(res);
+    });
 
   // Exportar seleção
   document.getElementById("anlSimExportar")?.addEventListener("click", () => {
-    const selecionadas = ALL_ROWS.filter((r) => selectedTickers.has(r.ticker)).map((r) => ({
-      ticker: r.ticker, nome: r.nome, preco: r.valorStock, divPer: r.divPer, divAnual: r.divAnual,
-      periodicidade: r.periodicidade, mes: r.mes, yield: r.yield,
+    const selecionadas = ALL_ROWS.filter((r) =>
+      selectedTickers.has(r.ticker)
+    ).map((r) => ({
+      ticker: r.ticker,
+      nome: r.nome,
+      preco: r.valorStock,
+      divPer: r.divPer,
+      divAnual: r.divAnual,
+      periodicidade: r.periodicidade,
+      mes: r.mes,
+      yield: r.yield,
     }));
     localStorage.setItem("simulacaoSelecionados", JSON.stringify(selecionadas));
-    alert(`Exportado ${selecionadas.length} tickers. Podes abrir o ecrã do simulador.`);
+    alert(
+      `Exportado ${selecionadas.length} tickers. Podes abrir o ecrã do simulador.`
+    );
     closeSimModal();
   });
 
