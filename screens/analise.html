@@ -269,23 +269,6 @@
   .pie-wrap{width:100%;max-width:420px;margin:10px auto;padding:10px}
   .pie-wrap canvas{width:100%!important;height:auto!important;max-height:300px}
   @media (max-width:480px){.pie-wrap{max-width:360px}.pie-wrap canvas{max-height:260px}}
-  .dividend-heatmap .months {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(64px, 1fr));
-}
-.dividend-heatmap .row .months {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(64px, 1fr));
-}
-.dividend-heatmap .months {
-  display: grid;
-  grid-template-columns: repeat(12, 110px); /* 12 colunas fixas → scroll X */
-}
-.dividend-heatmap .row .months {
-  display: grid;
-  grid-template-columns: repeat(12, 110px);
-}
-
 </style>
 
 <!-- deps para PDF (carregadas on-demand no JS também, aqui só por fallback rápido) -->
