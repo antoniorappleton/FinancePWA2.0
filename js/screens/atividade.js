@@ -1,3 +1,5 @@
+window.addEventListener('error', e => console.error('ATIVIDADE HARD ERROR:', e.error || e.message));
+
 import { db } from "../firebase-config.js";
 import {
   collection, getDocs, query, orderBy, where,
@@ -45,12 +47,16 @@ const charts = {
 };
 
 /* ===============================
-   Helpers (mantidos + novos)
+   Helpers
    =============================== */
-function toNum(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
+function toNumStrict(v){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : NaN;
+}
 function isFiniteNum(v){ return Number.isFinite(Number(v)); }
 function formatNum(n){ return Number(n || 0).toLocaleString("pt-PT"); }
 
+/** Carrega info complementar (valorStock, dividendo, periodicidade, mes, pe, sma, etc.) */
 async function fetchDividendInfoByTickers(tickers){
   const out = new Map();
   const chunks = [];
@@ -82,7 +88,7 @@ function estimateTime(currentPrice, targetPrice, growthPct, periodLabel) {
   return `${n.toFixed(1)} anos`;
 }
 
-/* ---- novos helpers (dividendos & calendário) ---- */
+/* ---- dividendos & calendário ---- */
 const MES_IDX = {
   "janeiro":0,"fevereiro":1,"março":2,"marco":2,"abril":3,"maio":4,"junho":5,"julho":6,
   "agosto":7,"setembro":8,"outubro":9,"novembro":10,"dezembro":11
@@ -96,7 +102,6 @@ function pagamentosAno(periodicidade){
   return 0;
 }
 function mesesPagos(periodicidade, mesTipico){
-  // devolve array de índices [0..11] dos meses esperados
   const p = String(periodicidade || "").toLowerCase();
   const baseIdx = MES_IDX[String(mesTipico||"").trim().toLowerCase()];
   if (p.startsWith("mensal")) return Array.from({length:12},(_,i)=>i);
@@ -115,7 +120,7 @@ function mesesPagos(periodicidade, mesTipico){
 }
 
 /* ===============================
-   Renders — antigos + novos
+   Renders — gráficos
    =============================== */
 function renderSetorDoughnut(map){
   const el = document.getElementById("chartSetores");
@@ -129,6 +134,7 @@ function renderSetorDoughnut(map){
     data: { labels, datasets:[{ data, backgroundColor: labels.map((_,i)=>PALETTE[i%PALETTE.length]), borderWidth:1 }] },
     options: {
       responsive:true, maintainAspectRatio:false, cutout:"62%",
+      animation:{ animateRotate:false, animateScale:false }, // evita “tremer”
       plugins:{
         legend:{ position:"bottom", labels:{ color: chartColors().ticks } },
         tooltip:{ backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
@@ -150,6 +156,7 @@ function renderMercadoDoughnut(map){
     data: { labels, datasets:[{ data, backgroundColor: labels.map((_,i)=>PALETTE[(i+5)%PALETTE.length]), borderWidth:1 }] },
     options: {
       responsive:true, maintainAspectRatio:false, cutout:"62%",
+      animation:{ animateRotate:false, animateScale:false },
       plugins:{
         legend:{ position:"bottom", labels:{ color: chartColors().ticks } },
         tooltip:{ backgroundColor: chartColors().tooltipBg, titleColor: chartColors().tooltipFg, bodyColor: chartColors().tooltipFg,
@@ -256,7 +263,7 @@ function renderDividendoCalendario12m(arrEuros12){
 }
 
 /* ===============================
-   Quick Actions (teu código)
+   Quick Actions (comprar/vender)
    =============================== */
 function wireQuickActions(gruposArr){
   const byTicker = new Map(gruposArr.map(g => [g.ticker, g]));
@@ -284,64 +291,65 @@ function wireQuickActions(gruposArr){
   function open(kind, ticker){
     const g = byTicker.get(ticker);
     if (!g) return;
-    modal.classList.remove("hidden");
-    title.textContent = kind === "compra" ? "Comprar ativo" : "Vender ativo";
-    tipoSel.value = kind;
-    fTicker.value = g.ticker;
-    fNome.value   = g.nome;
-    fSetor.value  = g.setor;
-    fMerc.value   = g.mercado;
-    fQtd.value    = "";
-    fPreco.value  = "";
-    fObj.value    = g.objetivo || "";
-    vendaTot.checked = false;
-    vendaTotWrap.style.display = kind === "venda" ? "block" : "none";
-    labelP.firstChild.textContent = kind === "venda" ? "Preço de venda (€)" : "Preço de compra (€)";
+    modal?.classList.remove("hidden");
+    title && (title.textContent = kind === "compra" ? "Comprar ativo" : "Vender ativo");
+    tipoSel && (tipoSel.value = kind);
+    if (fTicker) fTicker.value = g.ticker;
+    if (fNome)   fNome.value   = g.nome;
+    if (fSetor)  fSetor.value  = g.setor;
+    if (fMerc)   fMerc.value   = g.mercado;
+    if (fQtd)    fQtd.value    = "";
+    if (fPreco)  fPreco.value  = "";
+    if (fObj)    fObj.value    = g.objetivo || "";
+    if (vendaTot) vendaTot.checked = false;
+    if (vendaTotWrap) vendaTotWrap.style.display = kind === "venda" ? "block" : "none";
+    if (labelP && labelP.firstChild) labelP.firstChild.textContent = kind === "venda" ? "Preço de venda (€)" : "Preço de compra (€)";
   }
   function closeModal(){
-    modal.classList.add("hidden");
-    form.reset();
-    vendaTot.checked = false;
-    vendaTotWrap.style.display = "none";
-    labelP.firstChild.textContent = "Preço de compra (€)";
+    modal?.classList.add("hidden");
+    form?.reset();
+    if (vendaTot) vendaTot.checked = false;
+    if (vendaTotWrap) vendaTotWrap.style.display = "none";
+    if (labelP && labelP.firstChild) labelP.firstChild.textContent = "Preço de compra (€)";
   }
   close?.addEventListener("click", closeModal);
   cancel?.addEventListener("click", closeModal);
   modal?.addEventListener("click", (e)=>{ if (e.target.id === "pfAddModal") closeModal(); });
 
   document.getElementById("listaAtividades")?.addEventListener("click", (e)=>{
-    const buy = e.target.closest("[data-buy]");
-    const sell = e.target.closest("[data-sell]");
+    const buy = e.target.closest?.("[data-buy]");
+    const sell = e.target.closest?.("[data-sell]");
     if (buy)  open("compra", buy.getAttribute("data-buy"));
     if (sell) open("venda",  sell.getAttribute("data-sell"));
   });
 
   tipoSel?.addEventListener("change", () => {
     const isVenda = tipoSel.value === "venda";
-    labelP.firstChild.textContent = isVenda ? "Preço de venda (€)" : "Preço de compra (€)";
-    vendaTotWrap.style.display = isVenda ? "block" : "none";
+    if (labelP && labelP.firstChild) labelP.firstChild.textContent = isVenda ? "Preço de venda (€)" : "Preço de compra (€)";
+    if (vendaTotWrap) vendaTotWrap.style.display = isVenda ? "block" : "none";
   });
 
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const tipo  = (tipoSel.value || "compra").toLowerCase();
-    const nome  = fNome.value.trim();
-    const ticker= fTicker.value.trim().toUpperCase();
-    const setor = fSetor.value.trim();
-    const merc  = fMerc.value.trim();
-    const qtd   = Number(fQtd.value || 0);
-    const preco = Number(fPreco.value || 0);
-    const obj   = Number(fObj.value || 0);
-    const vendaTotal = vendaTot.checked;
-    if (!ticker || !nome || !qtd || !preco) {
-      alert("Preenche Ticker, Nome, Quantidade e Preço.");
+    const tipo  = (tipoSel?.value || "compra").toLowerCase();
+    const nome  = fNome?.value.trim() || "";
+    const ticker= fTicker?.value.trim().toUpperCase() || "";
+    const setor = fSetor?.value.trim() || "";
+    const merc  = fMerc?.value.trim() || "";
+    const qtd   = toNumStrict(fQtd?.value);
+    const preco = toNumStrict(fPreco?.value);
+    const obj   = toNumStrict(fObj?.value);
+    const vendaTotal = !!vendaTot?.checked;
+
+    if (!ticker || !nome || !Number.isFinite(qtd) || !Number.isFinite(preco) || qtd<=0 || preco<=0) {
+      alert("Preenche Ticker, Nome, Quantidade (>0) e Preço (>0).");
       return;
     }
     const quantidade = tipo === "venda" ? -Math.abs(qtd) : Math.abs(qtd);
     const payload = {
       tipoAcao: tipo, nome, ticker, setor, mercado: merc,
       quantidade, precoCompra: preco,
-      objetivoFinanceiro: isNaN(obj) ? 0 : obj,
+      objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
       dataCompra: serverTimestamp(),
     };
     try {
@@ -394,9 +402,13 @@ export async function initScreen() {
       const d = docu.data();
       const ticker = String(d.ticker || "").toUpperCase();
       if (!ticker) return;
-      const qtd = toNum(d.quantidade);
-      const preco = toNum(d.precoCompra);
-      const invest = qtd * preco;
+
+      const qtd   = toNumStrict(d.quantidade);
+      const preco = toNumStrict(d.precoCompra);
+      const safeQtd   = Number.isFinite(qtd)   ? qtd   : 0;
+      const safePreco = Number.isFinite(preco) ? preco : 0;
+      const invest = safeQtd * safePreco;
+
       const g = grupos.get(ticker) || {
         ticker,
         nome: d.nome || ticker,
@@ -408,11 +420,11 @@ export async function initScreen() {
         anyObjSet: false,
         lastDate: null,
       };
-      g.qtd += qtd;
-      g.investido += invest;
+      g.qtd       += safeQtd;
+      g.investido += Number.isFinite(invest) ? invest : 0;
 
-      const obj = toNum(d.objetivoFinanceiro);
-      if (!g.anyObjSet && obj > 0) {
+      const obj = toNumStrict(d.objetivoFinanceiro);
+      if (!g.anyObjSet && Number.isFinite(obj) && obj > 0) {
         g.objetivo = obj;
         g.anyObjSet = true;
       }
@@ -428,60 +440,59 @@ export async function initScreen() {
       g.mercado = d.mercado || g.mercado;
 
       grupos.set(ticker, g);
-      movimentosAsc.push({ date: dt || new Date(0), ticker, qtd, preco });
+      movimentosAsc.push({ date: dt || new Date(0), ticker, qtd: safeQtd, preco: safePreco });
     });
 
     const gruposArr = Array.from(grupos.values());
+
+    // Debug opcional
+    const dbgEl = document.getElementById("prtDebug");
+    if (dbgEl) {
+      const totalMovs = qSnap.size;
+      const tickers = gruposArr.length;
+      const abertos = gruposArr.filter(g => g.qtd > 0).length;
+      dbgEl.textContent = `Movimentos: ${totalMovs} | Tickers: ${tickers} | Abertos: ${abertos}`;
+    }
+    console.log("[atividade] grupos:", gruposArr);
 
     // 2) Info de cota / dividendos
     const tickers = gruposArr.map((g) => g.ticker);
     const infoMap = await fetchDividendInfoByTickers(tickers);
 
-    const fmtEUR = new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
-    });
-    const fmtDate = new Intl.DateTimeFormat("pt-PT", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-    });
+    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+    const fmtDate = new Intl.DateTimeFormat("pt-PT", { year: "numeric", month: "short", day: "2-digit" });
 
     // Enriquecer grupos com métricas para gráficos/cards
     const rowsForYield = []; // para Top5 Yield
     gruposArr.forEach((g) => {
       const info = infoMap.get(g.ticker) || {};
-      const precoAtual = isFiniteNum(info.valorStock)
-        ? Number(info.valorStock)
-        : null;
-      const precoMedio = g.qtd > 0 ? g.investido / g.qtd : 0;
-      g.lucroAtual =
-        precoAtual !== null ? (precoAtual - precoMedio) * g.qtd : 0;
+      const precoAtual = isFiniteNum(info.valorStock) ? Number(info.valorStock) : null;
+      const precoMedio = g.qtd !== 0 ? (g.investido / (g.qtd || 1)) : 0; // evita div/0
+      g.lucroAtual = precoAtual !== null ? (precoAtual - precoMedio) * g.qtd : 0;
       g.precoAtual = precoAtual;
 
-      // yields & valuation
-      const dividendo = toNum(info.dividendo);
-      const dmed24 = toNum(info.dividendoMedio24m);
+      const dividendo = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0; // por pagamento (unit.)
+      const dmed24 = isFiniteNum(info.dividendoMedio24m) ? Number(info.dividendoMedio24m) : 0; // anual (média 24m)
       const pe = isFiniteNum(info.peRatio) ? Number(info.peRatio) : null;
       const sma50 = isFiniteNum(info.sma50) ? Number(info.sma50) : null;
       const sma200 = isFiniteNum(info.sma200) ? Number(info.sma200) : null;
 
-      const yCur = precoAtual && dividendo > 0 ? dividendo / precoAtual : null; // 0..1
-      const y24m = precoAtual && dmed24 > 0 ? dmed24 / precoAtual : null; // 0..1
+      const yCur = precoAtual && dividendo > 0 && info.periodicidade
+        ? (dividendo * pagamentosAno(info.periodicidade)) / precoAtual
+        : (precoAtual && dmed24 > 0 ? dmed24 / precoAtual : null);
+
+      const y24m = precoAtual && dmed24 > 0 ? dmed24 / precoAtual : null;
+
       g._yCur = yCur;
       g._y24m = y24m;
       g._pe = pe;
       g._sma50 = sma50;
       g._sma200 = sma200;
 
-      rowsForYield.push({
-        ticker: g.ticker,
-        active: g.qtd > 0,
-        yieldCur: yCur,
-      });
+      rowsForYield.push({ ticker: g.ticker, active: g.qtd > 0, yieldCur: yCur });
     });
 
-    // 2.1) Distribuições
+    // 2.1) Distribuições (apenas posições abertas)
     const setoresMap = new Map();
     const mercadosMap = new Map();
     for (const g of gruposArr) {
@@ -492,45 +503,36 @@ export async function initScreen() {
       mercadosMap.set(merc, (mercadosMap.get(merc) || 0) + (g.investido || 0));
     }
 
-    // 2.2) KPIs agregados
-    const totalInvestido = gruposArr
-      .filter((g) => g.qtd > 0)
-      .reduce((a, g) => a + (g.investido || 0), 0);
-    const lucroTotal = gruposArr
-      .filter((g) => g.qtd > 0)
-      .reduce((a, g) => a + (g.lucroAtual || 0), 0);
-    const retornoPct = totalInvestido ? (lucroTotal / totalInvestido) * 100 : 0;
+    // 2.2) KPIs agregados (apenas posições abertas)
+    const abertos = gruposArr.filter(g => g.qtd > 0);
+    const totalInvestido = abertos.reduce((a, g) => a + (g.investido || 0), 0);
+    const lucroTotal     = abertos.reduce((a, g) => a + (g.lucroAtual || 0), 0);
+    const retornoPct     = totalInvestido ? (lucroTotal / totalInvestido) * 100 : 0;
 
-    // rendimento anual esperado
+    // rendimento anual esperado (unitário * pagamentos * qtd)
     let rendimentoAnual = 0;
     const eurosMes = new Array(12).fill(0); // calendário 12m
-    for (const g of gruposArr) {
-      if (g.qtd <= 0) continue;
+    for (const g of abertos) {
       const info = infoMap.get(g.ticker) || {};
-      const div = toNum(info.dividendo);
+      const divUnit = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0; // por pagamento
       const per = info.periodicidade;
       const mesT = info.mes;
       const payN = pagamentosAno(per);
-      const anualTicker = g.qtd * div * payN;
+      const anualTicker = g.qtd * divUnit * payN;
       rendimentoAnual += anualTicker;
 
-      // distribuir pelos meses estimados
+      // distribuir pelos meses estimados (cada mês recebe qtd * unidade)
       const meses = mesesPagos(per, mesT);
-      for (const m of meses) {
-        eurosMes[m] += g.qtd * div;
-      }
+      for (const m of meses) eurosMes[m] += g.qtd * divUnit;
     }
 
     // exposição acima da SMA200 (peso por investido)
     let somaPesosAcima = 0;
-    for (const g of gruposArr) {
-      if (g.qtd <= 0 || !totalInvestido) continue;
+    for (const g of abertos) {
+      if (!totalInvestido) continue;
       const w = (g.investido || 0) / totalInvestido;
-      const p = g.precoAtual,
-        s200 = g._sma200;
-      if (isFiniteNum(p) && isFiniteNum(s200) && Number(p) > Number(s200)) {
-        somaPesosAcima += w;
-      }
+      const p = g.precoAtual, s200 = g._sma200;
+      if (isFiniteNum(p) && isFiniteNum(s200) && Number(p) > Number(s200)) somaPesosAcima += w;
     }
     const expSMA200Pct = somaPesosAcima * 100;
 
@@ -544,13 +546,12 @@ export async function initScreen() {
     if (elRP) elRP.textContent = `${retornoPct.toFixed(1)}%`;
     if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
 
-    // 2.3) Timeline (como já tinhas)
+    // 2.3) Timeline (compras/vendas acumuladas; avaliação com preços atuais)
     movimentosAsc.sort((a, b) => a.date - b.date);
     const qtyNow = new Map();
     const priceNow = new Map();
     gruposArr.forEach((g) => {
-      if (isFiniteNum(g.precoAtual))
-        priceNow.set(g.ticker, Number(g.precoAtual));
+      if (isFiniteNum(g.precoAtual)) priceNow.set(g.ticker, Number(g.precoAtual));
       qtyNow.set(g.ticker, 0);
     });
     let cumInvest = 0;
@@ -579,16 +580,20 @@ export async function initScreen() {
     renderTimeline(timelinePoints);
     renderDividendoCalendario12m(eurosMes);
 
-    // 4) Render LISTA com badges extra
+    // 4) Render LISTA — mostra todos os tickers, com estado
     const html = gruposArr
-      .filter((g) => g.qtd > 0)
+      .filter((g) => Number.isFinite(g.qtd))
       .map((g) => {
         const info = infoMap.get(g.ticker) || {};
         const precoAtual = g.precoAtual;
-        const precoMedio = g.qtd > 0 ? g.investido / g.qtd : 0;
+        const precoMedio = g.qtd !== 0 ? (g.investido / (g.qtd || 1)) : 0;
         const lucroAtual = g.lucroAtual || 0;
 
-        // barra zero ao centro (teu código)
+        // estado posição
+        const posStatus = g.qtd > 0 ? "Posição aberta" : (g.qtd < 0 ? "Posição negativa (ver movimentos)" : "Posição encerrada");
+        const itemClass = g.qtd > 0 ? "" : " muted";
+
+        // progresso objetivo (barra zero ao centro)
         let pctText = "—";
         let barHTML = "";
         const objetivo = g.objetivo > 0 ? g.objetivo : 0;
@@ -601,9 +606,7 @@ export async function initScreen() {
           barHTML = `
             <div class="progress-dual">
               <div class="track">
-                <div class="fill ${
-                  positive ? "positive" : "negative"
-                }" style="width:${sideWidthPct}%"></div>
+                <div class="fill ${positive ? "positive" : "negative"}" style="width:${sideWidthPct}%"></div>
                 <div class="zero"></div>
               </div>
             </div>
@@ -611,7 +614,7 @@ export async function initScreen() {
         }
 
         const tp2Necessario =
-          objetivo > 0 && g.qtd > 0 ? precoMedio + objetivo / g.qtd : null;
+          objetivo > 0 && g.qtd !== 0 ? precoMedio + objetivo / (g.qtd || 1) : null;
 
         const { taxa, periodLabel } = pickBestRate(info);
         const estimativa =
@@ -621,27 +624,24 @@ export async function initScreen() {
 
         const dataTxt = g.lastDate ? fmtDate.format(g.lastDate) : "sem data";
 
-        // badges rápidas
+        // badges
+        const dividendoUnit = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0;
+        const payN = pagamentosAno(info.periodicidade);
+        const divAnualEst = dividendoUnit * payN;
         const yCur = g._yCur; // 0..1
         const y24 = g._y24m; // 0..1
         const pe = g._pe;
         const s50 = g._sma50;
         const s200 = g._sma200;
 
-        const yPct = isFiniteNum(yCur) ? (yCur * 100).toFixed(2) + "%" : "—";
-        const y24Pct = isFiniteNum(y24) ? (y24 * 100).toFixed(2) + "%" : "—";
+        const yPct = isFiniteNum(yCur) ? (yCur*100).toFixed(2) + "%" : "—";
+        const y24Pct = isFiniteNum(y24) ? (y24*100).toFixed(2) + "%" : "—";
         const yBadge =
           isFiniteNum(yCur) && isFiniteNum(y24)
-            ? yCur > y24
-              ? "↑ acima da média"
-              : "↓ abaixo da média"
+            ? (yCur > y24 ? "↑ acima da média" : "↓ abaixo da média")
             : "";
         const peBadge = isFiniteNum(pe)
-          ? pe < 15
-            ? "Barato"
-            : pe <= 25
-            ? "Justo"
-            : "Caro"
+          ? (pe < 15 ? "Barato" : (pe <= 25 ? "Justo" : "Caro"))
           : "—";
         const d50 =
           isFiniteNum(s50) && isFiniteNum(precoAtual)
@@ -656,100 +656,69 @@ export async function initScreen() {
         const d200Txt = d200 === null ? "—" : `${d200.toFixed(1)}%`;
 
         const stopLight =
-          isFiniteNum(precoAtual) &&
-          isFiniteNum(s200) &&
-          precoAtual < s200 &&
-          Number(info.taxaCrescimento_1mes || 0) < 0
+          isFiniteNum(precoAtual) && isFiniteNum(s200) && precoAtual < s200 && Number(info.taxaCrescimento_1mes || 0) < 0
             ? "🔴"
-            : (isFiniteNum(precoAtual) &&
-                isFiniteNum(s200) &&
-                precoAtual < s200) ||
-              Number(info.taxaCrescimento_1mes || 0) < 0
+            : ((isFiniteNum(precoAtual) && isFiniteNum(s200) && precoAtual < s200) || Number(info.taxaCrescimento_1mes || 0) < 0)
             ? "🟡"
-            : isFiniteNum(precoAtual) &&
-              isFiniteNum(s200) &&
-              precoAtual > s200 &&
-              Number(info.taxaCrescimento_1mes || 0) > 0
+            : (isFiniteNum(precoAtual) && isFiniteNum(s200) && precoAtual > s200 && Number(info.taxaCrescimento_1mes || 0) > 0)
             ? "🟢"
             : "⚪️";
 
-        // ações
-        const actions = `
-          <div class="actions-row" style="margin-top:.5rem">
-            <button class="btn outline" data-buy="${g.ticker}">Comprar</button>
-            <button class="btn ghost"  data-sell="${g.ticker}">Vender</button>
-          </div>
-        `;
+        // ações — esconder vender em posição encerrada/negativa
+        const actions = g.qtd > 0
+          ? `<div class="actions-row" style="margin-top:.5rem">
+               <button class="btn outline" data-buy="${g.ticker}">Comprar</button>
+               <button class="btn ghost"  data-sell="${g.ticker}">Vender</button>
+             </div>`
+          : `<div class="actions-row" style="margin-top:.5rem">
+               <button class="btn outline" data-buy="${g.ticker}">Reabrir (comprar)</button>
+             </div>`;
 
         // linha de análise extra
         const analysis = `
           <p class="muted" style="margin-top:.4rem">
             ${stopLight} Yield: <strong>${yPct}</strong> (${yBadge || "—"}) •
             Yield 24m: <strong>${y24Pct}</strong> •
-            P/E: <strong>${
-              isFiniteNum(pe) ? pe.toFixed(2) : "—"
-            } (${peBadge})</strong> •
+            P/E: <strong>${isFiniteNum(pe) ? pe.toFixed(2) : "—"} (${peBadge})</strong> •
             Δ50d: <strong>${d50Txt}</strong> •
             Δ200d: <strong>${d200Txt}</strong>
           </p>
           <p class="muted">
-            ${String(info.periodicidade || "n/A")} • paga em <strong>${String(
-          info.mes || "n/A"
-        )}</strong>
+            ${String(info.periodicidade || "n/A")} • paga em <strong>${String(info.mes || "n/A")}</strong> •
+            Div. unit.: <strong>${isFiniteNum(dividendoUnit) ? fmtEUR.format(dividendoUnit) : "—"}</strong> •
+            Div. anual est.: <strong>${isFiniteNum(divAnualEst) ? fmtEUR.format(divAnualEst) : "—"}</strong>
           </p>
         `;
 
         return `
-          <div class="activity-item">
+          <div class="activity-item${itemClass}">
             <div class="activity-left">
-              <span class="activity-icon">📦</span>
+              <span class="activity-icon">${g.qtd > 0 ? "📦" : "📭"}</span>
               <div>
-                <p><strong>${g.nome}</strong> <span class="muted">(${
-          g.ticker
-        })</span></p>
-                <p class="muted">${g.setor} • ${g.mercado}</p>
+                <p><strong>${g.nome}</strong> <span class="muted">(${g.ticker})</span></p>
+                <p class="muted">${g.setor} • ${g.mercado} • ${posStatus}</p>
                 <p class="muted">Última compra: ${dataTxt}</p>
                 <p class="muted">
                   Qtd: <strong>${formatNum(g.qtd)}</strong> ·
-                  Preço médio: <strong>${fmtEUR.format(
-                    precoMedio || 0
-                  )}</strong> ·
-                  Preço atual: <strong>${
-                    precoAtual !== null ? fmtEUR.format(precoAtual) : "—"
-                  }</strong>
+                  Preço médio: <strong>${fmtEUR.format(precoMedio || 0)}</strong> ·
+                  Preço atual: <strong>${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</strong>
                 </p>
                 <p class="muted">
-                  Investido: <strong>${fmtEUR.format(
-                    g.investido || 0
-                  )}</strong> ·
+                  Investido: <strong>${fmtEUR.format(g.investido || 0)}</strong> ·
                   Lucro atual: <strong>${fmtEUR.format(lucroAtual)}</strong>
                 </p>
 
-                ${
-                  objetivo > 0
-                    ? `
+                ${objetivo > 0 ? `
                   <div class="activity-meta">
-                    <span>Objetivo (lucro): <strong>${fmtEUR.format(
-                      objetivo
-                    )}</strong></span>
+                    <span>Objetivo (lucro): <strong>${fmtEUR.format(objetivo)}</strong></span>
                     <span>${pctText}</span>
                   </div>
                   ${barHTML}
                   <p class="muted">
-                    TP2 necessário: <strong>${
-                      tp2Necessario ? fmtEUR.format(tp2Necessario) : "—"
-                    }</strong>
-                    ${
-                      taxa !== null
-                        ? `· Estimativa: <strong>${estimativa}</strong>`
-                        : ``
-                    }
+                    TP2 necessário: <strong>${tp2Necessario ? fmtEUR.format(tp2Necessario) : "—"}</strong>
+                    ${taxa !== null ? `· Estimativa: <strong>${estimativa}</strong>` : ``}
                   </p>
-                `
-                    : `
-                  <p class="muted">Sem objetivo definido para este ticker.</p>
-                `
-                }
+                ` : `<p class="muted">Sem objetivo definido para este ticker.</p>`}
 
                 ${analysis}
                 ${actions}
@@ -761,10 +730,10 @@ export async function initScreen() {
 
     cont.innerHTML = html.join("");
 
-    // 5) Quick actions (teu)
+    // 5) Quick actions
     wireQuickActions(gruposArr);
 
-    // 6) Re-render ao mudar de tema (com guard)
+    // 6) Re-render ao mudar de tema + limpeza
     if (window.__prtThemeHandler) {
       window.removeEventListener("app:theme-changed", window.__prtThemeHandler);
     }
@@ -779,11 +748,6 @@ export async function initScreen() {
     };
     window.addEventListener("app:theme-changed", window.__prtThemeHandler);
 
-    // Popup Métricas - Explicação
-    // Ajuda das Métricas: ligar handlers e mostrar ao entrar
-    wirePortfolioHelpModal();
-    showPortfolioHelp(/* force = */ true); // ← abre SEMPRE quando entras neste ecrã
-
     // 7) Auto-clean quando saíres do ecrã
     const observer = new MutationObserver(() => {
       if (!document.getElementById("chartSetores")) {
@@ -794,10 +758,7 @@ export async function initScreen() {
         charts.timeline?.destroy?.();
         charts.divCal?.destroy?.();
         if (window.__prtThemeHandler) {
-          window.removeEventListener(
-            "app:theme-changed",
-            window.__prtThemeHandler
-          );
+          window.removeEventListener("app:theme-changed", window.__prtThemeHandler);
           window.__prtThemeHandler = null;
         }
         observer.disconnect();
@@ -816,7 +777,6 @@ export async function initScreen() {
   }
 }
 
-/* Métricas Popup */
 /* ========= Ajuda das Métricas (popup) ========= */
 const HELP_KEY = "prt.help.dismissed";
 
@@ -856,11 +816,8 @@ function wirePortfolioHelpModal() {
 function showPortfolioHelp(force = false) {
   const modal = document.getElementById("prtHelpModal");
   if (!modal) return;
-  // se NÃO for force e o user marcou "não mostrar", não abre
   if (!force) {
-    try {
-      if (localStorage.getItem(HELP_KEY) === "1") return;
-    } catch {}
+    try { if (localStorage.getItem(HELP_KEY) === "1") return; } catch {}
   }
   modal.classList.remove("hidden");
 }
