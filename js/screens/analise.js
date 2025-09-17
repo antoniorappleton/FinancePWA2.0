@@ -24,27 +24,40 @@
 
 // screens/analise.js
 import { db } from "../firebase-config.js";
-import { collection, getDocs, query } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+import {
+  collection,
+  getDocs,
+  query,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 /* =========================================================
 Carregamento “on-demand” de libs (Chart.js, html2canvas, jsPDF)
 ========================================================= */
 async function ensureScript(src) {
-if ([...document.scripts].some(s => s.src === src)) return;
-await new Promise((resolve, reject) => {
-const s = document.createElement("script");
-s.src = src; s.onload = resolve; s.onerror = reject;
-document.head.appendChild(s);
-});
+  if ([...document.scripts].some((s) => s.src === src)) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
 }
 async function ensureChartJS() {
-if (window.Chart) return;
-await ensureScript("https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js");
+  if (window.Chart) return;
+  await ensureScript(
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
+  );
 }
 async function ensurePDFLibs() {
-if (!window.html2canvas) await ensureScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-if (!window.jspdf) await ensureScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+  if (!window.html2canvas)
+    await ensureScript(
+      "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+    );
+  if (!window.jspdf)
+    await ensureScript(
+      "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+    );
 }
 
 async function ensureAutoTable() {
@@ -59,17 +72,47 @@ async function ensureAutoTable() {
 /* =========================================================
 Aparência / helpers
 ========================================================= */
-const isDark = () => document.documentElement.getAttribute("data-theme") === "dark";
+const isDark = () =>
+  document.documentElement.getAttribute("data-theme") === "dark";
 const chartColors = () => ({
-grid: isDark() ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)",
-ticks: isDark() ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.75)",
-tooltipBg: isDark() ? "rgba(17,17,17,.95)" : "rgba(255,255,255,.95)",
-tooltipFg: isDark() ? "#fff" : "#111",
+  grid: isDark() ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)",
+  ticks: isDark() ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.75)",
+  tooltipBg: isDark() ? "rgba(17,17,17,.95)" : "rgba(255,255,255,.95)",
+  tooltipFg: isDark() ? "#fff" : "#111",
 });
-const PALETTE = ["#4F46E5","#22C55E","#EAB308","#EF4444","#06B6D4","#F59E0B","#A855F7","#10B981","#3B82F6","#F472B6","#84CC16","#14B8A6"];
-const mesesPT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const PALETTE = [
+  "#4F46E5",
+  "#22C55E",
+  "#EAB308",
+  "#EF4444",
+  "#06B6D4",
+  "#F59E0B",
+  "#A855F7",
+  "#10B981",
+  "#3B82F6",
+  "#F472B6",
+  "#84CC16",
+  "#14B8A6",
+];
+const mesesPT = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
 const mesToIdx = new Map(mesesPT.map((m, i) => [m, i]));
-const toNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const toNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
 const fmtEUR = (n) =>
   Number(n || 0).toLocaleString("pt-PT", {
     style: "currency",
@@ -255,6 +298,7 @@ function renderDonut(elId, dataMap) {
     },
   });
 }
+
 function renderTopYield(elId, rows) {
   const el = document.getElementById(elId);
   if (!el) return null;
@@ -306,6 +350,7 @@ function renderTopYield(elId, rows) {
     },
   });
 }
+
 function renderCharts(rows) {
   const groupBy = (key) => {
     const map = new Map();
@@ -858,24 +903,44 @@ function distribuirInteiros_porScore(cands, investimento) {
   return sumarizar(linhas, investimento, gasto);
 }
 
-/* =========================================================
+  /* =========================================================
    Modal Simulação (open/close + render)
    ========================================================= */
 
-   // --- Estado do último resultado de simulação (para o Relatório) ---
-let __ANL_LAST_SIM = {
-  rows: [],            // linhas normalizadas para o relatório
-  opts: null           // { horizonte, periodo, incluirDiv, investimento }
+  // --- Estado do último resultado de simulação (para o Relatório) ---
+  let __ANL_LAST_SIM = {
+    rows: [], // linhas normalizadas para o relatório
+    opts: null, // { horizonte, periodo, incluirDiv, investimento }
 };
 
+// === Simulação (abrir/fechar) ===
 function openSimModal() {
-  document.getElementById("anlSimModal")?.classList.remove("hidden");
+  const el = document.getElementById("anlSimModal");
+  el?.classList.remove("hidden");
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
 }
 function closeSimModal() {
-  document.getElementById("anlSimModal")?.classList.add("hidden");
+  const el = document.getElementById("anlSimModal");
+  el?.classList.add("hidden");
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
 }
-function openReportModal(){ document.getElementById("anlReportModal")?.classList.remove("hidden"); }
-function closeReportModal(){ document.getElementById("anlReportModal")?.classList.add("hidden"); }
+
+// === Relatório (abrir/fechar) ===
+function openReportModal() {
+  const el = document.getElementById("anlReportModal");
+  el?.classList.remove("hidden");
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+}
+function closeReportModal() {
+  const el = document.getElementById("anlReportModal");
+  el?.classList.add("hidden");
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
+}
+
 
 function renderResultadoSimulacao(res) {
   const cont = document.getElementById("anlSimResultado");
@@ -1037,25 +1102,28 @@ async function renderSelectedSectorChart(rowsSelecionadas) {
 }
 
 /* =========================================================
-[S11] Relatório (PDF) — completo
-   ========================================================= */
-/* =========================================================
 [S11] Relatório (PDF) — V2 profissional (única parte alterada)
 ========================================================= */
 
 // Helpers específicos da V2
-const _fmtEUR = (n) => Number(n || 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
-const _pct    = (x) => `${(Number(x || 0) * 100).toFixed(1)}%`;
+const _fmtEUR = (n) =>
+  Number(n || 0).toLocaleString("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+  });
+const _pct = (x) => `${(Number(x || 0) * 100).toFixed(1)}%`;
 
 // Tenta obter imagem de um canvas; se não existir, devolve null
-function getChartImageByCanvasId(id){
+function getChartImageByCanvasId(id) {
   const cnv = document.getElementById(id);
-  if(!cnv) return null;
-  try{
+  if (!cnv) return null;
+  try {
     const chart = cnv.__chartist || cnv.__chart || cnv.chart || null;
-    if(chart?.toBase64Image) return chart.toBase64Image();
+    if (chart?.toBase64Image) return chart.toBase64Image();
     return cnv.toDataURL("image/png");
-  }catch{ return null; }
+  } catch {
+    return null;
+  }
 }
 
 // Cria gráficos “temporários” (invisíveis) só para o PDF, caso não existam no DOM
@@ -1068,15 +1136,19 @@ async function buildTempReportCharts(rows) {
   document.body.appendChild(wrap);
 
   // Helpers para dados
-  const labels = rows.map(r => r.ticker);
-  const invest = rows.map(r => Number(r.investido||0));
-  const lucro  = rows.map(r => Number(r.lucro||0));
-  const divH   = rows.map(r => Number((r.divHoriz ?? r.dividendoHorizonte) || 0));
-  const valH   = rows.map(r => Number(r.valorizacao||0));
+  const labels = rows.map((r) => r.ticker);
+  const invest = rows.map((r) => Number(r.investido || 0));
+  const lucro = rows.map((r) => Number(r.lucro || 0));
+  const divH = rows.map((r) =>
+    Number((r.divHoriz ?? r.dividendoHorizonte) || 0)
+  );
+  const valH = rows.map((r) => Number(r.valorizacao || 0));
 
   const mkCanvas = (id) => {
     const c = document.createElement("canvas");
-    c.width = 900; c.height = 500; c.id = id;
+    c.width = 900;
+    c.height = 500;
+    c.id = id;
     wrap.appendChild(c);
     return c.getContext("2d");
   };
@@ -1088,10 +1160,22 @@ async function buildTempReportCharts(rows) {
     const ctx = mkCanvas("chartDistInvest");
     new Chart(ctx, {
       type: "pie",
-      data: { labels, datasets: [{ data: invest, backgroundColor: labels.map((_,i)=>PALETTE[i%PALETTE.length]) }]},
-      options: { animation:false, plugins:{ legend:{ display:false } } }
+      data: {
+        labels,
+        datasets: [
+          {
+            data: invest,
+            backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
+          },
+        ],
+      },
+      options: { animation: false, plugins: { legend: { display: false } } },
     });
-    imgs.push({ id:"chartDistInvest", title:"Distribuição do Investimento por Ativo (Pizza)", img: getChartImageByCanvasId("chartDistInvest") });
+    imgs.push({
+      id: "chartDistInvest",
+      title: "Distribuição do Investimento por Ativo (Pizza)",
+      img: getChartImageByCanvasId("chartDistInvest"),
+    });
   }
 
   // Barras — Lucro estimado por ativo
@@ -1099,10 +1183,14 @@ async function buildTempReportCharts(rows) {
     const ctx = mkCanvas("chartLucroPorAtivo");
     new Chart(ctx, {
       type: "bar",
-      data: { labels, datasets: [{ label:"Lucro (€)", data: lucro }] },
-      options: { animation:false, plugins:{ legend:{ display:false } } }
+      data: { labels, datasets: [{ label: "Lucro (€)", data: lucro }] },
+      options: { animation: false, plugins: { legend: { display: false } } },
     });
-    imgs.push({ id:"chartLucroPorAtivo", title:"Lucro Estimado por Ativo (Barras)", img: getChartImageByCanvasId("chartLucroPorAtivo") });
+    imgs.push({
+      id: "chartLucroPorAtivo",
+      title: "Lucro Estimado por Ativo (Barras)",
+      img: getChartImageByCanvasId("chartLucroPorAtivo"),
+    });
   }
 
   // Barras agrupadas — Dividendos vs Valorização
@@ -1113,13 +1201,17 @@ async function buildTempReportCharts(rows) {
       data: {
         labels,
         datasets: [
-          { label:"Dividendos (H)", data: divH },
-          { label:"Valorização (H)", data: valH }
-        ]
+          { label: "Dividendos (H)", data: divH },
+          { label: "Valorização (H)", data: valH },
+        ],
       },
-      options: { animation:false }
+      options: { animation: false },
     });
-    imgs.push({ id:"chartDivVsVal", title:"Dividendos vs Valorização por Ativo (Barras Agrupadas)", img: getChartImageByCanvasId("chartDivVsVal") });
+    imgs.push({
+      id: "chartDivVsVal",
+      title: "Dividendos vs Valorização por Ativo (Barras Agrupadas)",
+      img: getChartImageByCanvasId("chartDivVsVal"),
+    });
   }
 
   // Barras — Investido por ativo
@@ -1127,15 +1219,19 @@ async function buildTempReportCharts(rows) {
     const ctx = mkCanvas("chartInvestPorAtivo");
     new Chart(ctx, {
       type: "bar",
-      data: { labels, datasets: [{ label:"Investido (€)", data: invest }] },
-      options: { animation:false, plugins:{ legend:{ display:false } } }
+      data: { labels, datasets: [{ label: "Investido (€)", data: invest }] },
+      options: { animation: false, plugins: { legend: { display: false } } },
     });
-    imgs.push({ id:"chartInvestPorAtivo", title:"Valor Investido por Ativo (Barras)", img: getChartImageByCanvasId("chartInvestPorAtivo") });
+    imgs.push({
+      id: "chartInvestPorAtivo",
+      title: "Valor Investido por Ativo (Barras)",
+      img: getChartImageByCanvasId("chartInvestPorAtivo"),
+    });
   }
 
   // limpa canvases temporários após captura
-  requestAnimationFrame(()=> document.body.removeChild(wrap));
-  return imgs.filter(x => !!x.img);
+  requestAnimationFrame(() => document.body.removeChild(wrap));
+  return imgs.filter((x) => !!x.img);
 }
 
 // Mantém API antiga: encaminha para a V2
@@ -1144,103 +1240,150 @@ export async function generateReportPDF(selecionadas = [], opts = {}) {
 }
 
 // === PREVIEW DO RELATÓRIO (igual ao PDF) ====================
-let __repCharts = { byTicker:null, bySector:null, lucro:null, divval:null, investBars:null };
+let __repCharts = {
+  byTicker: null,
+  bySector: null,
+  lucro: null,
+  divval: null,
+  investBars: null,
+};
 
 async function renderReportPreview(data, { horizonte }) {
   await ensureChartJS();
 
   // carrega datalabels (para labels nome+valor nas pizzas)
   if (!window.ChartDataLabels) {
-    await ensureScript("https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2");
+    await ensureScript(
+      "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"
+    );
   }
 
   // KPIs
-  const totInvest   = data.reduce((s,a)=>s+Number(a.investido||0),0);
-  const totDivAnual = data.reduce((s,a)=>s+Number(a.dividendoAnual||a.divAnual||0),0);
-  const totDivHoriz = data.reduce((s,a)=>s+Number(a.dividendoHorizonte||a.divHoriz||0),0);
-  const totVal      = data.reduce((s,a)=>s+Number(a.valorizacao||0),0);
-  const totLucro    = data.reduce((s,a)=>s+Number(a.lucro||0),0);
-  const retPct      = totInvest>0 ? (totLucro/totInvest)*100 : 0;
+  const totInvest = data.reduce((s, a) => s + Number(a.investido || 0), 0);
+  const totDivAnual = data.reduce(
+    (s, a) => s + Number(a.dividendoAnual || a.divAnual || 0),
+    0
+  );
+  const totDivHoriz = data.reduce(
+    (s, a) => s + Number(a.dividendoHorizonte || a.divHoriz || 0),
+    0
+  );
+  const totVal = data.reduce((s, a) => s + Number(a.valorizacao || 0), 0);
+  const totLucro = data.reduce((s, a) => s + Number(a.lucro || 0), 0);
+  const retPct = totInvest > 0 ? (totLucro / totInvest) * 100 : 0;
 
-  const _e = id => document.getElementById(id);
+  const _e = (id) => document.getElementById(id);
   _e("repKpiInv").textContent = fmtEUR(totInvest);
   _e("repKpiRet").textContent = `${fmtEUR(totLucro)} (${retPct.toFixed(1)}%)`;
-  _e("repKpiDiv").textContent = `${fmtEUR(totDivAnual)} / ${fmtEUR(totDivHoriz)}  (H=${horizonte})`;
+  _e("repKpiDiv").textContent = `${fmtEUR(totDivAnual)} / ${fmtEUR(
+    totDivHoriz
+  )}  (H=${horizonte})`;
   _e("repKpiVal").textContent = fmtEUR(totVal);
 
   // Tabela
   const tbody = document.querySelector("#repTable tbody");
-  const denom = totInvest>0 ? totInvest : 1;
-  tbody.innerHTML = data.map(a=>{
-    const inv = Number(a.investido||0);
-    const da  = Number(a.dividendoAnual||a.divAnual||0);
-    const dh  = Number(a.dividendoHorizonte||a.divHoriz||0);
-    const vz  = Number(a.valorizacao||0);
-    const lc  = Number(a.lucro||0);
-    return `
+  const denom = totInvest > 0 ? totInvest : 1;
+  tbody.innerHTML = data
+    .map((a) => {
+      const inv = Number(a.investido || 0);
+      const da = Number(a.dividendoAnual || a.divAnual || 0);
+      const dh = Number(a.dividendoHorizonte || a.divHoriz || 0);
+      const vz = Number(a.valorizacao || 0);
+      const lc = Number(a.lucro || 0);
+      return `
       <tr>
-        <td>${a.nome||"—"}</td>
-        <td><strong>${a.ticker||"—"}</strong></td>
+        <td>${a.nome || "—"}</td>
+        <td><strong>${a.ticker || "—"}</strong></td>
         <td>${fmtEUR(inv)}</td>
         <td>${fmtEUR(da)}</td>
         <td>${fmtEUR(dh)}</td>
         <td>${fmtEUR(vz)}</td>
         <td>${fmtEUR(lc)}</td>
-        <td>${((inv/denom)*100).toFixed(1)}%</td>
+        <td>${((inv / denom) * 100).toFixed(1)}%</td>
       </tr>`;
-  }).join("");
+    })
+    .join("");
 
   // Dados p/ gráficos
-  const byTickerLabels = data.map(a=>a.ticker);
-  const byTickerInvest = data.map(a=>Number(a.investido||0));
-  const byTickerLucro  = data.map(a=>Number(a.lucro||0));
-  const byTickerDivH   = data.map(a=>Number(a.dividendoHorizonte||a.divHoriz||0));
-  const byTickerValH   = data.map(a=>Number(a.valorizacao||0));
+  const byTickerLabels = data.map((a) => a.ticker);
+  const byTickerInvest = data.map((a) => Number(a.investido || 0));
+  const byTickerLucro = data.map((a) => Number(a.lucro || 0));
+  const byTickerDivH = data.map((a) =>
+    Number(a.dividendoHorizonte || a.divHoriz || 0)
+  );
+  const byTickerValH = data.map((a) => Number(a.valorizacao || 0));
 
   // Agregar por setor (lookup em ALL_ROWS)
   const sectorMap = new Map();
-  data.forEach(a=>{
-    const base = ALL_ROWS.find(r=>r.ticker===a.ticker);
+  data.forEach((a) => {
+    const base = ALL_ROWS.find((r) => r.ticker === a.ticker);
     const setor = canon(base?.setor || "—");
-    sectorMap.set(setor, (sectorMap.get(setor)||0) + Number(a.investido||0));
+    sectorMap.set(
+      setor,
+      (sectorMap.get(setor) || 0) + Number(a.investido || 0)
+    );
   });
   const bySectorLabels = Array.from(sectorMap.keys());
   const bySectorInvest = Array.from(sectorMap.values());
 
   // limpar gráficos antigos
-  Object.values(__repCharts).forEach(c=>c?.destroy());
+  Object.values(__repCharts).forEach((c) => c?.destroy());
   __repCharts = {};
 
   // opções partilhadas
   const pieCommon = {
-    responsive:true, animation:false,maintainAspectRatio: false,  // 🔑
-    plugins:{
-      legend:{ display:false },
-      tooltip:{ enabled:true },
-      datalabels:{
-        formatter:(v, ctx)=> `${ctx.chart.data.labels[ctx.dataIndex]}\n${fmtEUR(v)}`,
-        anchor:'center', align:'center', clamp:true, color:'#222', font:{weight:'600'}
-      }
-    }
+    responsive: true,
+    animation: false,
+    maintainAspectRatio: false, // 🔑
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: true },
+      datalabels: {
+        formatter: (v, ctx) =>
+          `${ctx.chart.data.labels[ctx.dataIndex]}\n${fmtEUR(v)}`,
+        anchor: "center",
+        align: "center",
+        clamp: true,
+        color: "#222",
+        font: { weight: "600" },
+      },
+    },
   };
   const barCommon = {
-    responsive:false, animation:false,maintainAspectRatio: false,  // 🔑
-    scales:{
-      x:{ ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid } },
-      y:{ ticks:{ color: chartColors().ticks }, grid:{ color: chartColors().grid } },
+    responsive: false,
+    animation: false,
+    maintainAspectRatio: false, // 🔑
+    scales: {
+      x: {
+        ticks: { color: chartColors().ticks },
+        grid: { color: chartColors().grid },
+      },
+      y: {
+        ticks: { color: chartColors().ticks },
+        grid: { color: chartColors().grid },
+      },
     },
-    plugins:{ legend:{ display:false }, tooltip:{ enabled:true } }
+    plugins: { legend: { display: false }, tooltip: { enabled: true } },
   };
 
   // 1) Pizza por Ativo
   __repCharts.byTicker = new Chart(
     document.getElementById("repChartInvestByTicker").getContext("2d"),
     {
-      type:"pie",
-      data:{ labels: byTickerLabels,
-        datasets:[{ data: byTickerInvest, backgroundColor: byTickerLabels.map((_,i)=>PALETTE[i%PALETTE.length]) }] },
+      type: "pie",
+      data: {
+        labels: byTickerLabels,
+        datasets: [
+          {
+            data: byTickerInvest,
+            backgroundColor: byTickerLabels.map(
+              (_, i) => PALETTE[i % PALETTE.length]
+            ),
+          },
+        ],
+      },
       options: pieCommon,
-      plugins:[ChartDataLabels]
+      plugins: [ChartDataLabels],
     }
   );
 
@@ -1248,11 +1391,20 @@ async function renderReportPreview(data, { horizonte }) {
   __repCharts.bySector = new Chart(
     document.getElementById("repChartInvestBySector").getContext("2d"),
     {
-      type:"pie",
-      data:{ labels: bySectorLabels,
-        datasets:[{ data: bySectorInvest, backgroundColor: bySectorLabels.map((_,i)=>PALETTE[i%PALETTE.length]) }] },
+      type: "pie",
+      data: {
+        labels: bySectorLabels,
+        datasets: [
+          {
+            data: bySectorInvest,
+            backgroundColor: bySectorLabels.map(
+              (_, i) => PALETTE[i % PALETTE.length]
+            ),
+          },
+        ],
+      },
       options: pieCommon,
-      plugins:[ChartDataLabels]
+      plugins: [ChartDataLabels],
     }
   );
 
@@ -1260,9 +1412,12 @@ async function renderReportPreview(data, { horizonte }) {
   __repCharts.lucro = new Chart(
     document.getElementById("repChartLucro").getContext("2d"),
     {
-      type:"bar",
-      data:{ labels: byTickerLabels, datasets:[{ label:"Lucro (€)", data: byTickerLucro }] },
-      options: barCommon
+      type: "bar",
+      data: {
+        labels: byTickerLabels,
+        datasets: [{ label: "Lucro (€)", data: byTickerLucro }],
+      },
+      options: barCommon,
     }
   );
 
@@ -1270,13 +1425,15 @@ async function renderReportPreview(data, { horizonte }) {
   __repCharts.divval = new Chart(
     document.getElementById("repChartDivVsVal").getContext("2d"),
     {
-      type:"bar",
-      data:{ labels: byTickerLabels,
-        datasets:[
-          { label:"Dividendos (H)", data: byTickerDivH },
-          { label:"Valorização (H)", data: byTickerValH }
-        ]},
-      options: barCommon
+      type: "bar",
+      data: {
+        labels: byTickerLabels,
+        datasets: [
+          { label: "Dividendos (H)", data: byTickerDivH },
+          { label: "Valorização (H)", data: byTickerValH },
+        ],
+      },
+      options: barCommon,
     }
   );
 
@@ -1284,9 +1441,12 @@ async function renderReportPreview(data, { horizonte }) {
   __repCharts.investBars = new Chart(
     document.getElementById("repChartInvestBars").getContext("2d"),
     {
-      type:"bar",
-      data:{ labels: byTickerLabels, datasets:[{ label:"Investido (€)", data: byTickerInvest }] },
-      options: barCommon
+      type: "bar",
+      data: {
+        labels: byTickerLabels,
+        datasets: [{ label: "Investido (€)", data: byTickerInvest }],
+      },
+      options: barCommon,
     }
   );
 
@@ -1295,12 +1455,14 @@ async function renderReportPreview(data, { horizonte }) {
     `Retorno Total: ${fmtEUR(totLucro)} (${retPct.toFixed(1)}%)`,
     `Dividendos Anuais (soma): ${fmtEUR(totDivAnual)}`,
     `Valorização no Horizonte: ${fmtEUR(totVal)}`,
-    `Rácio Dividendos/Valorização (global): ${ totVal>0 ? (totDivHoriz/totVal).toFixed(2) : "—" }`,
+    `Rácio Dividendos/Valorização (global): ${
+      totVal > 0 ? (totDivHoriz / totVal).toFixed(2) : "—"
+    }`,
   ];
-  document.getElementById("repKeyNotes").innerHTML =
-    notes.map(t=>`<li>${t}</li>`).join("");
+  document.getElementById("repKeyNotes").innerHTML = notes
+    .map((t) => `<li>${t}</li>`)
+    .join("");
 }
-
 
 // Nova V2
 export async function generateReportPDF_v2(rows = [], opts = {}) {
@@ -1309,140 +1471,277 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
   const { jsPDF } = window.jspdf;
 
   // 1) se houver simulação recente, usa-a; senão, normaliza 'rows' básicas
-  const horizonteUI = Number(document.getElementById("anlSimHoriz")?.value || 1);
-  const horizonte = Math.max(1, Number(opts.horizonte ?? __ANL_LAST_SIM?.opts?.horizonte ?? horizonteUI ?? 1));
+  const horizonteUI = Number(
+    document.getElementById("anlSimHoriz")?.value || 1
+  );
+  const horizonte = Math.max(
+    1,
+    Number(
+      opts.horizonte ?? __ANL_LAST_SIM?.opts?.horizonte ?? horizonteUI ?? 1
+    )
+  );
   let data;
 
   if (__ANL_LAST_SIM?.rows?.length) {
-    data = __ANL_LAST_SIM.rows.map(r => ({
-      nome: r.nome, ticker: r.ticker,
-      investido: Number(r.investido||0),
-      divAnual: Number(r.dividendoAnual||0),
-      divHoriz: Number(r.dividendoHorizonte||r.divHoriz||0),
-      valorizacao: Number(r.valorizacao||0),
-      lucro: Number(r.lucro||0),
+    data = __ANL_LAST_SIM.rows.map((r) => ({
+      nome: r.nome,
+      ticker: r.ticker,
+      investido: Number(r.investido || 0),
+      divAnual: Number(r.dividendoAnual || 0),
+      divHoriz: Number(r.dividendoHorizonte || r.divHoriz || 0),
+      valorizacao: Number(r.valorizacao || 0),
+      lucro: Number(r.lucro || 0),
     }));
   } else {
     // fallback (sem simulação): tudo 0 excepto anual → horizonte = anual*h
-    data = (rows||[]).map(r=>{
-      const nome = String(r.nome ?? r.Nome ?? r.ativo ?? "").trim() || (r.ticker||"Ativo");
+    data = (rows || []).map((r) => {
+      const nome =
+        String(r.nome ?? r.Nome ?? r.ativo ?? "").trim() || r.ticker || "Ativo";
       const ticker = String(r.ticker ?? r.Ticker ?? "").toUpperCase();
-      const investido = Number(r.investido ?? ((r.quantidade||0)*(r.preco||r.valorStock||0)) ?? 0);
-      const divAnual  = Number(r.dividendoAnual ?? r.dividendo ?? 0);
-      const divHoriz  = Number(r.dividendoHorizonte ?? ((divAnual*horizonte) || 0));
-      const valoriz   = Number(r.valorizacao ?? 0);
-      const lucro     = Number(r.lucro ?? ((divHoriz + valoriz) || 0));
-      return { nome, ticker, investido, divAnual, divHoriz, valorizacao: valoriz, lucro };
+      const investido = Number(
+        r.investido ?? (r.quantidade || 0) * (r.preco || r.valorStock || 0) ?? 0
+      );
+      const divAnual = Number(r.dividendoAnual ?? r.dividendo ?? 0);
+      const divHoriz = Number(
+        r.dividendoHorizonte ?? (divAnual * horizonte || 0)
+      );
+      const valoriz = Number(r.valorizacao ?? 0);
+      const lucro = Number(r.lucro ?? (divHoriz + valoriz || 0));
+      return {
+        nome,
+        ticker,
+        investido,
+        divAnual,
+        divHoriz,
+        valorizacao: valoriz,
+        lucro,
+      };
     });
   }
 
   // 2) KPIs
-  const totInvest   = data.reduce((s,a)=>s+a.investido,0);
-  const totDivAnual = data.reduce((s,a)=>s+a.divAnual,0);
-  const totDivHoriz = data.reduce((s,a)=>s+a.divHoriz,0);
-  const totVal      = data.reduce((s,a)=>s+a.valorizacao,0);
-  const totLucro    = data.reduce((s,a)=>s+a.lucro,0);
-  const retornoPct  = totInvest>0 ? (totLucro/totInvest) : 0;
+  const totInvest = data.reduce((s, a) => s + a.investido, 0);
+  const totDivAnual = data.reduce((s, a) => s + a.divAnual, 0);
+  const totDivHoriz = data.reduce((s, a) => s + a.divHoriz, 0);
+  const totVal = data.reduce((s, a) => s + a.valorizacao, 0);
+  const totLucro = data.reduce((s, a) => s + a.lucro, 0);
+  const retornoPct = totInvest > 0 ? totLucro / totInvest : 0;
 
   // 3) doc
-  const doc = new jsPDF({ unit:"pt", format:"a4" });
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const M = 36; let y = M;
-  const COLOR_PRIMARY=[79,70,229], COLOR_MUTED=[90,97,110];
+  const M = 36;
+  let y = M;
+  const COLOR_PRIMARY = [79, 70, 229],
+    COLOR_MUTED = [90, 97, 110];
   const hoje = new Date();
   const titulo = opts.titulo || "Relatório Financeiro do Portefólio";
 
   // capa
-  doc.setFont("helvetica","bold"); doc.setFontSize(18); doc.setTextColor(...COLOR_PRIMARY);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(...COLOR_PRIMARY);
   doc.text(titulo, M, y);
-  doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(...COLOR_MUTED);
-  doc.text(`Emitido em ${hoje.toLocaleDateString("pt-PT")} — Horizonte: ${horizonte} ${horizonte>1?"períodos":"período"}`, M, y+=18);
-  y += 12; doc.setDrawColor(...COLOR_PRIMARY); doc.setLineWidth(1); doc.line(M, y, pageW-M, y); y += 16;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(...COLOR_MUTED);
+  doc.text(
+    `Emitido em ${hoje.toLocaleDateString("pt-PT")} — Horizonte: ${horizonte} ${
+      horizonte > 1 ? "períodos" : "período"
+    }`,
+    M,
+    (y += 18)
+  );
+  y += 12;
+  doc.setDrawColor(...COLOR_PRIMARY);
+  doc.setLineWidth(1);
+  doc.line(M, y, pageW - M, y);
+  y += 16;
 
   // resumo executivo
-  doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(20); doc.text("Resumo Executivo", M, y); y+=16;
-  const boxW=(pageW-M*2-24)/2, boxH=64;
-  function kpiBox(x,y0,title,value,subtitle){ doc.setDrawColor(230); doc.setFillColor(248); doc.roundedRect(x,y0,boxW,boxH,6,6,"S"); doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...COLOR_MUTED); doc.text(title,x+12,y0+18); doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(20); doc.text(value,x+12,y0+36); if(subtitle){ doc.setFontSize(10); doc.setTextColor(...COLOR_MUTED); doc.text(subtitle,x+12,y0+52); } }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(20);
+  doc.text("Resumo Executivo", M, y);
+  y += 16;
+  const boxW = (pageW - M * 2 - 24) / 2,
+    boxH = 64;
+  function kpiBox(x, y0, title, value, subtitle) {
+    doc.setDrawColor(230);
+    doc.setFillColor(248);
+    doc.roundedRect(x, y0, boxW, boxH, 6, 6, "S");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLOR_MUTED);
+    doc.text(title, x + 12, y0 + 18);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(20);
+    doc.text(value, x + 12, y0 + 36);
+    if (subtitle) {
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_MUTED);
+      doc.text(subtitle, x + 12, y0 + 52);
+    }
+  }
   kpiBox(M, y, "Valor Investido", _fmtEUR(totInvest));
-  kpiBox(M+boxW+24, y, "Retorno Total", `${_fmtEUR(totLucro)} (${_pct(retornoPct)})`); y+=boxH+12;
-  kpiBox(M, y, "Dividendos (Anual / Horizonte)", `${_fmtEUR(totDivAnual)} / ${_fmtEUR(totDivHoriz)}`, `H = ${horizonte}`);
-  kpiBox(M+boxW+24, y, "Valorização Projetada", _fmtEUR(totVal)); y+=boxH+18;
+  kpiBox(
+    M + boxW + 24,
+    y,
+    "Retorno Total",
+    `${_fmtEUR(totLucro)} (${_pct(retornoPct)})`
+  );
+  y += boxH + 12;
+  kpiBox(
+    M,
+    y,
+    "Dividendos (Anual / Horizonte)",
+    `${_fmtEUR(totDivAnual)} / ${_fmtEUR(totDivHoriz)}`,
+    `H = ${horizonte}`
+  );
+  kpiBox(M + boxW + 24, y, "Valorização Projetada", _fmtEUR(totVal));
+  y += boxH + 18;
 
   // gráficos: tenta usar canvases na página; senão cria temporários
   const chartsWanted = [
-    { id:"chartDistInvest", title:"Distribuição do Investimento por Ativo (Pizza)" },
-    { id:"chartLucroPorAtivo", title:"Lucro Estimado por Ativo (Barras)" },
-    { id:"chartDivVsVal", title:"Dividendos vs Valorização por Ativo (Barras Agrupadas)" },
-    { id:"chartInvestPorAtivo", title:"Valor Investido por Ativo (Barras)" },
+    {
+      id: "chartDistInvest",
+      title: "Distribuição do Investimento por Ativo (Pizza)",
+    },
+    { id: "chartLucroPorAtivo", title: "Lucro Estimado por Ativo (Barras)" },
+    {
+      id: "chartDivVsVal",
+      title: "Dividendos vs Valorização por Ativo (Barras Agrupadas)",
+    },
+    { id: "chartInvestPorAtivo", title: "Valor Investido por Ativo (Barras)" },
   ];
 
   let chartImgs = chartsWanted
-    .map(c => ({ ...c, img: getChartImageByCanvasId(c.id) }))
-    .filter(c => !!c.img);
+    .map((c) => ({ ...c, img: getChartImageByCanvasId(c.id) }))
+    .filter((c) => !!c.img);
 
   if (chartImgs.length === 0 && data.length) {
     chartImgs = await buildTempReportCharts(
-      data.map(a => ({
-        ticker:a.ticker,
-        investido:a.investido,
-        lucro:a.lucro,
-        divHoriz:a.divHoriz,
-        valorizacao:a.valorizacao
+      data.map((a) => ({
+        ticker: a.ticker,
+        investido: a.investido,
+        lucro: a.lucro,
+        divHoriz: a.divHoriz,
+        valorizacao: a.valorizacao,
       }))
     );
   }
 
   for (const c of chartImgs) {
-    if (y + 280 > pageH - M) { doc.addPage(); y = M; }
-    doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(20);
+    if (y + 280 > pageH - M) {
+      doc.addPage();
+      y = M;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(20);
     doc.text(c.title, M, y);
-    doc.addImage(c.img, "PNG", M, y+8, pageW - M*2, 220, undefined, "FAST");
+    doc.addImage(c.img, "PNG", M, y + 8, pageW - M * 2, 220, undefined, "FAST");
     y += 240;
   }
 
   // tabela
-  if (y+120 > pageH-M) { doc.addPage(); y = M; }
-  doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(20); doc.text("Análise Individual por Ativo", M, y); y+=10;
+  if (y + 120 > pageH - M) {
+    doc.addPage();
+    y = M;
+  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(20);
+  doc.text("Análise Individual por Ativo", M, y);
+  y += 10;
 
-  const head = [[ "Ativo","Ticker","Investido (€)","Div. Anuais (€)","Div. Horizonte (€)","Valorização (€)","Lucro Estimado (€)","% Port." ]];
-  const denom = totInvest>0? totInvest : 1;
-  const body = data.map(a => [
-    a.nome, a.ticker,
-    _fmtEUR(a.investido), _fmtEUR(a.divAnual), _fmtEUR(a.divHoriz),
-    _fmtEUR(a.valorizacao), _fmtEUR(a.lucro),
-    ((a.investido/denom)*100).toFixed(1) + "%"
+  const head = [
+    [
+      "Ativo",
+      "Ticker",
+      "Investido (€)",
+      "Div. Anuais (€)",
+      "Div. Horizonte (€)",
+      "Valorização (€)",
+      "Lucro Estimado (€)",
+      "% Port.",
+    ],
+  ];
+  const denom = totInvest > 0 ? totInvest : 1;
+  const body = data.map((a) => [
+    a.nome,
+    a.ticker,
+    _fmtEUR(a.investido),
+    _fmtEUR(a.divAnual),
+    _fmtEUR(a.divHoriz),
+    _fmtEUR(a.valorizacao),
+    _fmtEUR(a.lucro),
+    ((a.investido / denom) * 100).toFixed(1) + "%",
   ]);
 
   doc.autoTable({
     startY: y + 10,
-    head, body,
-    styles:{ font:"helvetica", fontSize:9, cellPadding:4, overflow:"linebreak" },
-    headStyles:{ fillColor:[79,70,229], textColor:[255,255,255] },
-    columnStyles:{ 0:{cellWidth:120}, 2:{halign:"right"}, 3:{halign:"right"}, 4:{halign:"right"}, 5:{halign:"right"}, 6:{halign:"right"}, 7:{halign:"right"} },
-    margin:{ left:M, right:M }
+    head,
+    body,
+    styles: {
+      font: "helvetica",
+      fontSize: 9,
+      cellPadding: 4,
+      overflow: "linebreak",
+    },
+    headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255] },
+    columnStyles: {
+      0: { cellWidth: 120 },
+      2: { halign: "right" },
+      3: { halign: "right" },
+      4: { halign: "right" },
+      5: { halign: "right" },
+      6: { halign: "right" },
+      7: { halign: "right" },
+    },
+    margin: { left: M, right: M },
   });
   y = doc.lastAutoTable.finalY + 16;
 
   // Indicadores-Chave
-  if (y+90 > pageH-M) { doc.addPage(); y = M; }
-  doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(20); doc.text("Indicadores-Chave", M, y); y += 16;
-  doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(50);
+  if (y + 90 > pageH - M) {
+    doc.addPage();
+    y = M;
+  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(20);
+  doc.text("Indicadores-Chave", M, y);
+  y += 16;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(50);
   const lines = [
     `Retorno Total: ${_fmtEUR(totLucro)} (${_pct(retornoPct)})`,
     `Dividendos Anuais (soma): ${_fmtEUR(totDivAnual)}`,
     `Valorização no Horizonte: ${_fmtEUR(totVal)}`,
-    `Rácio Dividendos/Valorização (global): ${ totVal>0 ? (totDivHoriz/totVal).toFixed(2) : "—" }`,
+    `Rácio Dividendos/Valorização (global): ${
+      totVal > 0 ? (totDivHoriz / totVal).toFixed(2) : "—"
+    }`,
   ];
-  lines.forEach((t,i) => doc.text(`• ${t}`, M, y + i*16)); y += lines.length*16 + 8;
+  lines.forEach((t, i) => doc.text(`• ${t}`, M, y + i * 16));
+  y += lines.length * 16 + 8;
 
   // rodapé & save
-  doc.setFontSize(9); doc.setTextColor(...COLOR_MUTED);
-  doc.text(`© ${new Date().getFullYear()} APPFinance — Relatório gerado automaticamente`, M, pageH - 14);
-  const fileName = `Relatorio_Portefolio_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.setFontSize(9);
+  doc.setTextColor(...COLOR_MUTED);
+  doc.text(
+    `© ${new Date().getFullYear()} APPFinance — Relatório gerado automaticamente`,
+    M,
+    pageH - 14
+  );
+  const fileName = `Relatorio_Portefolio_${new Date()
+    .toISOString()
+    .slice(0, 10)}.pdf`;
   doc.save(fileName);
 }
-
 
 /* =========================================================
    Heatmap scroll header sync (extra)
@@ -1546,23 +1845,21 @@ export async function initScreen() {
     openSimModal();
   });
 
-  // Fechar modal preview
-    document.getElementById("repClose")?.addEventListener("click", closeReportModal);
-    document.getElementById("repClose2")?.addEventListener("click", closeReportModal);
 
-    function openReportModal(){
+
+// === Relatório (abrir/fechar) ===
+function openReportModal() {
   const el = document.getElementById("anlReportModal");
   el?.classList.remove("hidden");
-  document.documentElement.style.overflow = "hidden"; // 🔒
+  document.documentElement.style.overflow = "hidden";
   document.body.style.overflow = "hidden";
 }
-function closeReportModal(){
+function closeReportModal() {
   const el = document.getElementById("anlReportModal");
   el?.classList.add("hidden");
   document.documentElement.style.overflow = "";
   document.body.style.overflow = "";
 }
-
 
   // Exclusividade Total vs Inteiros
   const cbTotal = document.getElementById("anlSimInvestirTotal");
@@ -1642,20 +1939,24 @@ function closeReportModal(){
       };
     });
 
-      // Relatório — agora abre modal de pré-visualização (HTML), e o PDF sai do botão dentro do modal
-  const relBtn = document.getElementById("anlSimRelatorio") || document.getElementById("btnRelatorio");
+  // Relatório — agora abre modal de pré-visualização (HTML), e o PDF sai do botão dentro do modal
+  const relBtn =
+    document.getElementById("anlSimRelatorio") ||
+    document.getElementById("btnRelatorio");
   relBtn?.addEventListener("click", async () => {
     // 1) Fonte dos dados: prioridade à última simulação; se não houver, usar seleção crua (fallback simples)
-    const temSim = Array.isArray(__ANL_LAST_SIM?.rows) && __ANL_LAST_SIM.rows.length > 0;
+    const temSim =
+      Array.isArray(__ANL_LAST_SIM?.rows) && __ANL_LAST_SIM.rows.length > 0;
 
     const horizonte =
       Number(document.getElementById("anlSimHoriz")?.value) ||
-      Number(__ANL_LAST_SIM?.opts?.horizonte) || 1;
+      Number(__ANL_LAST_SIM?.opts?.horizonte) ||
+      1;
 
     let dataRows;
     if (temSim) {
       // dados já normalizados no clique de "Calcular"
-      dataRows = __ANL_LAST_SIM.rows.map(r => ({
+      dataRows = __ANL_LAST_SIM.rows.map((r) => ({
         nome: r.nome,
         ticker: r.ticker,
         investido: Number(r.investido || 0),
@@ -1666,20 +1967,28 @@ function closeReportModal(){
       }));
     } else {
       // fallback: construir algo a partir da seleção atual (sem simulação)
-      const selecionadas = ALL_ROWS.filter(r => selectedTickers.has(r.ticker));
+      const selecionadas = ALL_ROWS.filter((r) =>
+        selectedTickers.has(r.ticker)
+      );
       if (!selecionadas.length) {
-        alert("Seleciona pelo menos uma ação (e idealmente executa a simulação).");
+        alert(
+          "Seleciona pelo menos uma ação (e idealmente executa a simulação)."
+        );
         return;
       }
-      dataRows = selecionadas.map(r => ({
+      dataRows = selecionadas.map((r) => ({
         nome: r.nome,
         ticker: r.ticker,
         // sem simulação, tomamos “1 unidade” como aproximação só para pré-visualizar
         investido: Number(r.valorStock || 0),
         dividendoAnual: Number(r.divAnual || r.dividendoMedio24m || 0),
-        dividendoHorizonte: Number(r.divAnual || r.dividendoMedio24m || 0) * Number(horizonte || 1),
+        dividendoHorizonte:
+          Number(r.divAnual || r.dividendoMedio24m || 0) *
+          Number(horizonte || 1),
         valorizacao: 0,
-        lucro: Number(r.divAnual || r.dividendoMedio24m || 0) * Number(horizonte || 1),
+        lucro:
+          Number(r.divAnual || r.dividendoMedio24m || 0) *
+          Number(horizonte || 1),
       }));
     }
 
@@ -1693,44 +2002,32 @@ function closeReportModal(){
     }
   });
 
-  // Controlo do modal de relatório (fechar)
-  document.getElementById("anlRepClose")?.addEventListener("click", closeReportModal);
-  document.getElementById("repCloseBottom")?.addEventListener("click", closeReportModal);
+  // === Fechar Modais (Simulação + Relatório) ===
 
-  // Exportar PDF a partir do preview
-    document.getElementById("repExportPdf")?.addEventListener("click", async () => {
-      // Se houver simulação, a V2 já lê de __ANL_LAST_SIM; senão passamos o que está na tabela
-      const horizonte = Number(
-        document.getElementById("anlSimHoriz")?.value ||
-        __ANL_LAST_SIM?.opts?.horizonte || 1
-      );
+// util para saber se um modal está aberto
+const _isOpen = (el) => el && !el.classList.contains("hidden");
 
-      // tenta usar a sim; se não houver, reconstrói dos dados visíveis na tabela do preview
-      let rowsForReport = __ANL_LAST_SIM?.rows?.length
-        ? __ANL_LAST_SIM.rows
-        : Array.from(document.querySelectorAll("#repTable tbody tr")).map(tr=>{
-            const tds = tr.querySelectorAll("td");
-            return {
-              nome: tds[0]?.textContent?.trim() || "",
-              ticker: tds[1]?.textContent?.trim() || "",
-              investido: Number((tds[2]?.textContent||"").replace(/[^\d,.-]/g,"").replace(".", "").replace(",", ".")) || 0,
-              dividendoAnual: Number((tds[3]?.textContent||"").replace(/[^\d,.-]/g,"").replace(".", "").replace(",", ".")) || 0,
-              dividendoHorizonte: Number((tds[4]?.textContent||"").replace(/[^\d,.-]/g,"").replace(".", "").replace(",", ".")) || 0,
-              valorizacao: Number((tds[5]?.textContent||"").replace(/[^\d,.-]/g,"").replace(".", "").replace(",", ".")) || 0,
-              lucro: Number((tds[6]?.textContent||"").replace(/[^\d,.-]/g,"").replace(".", "").replace(",", ".")) || 0,
-            };
-          });
+// SIMULADOR — botões + clique no backdrop
+document.getElementById("anlSimClose")?.addEventListener("click", closeSimModal);
+document.getElementById("anlSimModal")?.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeSimModal(); // clique fora fecha
+});
 
-      try {
-        await generateReportPDF_v2(rowsForReport, {
-          titulo: "Relatório Financeiro (v2)",
-          horizonte,
-        });
-      } catch (e) {
-        console.error("[relatorio] falhou:", e);
-        alert("Não consegui gerar o PDF. Vê a consola para mais detalhes.");
-      }
-    });
+// RELATÓRIO — botões corretos + clique no backdrop
+document.getElementById("repCloseTop")?.addEventListener("click", closeReportModal);
+document.getElementById("repCloseBottom")?.addEventListener("click", closeReportModal);
+document.getElementById("anlReportModal")?.addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) closeReportModal(); // clique fora fecha
+});
+
+// ESC fecha o modal aberto (prioridade ao relatório)
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const rep = document.getElementById("anlReportModal");
+  const sim = document.getElementById("anlSimModal");
+  if (_isOpen(rep)) closeReportModal();
+  else if (_isOpen(sim)) closeSimModal();
+});
 
 
   // Render inicial
