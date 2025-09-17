@@ -466,6 +466,7 @@ function renderTable(rows) {
       return `<span class="badge warn">${pe.toFixed(2)} Justo</span>`;
     return `<span class="badge danger">${pe.toFixed(2)} Caro</span>`;
   };
+
   const badgeYield = (y, y24) => {
     if (!Number.isFinite(y)) return `<span class="badge muted">—</span>`;
     let base = "muted";
@@ -481,11 +482,17 @@ function renderTable(rows) {
     }
     return curr;
   };
+
+  // Mostra fração decimal como % e aceita também valores já em percentagem
+  // 0.6496 -> +64.96%   |   64.96 -> +64.96%
   const pct = (v) => {
-    if (!Number.isFinite(v)) return `—`;
-    const cls = v >= 0 ? "up" : "down";
-    const sign = v >= 0 ? "+" : "";
-    return `<span class="${cls}">${sign}${v.toFixed(2)}%</span>`;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return `—`;
+    const frac = Math.abs(n) > 1 ? n / 100 : n; // normaliza para fração
+    const shown = frac * 100;
+    const cls = frac >= 0 ? "up" : "down";
+    const sign = frac >= 0 ? "+" : "";
+    return `<span class="${cls}">${sign}${shown.toFixed(2)}%</span>`;
   };
 
   tb.innerHTML = rows
@@ -497,17 +504,13 @@ function renderTable(rows) {
       const divAnualTxt = r.divAnual > 0 ? fmtEUR(r.divAnual) : "—";
       return `
       <tr>
-        <td class="sticky-col"><input type="checkbox" class="anlRowSel" data-ticker="${
-          r.ticker
-        }" ${checked} /></td>
+        <td class="sticky-col"><input type="checkbox" class="anlRowSel" data-ticker="${r.ticker}" ${checked} /></td>
         <td class="sticky-col"><strong>${r.ticker}</strong></td>
         <td>${r.nome || "—"}</td>
         <td>${r.setor || "—"}</td>
         <td>${r.mercado || "—"}</td>
         <td>${badgeYield(y, y24)}</td>
-        <td>${
-          Number.isFinite(r.yield24) ? `${r.yield24.toFixed(2)}%` : "—"
-        }</td>
+        <td>${Number.isFinite(r.yield24) ? `${r.yield24.toFixed(2)}%` : "—"}</td>
         <td>${divPerTxt}</td>
         <td>${divAnualTxt}</td>
         <td>${badgePE(r.pe)}</td>
@@ -523,6 +526,7 @@ function renderTable(rows) {
     })
     .join("");
 
+  // listeners dos checkboxes de seleção
   tb.querySelectorAll(".anlRowSel").forEach((ch) => {
     ch.addEventListener("change", (e) => {
       const t = e.target.getAttribute("data-ticker");
@@ -533,6 +537,7 @@ function renderTable(rows) {
     });
   });
 }
+
 
 /* =========================================================
    Firestore (fetch)
@@ -651,20 +656,25 @@ function populateFilters() {
    === LUCRO MÁXIMO — versão prudente e configurável ===
    ========================================================= */
 // helpers de anualização prudente (compounding)
-function annualizeRate(row, periodoSel) {
-  const w = Number(row?.g1w ?? 0) / 100;
-  const m = Number(row?.g1m ?? 0) / 100;
-  const y = Number(row?.g1y ?? 0) / 100;
 
-  let rAnnual;
-  if (periodoSel === "1s") {
-    rAnnual = Math.pow(1 + w, 52) - 1;
-  } else if (periodoSel === "1m") {
-    rAnnual = Math.pow(1 + m, 12) - 1;
-  } else {
-    rAnnual = y; // já anual
-  }
-  return clamp(rAnnual, CFG.MIN_ANNUAL_RETURN, CFG.MAX_ANNUAL_RETURN);
+// Converte percentagens ou frações em FRAÇÃO decimal
+// 64.9  -> 0.649
+// 0.649 -> 0.649
+function asRate(x) {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return 0;
+  return Math.abs(n) > 1 ? n / 100 : n;
+}
+function annualizeRate(row) {
+  const w = asRate(row?.g1w);
+  const m = asRate(row?.g1m);
+  const y = asRate(row?.g1y);
+
+  // prioridade: anual > mensal > semanal
+  if (Number.isFinite(y) && y !== 0) return y;
+  if (Number.isFinite(m) && m !== 0) return Math.pow(1 + m, 12) - 1;
+  if (Number.isFinite(w) && w !== 0) return Math.pow(1 + w, 52) - 1;
+  return 0;
 }
 function scorePE(pe) {
   if (!Number.isFinite(pe) || pe <= 0) return 0.5;
