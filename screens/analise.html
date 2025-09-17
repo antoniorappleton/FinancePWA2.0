@@ -199,7 +199,7 @@
 
       <div class="actions-row sticky-actions">
         <button class="btn outline" id="anlSimCalcular">Calcular</button>
-        <button class="btn" id="anlSimRelatorio">Relatório (PDF)</button>
+        <button class="btn" id="anlSimRelatorio">Ver Relatório</button>
       </div>
 
       <!-- DISTRIBUIÇÃO POR SETOR (tickers selecionados) -->
@@ -211,6 +211,91 @@
     </div>
   </div>
 </div>
+
+<!-- PREVIEW DO RELATÓRIO -->
+<div id="anlReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="repTitle">
+  <div class="modal-content" style="max-width:1100px;">
+    <div class="modal-header">
+      <h3 id="repTitle">Relatório Financeiro — Pré-visualização</h3>
+      <button id="repClose" class="btn outline" title="Fechar">✕</button>
+    </div>
+
+    <!-- 🔽 TUDO DO RELATÓRIO FICA DENTRO DA .modal-body -->
+    <div class="modal-body">
+      <!-- KPIs -->
+      <section class="rep-kpis">
+        <div class="kpi">
+          <div class="kpi-title">Valor Investido</div>
+          <div id="repKpiInv" class="kpi-value">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-title">Retorno Total</div>
+          <div id="repKpiRet" class="kpi-value">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-title">Dividendos (Anual / Horizonte)</div>
+          <div id="repKpiDiv" class="kpi-value">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-title">Valorização Projetada</div>
+          <div id="repKpiVal" class="kpi-value">—</div>
+        </div>
+      </section>
+
+      <!-- GRÁFICOS (pequenos) -->
+      <section class="rep-charts">
+        <div class="chart-card">
+          <h4>Distribuição do Investimento por Ativo</h4>
+          <canvas id="repChartInvestByTicker"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>Distribuição do Investimento por Setor</h4>
+          <canvas id="repChartInvestBySector"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>Lucro Estimado por Ativo</h4>
+          <canvas id="repChartLucro"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>Dividendos vs Valorização (H)</h4>
+          <canvas id="repChartDivVsVal"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>Valor Investido por Ativo</h4>
+          <canvas id="repChartInvestBars"></canvas>
+        </div>
+      </section>
+
+      <!-- TABELA -->
+      <section class="rep-table">
+        <table id="repTable" class="fine-table" style="width:100%">
+          <thead>
+            <tr>
+              <th>Ativo</th><th>Ticker</th>
+              <th>Investido (€)</th><th>Div. Anuais (€)</th>
+              <th>Div. Horizonte (€)</th><th>Valorização (€)</th>
+              <th>Lucro Estimado (€)</th><th>% Port.</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <!-- INDICADORES-CHAVE -->
+      <section class="rep-notes">
+        <ul id="repKeyNotes" class="notes"></ul>
+      </section>
+    </div>
+
+    <!-- 🔽 UM SÓ FOOTER (IDs únicos) -->
+    <div class="modal-footer">
+      <button id="repExportPdf" class="btn">Exportar PDF</button>
+      <button id="repCloseBottom">Fechar</button>
+    </div>
+  </div>
+</div>
+
+
 
 <!-- estilos -->
 <style>

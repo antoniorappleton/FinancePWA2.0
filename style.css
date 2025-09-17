@@ -813,3 +813,100 @@ body.auth-screen .form-grid{ grid-template-columns:1fr !important; }
   background: var(--popover, #111); color: #fff; padding: 6px 8px; border-radius: 6px;
   white-space: nowrap; font-size: 12px; z-index: 10; pointer-events: none;
 }
+.modal.hidden{display:none}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;
+  display:flex;align-items:start;justify-content:center;padding:24px;overflow:auto}
+.modal-content{background:var(--panel,#fff);color:var(--fg,#111);border-radius:12px;
+  width:100%;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.modal-header,.modal-footer{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.08)}
+.modal-footer{border-top:1px solid rgba(0,0,0,.08);gap:8px}
+.rep-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px 20px}
+.kpi{border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:10px 12px}
+.kpi-title{font-size:12px;opacity:.7;margin-bottom:4px}
+.kpi-value{font-weight:700}
+.rep-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:8px 20px}
+.chart-card{border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:10px 12px}
+.chart-card h4{margin:6px 0 8px 0;font-size:14px}
+.rep-table{padding:4px 20px 16px}
+.rep-notes{padding:0 20px 16px}
+.notes{margin:8px 0 0 0;padding-left:18px}
+.icon-btn{background:none;border:none;font-size:18px;cursor:pointer}
+@media (max-width:960px){
+  .rep-kpis{grid-template-columns:repeat(2,1fr)}
+  .rep-charts{grid-template-columns:1fr}
+}
+
+/* === Modal base === */
+.modal.hidden { display:none }
+.modal {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.35);
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 24px;
+}
+
+/* Caixa do modal ocupa a altura disponível e cria colunas */
+.modal-content {
+  width: 100%;
+  max-width: 1100px;
+  background: var(--panel, #fff);
+  color: var(--fg, #111);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+  display: flex; flex-direction: column;
+  max-height: 90vh;             /* 🔑 não passa do viewport */
+  overflow: hidden;             /* 🔑 barra de scroll só no body */
+}
+
+/* Header fixo (não fica escondido quando há scroll) */
+.modal-header, .modal-footer {
+  padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+.modal-footer { border-top: 1px solid rgba(0,0,0,.08); }
+
+/* 🔑 Corpo scrolável */
+.modal-body {
+  overflow: auto;
+  padding: 12px 18px 18px;
+  /* espaço para o header não “colar” ao topo visualmente */
+}
+
+/* Layouts internos (podes manter os teus) */
+.rep-kpis{
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px; margin-bottom: 12px;
+}
+.kpi{border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:10px 12px}
+.kpi-title{font-size:12px;opacity:.7;margin-bottom:4px}
+.kpi-value{font-weight:700}
+
+/* Gráficos menores e em grelha */
+.rep-charts{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px; margin-bottom: 12px;
+}
+.chart-card{border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:10px 12px}
+.chart-card h4{margin:6px 0 8px;font-size:14px}
+.chart-card canvas{width:100% !important; height:220px !important} /* 🔑 não estoura */
+
+/* Tabela/Notas */
+.rep-table{margin-bottom:12px}
+.rep-notes .notes{margin:8px 0 0 16px}
+
+/* Dark mode (opcional) */
+:root[data-theme="dark"] .modal-content{
+  background:#111827; color:#E5E7EB;
+  border:1px solid rgba(255,255,255,.06);
+}
+:root[data-theme="dark"] .chart-card,
+:root[data-theme="dark"] .kpi{
+  border-color: rgba(255,255,255,.12);
+}
+
+@media (max-width: 960px){
+  .rep-kpis{grid-template-columns:repeat(2,1fr)}
+  .rep-charts{grid-template-columns:1fr}
+}
