@@ -53,7 +53,11 @@ function toNumStrict(v){
   const n = Number(v);
   return Number.isFinite(n) ? n : NaN;
 }
-function isFiniteNum(v){ return Number.isFinite(Number(v)); }
+function isFiniteNum(v){
+   if (v === null || v === undefined || v === "") return false;
+   const n = Number(v);
+   return Number.isFinite(n);
+ }
 function formatNum(n){ return Number(n || 0).toLocaleString("pt-PT"); }
 
 /** Carrega info complementar (valorStock, dividendo, periodicidade, mes, pe, sma, etc.) */
@@ -679,14 +683,22 @@ export async function initScreen() {
           <p class="muted" style="margin-top:.4rem">
             ${stopLight} Yield: <strong>${yPct}</strong> (${yBadge || "—"}) •
             Yield 24m: <strong>${y24Pct}</strong> •
-            P/E: <strong>${isFiniteNum(pe) ? pe.toFixed(2) : "—"} (${peBadge})</strong> •
+            P/E: <strong>${
+              isFiniteNum(pe) ? Number(pe).toFixed(2) : "—"
+            } (${peBadge})</strong> •
             Δ50d: <strong>${d50Txt}</strong> •
             Δ200d: <strong>${d200Txt}</strong>
           </p>
           <p class="muted">
-            ${String(info.periodicidade || "n/A")} • paga em <strong>${String(info.mes || "n/A")}</strong> •
-            Div. unit.: <strong>${isFiniteNum(dividendoUnit) ? fmtEUR.format(dividendoUnit) : "—"}</strong> •
-            Div. anual est.: <strong>${isFiniteNum(divAnualEst) ? fmtEUR.format(divAnualEst) : "—"}</strong>
+            ${String(info.periodicidade || "n/A")} • paga em <strong>${String(
+          info.mes || "n/A"
+        )}</strong> •
+            Div. unit.: <strong>${
+              isFiniteNum(dividendoUnit) ? fmtEUR.format(dividendoUnit) : "—"
+            }</strong> •
+            Div. anual est.: <strong>${
+              isFiniteNum(divAnualEst) ? fmtEUR.format(divAnualEst) : "—"
+            }</strong>
           </p>
         `;
 

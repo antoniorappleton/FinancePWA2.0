@@ -28,10 +28,37 @@ self.addEventListener("activate", event => {
 });
 
 // Responde com cache ou vai buscar à rede
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+//self.addEventListener("fetch", event => {
+  //event.respondWith(
+    //caches.match(event.request).then(response => {
+     // return response || fetch(event.request);
+    //})
+ // );
+//});
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open("app-cache-v1");
+      const urls = [
+        "/",
+        "/index.html",
+        "/style.css",
+        "/js/main.js",
+        "/screens/atividade.html",
+        "/screens/dashboard.html", // etc...
+        // evita listar módulos dinâmicos se não tiveres a certeza
+      ];
+      await Promise.all(
+        urls.map(async (url) => {
+          try {
+            const resp = await fetch(url, { cache: "no-cache" });
+            if (!resp.ok) throw new Error(`${url} -> ${resp.status}`);
+            await cache.put(url, resp);
+          } catch (e) {
+            console.warn("[SW] skip cache:", e.message);
+          }
+        })
+      );
+    })()
   );
 });

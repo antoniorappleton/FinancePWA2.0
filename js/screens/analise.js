@@ -1030,8 +1030,7 @@ export async function initScreen() {
     let candidatos = prepararCandidatos(selecionadas, { periodo, horizonte, incluirDiv, modoEstrito });
     if (candidatos.length === 0) { alert("Nenhum ativo com retorno positivo ou dados válidos para este cenário."); return; }
 
-    const res = (apenasInteiros && !usarFracoes) ? distribuirInteiros_porScore(candidatos, investimento)
-                                                 : distribuirFracoes_porScore(candidatos, investimento);
+    const res = (apenasInteiros && !usarFracoes) ? distribuirInteiros_porScore(candidatos, investimento) : distribuirFracoes_porScore(candidatos, investimento);
 
     await renderSelectedSectorChart(selecionadas);
     renderResultadoSimulacao(res);
