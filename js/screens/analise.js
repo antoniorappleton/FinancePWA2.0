@@ -118,34 +118,48 @@ const fmtEUR = (n) =>
     style: "currency",
     currency: "EUR",
   });
-const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-const canon = (s) =>
-  String(s ?? "")
-    .replace(/\u00A0/g, " ")
-    .replace(/[\u200B-\u200D]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const canon = (s) =>
+    String(s ?? "")
+      .replace(/\u00A0/g, " ")
+      .replace(/[\u200B-\u200D]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
-/* =========================================================
+  /* =========================================================
    Config ajustável — pesos/limites do algoritmo (visível)
    ========================================================= */
-const CFG = {
+  const CFG = {
   // limites prudentes (crescimento anualizado composto)
-  MAX_ANNUAL_RETURN: 0.8, // +80%/ano
+  MAX_ANNUAL_RETURN: 0.8,  // +80%/ano (rede técnica)
   MIN_ANNUAL_RETURN: -0.8, // -80%/ano
 
-  // peso dos componentes no score [0..1] (R = retorno/€; V = P/E; T = tendência; Rsk = fator “constante”)
+  // peso dos componentes no score
   WEIGHTS: {
-    R: 0.55, // retorno por euro investido
-    V: 0.15, // valuation por P/E
-    T: 0.25, // técnica (SMA50/SMA200)
-    Rsk: 0.05, // risco base
+    R: 0.20, // retorno por € (menos peso às taxas)
+    V: 0.35, // valuation (P/E)
+    T: 0.20, // técnica (SMAs)
+    D: 0.20, // NEW: dividend yield score
+    Rsk: 0.05 // constante
   },
 
-  // percentagem máxima do total por ticker no modo frações
-  MAX_PCT_POR_TICKER: 0.35,
+  // Blend dominado por 1 ano (igual para qualquer seleção na UI)
+  BLEND_WEIGHTS: {
+    "1s": { w: 0.10, m: 0.20, y: 0.70 },
+    "1m": { w: 0.10, m: 0.20, y: 0.70 },
+    "1a": { w: 0.10, m: 0.20, y: 0.70 },
+  },
+
+  // NEW: tampão de realismo na projeção
+  // Cap económico mais conservador
+  REALISM_CAP: {
+    enabled: true,
+    trigger: 0.50, // se a taxa PRIMÁRIA anualizada > 50%…
+    cap: 0.15,     // …corta a projeção final a 15%/ano
+  },
 };
-window.ANL_CFG = CFG; // podes ajustar via consola se quiseres
+
+  window.ANL_CFG = CFG; // podes ajustar via consola se quiseres
 
 /* =========================================================
    Cálculos de dividendos / yield
@@ -665,17 +679,38 @@ function asRate(x) {
   if (!Number.isFinite(n)) return 0;
   return Math.abs(n) > 1 ? n / 100 : n;
 }
-function annualizeRate(row) {
+function annualizeRate(row, periodoSel) {
+  const asRate = (x) => {
+    const n = Number(x);
+    if (!Number.isFinite(n)) return 0;
+    return Math.abs(n) > 1 ? n / 100 : n;
+  };
+
   const w = asRate(row?.g1w);
   const m = asRate(row?.g1m);
   const y = asRate(row?.g1y);
 
-  // prioridade: anual > mensal > semanal
-  if (Number.isFinite(y) && y !== 0) return y;
-  if (Number.isFinite(m) && m !== 0) return Math.pow(1 + m, 12) - 1;
-  if (Number.isFinite(w) && w !== 0) return Math.pow(1 + w, 52) - 1;
-  return 0;
+  const rw = Math.pow(1 + (w || 0), 52) - 1;
+  const rm = Math.pow(1 + (m || 0), 12) - 1;
+  const ry = y || 0;
+
+  const clamp01 = (r) => clamp(r, CFG.MIN_ANNUAL_RETURN, CFG.MAX_ANNUAL_RETURN);
+  const Rw = clamp01(rw), Rm = clamp01(rm), Ry = clamp01(ry);
+
+  const Wb = (CFG?.BLEND_WEIGHTS?.[periodoSel]) ?? { w: 0.10, m: 0.20, y: 0.70 };
+  const r_blend = (Wb.w * Rw) + (Wb.m * Rm) + (Wb.y * Ry);
+
+  const capCfg = CFG?.REALISM_CAP ?? { enabled: true, trigger: 0.50, cap: 0.15 };
+  const r_primary = periodoSel === "1s" ? Rw : (periodoSel === "1m" ? Rm : Ry);
+  if (capCfg.enabled && r_primary > capCfg.trigger) {
+    return Math.min(r_blend, capCfg.cap);
+  }
+
+  return r_blend;
 }
+
+
+
 function scorePE(pe) {
   if (!Number.isFinite(pe) || pe <= 0) return 0.5;
   if (pe <= 12) return 1.0;
@@ -725,6 +760,28 @@ function calcularMetricasBase(
     retornoPorEuro,
   };
 }
+
+// Normaliza atratividade do dividendo em [0..1]
+function scoreDividend(row) {
+  // current yield (%). Se não existir, tenta calcular a partir de divAnual / preço
+  const curr = Number.isFinite(row.yield)
+    ? Number(row.yield)
+    : (Number(row.divAnual || row.dividendoMedio24m || 0) / Number(row.valorStock || 0)) * 100;
+
+  const hist = Number(row.yield24) || 0; // média 24m (%), se existir
+
+  // A) Score absoluto: 6% ou mais é "excelente"
+  const abs = clamp((curr || 0) / 6, 0, 1);
+
+  // B) Score relativo: atual vs histórico (cap a 1.5x)
+  const relRaw = hist > 0 ? curr / hist : abs; // fallback p/ abs quando não há histórico
+  const rel = clamp(relRaw / 1.5, 0, 1);
+
+  // Blend (mais peso ao absoluto, algum ao relativo)
+  const D = clamp(0.6 * abs + 0.4 * rel, 0, 1);
+  return D;
+}
+
 function prepararCandidatos(
   rows,
   { periodo, horizonte, incluirDiv, modoEstrito = false }
@@ -750,14 +807,37 @@ function prepararCandidatos(
   cands = cands
     .map((c) => {
       const R = clamp(c.metrics.retornoPorEuro / p99, 0, 1);
-      if (modoEstrito)
-        return { ...c, score: R, __R: R, __V: 0, __T: 0, __Rsk: 0 };
+
+      if (modoEstrito) {
+        return { ...c, score: R, __R: R, __V: 0, __T: 0, __D: 0, __Rsk: 0 };
+      }
+
       const V = scorePE(c.pe);
       const T = scoreTrend(c.metrics.preco, c.sma50, c.sma200);
+      const D = scoreDividend({
+        ...c,
+        divAnual: c.metrics.dividendoAnual, // garantir disponibilidade
+      });
       const Rsk = 1.0;
       const W = CFG.WEIGHTS;
-      const score = clamp(W.R * R + W.V * V + W.T * T + W.Rsk * Rsk, 0, 1);
-      return { ...c, score, __R: R, __V: V, __T: T, __Rsk: Rsk };
+
+      // Se alguém esquecer de pôr W.D, assume 0
+      const score =
+        W.R * R +
+        W.V * V +
+        W.T * T +
+        (W.D || 0) * D +
+        W.Rsk * Rsk;
+
+      return {
+        ...c,
+        score: clamp(score, 0, 1),
+        __R: R,
+        __V: V,
+        __T: T,
+        __D: D,
+        __Rsk: Rsk,
+      };
     })
     .filter((c) => c.score > 0);
 
@@ -949,6 +1029,10 @@ function closeReportModal() {
   el?.classList.add("hidden");
   document.documentElement.style.overflow = "";
   document.body.style.overflow = "";
+    // 🔽 limpar simulação anterior
+  __ANL_LAST_SIM = null;
+  document.getElementById("repTableBody").innerHTML = "";
+  document.getElementById("repTotalResumo").innerHTML = "";
 }
 
 
@@ -1770,7 +1854,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
   doc.setFontSize(9);
   doc.setTextColor(...COLOR_MUTED);
   doc.text(
-    `© ${new Date().getFullYear()} APPFinance — Relatório gerado automaticamente`,
+    `© ${new Date().getFullYear()} AAPPLETON.report — Relatório gerado automaticamente`,
     M,
     pageH - 14
   );
@@ -2146,7 +2230,7 @@ export async function initScreen() {
 
           // 4) Gera o PDF (usa a tua V2)
           await generateReportPDF_v2(rowsForReport, {
-            titulo: "Relatório Financeiro (v2)",
+            titulo: "Simulação do Portefólio",
             horizonte,
           });
         } catch (e) {
