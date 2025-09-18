@@ -1857,19 +1857,19 @@ export async function initScreen() {
 
 
 
-// === Relatório (abrir/fechar) ===
-function openReportModal() {
-  const el = document.getElementById("anlReportModal");
-  el?.classList.remove("hidden");
-  document.documentElement.style.overflow = "hidden";
-  document.body.style.overflow = "hidden";
-}
-function closeReportModal() {
-  const el = document.getElementById("anlReportModal");
-  el?.classList.add("hidden");
-  document.documentElement.style.overflow = "";
-  document.body.style.overflow = "";
-}
+  // === Relatório (abrir/fechar) ===
+  function openReportModal() {
+    const el = document.getElementById("anlReportModal");
+    el?.classList.remove("hidden");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+  function closeReportModal() {
+    const el = document.getElementById("anlReportModal");
+    el?.classList.add("hidden");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
 
   // Exclusividade Total vs Inteiros
   const cbTotal = document.getElementById("anlSimInvestirTotal");
@@ -2012,43 +2012,125 @@ function closeReportModal() {
     }
   });
 
-  // === Fechar Modais (Simulação + Relatório) ===
+    // === Fechar Modais (Simulação + Relatório) ===
 
-// util para saber se um modal está aberto
-const _isOpen = (el) => el && !el.classList.contains("hidden");
+  // util para saber se um modal está aberto
+  const _isOpen = (el) => el && !el.classList.contains("hidden");
 
-// SIMULADOR — botões + clique no backdrop
-document.getElementById("anlSimClose")?.addEventListener("click", closeSimModal);
-document.getElementById("anlSimModal")?.addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closeSimModal(); // clique fora fecha
-});
-
-// RELATÓRIO — botões corretos + clique no backdrop
-document.getElementById("repCloseTop")?.addEventListener("click", closeReportModal);
-document.getElementById("repCloseBottom")?.addEventListener("click", closeReportModal);
-document.getElementById("anlReportModal")?.addEventListener("click", (e) => {
-  if (e.target === e.currentTarget) closeReportModal(); // clique fora fecha
-});
-
-// ESC fecha o modal aberto (prioridade ao relatório)
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape") return;
-  const rep = document.getElementById("anlReportModal");
-  const sim = document.getElementById("anlSimModal");
-  if (_isOpen(rep)) closeReportModal();
-  else if (_isOpen(sim)) closeSimModal();
-});
-
-
-  // Render inicial
-  markSortedHeader();
-  applyFilters();
-}
-
-/* Auto-init seguro */
-if (!window.__ANL_AUTO_INIT__) {
-  window.__ANL_AUTO_INIT__ = true;
-  initScreen().catch((e) => {
-    console.error("[analise] init error", e);
+  // SIMULADOR — botões + clique no backdrop
+  document.getElementById("anlSimClose")?.addEventListener("click", closeSimModal);
+  document.getElementById("anlSimModal")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeSimModal(); // clique fora fecha
   });
-}
+
+  // RELATÓRIO — botões corretos + clique no backdrop
+  document.getElementById("repCloseTop")?.addEventListener("click", closeReportModal);
+  document.getElementById("repCloseBottom")?.addEventListener("click", closeReportModal);
+  document.getElementById("anlReportModal")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeReportModal(); // clique fora fecha
+  });
+
+  // ESC fecha o modal aberto (prioridade ao relatório)
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const rep = document.getElementById("anlReportModal");
+    const sim = document.getElementById("anlSimModal");
+    if (_isOpen(rep)) closeReportModal();
+    else if (_isOpen(sim)) closeSimModal();
+  });
+
+
+    // Render inicial
+    markSortedHeader();
+    applyFilters();
+  }
+
+  /* Auto-init seguro */
+  if (!window.__ANL_AUTO_INIT__) {
+    window.__ANL_AUTO_INIT__ = true;
+    initScreen().catch((e) => {
+      console.error("[analise] init error", e);
+    });
+
+    // Exportar PDF (robusto): garante libs e dados antes de gerar
+    const bindExportPdf = () => {
+      const btn = document.getElementById("repExportPdf");
+      if (!btn) return;
+
+      // remove handlers antigos, se existirem
+      btn.replaceWith(btn.cloneNode(true));
+      const freshBtn = document.getElementById("repExportPdf");
+
+      freshBtn.addEventListener("click", async () => {
+        try {
+          // 1) Garante libs carregadas (jspdf + autotable)
+          await ensurePDFLibs();
+          await ensureAutoTable();
+          if (!window.jspdf?.jsPDF) {
+            alert("Não consegui carregar o jsPDF. Verifica a ligação.");
+            return;
+          }
+
+          // 2) Horizonte (UI > sim > fallback 1)
+          const horizonte = Number(
+            document.getElementById("anlSimHoriz")?.value ||
+              __ANL_LAST_SIM?.opts?.horizonte ||
+              1
+          );
+
+          // 3) Dados do relatório: usa simulação se existir; senão, lê a tabela do preview
+          let rowsForReport = [];
+          if (
+            Array.isArray(__ANL_LAST_SIM?.rows) &&
+            __ANL_LAST_SIM.rows.length
+          ) {
+            rowsForReport = __ANL_LAST_SIM.rows;
+          } else {
+            const trs = Array.from(
+              document.querySelectorAll("#repTable tbody tr")
+            );
+            rowsForReport = trs.map((tr) => {
+              const td = tr.querySelectorAll("td");
+              const num = (s) =>
+                Number(
+                  (s || "")
+                    .replace(/[^\d,.-]/g, "")
+                    .replace(/\./g, "")
+                    .replace(",", ".")
+                ) || 0;
+              return {
+                nome: td[0]?.textContent?.trim() || "",
+                ticker: td[1]?.textContent?.trim() || "",
+                investido: num(td[2]?.textContent),
+                dividendoAnual: num(td[3]?.textContent),
+                dividendoHorizonte: num(td[4]?.textContent),
+                valorizacao: num(td[5]?.textContent),
+                lucro: num(td[6]?.textContent),
+              };
+            });
+          }
+
+          if (!rowsForReport.length) {
+            alert(
+              "Sem dados para exportar. Executa a simulação ou abre o relatório com seleção válida."
+            );
+            return;
+          }
+
+          // 4) Gera o PDF (usa a tua V2)
+          await generateReportPDF_v2(rowsForReport, {
+            titulo: "Relatório Financeiro (v2)",
+            horizonte,
+          });
+        } catch (e) {
+          console.error("[repExportPdf] erro:", e);
+          alert(
+            "Falhou a exportação do PDF. Consulta a consola para mais detalhes."
+          );
+        }
+      });
+    };
+
+    // chama já
+    bindExportPdf();
+  }
