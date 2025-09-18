@@ -1154,10 +1154,10 @@ async function buildTempReportCharts(rows) {
   );
   const valH = rows.map((r) => Number(r.valorizacao || 0));
 
-  const mkCanvas = (id) => {
+  const mkCanvas = (id, w = 900, h = 500) => {
     const c = document.createElement("canvas");
-    c.width = 900;
-    c.height = 500;
+    c.width = w;
+    c.height = h;
     c.id = id;
     wrap.appendChild(c);
     return c.getContext("2d");
@@ -1167,7 +1167,7 @@ async function buildTempReportCharts(rows) {
 
   // Pizza — distribuição do investimento
   if (!document.getElementById("chartDistInvest")) {
-    const ctx = mkCanvas("chartDistInvest");
+    const ctx = mkCanvas("chartDistInvest", 600, 600); // 🔳 quadrado = círculo perfeito
     new Chart(ctx, {
       type: "pie",
       data: {
@@ -1179,7 +1179,11 @@ async function buildTempReportCharts(rows) {
           },
         ],
       },
-      options: { animation: false, plugins: { legend: { display: false } } },
+      options: {
+        animation: false,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+      },
     });
     imgs.push({
       id: "chartDistInvest",
@@ -1652,8 +1656,31 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
     doc.setFontSize(12);
     doc.setTextColor(20);
     doc.text(c.title, M, y);
-    doc.addImage(c.img, "PNG", M, y + 8, pageW - M * 2, 220, undefined, "FAST");
-    y += 240;
+    const MAX_W = pageW - M * 2;
+
+    if (c.id === "chartDistInvest") {
+      // 🍕 PIZZA: desenha num quadrado centrado (sem ovalizar)
+      const S = 220; // altura/largura desejadas
+      const xCentered = (pageW - S) / 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(20);
+      doc.text(c.title, M, y);
+
+      doc.addImage(c.img, "PNG", xCentered, y + 8, S, S, undefined, "FAST");
+      y += S + 28;
+    } else {
+      // 📊 BARRAS: mais compacto em altura
+      const H = 180; // altura mais baixa
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(20);
+      doc.text(c.title, M, y);
+
+      doc.addImage(c.img, "PNG", M, y + 8, MAX_W, H, undefined, "FAST");
+      y += H + 28;
+    }
+
   }
 
   // tabela
