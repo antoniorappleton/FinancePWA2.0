@@ -136,9 +136,9 @@ const fmtEUR = (n) =>
 
   // peso dos componentes no score
   WEIGHTS: {
-    R: 0.20, // retorno por € (menos peso às taxas)
+    R: 0.15, // retorno por € (menos peso às taxas)
     V: 0.35, // valuation (P/E)
-    T: 0.20, // técnica (SMAs)
+    T: 0.25, // técnica (SMAs)
     D: 0.20, // NEW: dividend yield score
     Rsk: 0.05 // constante
   },
@@ -686,10 +686,7 @@ function annualizeRate(row, periodoSel) {
     return Math.abs(n) > 1 ? n / 100 : n;
   };
 
-  const w = asRate(row?.g1w);
-  const m = asRate(row?.g1m);
-  const y = asRate(row?.g1y);
-
+  const w = asRate(row?.g1w), m = asRate(row?.g1m), y = asRate(row?.g1y);
   const rw = Math.pow(1 + (w || 0), 52) - 1;
   const rm = Math.pow(1 + (m || 0), 12) - 1;
   const ry = y || 0;
@@ -700,14 +697,11 @@ function annualizeRate(row, periodoSel) {
   const Wb = (CFG?.BLEND_WEIGHTS?.[periodoSel]) ?? { w: 0.10, m: 0.20, y: 0.70 };
   const r_blend = (Wb.w * Rw) + (Wb.m * Rm) + (Wb.y * Ry);
 
-  const capCfg = CFG?.REALISM_CAP ?? { enabled: true, trigger: 0.50, cap: 0.15 };
-  const r_primary = periodoSel === "1s" ? Rw : (periodoSel === "1m" ? Rm : Ry);
-  if (capCfg.enabled && r_primary > capCfg.trigger) {
-    return Math.min(r_blend, capCfg.cap);
-  }
-
-  return r_blend;
+  // 🔽 CAP INCONDICIONAL sobre o blend
+  const capCfg = CFG?.REALISM_CAP ?? { enabled: true, cap: 0.15 };
+  return capCfg.enabled ? Math.min(r_blend, capCfg.cap) : r_blend;
 }
+
 
 
 
@@ -940,58 +934,48 @@ function distribuirFracoes_porScore(cands, investimento) {
 
 function distribuirInteiros_porScore(cands, investimento) {
   const soma = cands.reduce((s, c) => s + c.score, 0);
-  if (!(soma > 0))
-    return {
-      linhas: [],
-      totalLucro: 0,
-      totalGasto: 0,
-      totalDivAnual: 0,
-      totalDivPeriodo: 0,
-      totalValoriz: 0,
-      restante: investimento,
-    };
+  if (!(soma > 0)) return { linhas: [], totalLucro:0, totalGasto:0, totalDivAnual:0, totalDivPeriodo:0, totalValoriz:0, restante: investimento };
+
+  // 🔽 NOVO: cap absoluto por ticker
+  const capAbs = CFG.MAX_PCT_POR_TICKER ? CFG.MAX_PCT_POR_TICKER * investimento : Infinity;
 
   const ordered = [...cands].sort((a, b) => b.score - a.score);
   const base = ordered.map((c) => {
     const propor = c.score / soma;
     const investAlvo = investimento * propor;
-    const qtd = Math.max(
-      0,
-      Math.floor(c.metrics.preco > 0 ? investAlvo / c.metrics.preco : 0)
-    );
+    // aplica cap já na base
+    const investCapped = Math.min(investAlvo, capAbs);
+    const qtd = Math.max(0, Math.floor(c.metrics.preco > 0 ? investCapped / c.metrics.preco : 0));
     return { c, qtd };
   });
 
   let gasto = base.reduce((s, x) => s + x.qtd * x.c.metrics.preco, 0);
   let restante = investimento - gasto;
 
+  // 🔽 NOVO: greedy respeitando cap
   while (true) {
     let escolhido = null;
     for (const cand of ordered) {
-      if (cand.metrics.preco <= restante && cand.metrics.lucroUnidade > 0) {
+      const reg = base.find((x) => x.c === cand);
+      const investAtual = (reg?.qtd || 0) * cand.metrics.preco;
+      if (cand.metrics.preco <= restante &&
+          cand.metrics.lucroUnidade > 0 &&
+          investAtual + cand.metrics.preco <= capAbs) {
         escolhido = cand;
         break;
       }
     }
     if (!escolhido) break;
     const reg = base.find((x) => x.c === escolhido);
-    if (!reg) break;
     reg.qtd += 1;
     gasto += escolhido.metrics.preco;
     restante = investimento - gasto;
-    if (
-      !ordered.some(
-        (o) => o.metrics.preco <= restante && o.metrics.lucroUnidade > 0
-      )
-    )
-      break;
   }
 
-  const linhas = base
-    .filter(({ qtd }) => qtd > 0)
-    .map(({ c, qtd }) => makeLinha(c, qtd));
+  const linhas = base.filter(({ qtd }) => qtd > 0).map(({ c, qtd }) => makeLinha(c, qtd));
   return sumarizar(linhas, investimento, gasto);
 }
+
 
   /* =========================================================
    Modal Simulação (open/close + render)
@@ -1220,54 +1204,85 @@ function getChartImageByCanvasId(id) {
   }
 }
 
-// Cria gráficos “temporários” (invisíveis) só para o PDF, caso não existam no DOM
+// ================================================
+// CHARTS TEMPORÁRIOS (PDF) — robusto, com pizzas & datalabels
+// ================================================
 async function buildTempReportCharts(rows) {
   await ensureChartJS();
+  if (!window.ChartDataLabels) {
+    await ensureScript("https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2");
+  }
+  const DATALABELS = window.ChartDataLabels || null;
+  const piePlugins = DATALABELS ? [DATALABELS] : [];
+
   // container offscreen
   const wrap = document.createElement("div");
   wrap.style.position = "fixed";
   wrap.style.left = "-10000px";
   document.body.appendChild(wrap);
 
-  // Helpers para dados
-  const labels = rows.map((r) => r.ticker);
-  const invest = rows.map((r) => Number(r.investido || 0));
-  const lucro = rows.map((r) => Number(r.lucro || 0));
-  const divH = rows.map((r) =>
-    Number((r.divHoriz ?? r.dividendoHorizonte) || 0)
-  );
-  const valH = rows.map((r) => Number(r.valorizacao || 0));
-
+  // helper (antes de usar)
   const mkCanvas = (id, w = 900, h = 500) => {
     const c = document.createElement("canvas");
-    c.width = w;
-    c.height = h;
-    c.id = id;
+    c.width = w; c.height = h; c.id = id;
     wrap.appendChild(c);
     return c.getContext("2d");
   };
 
+  // opções partilhadas para pizzas
+  const pieOptsForPdf = {
+    animation: false,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: true, position: "bottom" },
+      datalabels: DATALABELS ? {
+        formatter: (v, ctx) => {
+          const lbl = ctx.chart.data.labels[ctx.dataIndex] || "";
+          const val = Number(v || 0);
+          const sum = (ctx.chart.data.datasets[0].data || [])
+            .reduce((a, b) => a + Number(b || 0), 0) || 1;
+          const pct = (val / sum) * 100;
+          return `${lbl}\n${pct.toFixed(1)}%`;
+        },
+        anchor: "center",
+        align: "center",
+        color: "#222",
+        font: { weight: "600", size: 11 },
+        clamp: true,
+      } : undefined,
+    },
+  };
+
+  // Dados base
+  const labels = rows.map((r) => r.ticker);
+  const invest = rows.map((r) => Number(r.investido || 0));
+  const lucro  = rows.map((r) => Number(r.lucro || 0));
+  const divH   = rows.map((r) => Number((r.divHoriz ?? r.dividendoHorizonte) || 0));
+  const valH   = rows.map((r) => Number(r.valorizacao || 0));
+
+  // Agregar por setor via ALL_ROWS (ticker → setor)
+  const sectorMap = new Map();
+  rows.forEach((r) => {
+    const base  = ALL_ROWS.find((x) => x.ticker === r.ticker);
+    const setor = (base?.setor || "—").trim();
+    sectorMap.set(setor, (sectorMap.get(setor) || 0) + Number(r.investido || 0));
+  });
+  const sectorLabels = Array.from(sectorMap.keys());
+  const sectorInvest = Array.from(sectorMap.values());
+
   const imgs = [];
 
-  // Pizza — distribuição do investimento
+  // Pizza — por Ativo
   if (!document.getElementById("chartDistInvest")) {
-    const ctx = mkCanvas("chartDistInvest", 600, 600); // 🔳 quadrado = círculo perfeito
+    const ctx = mkCanvas("chartDistInvest", 600, 600); // quadrado = círculo perfeito
     new Chart(ctx, {
       type: "pie",
       data: {
         labels,
-        datasets: [
-          {
-            data: invest,
-            backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
-          },
-        ],
+        datasets: [{ data: invest, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]) }],
       },
-      options: {
-        animation: false,
-        maintainAspectRatio: true,
-        plugins: { legend: { display: false } },
-      },
+      options: pieOptsForPdf,
+      plugins: piePlugins,
     });
     imgs.push({
       id: "chartDistInvest",
@@ -1276,7 +1291,26 @@ async function buildTempReportCharts(rows) {
     });
   }
 
-  // Barras — Lucro estimado por ativo
+  // Pizza — por Setor
+  if (sectorLabels.length && !document.getElementById("chartDistSector")) {
+    const ctx = mkCanvas("chartDistSector", 600, 600);
+    new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: sectorLabels,
+        datasets: [{ data: sectorInvest, backgroundColor: sectorLabels.map((_, i) => PALETTE[i % PALETTE.length]) }],
+      },
+      options: pieOptsForPdf,
+      plugins: piePlugins,
+    });
+    imgs.push({
+      id: "chartDistSector",
+      title: "Distribuição do Investimento por Setor (Pizza)",
+      img: getChartImageByCanvasId("chartDistSector"),
+    });
+  }
+
+  // Barras — Lucro
   if (!document.getElementById("chartLucroPorAtivo")) {
     const ctx = mkCanvas("chartLucroPorAtivo");
     new Chart(ctx, {
@@ -1291,7 +1325,7 @@ async function buildTempReportCharts(rows) {
     });
   }
 
-  // Barras agrupadas — Dividendos vs Valorização
+  // Barras — Dividendos vs Valorização
   if (!document.getElementById("chartDivVsVal")) {
     const ctx = mkCanvas("chartDivVsVal");
     new Chart(ctx, {
@@ -1312,7 +1346,7 @@ async function buildTempReportCharts(rows) {
     });
   }
 
-  // Barras — Investido por ativo
+  // Barras — Investido por Ativo
   if (!document.getElementById("chartInvestPorAtivo")) {
     const ctx = mkCanvas("chartInvestPorAtivo");
     new Chart(ctx, {
@@ -1327,7 +1361,7 @@ async function buildTempReportCharts(rows) {
     });
   }
 
-  // limpa canvases temporários após captura
+  // limpar canvases temporários após captura
   requestAnimationFrame(() => document.body.removeChild(wrap));
   return imgs.filter((x) => !!x.img);
 }
@@ -1346,49 +1380,51 @@ let __repCharts = {
   investBars: null,
 };
 
+// ================================
+// PREVIEW (modal) — robusto e com data labels (se disponível)
+// ================================
 async function renderReportPreview(data, { horizonte }) {
   await ensureChartJS();
-
-  // carrega datalabels (para labels nome+valor nas pizzas)
+  // plugin (labels nas fatias) — carregar e usar de forma segura
   if (!window.ChartDataLabels) {
-    await ensureScript(
-      "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"
-    );
+    await ensureScript("https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2");
   }
+  const DATALABELS = window.ChartDataLabels || null;
+  const piePlugins = DATALABELS ? [DATALABELS] : [];
+
+  // helpers para destruir antes de recriar
+  const getCtx = (id) => {
+    const cnv = document.getElementById(id);
+    if (!cnv) return null;
+    const prev = window.Chart?.getChart?.(cnv);
+    if (prev) prev.destroy();
+    return cnv.getContext("2d");
+  };
 
   // KPIs
-  const totInvest = data.reduce((s, a) => s + Number(a.investido || 0), 0);
-  const totDivAnual = data.reduce(
-    (s, a) => s + Number(a.dividendoAnual || a.divAnual || 0),
-    0
-  );
-  const totDivHoriz = data.reduce(
-    (s, a) => s + Number(a.dividendoHorizonte || a.divHoriz || 0),
-    0
-  );
-  const totVal = data.reduce((s, a) => s + Number(a.valorizacao || 0), 0);
-  const totLucro = data.reduce((s, a) => s + Number(a.lucro || 0), 0);
-  const retPct = totInvest > 0 ? (totLucro / totInvest) * 100 : 0;
+  const totInvest   = data.reduce((s, a) => s + Number(a.investido || 0), 0);
+  const totDivAnual = data.reduce((s, a) => s + Number(a.dividendoAnual || a.divAnual || 0), 0);
+  const totDivHoriz = data.reduce((s, a) => s + Number(a.dividendoHorizonte || a.divHoriz || 0), 0);
+  const totVal      = data.reduce((s, a) => s + Number(a.valorizacao || 0), 0);
+  const totLucro    = data.reduce((s, a) => s + Number(a.lucro || 0), 0);
+  const retPct      = totInvest > 0 ? (totLucro / totInvest) * 100 : 0;
 
   const _e = (id) => document.getElementById(id);
   _e("repKpiInv").textContent = fmtEUR(totInvest);
   _e("repKpiRet").textContent = `${fmtEUR(totLucro)} (${retPct.toFixed(1)}%)`;
-  _e("repKpiDiv").textContent = `${fmtEUR(totDivAnual)} / ${fmtEUR(
-    totDivHoriz
-  )}  (H=${horizonte})`;
+  _e("repKpiDiv").textContent = `${fmtEUR(totDivAnual)} / ${fmtEUR(totDivHoriz)}  (H=${horizonte})`;
   _e("repKpiVal").textContent = fmtEUR(totVal);
 
   // Tabela
   const tbody = document.querySelector("#repTable tbody");
   const denom = totInvest > 0 ? totInvest : 1;
-  tbody.innerHTML = data
-    .map((a) => {
-      const inv = Number(a.investido || 0);
-      const da = Number(a.dividendoAnual || a.divAnual || 0);
-      const dh = Number(a.dividendoHorizonte || a.divHoriz || 0);
-      const vz = Number(a.valorizacao || 0);
-      const lc = Number(a.lucro || 0);
-      return `
+  tbody.innerHTML = data.map((a) => {
+    const inv = Number(a.investido || 0);
+    const da  = Number(a.dividendoAnual || a.divAnual || 0);
+    const dh  = Number(a.dividendoHorizonte || a.divHoriz || 0);
+    const vz  = Number(a.valorizacao || 0);
+    const lc  = Number(a.lucro || 0);
+    return `
       <tr>
         <td>${a.nome || "—"}</td>
         <td><strong>${a.ticker || "—"}</strong></td>
@@ -1399,32 +1435,26 @@ async function renderReportPreview(data, { horizonte }) {
         <td>${fmtEUR(lc)}</td>
         <td>${((inv / denom) * 100).toFixed(1)}%</td>
       </tr>`;
-    })
-    .join("");
+  }).join("");
 
   // Dados p/ gráficos
   const byTickerLabels = data.map((a) => a.ticker);
   const byTickerInvest = data.map((a) => Number(a.investido || 0));
-  const byTickerLucro = data.map((a) => Number(a.lucro || 0));
-  const byTickerDivH = data.map((a) =>
-    Number(a.dividendoHorizonte || a.divHoriz || 0)
-  );
-  const byTickerValH = data.map((a) => Number(a.valorizacao || 0));
+  const byTickerLucro  = data.map((a) => Number(a.lucro || 0));
+  const byTickerDivH   = data.map((a) => Number(a.dividendoHorizonte || a.divHoriz || 0));
+  const byTickerValH   = data.map((a) => Number(a.valorizacao || 0));
 
   // Agregar por setor (lookup em ALL_ROWS)
   const sectorMap = new Map();
   data.forEach((a) => {
-    const base = ALL_ROWS.find((r) => r.ticker === a.ticker);
+    const base  = ALL_ROWS.find((r) => r.ticker === a.ticker);
     const setor = canon(base?.setor || "—");
-    sectorMap.set(
-      setor,
-      (sectorMap.get(setor) || 0) + Number(a.investido || 0)
-    );
+    sectorMap.set(setor, (sectorMap.get(setor) || 0) + Number(a.investido || 0));
   });
   const bySectorLabels = Array.from(sectorMap.keys());
   const bySectorInvest = Array.from(sectorMap.values());
 
-  // limpar gráficos antigos
+  // limpar gráficos antigos (se existirem)
   Object.values(__repCharts).forEach((c) => c?.destroy());
   __repCharts = {};
 
@@ -1432,97 +1462,73 @@ async function renderReportPreview(data, { horizonte }) {
   const pieCommon = {
     responsive: true,
     animation: false,
-    maintainAspectRatio: false, // 🔑
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       tooltip: { enabled: true },
-      datalabels: {
-        formatter: (v, ctx) =>
-          `${ctx.chart.data.labels[ctx.dataIndex]}\n${fmtEUR(v)}`,
+      datalabels: DATALABELS ? {
+        formatter: (v, ctx) => `${ctx.chart.data.labels[ctx.dataIndex]}\n${fmtEUR(v)}`,
         anchor: "center",
         align: "center",
         clamp: true,
         color: "#222",
         font: { weight: "600" },
-      },
+      } : undefined,
     },
   };
   const barCommon = {
     responsive: false,
     animation: false,
-    maintainAspectRatio: false, // 🔑
+    maintainAspectRatio: false,
     scales: {
-      x: {
-        ticks: { color: chartColors().ticks },
-        grid: { color: chartColors().grid },
-      },
-      y: {
-        ticks: { color: chartColors().ticks },
-        grid: { color: chartColors().grid },
-      },
+      x: { ticks: { color: chartColors().ticks }, grid: { color: chartColors().grid } },
+      y: { ticks: { color: chartColors().ticks }, grid: { color: chartColors().grid } },
     },
     plugins: { legend: { display: false }, tooltip: { enabled: true } },
   };
 
   // 1) Pizza por Ativo
-  __repCharts.byTicker = new Chart(
-    document.getElementById("repChartInvestByTicker").getContext("2d"),
-    {
+  const ctxByTicker = getCtx("repChartInvestByTicker");
+  if (ctxByTicker) {
+    __repCharts.byTicker = new Chart(ctxByTicker, {
       type: "pie",
       data: {
         labels: byTickerLabels,
-        datasets: [
-          {
-            data: byTickerInvest,
-            backgroundColor: byTickerLabels.map(
-              (_, i) => PALETTE[i % PALETTE.length]
-            ),
-          },
-        ],
+        datasets: [{ data: byTickerInvest, backgroundColor: byTickerLabels.map((_, i) => PALETTE[i % PALETTE.length]) }],
       },
       options: pieCommon,
-      plugins: [ChartDataLabels],
-    }
-  );
+      plugins: piePlugins,
+    });
+  }
 
   // 2) Pizza por Setor
-  __repCharts.bySector = new Chart(
-    document.getElementById("repChartInvestBySector").getContext("2d"),
-    {
+  const ctxBySector = getCtx("repChartInvestBySector");
+  if (ctxBySector) {
+    __repCharts.bySector = new Chart(ctxBySector, {
       type: "pie",
       data: {
         labels: bySectorLabels,
-        datasets: [
-          {
-            data: bySectorInvest,
-            backgroundColor: bySectorLabels.map(
-              (_, i) => PALETTE[i % PALETTE.length]
-            ),
-          },
-        ],
+        datasets: [{ data: bySectorInvest, backgroundColor: bySectorLabels.map((_, i) => PALETTE[i % PALETTE.length]) }],
       },
       options: pieCommon,
-      plugins: [ChartDataLabels],
-    }
-  );
+      plugins: piePlugins,
+    });
+  }
 
   // 3) Barras — Lucro por Ativo
-  __repCharts.lucro = new Chart(
-    document.getElementById("repChartLucro").getContext("2d"),
-    {
+  const ctxLucro = getCtx("repChartLucro");
+  if (ctxLucro) {
+    __repCharts.lucro = new Chart(ctxLucro, {
       type: "bar",
-      data: {
-        labels: byTickerLabels,
-        datasets: [{ label: "Lucro (€)", data: byTickerLucro }],
-      },
+      data: { labels: byTickerLabels, datasets: [{ label: "Lucro (€)", data: byTickerLucro }] },
       options: barCommon,
-    }
-  );
+    });
+  }
 
-  // 4) Barras agrupadas — Dividendos vs Valorização
-  __repCharts.divval = new Chart(
-    document.getElementById("repChartDivVsVal").getContext("2d"),
-    {
+  // 4) Barras — Dividendos vs Valorização
+  const ctxDivVal = getCtx("repChartDivVsVal");
+  if (ctxDivVal) {
+    __repCharts.divval = new Chart(ctxDivVal, {
       type: "bar",
       data: {
         labels: byTickerLabels,
@@ -1532,35 +1538,30 @@ async function renderReportPreview(data, { horizonte }) {
         ],
       },
       options: barCommon,
-    }
-  );
+    });
+  }
 
   // 5) Barras — Investido por Ativo
-  __repCharts.investBars = new Chart(
-    document.getElementById("repChartInvestBars").getContext("2d"),
-    {
+  const ctxInvest = getCtx("repChartInvestBars");
+  if (ctxInvest) {
+    __repCharts.investBars = new Chart(ctxInvest, {
       type: "bar",
-      data: {
-        labels: byTickerLabels,
-        datasets: [{ label: "Investido (€)", data: byTickerInvest }],
-      },
+      data: { labels: byTickerLabels, datasets: [{ label: "Investido (€)", data: byTickerInvest }] },
       options: barCommon,
-    }
-  );
+    });
+  }
 
   // Indicadores-chave (texto)
   const notes = [
     `Retorno Total: ${fmtEUR(totLucro)} (${retPct.toFixed(1)}%)`,
     `Dividendos Anuais (soma): ${fmtEUR(totDivAnual)}`,
     `Valorização no Horizonte: ${fmtEUR(totVal)}`,
-    `Rácio Dividendos/Valorização (global): ${
-      totVal > 0 ? (totDivHoriz / totVal).toFixed(2) : "—"
-    }`,
+    `Rácio Dividendos/Valorização (global): ${totVal > 0 ? (totDivHoriz / totVal).toFixed(2) : "—"}`,
   ];
-  document.getElementById("repKeyNotes").innerHTML = notes
-    .map((t) => `<li>${t}</li>`)
-    .join("");
+  document.getElementById("repKeyNotes").innerHTML = notes.map((t) => `<li>${t}</li>`).join("");
 }
+
+
 
 // Nova V2
 export async function generateReportPDF_v2(rows = [], opts = {}) {
@@ -1703,17 +1704,13 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
 
   // gráficos: tenta usar canvases na página; senão cria temporários
   const chartsWanted = [
-    {
-      id: "chartDistInvest",
-      title: "Distribuição do Investimento por Ativo (Pizza)",
-    },
-    { id: "chartLucroPorAtivo", title: "Lucro Estimado por Ativo (Barras)" },
-    {
-      id: "chartDivVsVal",
-      title: "Dividendos vs Valorização por Ativo (Barras Agrupadas)",
-    },
-    { id: "chartInvestPorAtivo", title: "Valor Investido por Ativo (Barras)" },
-  ];
+  { id: "chartDistInvest",  title: "Distribuição do Investimento por Ativo (Pizza)" },
+  { id: "chartDistSector",  title: "Distribuição do Investimento por Setor (Pizza)" }, // 👈 novo
+  { id: "chartLucroPorAtivo", title: "Lucro Estimado por Ativo (Barras)" },
+  { id: "chartDivVsVal",      title: "Dividendos vs Valorização por Ativo (Barras Agrupadas)" },
+  { id: "chartInvestPorAtivo", title: "Valor Investido por Ativo (Barras)" },
+];
+
 
   let chartImgs = chartsWanted
     .map((c) => ({ ...c, img: getChartImageByCanvasId(c.id) }))
@@ -1732,40 +1729,36 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
   }
 
   for (const c of chartImgs) {
-    if (y + 280 > pageH - M) {
-      doc.addPage();
-      y = M;
-    }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(20);
-    doc.text(c.title, M, y);
-    const MAX_W = pageW - M * 2;
+  // salto de página conforme a altura que vais usar
+  const S = 220;      // lado dos gráficos de pizza
+  const H = 180;      // altura dos gráficos de barras
+  const MAX_W = pageW - M * 2;
 
-    if (c.id === "chartDistInvest") {
-      // 🍕 PIZZA: desenha num quadrado centrado (sem ovalizar)
-      const S = 220; // altura/largura desejadas
-      const xCentered = (pageW - S) / 2;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(20);
-      doc.text(c.title, M, y);
-
-      doc.addImage(c.img, "PNG", xCentered, y + 8, S, S, undefined, "FAST");
-      y += S + 28;
-    } else {
-      // 📊 BARRAS: mais compacto em altura
-      const H = 180; // altura mais baixa
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(20);
-      doc.text(c.title, M, y);
-
-      doc.addImage(c.img, "PNG", M, y + 8, MAX_W, H, undefined, "FAST");
-      y += H + 28;
-    }
-
+  const willUseSquare = (c.id === "chartDistInvest" || c.id === "chartDistSector");
+  const needed = willUseSquare ? (S + 28) : (H + 28);
+  if (y + needed + 10 > pageH - M) { // +10 de margem
+    doc.addPage();
+    y = M;
   }
+
+  // título (uma única vez!)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(20);
+  doc.text(c.title, M, y);
+
+  if (willUseSquare) {
+    // 🍕 pizzas (Ativo e Setor): quadrado centrado
+    const xCentered = (pageW - S) / 2;
+    doc.addImage(c.img, "PNG", xCentered, y + 8, S, S, undefined, "FAST");
+    y += S + 28;
+  } else {
+    // 📊 barras (e restantes): largura total, altura compacta
+    doc.addImage(c.img, "PNG", M, y + 8, MAX_W, H, undefined, "FAST");
+    y += H + 28;
+  }
+}
+
 
   // tabela
   if (y + 120 > pageH - M) {
