@@ -378,35 +378,37 @@ async function fetchAcoesBase(){
 /* principal da distribuição */
 async function distribuirInvestimento(opts){
   const { investimento, periodoSel, horizonte, acoesCompletas } = opts;
+  // nota: analise.js usa "1s", "1m", "1a"
+  const periodo = (periodoSel === "1ano" ? "1a" : periodoSel);
 
-  const base = await fetchAcoesBase();
+  // 1) fetch base como já fazias...
+  const snap = await getDocs(collection(db, "acoesDividendos"));
+  const base = [];
+  snap.forEach(doc=>{
+    const d = doc.data();
+    if (!d || !d.ticker) return;
+    base.push(mapRowForSimCore(d));
+  });
 
-  // calcular métricas
-  const comMetricas = base
-    .map(a=>{
-      const metrics = calcularMetricasAcao(a, periodoSel, horizonte);
-      return metrics ? {...a, metrics} : null;
-    })
-    .filter(Boolean)
-    .filter(a=>a.metrics.retornoPorEuro > 0);
-
-  if (comMetricas.length === 0) {
+  // 2) preparar candidatos com o MESMO core do analise.js — MODO ESTRITO = lucro máximo
+  const cands = window.SIM_CORE.prepararCandidatos(base, {
+    periodo,
+    horizonte: Number(horizonte || 1),
+    incluirDiv: true,       // o teu TOP 10 original já somava dividendos
+    modoEstrito: true       // <— chave do “lucro máximo”
+  });
+  if (!cands.length){
     return { linhas: [], totalLucro: 0, totalGasto: 0, restante: investimento };
   }
 
-  // (opcional) limitar ao TOP_N melhores por retorno/€:
-  const TOP_N = 10;
-  const universo = [...comMetricas]
-    .sort((a,b)=>b.metrics.retornoPorEuro - a.metrics.retornoPorEuro)
-    .slice(0, TOP_N);
+  // 3) distribuir com o MESMO algoritmo
+  const res = acoesCompletas
+    ? window.SIM_CORE.distribuirInteiros_porScore_capped(cands, investimento)
+    : window.SIM_CORE.distribuirFracoes_porScore(cands, investimento);
 
-  // distribuir
-  if (acoesCompletas){
-    return distribuirInteiras(universo, investimento);
-  } else {
-    return distribuirFracoes(universo, investimento);
-  }
+  return res;
 }
+
 
 /* render do resultado TOP 10 */
 function renderResultado(destEl, resultado, opts){
