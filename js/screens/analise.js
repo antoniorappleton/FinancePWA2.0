@@ -136,10 +136,10 @@ const CFG = {
 
   // peso dos componentes no score [0..1]
   // R = retorno/€, V = P/E, T = tendência (SMA), D = dividend yield, Rsk = constante
-  WEIGHTS: { R: 0.35, V: 0.20, T: 0.20, D: 0.20, Rsk: 0.05 },
+  WEIGHTS: { R: 0.10, V: 0.25, T: 0.30, D: 0.30, Rsk: 0.05 },
 
   // teto duro por ticker (usado em frações e inteiros)
-  CAP_PCT_POR_TICKER: 0.35,
+  CAP_PCT_POR_TICKER: 0.15,
 
   // blend das taxas conforme período escolhido no simulador
   BLEND_WEIGHTS: {
