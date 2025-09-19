@@ -1885,7 +1885,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
   doc.setFontSize(9);
   doc.setTextColor(...COLOR_MUTED);
   doc.text(
-    `© ${new Date().getFullYear()} APPFinance — Relatório gerado automaticamente`,
+    `© ${new Date().getFullYear()} APPletonFinance — Simulação de Investimentos`,
     M,
     pageH - 14
   );
@@ -2352,7 +2352,7 @@ if (!window.__ANL_AUTO_INIT__) {
 
         // 4) Gera o PDF (usa a tua V2)
         await generateReportPDF_v2(rowsForReport, {
-          titulo: "Relatório Financeiro (v2)",
+          titulo: "Simulação do Portefólio . APPletonFinance",
           horizonte,
         });
       } catch (e) {
