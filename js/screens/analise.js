@@ -595,10 +595,24 @@ async function fetchAcoes() {
         Number(d.peRatio) ||
         Number(d["P/E ratio (Preço/Lucro)"]) ||
         null,
-      delta50: Number(d.delta50) || 0,
-      delta200: Number(d.delta200) || 0,
-      sma50: Number(d.sma50) || Number(d.SMA50) || null,
-      sma200: Number(d.sma200) || Number(d.SMA200) || null,
+        sma50: Number(d.sma50) || Number(d.SMA50) || null,
+  sma200: Number(d.sma200) || Number(d.SMA200) || null,
+
+    // deltas: usa os da BD se existirem; caso contrário, calcula a partir das SMAs
+    delta50: (() => {
+      const raw = Number(d.delta50);
+      if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw; // aceita 9.1 ou 0.091
+      const p = valor, s = Number(d.sma50) || Number(d.SMA50);
+      return Number.isFinite(p) && Number.isFinite(s) && s > 0 ? (p - s) / s : null;
+    })(),
+
+    delta200: (() => {
+      const raw = Number(d.delta200);
+      if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
+      const p = valor, s = Number(d.sma200) || Number(d.SMA200);
+      return Number.isFinite(p) && Number.isFinite(s) && s > 0 ? (p - s) / s : null;
+    })(),
+
     });
   });
   ALL_ROWS = rows;

@@ -776,6 +776,16 @@ export async function initScreen() {
         observer.disconnect();
       }
     });
+
+    // 5) Quick actions
+wireQuickActions(gruposArr);
+
+// 5.1) Modal de ajuda (liga e mostra se não tiver sido dispensado)
+wirePortfolioHelpModal();
+// dá um micro-tempo para o DOM assentar antes de abrir
+setTimeout(() => showPortfolioHelp(false), 0);
+
+
     observer.observe(document.body, { childList: true, subtree: true });
   } catch (e) {
     console.error("Erro ao carregar atividades:", e);
