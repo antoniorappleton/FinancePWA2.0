@@ -89,6 +89,64 @@
   <div id="listaAtividades"></div>
 </div>
 
+<!-- ======== Estilos locais (collapse + modal simples) ======== -->
+<style>
+  .activity-item.collapsed .activity-details { display: none; }
+  .collapse-btn { border:none; background:transparent; cursor:pointer; font-size:18px; margin-right:8px; }
+
+  .modal.hidden{display:none}
+  .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
+
+</style>
+
+<!-- ======== Modal rápido para Comprar/Vender e Editar ======== -->
+<div id="pfAddModal" class="modal hidden">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 id="pfAddTitle">Registar</h3>
+      <button id="pfAddClose" class="btn">Fechar</button>
+    </div>
+    <form id="pfAddForm">
+      <div class="modal-body">
+        <input type="hidden" id="pfDocId" />
+        <input type="hidden" id="pfTipoAcao" value="compra" />
+
+        <label>Nome</label>
+        <input id="pfNome" type="text" />
+
+        <label>Ticker</label>
+        <input id="pfTicker" type="text" />
+
+        <label>Setor</label>
+        <input id="pfSetor" type="text" />
+
+        <label>Mercado</label>
+        <input id="pfMercado" type="text" />
+
+        <label id="pfLabelPreco">Preço de compra (€)</label>
+        <input id="pfPreco" type="number" step="0.0001" />
+
+        <label>Quantidade</label>
+        <input id="pfQuantidade" type="number" step="0.0001" />
+
+        <label>Objetivo (lucro €)</label>
+        <input id="pfObjetivo" type="number" step="0.01" />
+
+        <div id="pfVendaTotalWrap" style="display:none; margin-top:8px">
+          <label style="display:flex; gap:.5rem; align-items:center">
+            <input id="pfVendaTotal" type="checkbox" />
+            Vender posição total (apaga movimentos anteriores)
+          </label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="pfAddCancel" class="btn">Cancelar</button>
+        <button type="submit" id="pfAddSave" class="btn primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal QUICK BUY/SELL (mantém o teu modal existente) -->
 <!-- ... o teu #pfAddModal aqui, sem alterações ... -->
 <!-- 📘 Ajuda das Métricas -->
@@ -146,4 +204,3 @@
     </div>
   </div>
 </div>
-
