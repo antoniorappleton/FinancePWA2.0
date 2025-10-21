@@ -571,7 +571,14 @@ async function fetchAcoes() {
       setor: canon(d.setor || ""),
       mercado: canon(d.mercado || ""),
       valorStock: valor,
-
+      evEbitda:
+        Number(d.evEbitda) ||
+        Number(d["EV/Ebitda"]) ||
+        (() => {
+          const ev = Number(d.EV) || Number(d.ev);
+          const ebt = Number(d.Ebitda) || Number(d.ebitda);
+          return (Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0) ? ev / ebt : null;
+      })(),
       dividendo: toNum(d.dividendo), // POR PAGAMENTO (média 24m)
       dividendoMedio24m: toNum(d.dividendoMedio24m), // ANUAL (média 24m)
       periodicidade: d.periodicidade || "",
@@ -716,7 +723,6 @@ function percentile(arr, p) {
 
 /** Proxy muito simples de volatilidade [0..1] se não houver `row.volatility`. */
 function proxyVol(row) {
-  // amplitude feita de movimentos curto/médio prazo (normalizados e limitados)
   const w = Math.min(1, Math.abs(asRate(row?.g1w)) * 10); // semana tem peso alto
   const m = Math.min(1, Math.abs(asRate(row?.g1m)) * 3);  // mês moderado
   const y = Math.min(1, Math.abs(asRate(row?.g1y)));      // ano menor (já anual)
@@ -746,7 +752,7 @@ function annualizeRate(row, periodoSel) {
   const BW = CFG.BLEND_WEIGHTS?.[periodoSel] || CFG.BLEND_WEIGHTS?.["1m"] || { w:0.1, m:0.75, y:0.15 };
   let r_blend = (BW.w * Rw) + (BW.m * Rm) + (BW.y * Ry);
 
-  // prudence factor (traz para o real) — ligeiramente mais conservador
+  // prudence factor (ligeiro conservadorismo)
   r_blend *= 0.75;
 
   // penalização por volatilidade (usa row.volatility ou proxy)
@@ -757,7 +763,6 @@ function annualizeRate(row, periodoSel) {
   const r_primary = (periodoSel === "1s") ? Rw : (periodoSel === "1m") ? Rm : Ry;
   const RC = CFG.REALISM_CAP || { enabled: true, trigger: 0.60, cap: 0.15 };
   if (RC.enabled && r_primary > RC.trigger) {
-    // aproximação côncava até ao cap
     const over = Math.max(0, r_primary - RC.trigger);
     const span = Math.max(1e-9, RC.cap - RC.trigger);
     const damp = 1 - Math.max(0, Math.min(1, over / span)) ** 0.75; // curva suave
@@ -771,23 +776,72 @@ function annualizeRate(row, periodoSel) {
    Scorings secundários (valuation / técnico)
 ----------------------------------------------*/
 
+/** P/E — score 0..1 (baixo melhor). Curva suave e robusta. */
 function scorePE(pe) {
-  if (!Number.isFinite(pe) || pe <= 0) return 0.4; // neutro-ligeiro
-  if (pe <= 12) return 1.0;
-  if (pe <= 15) return 0.85;
-  if (pe <= 20) return 0.70;
-  if (pe <= 25) return 0.50;
-  if (pe <= 30) return 0.35;
-  return 0.20;
+  const v = Number(pe);
+  if (!Number.isFinite(v) || v <= 0) return 0.4;  // neutro-ligeiro
+  const lo = 10, hi = 30;                         // âncoras simples
+  if (v <= lo * 0.6) return 1.0;
+  if (v >= hi * 2)   return 0.1;
+  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo))); // 0..1
+  const curve = 1 - Math.pow(t, 0.8);                       // côncava
+  return clamp(0.1 + 0.9 * curve, 0, 1);
 }
 
+/** Tendência — combinação simples de preço vs SMA50/200 e golden cross. */
 function scoreTrend(preco, sma50, sma200) {
   let t = 0;
-  if (Number.isFinite(preco) && Number.isFinite(sma50)  && preco > sma50)  t += 0.2;
-  if (Number.isFinite(preco) && Number.isFinite(sma200) && preco > sma200) t += 0.3;
-  if (Number.isFinite(sma50) && Number.isFinite(sma200) && sma50 > sma200) t += 0.1;
-  return clamp(t, 0, 0.6);
+  const p = Number(preco), s50 = Number(sma50), s200 = Number(sma200);
+  if (Number.isFinite(p) && Number.isFinite(s50)  && p > s50)  t += 0.2;
+  if (Number.isFinite(p) && Number.isFinite(s200) && p > s200) t += 0.3;
+  if (Number.isFinite(s50) && Number.isFinite(s200) && s50 > s200) t += 0.1;
+
+  // opcional: distância normalizada ao SMA50 (boost pequeno, capado)
+  if (Number.isFinite(p) && Number.isFinite(s50) && s50 > 0) {
+    const dist = clamp((p - s50) / s50, -0.2, 0.2); // ±20%
+    t += dist * 0.5;
+  }
+  return clamp(t, 0, 1);
 }
+
+/** EV/EBITDA — score 0..1 (baixo melhor), com âncoras por setor. */
+function scoreEVEBITDA(evebitda, setor) {
+  const v = Number(evebitda);
+  if (!Number.isFinite(v) || v <= 0) return 0.4; // neutro-ligeiro
+
+  const A = (CFG.EVEBITDA_ANCHORS?.[String(setor || "—")] || CFG.EVEBITDA_ANCHORS?.default || { lo: 6, hi: 20 });
+  const lo = Math.max(1, Number(A.lo) || 6);
+  const hi = Math.max(lo + 1, Number(A.hi) || 20);
+
+  if (v <= lo * 0.6) return 1.0; // muito barato
+  if (v >= hi * 2)   return 0.1; // muito caro
+
+  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo))); // 0..1
+  const curve = 1 - Math.pow(t, 0.75);                      // côncava
+  return clamp(0.1 + 0.9 * curve, 0, 1);
+}
+
+/* ---------------------------------------------
+   Estender CFG sem o redefinir (pesos e âncoras)
+----------------------------------------------*/
+
+// Peso de EV/EBITDA no blend (se ainda não existir)
+CFG.WEIGHTS = CFG.WEIGHTS || {};
+if (typeof CFG.WEIGHTS.E !== "number") CFG.WEIGHTS.E = 0.20;
+
+// Âncoras por setor para EV/EBITDA (ajusta ao teu universo)
+CFG.EVEBITDA_ANCHORS = CFG.EVEBITDA_ANCHORS || {
+  default:             { lo: 6,  hi: 20 },
+  "Tecnologia":        { lo: 8,  hi: 25 },
+  "Saúde":             { lo: 7,  hi: 22 },
+  "Consumo Cíclico":   { lo: 7,  hi: 22 },
+  "Consumo":           { lo: 7,  hi: 22 },
+  "Indústria":         { lo: 6,  hi: 20 },
+  "Financeiro":        { lo: 5,  hi: 16 },
+  "Utilities":         { lo: 5,  hi: 14 },
+  "Energia":           { lo: 5,  hi: 14 },
+  "Imobiliário":       { lo: 6,  hi: 18 },
+};
 
 /* ---------------------------------------------
    Métricas base do ativo e score composto
@@ -802,7 +856,7 @@ function calcularMetricasBase(acao, { periodo = "1m", horizonte = 1, incluirDiv 
   // desconto de fiabilidade com o tempo (cada ano -15% de confiança)
   const decay = Math.exp(-0.15 * (h - 1));
 
-  // valorização mais prudente (não usa rAnnual “full throttle”)
+  // valorização prudente (não usa rAnnual a 100%)
   const valorizacaoNoHorizonte = precoAtual * (Math.pow(1 + rAnnual * 0.8, h) - 1) * decay;
   const dividendosNoHorizonte  = (incluirDiv ? anualDiv * h : 0) * decay;
 
@@ -847,17 +901,23 @@ function prepararCandidatos(rows, { periodo, horizonte, incluirDiv, modoEstrito 
 
     const V = scorePE(c.pe);
     const T = scoreTrend(c.metrics.preco, c.sma50, c.sma200);
-    const D = scoreDividendYield(c); // definido no teu ficheiro
-    const W = CFG.WEIGHTS || { R:0.10, V:0.30, T:0.30, D:0.25, Rsk:0.05 };
+    const D = scoreDividendYield(c);                 // definido noutro ponto do ficheiro
+    const E = scoreEVEBITDA(c.evEbitda, c.setor);    // NOVO componente (valuation)
+
+    const W = CFG.WEIGHTS || { R:0.10, V:0.30, T:0.30, D:0.25, E:0.20, Rsk:0.05 };
 
     // ajuste de risco via volatilidade (ou proxy)
     const vol = Number.isFinite(c?.volatility) ? Math.max(0, Math.min(1, c.volatility)) : proxyVol(c);
     const riskAdj = 1 / (1 + 0.75 * vol); // 0.57..1
 
-    let score = clamp(W.R*R + W.V*V + W.T*T + W.D*D + (W.Rsk||0)*1.0, 0, 1);
+    let score = clamp(
+      (W.R||0)*R + (W.V||0)*V + (W.T||0)*T + (W.D||0)*D + (W.E||0)*E + (W.Rsk||0)*1.0,
+      0, 1
+    );
     score *= riskAdj;
     score *= setorFactor(c.setor); // deconcentra suavemente
-    return { ...c, score, __R: R, __V: V, __T: T, __D: D };
+
+    return { ...c, score, __R: R, __V: V, __T: T, __D: D, __E: E };
   }).filter(c => c.score > 0);
 
   return out;
@@ -902,7 +962,6 @@ function sumarizar(linhas, investimento, gasto) {
 ----------------------------------------------*/
 
 function aplicarCapsSetorETicker(allocMap, investimento, getSetorOf) {
-  // caps (usar CFG se existir, senão defaults prudentes)
   const capTicker = (CFG.CAP_PCT_POR_TICKER ?? 0.18) * investimento;
   const capSetor  = (CFG.CAP_PCT_POR_SETOR  ?? 0.30) * investimento;
 
