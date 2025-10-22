@@ -225,6 +225,7 @@ const SORT_ACCESSORS = {
   periodicidade: (r) => r.periodicidade || "",
   mes: (r) => r.mes || "",
   observacao: (r) => r.observacao || "",
+  evebitda: (r) => (Number.isFinite(r.evEbitda) ? r.evEbitda : Infinity),
 };
 function sortRows(rows) {
   if (!sortKey) return rows;
@@ -465,6 +466,21 @@ function renderTable(rows) {
   const tb = document.getElementById("anlTableBody");
   if (!tb) return;
 
+  const badgeEVEBITDA = (x, setor) => {
+    if (!Number.isFinite(x) || x <= 0)
+      return `<span class="badge muted">—</span>`;
+    // se tiveres âncoras por setor no CFG, usa-as; caso contrário, defaults
+    const A = CFG.EVEBITDA_ANCHORS?.[String(setor || "—")] ||
+      CFG.EVEBITDA_ANCHORS?.default || { lo: 6, hi: 20 };
+    const lo = Math.max(1, Number(A.lo) || 6);
+    const hi = Math.max(lo + 1, Number(A.hi) || 20);
+    let klass = "ok";
+    if (x > hi) klass = "danger"; // caro
+    else if (x >= (lo + hi) / 2) klass = "warn"; // meio-termo
+    return `<span class="badge ${klass}">${x.toFixed(2)}</span>`;
+  };
+
+
   const badgePE = (pe) => {
     if (!Number.isFinite(pe) || pe <= 0)
       return `<span class="badge muted">—</span>`;
@@ -519,9 +535,8 @@ function renderTable(rows) {
         <td>${r.setor || "—"}</td>
         <td>${r.mercado || "—"}</td>
         <td>${badgeYield(y, y24)}</td>
-        <td>${
-          Number.isFinite(r.yield24) ? `${r.yield24.toFixed(2)}%` : "—"
-        }</td>
+        
+        <td>${badgeEVEBITDA(r.evEbitda, r.setor)}</td>
         <td>${divPerTxt}</td>
         <td>${divAnualTxt}</td>
         <td>${badgePE(r.pe)}</td>
@@ -537,16 +552,16 @@ function renderTable(rows) {
     })
     .join("");
 
-  // listeners dos checkboxes de seleção
-  tb.querySelectorAll(".anlRowSel").forEach((ch) => {
-    ch.addEventListener("change", (e) => {
-      const t = e.target.getAttribute("data-ticker");
-      if (!t) return;
-      if (e.target.checked) selectedTickers.add(t);
-      else selectedTickers.delete(t);
-      updateSelCount();
+    // listeners dos checkboxes de seleção
+    tb.querySelectorAll(".anlRowSel").forEach((ch) => {
+      ch.addEventListener("change", (e) => {
+        const t = e.target.getAttribute("data-ticker");
+        if (!t) return;
+        if (e.target.checked) selectedTickers.add(t);
+        else selectedTickers.delete(t);
+        updateSelCount();
+      });
     });
-  });
 }
 
 /* =========================================================
@@ -571,14 +586,6 @@ async function fetchAcoes() {
       setor: canon(d.setor || ""),
       mercado: canon(d.mercado || ""),
       valorStock: valor,
-      evEbitda:
-        Number(d.evEbitda) ||
-        Number(d["EV/Ebitda"]) ||
-        (() => {
-          const ev = Number(d.EV) || Number(d.ev);
-          const ebt = Number(d.Ebitda) || Number(d.ebitda);
-          return (Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0) ? ev / ebt : null;
-      })(),
       dividendo: toNum(d.dividendo), // POR PAGAMENTO (média 24m)
       dividendoMedio24m: toNum(d.dividendoMedio24m), // ANUAL (média 24m)
       periodicidade: d.periodicidade || "",
@@ -595,6 +602,17 @@ async function fetchAcoes() {
       g1m: Number(d.taxaCrescimento_1mes) || 0,
       g1y: Number(d.taxaCrescimento_1ano) || 0,
 
+      evEbitda:
+        Number(d.evEbitda) ||
+        Number(d["EV/Ebitda"]) ||
+        (() => {
+          const ev = Number(d.EV) || Number(d.ev);
+          const ebt = Number(d.Ebitda) || Number(d.ebitda);
+          return Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0
+            ? ev / ebt
+            : null;
+        })(),
+
       // valuation/técnicos (podem vir como string)
       yield24: Number(d.yield24) || null, // se existir, opcional
       pe:
@@ -604,7 +622,20 @@ async function fetchAcoes() {
         null,
       sma50: Number(d.sma50) || Number(d.SMA50) || null,
       sma200: Number(d.sma200) || Number(d.SMA200) || null,
-
+      evEbitda:
+        Number(d.evEbitda) ||
+        Number(d["EV/Ebitda"]) ||
+        (() => {
+          const toNum = (x) =>
+            typeof x === "string"
+              ? Number(x.replace?.(/[, ]/g, "") || x)
+              : Number(x);
+          const ev = toNum(d.EV) || toNum(d.ev);
+          const ebt = toNum(d.Ebitda) || toNum(d.ebitda);
+          return Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0
+            ? ev / ebt
+            : null;
+        })(),
       // deltas: usa os da BD se existirem; caso contrário, calcula a partir das SMAs
       delta50: (() => {
         const raw = Number(d.delta50);
