@@ -180,46 +180,63 @@ function renderDividendoCalendario12m(arr){
 // Quick Actions (comprar/vender/editar + collapse)
 // ===============================
 function wireQuickActions(gruposArr){
-  const byTicker = new Map(gruposArr.map(g=>[g.ticker,g]));
-  const $ = (s)=>document.querySelector(s);
+  const byTicker = new Map(gruposArr.map((g) => [g.ticker, g]));
+  const $ = (s) => document.querySelector(s);
 
-  const modal   = $("#pfAddModal");
-  const title   = $("#pfAddTitle");
-  const form    = $("#pfAddForm");
-  const close   = $("#pfAddClose");
-  const cancel  = $("#pfAddCancel");
+  const modal = $("#pfAddModal");
+  const title = $("#pfAddTitle");
+  const form = $("#pfAddForm");
+  const close = $("#pfAddClose");
+  const cancel = $("#pfAddCancel");
 
   const tipoSel = $("#pfTipoAcao");
-  const labelP  = $("#pfLabelPreco");
+  const labelP = $("#pfLabelPreco");
   const vendaTotWrap = $("#pfVendaTotalWrap");
   const vendaTot = $("#pfVendaTotal");
+  // (NOVO) posição atual do ticker que está aberto no modal
+  let currentPosQty = 0;
 
+  // (NOVO) hidden onde vamos guardar a posição atual
+  // (nota: vais adicionar este hidden no HTML a seguir — depois fazemos isso)
+  const fPosAtual = document.getElementById("pfPosicaoAtual");
   const fTicker = $("#pfTicker");
-  const fNome   = $("#pfNome");
-  const fSetor  = $("#pfSetor");
-  const fMerc   = $("#pfMercado");
-  const fQtd    = $("#pfQuantidade");
-  const fPreco  = $("#pfPreco");
-  const fObj    = $("#pfObjetivo");
+  const fNome = $("#pfNome");
+  const fSetor = $("#pfSetor");
+  const fMerc = $("#pfMercado");
+  const fQtd = $("#pfQuantidade");
+  const fPreco = $("#pfPreco");
+  const fObj = $("#pfObjetivo");
 
-  function open(kind, ticker){
+  function open(kind, ticker) {
     const g = byTicker.get(ticker);
     if (!g) return;
+
+    // posição atual em carteira
+    currentPosQty = Number(g.qtd || 0);
+    if (fPosAtual) fPosAtual.value = String(currentPosQty);
+
+    // garantir que o input de quantidade fica editável
+    if (fQtd) fQtd.removeAttribute("readonly");
+
     modal?.classList.remove("hidden");
-    if (title) title.textContent = kind==="compra" ? "Comprar ativo" : "Vender ativo";
+    if (title)
+      title.textContent = kind === "compra" ? "Comprar ativo" : "Vender ativo";
     if (tipoSel) tipoSel.value = kind;
     if (fTicker) fTicker.value = g.ticker;
-    if (fNome)   fNome.value   = g.nome;
-    if (fSetor)  fSetor.value  = g.setor || "";
-    if (fMerc)   fMerc.value   = g.mercado || "";
-    if (fQtd)    fQtd.value    = "";
-    if (fPreco)  fPreco.value  = "";
-    if (fObj)    fObj.value    = g.objetivo || "";
+    if (fNome) fNome.value = g.nome;
+    if (fSetor) fSetor.value = g.setor || "";
+    if (fMerc) fMerc.value = g.mercado || "";
+    if (fQtd) fQtd.value = "";
+    if (fPreco) fPreco.value = "";
+    if (fObj) fObj.value = g.objetivo || "";
     if (vendaTot) vendaTot.checked = false;
-    if (vendaTotWrap) vendaTotWrap.style.display = kind==="venda" ? "block" : "none";
-    if (labelP) labelP.textContent = kind==="venda" ? "Preço de venda (€)" : "Preço de compra (€)";
+    if (vendaTotWrap)
+      vendaTotWrap.style.display = kind === "venda" ? "block" : "none";
+    if (labelP)
+      labelP.textContent =
+        kind === "venda" ? "Preço de venda (€)" : "Preço de compra (€)";
   }
-  function closeModal(){
+  function closeModal() {
     modal?.classList.add("hidden");
     form?.reset();
     const idHidden = document.getElementById("pfDocId");
@@ -231,18 +248,20 @@ function wireQuickActions(gruposArr){
   }
   close?.addEventListener("click", closeModal);
   cancel?.addEventListener("click", closeModal);
-  modal?.addEventListener("click", (e)=>{ if (e.target.id === "pfAddModal") closeModal(); });
+  modal?.addEventListener("click", (e) => {
+    if (e.target.id === "pfAddModal") closeModal();
+  });
 
   // BUY/SELL buttons
-  document.getElementById("listaAtividades")?.addEventListener("click",(e)=>{
+  document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
     const buy = e.target.closest?.("[data-buy]");
-    const sell= e.target.closest?.("[data-sell]");
-    if (buy)  open("compra", buy.getAttribute("data-buy"));
-    if (sell) open("venda",  sell.getAttribute("data-sell"));
+    const sell = e.target.closest?.("[data-sell]");
+    if (buy) open("compra", buy.getAttribute("data-buy"));
+    if (sell) open("venda", sell.getAttribute("data-sell"));
   });
 
   // Collapse per card
-  document.getElementById("listaAtividades")?.addEventListener("click",(e)=>{
+  document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
     const t = e.target.closest?.("[data-toggle-card]");
     if (!t) return;
     const card = t.closest(".activity-item");
@@ -251,96 +270,176 @@ function wireQuickActions(gruposArr){
   });
 
   // Edit button
-  document.getElementById("listaAtividades")?.addEventListener("click", async (e)=>{
-    const btn = e.target.closest?.("[data-edit]");
-    if (!btn) return;
-    const docId = btn.getAttribute("data-edit");
-    const ticker = btn.getAttribute("data-edit-ticker") || "";
-    if (!docId){ alert("Não encontrei o último movimento deste ticker."); return; }
+  document
+    .getElementById("listaAtividades")
+    ?.addEventListener("click", async (e) => {
+      const btn = e.target.closest?.("[data-edit]");
+      if (!btn) return;
+      const docId = btn.getAttribute("data-edit");
+      const ticker = btn.getAttribute("data-edit-ticker") || "";
+      if (!docId) {
+        alert("Não encontrei o último movimento deste ticker.");
+        return;
+      }
 
-    try{
-      const ref = doc(db, "ativos", docId);
-      const snap = await getDoc(ref);
-      if (!snap.exists()){ alert("Documento não encontrado."); return; }
-      const d = snap.data();
+      try {
+        const ref = doc(db, "ativos", docId);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          alert("Documento não encontrado.");
+          return;
+        }
+        const d = snap.data();
 
-      modal?.classList.remove("hidden");
-      if (title) title.textContent = "Editar movimento";
-      if (tipoSel) tipoSel.value = "edicao";
-      const idHidden = document.getElementById("pfDocId"); if (idHidden) idHidden.value = docId;
+        modal?.classList.remove("hidden");
+        if (title) title.textContent = "Editar movimento";
+        if (tipoSel) tipoSel.value = "edicao";
+        const idHidden = document.getElementById("pfDocId");
+        if (idHidden) idHidden.value = docId;
 
-      if (fTicker) fTicker.value = d.ticker || ticker || "";
-      if (fNome)   fNome.value   = d.nome || "";
-      if (fSetor)  fSetor.value  = d.setor || "";
-      if (fMerc)   fMerc.value   = d.mercado || "";
-      if (fQtd)    fQtd.value    = Number(d.quantidade || 0);
-      if (fPreco)  fPreco.value  = Number(d.precoCompra || 0);
-      if (fObj)    fObj.value    = Number(d.objetivoFinanceiro || 0);
+        if (fTicker) fTicker.value = d.ticker || ticker || "";
+        if (fNome) fNome.value = d.nome || "";
+        if (fSetor) fSetor.value = d.setor || "";
+        if (fMerc) fMerc.value = d.mercado || "";
+        if (fQtd) fQtd.value = Number(d.quantidade || 0);
+        if (fPreco) fPreco.value = Number(d.precoCompra || 0);
+        if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
 
-      if (labelP) labelP.textContent = "Preço (€)";
-      if (vendaTotWrap) vendaTotWrap.style.display = "none";
-    }catch(err){
-      console.error("Falha ao abrir edição:", err);
-      alert("Não foi possível abrir a edição.");
+        if (labelP) labelP.textContent = "Preço (€)";
+        if (vendaTotWrap) vendaTotWrap.style.display = "none";
+      } catch (err) {
+        console.error("Falha ao abrir edição:", err);
+        alert("Não foi possível abrir a edição.");
+      }
+    });
+
+  // Tipo muda o label e visibilidade de venda total
+  tipoSel?.addEventListener("change", () => {
+    const isVenda = tipoSel.value === "venda";
+
+    if (labelP)
+      labelP.textContent = isVenda
+        ? "Preço de venda (€)"
+        : "Preço de compra (€)";
+
+    if (vendaTotWrap) vendaTotWrap.style.display = isVenda ? "block" : "none";
+
+    // (NOVO) se não for venda, limpar estado de "venda total"
+    if (!isVenda) {
+      if (vendaTot) vendaTot.checked = false;
+      if (fQtd) {
+        fQtd.removeAttribute("readonly");
+        // se quiseres limpar também o valor, descomenta:
+        // fQtd.value = "";
+      }
     }
   });
 
-  // Tipo muda o label e visibilidade de venda total
-  tipoSel?.addEventListener("change", ()=>{
-    const isVenda = tipoSel.value==="venda";
-    if (labelP) labelP.textContent = isVenda ? "Preço de venda (€)" : "Preço de compra (€)";
-    if (vendaTotWrap) vendaTotWrap.style.display = isVenda ? "block" : "none";
+  // ===============================
+  // Venda total = fechar posição (SEM apagar histórico)
+  // ===============================
+  vendaTot?.addEventListener("change", () => {
+    const checked = !!vendaTot.checked;
+    const pos = Number(fPosAtual?.value || currentPosQty || 0);
+
+    if (!fQtd) return;
+
+    if (checked) {
+      if (!(pos > 0)) {
+        alert("Não há posição para fechar (quantidade em carteira = 0).");
+        vendaTot.checked = false;
+        return;
+      }
+
+      // preenche com a posição total
+      fQtd.value = Math.abs(pos).toString();
+      fQtd.setAttribute("readonly", "readonly");
+    } else {
+      fQtd.removeAttribute("readonly");
+      fQtd.value = "";
+    }
   });
 
   // Submit
-  form?.addEventListener("submit", async (e)=>{
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const tipo  = (tipoSel?.value || "compra").toLowerCase(); // compra | venda | edicao
-    const nome  = fNome?.value.trim() || "";
-    const ticker= fTicker?.value.trim().toUpperCase() || "";
+    const tipo = (tipoSel?.value || "compra").toLowerCase(); // compra | venda | edicao
+    const nome = fNome?.value.trim() || "";
+    const ticker = fTicker?.value.trim().toUpperCase() || "";
     const setor = fSetor?.value.trim() || "";
-    const merc  = fMerc?.value.trim() || "";
-    const qtd   = toNumStrict(fQtd?.value);
+    const merc = fMerc?.value.trim() || "";
+    const qtd = toNumStrict(fQtd?.value);
     const preco = toNumStrict(fPreco?.value);
-    const obj   = toNumStrict(fObj?.value);
+    const obj = toNumStrict(fObj?.value);
     const vendaTotal = !!vendaTot?.checked;
     const docId = (document.getElementById("pfDocId")?.value || "").trim();
 
-    try{
-      if (tipo === "edicao" && docId){
-        await updateDoc(doc(db,"ativos",docId), {
-          nome, ticker, setor, mercado: merc,
+    try {
+      if (tipo === "edicao" && docId) {
+        await updateDoc(doc(db, "ativos", docId), {
+          nome,
+          ticker,
+          setor,
+          mercado: merc,
           quantidade: Number.isFinite(qtd) ? qtd : 0,
           precoCompra: Number.isFinite(preco) ? preco : 0,
-          objetivoFinanceiro: Number.isFinite(obj) ? obj : 0
+          objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
         });
       } else {
-        if (!ticker || !nome || !Number.isFinite(qtd) || !Number.isFinite(preco) || qtd<=0 || preco<=0){
+        let qtdEfetiva = qtd;
+
+        // venda total → usar posição atual
+        if (tipo === "venda" && vendaTotal) {
+          const pos = Number(fPosAtual?.value || currentPosQty || 0);
+          qtdEfetiva = Math.abs(pos);
+
+          if (!(qtdEfetiva > 0)) {
+            alert("Não há posição para fechar (quantidade em carteira = 0).");
+            return;
+          }
+        }
+
+        // validação base
+        if (
+          !ticker ||
+          !nome ||
+          !Number.isFinite(qtdEfetiva) ||
+          !Number.isFinite(preco) ||
+          qtdEfetiva <= 0 ||
+          preco <= 0
+        ) {
           alert("Preenche Ticker, Nome, Quantidade (>0) e Preço (>0).");
           return;
         }
-        const quantidade = tipo==="venda" ? -Math.abs(qtd) : Math.abs(qtd);
+
+        // venda parcial não pode exceder a posição
+        if (tipo === "venda" && !vendaTotal) {
+          const pos = Number(fPosAtual?.value || currentPosQty || 0);
+          if (qtdEfetiva > pos) {
+            alert(`Não podes vender mais do que tens. Posição atual: ${pos}`);
+            return;
+          }
+        }
+        const quantidade =
+          tipo === "venda" ? -Math.abs(qtdEfetiva) : Math.abs(qtdEfetiva);
         const payload = {
-          tipoAcao: tipo, nome, ticker, setor, mercado: merc,
-          quantidade, precoCompra: preco,
+          tipoAcao: tipo,
+          nome,
+          ticker,
+          setor,
+          mercado: merc,
+          quantidade,
+          precoCompra: preco,
           objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
           dataCompra: serverTimestamp(),
         };
-        await addDoc(collection(db,"ativos"), payload);
-
-        if (tipo==="venda" && vendaTotal){
-          const toDelQ = query(collection(db,"ativos"), where("ticker","==",ticker));
-          const snapDel = await getDocs(toDelQ);
-          const ops = [];
-          snapDel.forEach(d => ops.push(deleteDoc(doc(db,"ativos", d.id))));
-          await Promise.all(ops);
-        }
+        await addDoc(collection(db, "ativos"), payload);
       }
 
       closeModal();
       location.reload();
-    }catch(err){
+    } catch (err) {
       console.error("❌ Erro ao guardar movimento:", err);
       alert("Não foi possível guardar. Tenta novamente.");
     }
