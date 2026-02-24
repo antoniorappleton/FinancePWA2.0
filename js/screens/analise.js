@@ -135,8 +135,8 @@ const CFG = {
   MIN_ANNUAL_RETURN: -0.8, // -80%/ano
 
   // peso dos componentes no score [0..1]
-  // R = retorno/€, V = P/E, T = tendência (SMA), D = dividend yield, Rsk = constante
-  WEIGHTS: { R: 0.1, V: 0.25, T: 0.3, D: 0.3, Rsk: 0.05 },
+  // R = retorno/€, V = P/E, T = tendência (SMA), D = dividend yield, E = EV/EBITDA, Rsk = constante
+  WEIGHTS: { R: 0.1, V: 0.2, T: 0.25, D: 0.2, E: 0.2, Rsk: 0.05 },
 
   // teto duro por ticker (usado em frações e inteiros)
   CAP_PCT_POR_TICKER: 0.15,
@@ -852,13 +852,21 @@ function scoreEVEBITDA(evebitda, setor) {
   return clamp(0.1 + 0.9 * curve, 0, 1);
 }
 
-/* ---------------------------------------------
-   Estender CFG sem o redefinir (pesos e âncoras)
-----------------------------------------------*/
+/** Dividend Yield — score 0..1 (cap em 8%). */
+function scoreDividendYield(row) {
+  let yPct = Number(row.yield);
+  if (!Number.isFinite(yPct)) {
+    const anual = Number(row.divAnual ?? anualPreferido(row)) || 0;
+    const preco = Number(row.valorStock) || 0;
+    yPct = preco > 0 ? (anual / preco) * 100 : 0;
+  }
+  const capYield = 8;
+  return clamp(yPct / capYield, 0, 1);
+}
 
-// Peso de EV/EBITDA no blend (se ainda não existir)
-CFG.WEIGHTS = CFG.WEIGHTS || {};
-if (typeof CFG.WEIGHTS.E !== "number") CFG.WEIGHTS.E = 0.20;
+/* ---------------------------------------------
+   Estender CFG — pesos e âncoras
+----------------------------------------------*/
 
 // Âncoras por setor para EV/EBITDA (ajusta ao teu universo)
 CFG.EVEBITDA_ANCHORS = CFG.EVEBITDA_ANCHORS || {
@@ -935,7 +943,7 @@ function prepararCandidatos(rows, { periodo, horizonte, incluirDiv, modoEstrito 
     const D = scoreDividendYield(c);                 // definido noutro ponto do ficheiro
     const E = scoreEVEBITDA(c.evEbitda, c.setor);    // NOVO componente (valuation)
 
-    const W = CFG.WEIGHTS || { R:0.10, V:0.30, T:0.30, D:0.25, E:0.20, Rsk:0.05 };
+    const W = CFG.WEIGHTS;
 
     // ajuste de risco via volatilidade (ou proxy)
     const vol = Number.isFinite(c?.volatility) ? Math.max(0, Math.min(1, c.volatility)) : proxyVol(c);
@@ -1185,6 +1193,20 @@ function closeReportModal() {
   document.body.style.overflow = "";
 }
 
+// === Explicação do Algoritmo (abrir/fechar) ===
+function openAlgoModal() {
+  const el = document.getElementById("anlAlgoModal");
+  el?.classList.remove("hidden");
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+}
+function closeAlgoModal() {
+  const el = document.getElementById("anlAlgoModal");
+  el?.classList.add("hidden");
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
+}
+
 function renderResultadoSimulacao(res) {
   const cont = document.getElementById("anlSimResultado");
   if (!cont) return;
@@ -1348,20 +1370,6 @@ async function renderSelectedSectorChart(rowsSelecionadas) {
 [S11] Relatório (PDF) — V2 profissional (única parte alterada)
 ========================================================= */
 
-// Helpers específicos da V2
-
-function scoreDividendYield(row) {
-  // tenta usar 'yield' já calculado; senão deriva de divAnual/preço
-  let yPct = Number(row.yield);
-  if (!Number.isFinite(yPct)) {
-    const anual = Number(row.divAnual ?? anualPreferido(row)) || 0;
-    const preco = Number(row.valorStock) || 0;
-    yPct = preco > 0 ? (anual / preco) * 100 : 0;
-  }
-  const capYield = 8; // 8% ou o que achares prudente; acima disto não ganha mais score
-  const frac = clamp(yPct / capYield, 0, 1);
-  return frac; // 0..1
-}
 
 const _fmtEUR = (n) =>
   Number(n || 0).toLocaleString("pt-PT", {
@@ -2520,12 +2528,28 @@ export async function initScreen() {
     if (e.target === e.currentTarget) closeReportModal(); // clique fora fecha
   });
 
+  // ALGORITMO — botões + clique no backdrop
+  document.getElementById("anlAlgoHelp")?.addEventListener("click", openAlgoModal);
+  document.getElementById("anlAlgoClose")?.addEventListener("click", closeAlgoModal);
+  document.getElementById("anlAlgoOk")?.addEventListener("click", closeAlgoModal);
+  document.getElementById("anlAlgoModal")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeAlgoModal();
+  });
+
+  // Mostrar aviso de algoritmo uma vez por sessão
+  if (!sessionStorage.getItem("anl_algo_seen")) {
+    setTimeout(openAlgoModal, 1000);
+    sessionStorage.setItem("anl_algo_seen", "true");
+  }
+
   // ESC fecha o modal aberto (prioridade ao relatório)
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     const rep = document.getElementById("anlReportModal");
     const sim = document.getElementById("anlSimModal");
+    const algo = document.getElementById("anlAlgoModal");
     if (_isOpen(rep)) closeReportModal();
+    else if (_isOpen(algo)) closeAlgoModal();
     else if (_isOpen(sim)) closeSimModal();
   });
 
