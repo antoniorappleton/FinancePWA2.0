@@ -69,42 +69,27 @@
         </div>
       </div>
 
-      <div class="dividend-heatmap">
-        <!-- Header com scroll horizontal sincronizado -->
-        <div class="heatmap-header">
-          <div class="cell sticky-col"></div>
-          <div id="anlHeatmapHeaderScroll" class="months-scroll">
-            <div class="months" id="anlHeatmapHeaderMonths">
-              <div class="cell">Jan</div>
-              <div class="cell">Fev</div>
-              <div class="cell">Mar</div>
-              <div class="cell">Abr</div>
-              <div class="cell">Mai</div>
-              <div class="cell">Jun</div>
-              <div class="cell">Jul</div>
-              <div class="cell">Ago</div>
-              <div class="cell">Set</div>
-              <div class="cell">Out</div>
-              <div class="cell">Nov</div>
-              <div class="cell">Dez</div>
-            </div>
-          </div>
+      <div id="anlHeatmapScroll" class="dividend-heatmap-container">
+        <div id="anlHeatmapGrid" class="dividend-heatmap-grid">
+          <!-- Header e Linhas são gerados via JS no mesmo grid -->
         </div>
-
-        <!-- Body com scroll (vertical + horizontal) -->
-        <div id="anlHeatmapBody" class="heatmap-body"></div>
       </div>
 
       <div class="legend" style="margin-top: 6px">
-        <span class="legend-item">
-          <span class="legend-box weak"></span> estimado baixo
-        </span>
-        <span class="legend-item">
-          <span class="legend-box med"></span> estimado médio
-        </span>
-        <span class="legend-item">
-          <span class="legend-box strong"></span> estimado alto
-        </span>
+        <span style="font-size: 0.85rem; margin-right: 8px">Intensidade do dividendo:</span>
+        <div class="legend-item">
+          <div class="legend-box level-1" style="background: rgba(16, 185, 129, .10); border: 1px solid var(--border);">
+          </div> Baixa
+        </div>
+        <div class="legend-item">
+          <div class="legend-box level-2" style="background: rgba(16, 185, 129, .30);"></div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-box level-3" style="background: rgba(16, 185, 129, .55);"></div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-box level-4" style="background: rgba(16, 185, 129, .80);"></div> Alta
+        </div>
       </div>
     </div>
   </div>
@@ -426,65 +411,93 @@
     background: rgba(34, 197, 94, .58)
   }
 
-  .dividend-heatmap {
+  .dividend-heatmap-container {
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 12px;
-    overflow: hidden
+    overflow: auto;
+    max-height: 500px;
+    position: relative;
   }
 
-  .dividend-heatmap .cell {
-    padding: 8px 10px;
-    border-right: 1px solid var(--border, #e5e7eb);
-    white-space: nowrap
-  }
-
-  .dividend-heatmap .heatmap-header {
+  .dividend-heatmap-grid {
     display: grid;
-    grid-template-columns: 220px 1fr;
-    background: var(--muted-bg, rgba(0, 0, 0, .03));
+    grid-template-columns: 80px repeat(12, minmax(80px, 1fr));
+  }
+
+  .dividend-heatmap-grid .cell {
+    padding: 10px 12px;
+    border-right: 1px solid var(--border, #e5e7eb);
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    background: var(--card, #fff);
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 0.9rem;
+  }
+
+  .dividend-heatmap-grid .header-cell {
     position: sticky;
     top: 0;
-    z-index: 1
+    z-index: 10;
+    background: var(--muted-bg, #f9fafb);
+    font-weight: bold;
+    border-bottom: 2px solid var(--border, #e5e7eb);
   }
 
-  .dividend-heatmap .months {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(72px, 1fr))
-  }
-
-  .months-scroll {
-    overflow: auto
-  }
-
-  .dividend-heatmap .heatmap-body {
-    max-height: 420px;
-    overflow: auto
-  }
-
-  .dividend-heatmap .row {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    border-top: 1px solid var(--border, #e5e7eb)
-  }
-
-  .dividend-heatmap .row .months {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(72px, 1fr))
-  }
-
-  .dividend-heatmap .sticky-col {
+  .dividend-heatmap-grid .sticky-col {
     position: sticky;
     left: 0;
+    z-index: 5;
     background: var(--card, #fff);
-    z-index: 2;
-    border-right: 1px solid var(--border, #e5e7eb)
+    border-right: 2px solid var(--border, #e5e7eb);
   }
 
-  .dividend-heatmap .tt {
-    position: relative
+  .dividend-heatmap-grid .header-cell.sticky-col {
+    z-index: 15;
+    background: var(--muted-bg, #f9fafb);
   }
 
-  .dividend-heatmap .tt:hover::after {
+  [data-theme="dark"] .dividend-heatmap-grid .cell {
+    background: #111;
+    border-color: rgba(255, 255, 255, .1);
+  }
+
+  [data-theme="dark"] .dividend-heatmap-grid .header-cell {
+    background: #1a1a1a;
+  }
+
+  [data-theme="dark"] .dividend-heatmap-grid .sticky-col {
+    background: #111;
+  }
+
+  [data-theme="dark"] .dividend-heatmap-grid .header-cell.sticky-col {
+    background: #1a1a1a;
+  }
+
+  /* Heatmap Colors — Vivid Gradient (Using !important to ensure visibility over theme defaults) */
+  .dividend-heatmap-grid .cell.pay-1 {
+    background: rgba(16, 185, 129, .18) !important;
+  }
+
+  .dividend-heatmap-grid .cell.pay-2 {
+    background: rgba(16, 185, 129, .35) !important;
+  }
+
+  .dividend-heatmap-grid .cell.pay-3 {
+    background: rgba(16, 185, 129, .55) !important;
+  }
+
+  .dividend-heatmap-grid .cell.pay-4 {
+    background: rgba(16, 185, 129, .85) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+  }
+
+  .tt {
+    position: relative;
+  }
+
+  .tt:hover::after {
     content: attr(data-tt);
     position: absolute;
     bottom: 100%;
@@ -492,23 +505,12 @@
     transform: translateY(-4px);
     background: rgba(0, 0, 0, .85);
     color: #fff;
-    font-size: 12px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    white-space: nowrap
-  }
-
-  .pay-weak {
-    background: rgba(34, 197, 94, .18)
-  }
-
-  .pay-med {
-    background: rgba(34, 197, 94, .38)
-  }
-
-  .pay-strong {
-    background: rgba(34, 197, 94, .58);
-    color: #fff
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 20;
+    pointer-events: none;
   }
 
   .table-scroll {

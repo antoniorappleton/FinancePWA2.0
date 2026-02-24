@@ -389,73 +389,59 @@ function mesesPagamento(periodicidade, mesTipicoIdx) {
   return [];
 }
 function renderHeatmap(rows) {
-  const body = document.getElementById("anlHeatmapBody");
-  const headMonths = document.getElementById("anlHeatmapHeaderMonths");
-  if (!body || !headMonths) return;
+  const container = document.getElementById("anlHeatmapScroll");
+  const grid = document.getElementById("anlHeatmapGrid");
+  if (!container || !grid) return;
 
-  headMonths.innerHTML = mesesPT
-    .map((m) => `<div class="cell"><strong>${m}</strong></div>`)
-    .join("");
+  // 1. Header Row
+  let html = `<div class="cell header-cell sticky-col">Ativo</div>`;
+  mesesPT.forEach((m) => {
+    html += `<div class="cell header-cell">${m.slice(0, 3)}</div>`;
+  });
 
-  // thresholds (com base em per-payment)
+  // 2. Thresholds for coloring (4 levels)
   const perPayments = rows
     .map((r) => perPayment(r))
     .filter((v) => v > 0)
     .sort((a, b) => a - b);
-  const q1 = perPayments.length
-    ? perPayments[Math.floor(perPayments.length * 0.33)]
-    : 0.01;
-  const q2 = perPayments.length
-    ? perPayments[Math.floor(perPayments.length * 0.66)]
-    : 0.02;
+  const q1 = percentile(perPayments, 0.25) || 0.01;
+  const q2 = percentile(perPayments, 0.50) || 0.02;
+  const q3 = percentile(perPayments, 0.75) || 0.03;
 
-  body.innerHTML = rows
-    .map((r) => {
-      const per = String(r.periodicidade || "n/A");
-      const idxMes = mesToIdx.get(String(r.mes || "")) ?? NaN;
-      const meses = mesesPagamento(per, idxMes);
-      const perPay = perPayment(r);
-      const klass =
-        perPay > 0
-          ? perPay <= q1
-            ? "pay-weak"
-            : perPay <= q2
-            ? "pay-med"
-            : "pay-strong"
-          : "";
-      const cells = Array.from({ length: 12 }, (_, m) => {
-        if (!meses.includes(m)) return `<div class="cell"></div>`;
-        const tt = `${r.ticker} • ${mesesPT[m]} • ~${fmtEUR(perPay)}`;
-        return `<div class="cell tt ${klass}" data-tt="${tt}">${
-          perPay ? fmtEUR(perPay) : ""
-        }</div>`;
-      }).join("");
-      const nome = r.nome ? ` <span class="muted">— ${r.nome}</span>` : "";
-      return `
-      <div class="row">
-        <div class="cell sticky-col"><strong>${r.ticker}</strong>${nome}</div>
-        <div class="months">${cells}</div>
-      </div>`;
-    })
-    .join("");
-
-  // sincroniza header ao scroll
-  const headerScroll = document.getElementById("anlHeatmapHeaderScroll");
-  const onScroll = (e) => {
-    headMonths.scrollLeft = e.target.scrollLeft;
-    headerScroll.scrollLeft = e.target.scrollLeft;
-  };
-  body.removeEventListener("scroll", onScroll);
-  body.addEventListener("scroll", onScroll, { passive: true });
-
-  // ir para Dezembro na 1ª renderização
-  setTimeout(() => {
-    const maxX = body.scrollWidth - body.clientWidth;
-    if (maxX > 0) {
-      body.scrollLeft = maxX;
-      headMonths.scrollLeft = maxX;
-      headerScroll.scrollLeft = maxX;
+  // 3. Data Rows
+  rows.forEach((r) => {
+    const per = String(r.periodicidade || "n/A");
+    const idxMes = mesToIdx.get(String(r.mes || "")) ?? NaN;
+    const meses = mesesPagamento(per, idxMes);
+    const perPay = perPayment(r);
+    
+    let klass = "";
+    if (perPay > 0) {
+      if (perPay <= q1) klass = "pay-1";
+      else if (perPay <= q2) klass = "pay-2";
+      else if (perPay <= q3) klass = "pay-3";
+      else klass = "pay-4";
     }
+
+    const tickerNome = `${r.ticker}${r.nome ? ` <span class="muted" style="font-size:0.75rem; margin-left:4px;">— ${r.nome}</span>` : ""}`;
+    html += `<div class="cell sticky-col" title="${r.ticker} — ${r.nome || ''}"><strong>${r.ticker}</strong></div>`;
+
+    for (let m = 0; m < 12; m++) {
+      if (!meses.includes(m)) {
+        html += `<div class="cell"></div>`;
+        continue;
+      }
+      const tt = `${r.ticker} • ${mesesPT[m]} • ~${fmtEUR(perPay)}`;
+      html += `<div class="cell tt ${klass}" data-tt="${tt}">${perPay ? fmtEUR(perPay) : ""}</div>`;
+    }
+  });
+
+  grid.innerHTML = html;
+
+  // 4. Initial Scroll to December
+  setTimeout(() => {
+    const maxX = container.scrollWidth - container.clientWidth;
+    if (maxX > 0) container.scrollLeft = maxX;
   }, 0);
 }
 
@@ -744,12 +730,17 @@ function countBy(arr, keyFn) {
   return map;
 }
 
-/** Percentil simples (0..1). */
+/** Percentil com interpolação linear (0..1). */
 function percentile(arr, p) {
   const a = (arr || []).filter(Number.isFinite).slice().sort((x, y) => x - y);
   if (!a.length) return 0;
-  const idx = Math.floor((a.length - 1) * Math.max(0, Math.min(1, p)));
-  return a[idx];
+  if (p <= 0) return a[0];
+  if (p >= 1) return a[a.length - 1];
+  const index = (a.length - 1) * p;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  const weight = index - lower;
+  return a[lower] * (1 - weight) + a[upper] * weight;
 }
 
 /** Proxy muito simples de volatilidade [0..1] se não houver `row.volatility`. */
