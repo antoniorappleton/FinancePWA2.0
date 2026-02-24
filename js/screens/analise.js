@@ -1343,7 +1343,7 @@ async function renderSelectedSectorChart(rowsSelecionadas) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
       cutout: "62%",
       animation: false,
       plugins: {
@@ -2345,8 +2345,10 @@ export async function initScreen() {
       return;
     }
     const selecionadas = ALL_ROWS.filter((r) => selectedTickers.has(r.ticker));
-    await renderSelectedSectorChart(selecionadas);
     openSimModal();
+    requestAnimationFrame(() => {
+      renderSelectedSectorChart(selecionadas);
+    });
   });
 
   // === Relatório (abrir/fechar) ===
