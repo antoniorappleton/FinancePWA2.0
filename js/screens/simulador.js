@@ -202,9 +202,11 @@ function calcularMediaPonderada() {
     const totalQtd = qtd1 + qtd2;
     const totalInvestido = invest1 + invest2;
     const precoMedio = totalInvestido / totalQtd;
+    const diffPreco = preco1 > 0 ? ((preco2 - preco1) / preco1) * 100 : 0;
 
     out.innerHTML = `
       <p>📊 <strong>Preço Médio:</strong> ${precoMedio.toFixed(2)} €</p>
+      <p>📈 <strong>Diferença de Preço:</strong> ${diffPreco.toFixed(2)}%</p>
       <p>📦 <strong>Total de Ações:</strong> ${totalQtd.toFixed(2)}</p>
       <p>💰 <strong>Total Investido:</strong> ${totalInvestido.toFixed(2)} €</p>
     `;
@@ -231,9 +233,11 @@ function calcularTP2() {
 
   const nAcoes = inv / tp1;
   const tp2 = tp1 + (lucro / nAcoes);
+  const crescimento = tp1 > 0 ? ((tp2 - tp1) / tp1) * 100 : 0;
 
   out.innerHTML = `
     <p>🎯 <strong>TP2 necessário:</strong> ${tp2.toFixed(2)} €</p>
+    <p>📈 <strong>Crescimento necessário:</strong> ${crescimento.toFixed(2)}%</p>
     <small>(${nAcoes.toFixed(2)} ações estimadas)</small>
   `;
 }
