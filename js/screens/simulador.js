@@ -249,7 +249,7 @@ function calcularTP2() {
 // === MOTOR LOCAL (TOP 10) — configurações mais realistas ===
 const TOP_CFG = {
   // Máximo/mínimo anual admitido depois da anualização
-  MAX_ANNUAL_RETURN: 0.35,   // antes 0.8 → agora 35%/ano
+  MAX_ANNUAL_RETURN: 0.20,   // Reduzido para 20% (mais conservador)
   MIN_ANNUAL_RETURN: -0.5,   // -50%/ano
 
   // Limite prudente por ticker (quando fracionado/inteiras)
@@ -257,14 +257,14 @@ const TOP_CFG = {
 
   // Blends por período (mantém)
   BLEND_WEIGHTS: {
-    "1s": { w: 0.60, m: 0.25, y: 0.15 }, // um pouco menos peso na semana
+    "1s": { w: 0.60, m: 0.25, y: 0.15 }, 
     "1m": { w: 0.15, m: 0.65, y: 0.20 },
     "1a": { w: 0.10, m: 0.20, y: 0.70 },
   },
 
   // Se a taxa "primária" for alta, capamos o blend
-  REALISM_CAP: { enabled: true, trigger: 0.35, cap: 0.25 }, 
-  // se a taxa primária ≥35%/ano, capar o blend a 25%/ano
+  REALISM_CAP: { enabled: true, trigger: 0.20, cap: 0.15 }, 
+  // se a taxa primária ≥20%/ano, capar o blend a 15%/ano
 };
 
 
@@ -315,6 +315,9 @@ function renderResultado(destEl, resultado, opts){
         ${opts.acoesCompletas && restante>0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
         <br/>
         <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte>1?"períodos":"período"}):</strong> ${euro(totalLucro)}
+        <span class="${totalLucro >= 0 ? "up" : "down"}" style="font-weight:bold; margin-left:8px;">
+          (${totalGasto > 0 ? (totalLucro/totalGasto*100).toFixed(2) : 0}%)
+        </span>
       </p>
       <p class="muted" style="margin-top:.3rem">
         ${opts.incluirDiv === false ? "Dividendo excluído do cálculo." : "Dividendo incluído no cálculo."}
