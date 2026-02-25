@@ -34,8 +34,9 @@
     <div class="card info">
       <div class="card-content">
         <div>
-          <p class="label">Lucro Total</p>
+          <p class="label">Lucro Atual (aberto)</p>
           <p class="value lucro-total" id="lucroTotal">€0.00</p>
+          <p id="lucroAcumulado" class="subvalue muted">—</p>
         </div>
         <div class="icon-box">
           <i class="fas fa-wallet"></i>
@@ -50,9 +51,7 @@
           <p class="value posicoes-ativas" id="posicoesAtivas">0</p>
           <p class="subvalue">
             Objetivos:
-            <span class="objetivos-financeiros" id="objetivosFinanceiros"
-              >0/0</span
-            >
+            <span class="objetivos-financeiros" id="objetivosFinanceiros">0/0</span>
           </p>
         </div>
         <div class="icon-box">
@@ -64,8 +63,9 @@
     <div class="card warning">
       <div class="card-content">
         <div>
-          <p class="label">Taxa de Sucesso</p>
+          <p class="label">Taxa de Sucesso (atual)</p>
           <p class="value taxa-sucesso" id="taxaSucesso">0%</p>
+          <p id="taxaSucessoAcumulada" class="subvalue muted">—</p>
           <p class="subvalue">
             Objetivo Total: <span id="objetivoTotal">€0.00</span>
           </p>
@@ -136,22 +136,12 @@
 
           <label>
             Nome
-            <input
-              id="nomeAtivo"
-              type="text"
-              placeholder="Ex.: Apple Inc."
-              required
-            />
+            <input id="nomeAtivo" type="text" placeholder="Ex.: Apple Inc." required />
           </label>
 
           <label>
             Ticker
-            <input
-              id="tickerAtivo"
-              type="text"
-              placeholder="Ex.: AAPL"
-              required
-            />
+            <input id="tickerAtivo" type="text" placeholder="Ex.: AAPL" required />
           </label>
 
           <label>
@@ -196,24 +186,12 @@
 
           <label>
             Quantidade
-            <input
-              id="quantidadeAtivo"
-              type="number"
-              step="0.0001"
-              min="0.0001"
-              required
-            />
+            <input id="quantidadeAtivo" type="number" step="0.0001" min="0.0001" required />
           </label>
 
           <label id="labelPreco">
             Preço da transação (€)
-            <input
-              id="precoAtivo"
-              type="number"
-              step="0.0001"
-              min="0"
-              required
-            />
+            <input id="precoAtivo" type="number" step="0.0001" min="0" required />
           </label>
 
           <label>

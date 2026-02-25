@@ -28,6 +28,17 @@
     <div class="card info">
       <div class="card-content">
         <div>
+          <p class="label">Lucro Atual (aberto)</p>
+          <p class="value" id="prtLucroTotal">€0,00</p>
+          <p id="prtLucroAcumulado" class="subvalue muted">—</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-wallet"></i></div>
+      </div>
+    </div>
+
+    <div class="card info">
+      <div class="card-content">
+        <div>
           <p class="label">Retorno global (P/L%)</p>
           <p class="value" id="prtRetorno">0%</p>
         </div>
@@ -91,12 +102,31 @@
 
 <!-- ======== Estilos locais (collapse + modal simples) ======== -->
 <style>
-  .activity-item.collapsed .activity-details { display: none; }
-  .collapse-btn { border:none; background:transparent; cursor:pointer; font-size:18px; margin-right:8px; }
+  .activity-item.collapsed .activity-details {
+    display: none;
+  }
 
-  .modal.hidden{display:none}
-  .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:9999}
+  .collapse-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    margin-right: 8px;
+  }
 
+  .modal.hidden {
+    display: none
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .4);
+    z-index: 9999
+  }
 </style>
 
 <!-- ======== Modal rápido para Comprar/Vender e Editar ======== -->
@@ -164,9 +194,11 @@
       <div class="page" style="padding:14px">
         <div class="muted" style="display:grid; gap:.6rem; line-height:1.4">
           <div><strong>Valor Total Investido</strong> — soma de todo o capital investido nas posições ativas.</div>
-          <div><strong>Rendimento anual esperado</strong> — estimativa: Σ(qtd × dividendo × pagamentos/ano) por ativo, de acordo com a periodicidade.</div>
+          <div><strong>Rendimento anual esperado</strong> — estimativa: Σ(qtd × dividendo × pagamentos/ano) por ativo,
+            de acordo com a periodicidade.</div>
           <div><strong>Retorno global (P/L%)</strong> — (Avaliação atual − Investido) / Investido.</div>
-          <div><strong>Exposição acima da SMA200</strong> — percentagem do portefólio (ponderada pelo investidor) com preço acima da média móvel 200.</div>
+          <div><strong>Exposição acima da SMA200</strong> — percentagem do portefólio (ponderada pelo investidor) com
+            preço acima da média móvel 200.</div>
 
           <hr>
 
@@ -174,17 +206,20 @@
           <div><strong>Top 5 por Investido</strong> — barras com as maiores posições (investido e lucro atual).</div>
           <div><strong>Top 5 por Yield</strong> — barras horizontais ordenadas por dividend yield atual.</div>
           <div><strong>Evolução</strong> — linha “Investido acumulado” vs “Avaliação atual”.</div>
-          <div><strong>Calendário de Dividendos (12m)</strong> — soma estimada de € por mês, com base no mês típico e periodicidade.</div>
+          <div><strong>Calendário de Dividendos (12m)</strong> — soma estimada de € por mês, com base no mês típico e
+            periodicidade.</div>
 
           <hr>
 
           <div><strong>Badges por ativo</strong>:
             <ul style="margin:.3rem 0 0 1.1rem">
-              <li><em>Yield</em> (dividendo/valorStock) e <em>Yield 24m</em> (média 24m) → indica se está ↑ acima ou ↓ abaixo da média.</li>
+              <li><em>Yield</em> (dividendo/valorStock) e <em>Yield 24m</em> (média 24m) → indica se está ↑ acima ou ↓
+                abaixo da média.</li>
               <li><em>P/E</em> (faixas: &lt;15 barato, 15–25 justo, &gt;25 caro).</li>
               <li><em>Δ50d / Δ200d</em> — variação vs. SMA 50/200.</li>
               <li><em>Semáforo</em> — tendência rápida (🟢/🟡/🔴) com base em SMA200 e crescimento de 1 mês.</li>
-              <li><em>TP2 &amp; ETA</em> — preço alvo e estimativa de tempo para lá chegar (usando a melhor taxa disponível).</li>
+              <li><em>TP2 &amp; ETA</em> — preço alvo e estimativa de tempo para lá chegar (usando a melhor taxa
+                disponível).</li>
             </ul>
           </div>
         </div>

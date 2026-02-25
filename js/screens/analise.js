@@ -26,7 +26,7 @@
 import { db } from "../firebase-config.js";
 import {
   collection,
-  getDocs,
+  onSnapshot,
   query,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -554,97 +554,79 @@ function renderTable(rows) {
    Firestore (fetch)
    ========================================================= */
 let ALL_ROWS = [];
-async function fetchAcoes() {
-  const snap = await getDocs(query(collection(db, "acoesDividendos")));
-  const rows = [];
-  snap.forEach((doc) => {
-    const d = doc.data();
-    const ticker = String(d.ticker || "").toUpperCase();
-    if (!ticker) return;
+let unsubAcoes = null;
 
-    const valor = toNum(d.valorStock);
-    const anual = toNum(d.dividendoMedio24m) || anualPreferido(d); // anual (média 24m preferida)
-    const y = computeYieldPct(anual, valor);
+function fetchAcoes() {
+  if (unsubAcoes) unsubAcoes();
 
-    rows.push({
-      ticker,
-      nome: d.nome || "",
-      setor: canon(d.setor || ""),
-      mercado: canon(d.mercado || ""),
-      valorStock: valor,
-      dividendo: toNum(d.dividendo), // POR PAGAMENTO (média 24m)
-      dividendoMedio24m: toNum(d.dividendoMedio24m), // ANUAL (média 24m)
-      periodicidade: d.periodicidade || "",
-      mes: d.mes || "",
-      observacao: d.observacao || d["Observação"] || "",
+  unsubAcoes = onSnapshot(query(collection(db, "acoesDividendos")), (snap) => {
+    const rows = [];
+    snap.forEach((doc) => {
+      const d = doc.data();
+      const ticker = String(d.ticker || "").toUpperCase();
+      if (!ticker) return;
 
-      // derivados
-      divPer: perPayment(d),
-      divAnual: anual,
-      yield: Number.isFinite(y) ? y : null,
+      const valor = toNum(d.valorStock);
+      const anual = toNum(d.dividendoMedio24m) || anualPreferido(d);
+      const y = computeYieldPct(anual, valor);
 
-      // crescimento (cuidado: podem vir strings)
-      g1w: Number(d.taxaCrescimento_1semana) || 0,
-      g1m: Number(d.taxaCrescimento_1mes) || 0,
-      g1y: Number(d.taxaCrescimento_1ano) || 0,
+      rows.push({
+        ticker,
+        nome: d.nome || "",
+        setor: canon(d.setor || ""),
+        mercado: canon(d.mercado || ""),
+        valorStock: valor,
+        dividendo: toNum(d.dividendo),
+        dividendoMedio24m: toNum(d.dividendoMedio24m),
+        periodicidade: d.periodicidade || "",
+        mes: d.mes || "",
+        observacao: d.observacao || d["Observação"] || "",
 
-      evEbitda:
-        Number(d.evEbitda) ||
-        Number(d["EV/Ebitda"]) ||
-        (() => {
-          const ev = Number(d.EV) || Number(d.ev);
-          const ebt = Number(d.Ebitda) || Number(d.ebitda);
-          return Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0
-            ? ev / ebt
-            : null;
+        divPer: perPayment(d),
+        divAnual: anual,
+        yield: Number.isFinite(y) ? y : null,
+
+        g1w: Number(d.taxaCrescimento_1semana) || 0,
+        g1m: Number(d.taxaCrescimento_1mes) || 0,
+        g1y: Number(d.taxaCrescimento_1ano) || 0,
+
+        evEbitda:
+          Number(d.evEbitda) ||
+          Number(d["EV/Ebitda"]) ||
+          (() => {
+            const ev = Number(d.EV) || Number(d.ev);
+            const ebt = Number(d.Ebitda) || Number(d.ebitda);
+            return Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0 ? ev / ebt : null;
+          })(),
+
+        yield24: Number(d.yield24) || null,
+        pe: Number(d.pe) || Number(d.peRatio) || Number(d["P/E ratio (Preço/Lucro)"]) || null,
+        sma50: Number(d.sma50) || Number(d.SMA50) || null,
+        sma200: Number(d.sma200) || Number(d.SMA200) || null,
+
+        delta50: (() => {
+          const raw = Number(d.delta50);
+          if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
+          const p = valor, s = Number(d.sma50) || Number(d.SMA50);
+          return Number.isFinite(p) && Number.isFinite(s) && s > 0 ? (p - s) / s : null;
         })(),
 
-      // valuation/técnicos (podem vir como string)
-      yield24: Number(d.yield24) || null, // se existir, opcional
-      pe:
-        Number(d.pe) ||
-        Number(d.peRatio) ||
-        Number(d["P/E ratio (Preço/Lucro)"]) ||
-        null,
-      sma50: Number(d.sma50) || Number(d.SMA50) || null,
-      sma200: Number(d.sma200) || Number(d.SMA200) || null,
-      evEbitda:
-        Number(d.evEbitda) ||
-        Number(d["EV/Ebitda"]) ||
-        (() => {
-          const toNum = (x) =>
-            typeof x === "string"
-              ? Number(x.replace?.(/[, ]/g, "") || x)
-              : Number(x);
-          const ev = toNum(d.EV) || toNum(d.ev);
-          const ebt = toNum(d.Ebitda) || toNum(d.ebitda);
-          return Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0
-            ? ev / ebt
-            : null;
+        delta200: (() => {
+          const raw = Number(d.delta200);
+          if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
+          const p = valor, s = Number(d.sma200) || Number(d.SMA200);
+          return Number.isFinite(p) && Number.isFinite(s) && s > 0 ? (p - s) / s : null;
         })(),
-      // deltas: usa os da BD se existirem; caso contrário, calcula a partir das SMAs
-      delta50: (() => {
-        const raw = Number(d.delta50);
-        if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw; // aceita 9.1 ou 0.091
-        const p = valor,
-          s = Number(d.sma50) || Number(d.SMA50);
-        return Number.isFinite(p) && Number.isFinite(s) && s > 0
-          ? (p - s) / s
-          : null;
-      })(),
-
-      delta200: (() => {
-        const raw = Number(d.delta200);
-        if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
-        const p = valor,
-          s = Number(d.sma200) || Number(d.SMA200);
-        return Number.isFinite(p) && Number.isFinite(s) && s > 0
-          ? (p - s) / s
-          : null;
-      })(),
+      });
     });
+    ALL_ROWS = rows;
+    
+    // Atualizar UI automaticamente se já estivermos inicializados
+    if (document.getElementById("anlTable")) {
+      populateFilters();
+      applyFilters();
+    }
   });
-  ALL_ROWS = rows;
 }
 
 /* =========================================================
@@ -2264,8 +2246,7 @@ export async function initScreen() {
     return;
   }
 
-  await fetchAcoes();
-  populateFilters();
+  fetchAcoes();
 
   // Ordenação
   document.querySelectorAll("#anlTable thead th.sortable").forEach((th) => {

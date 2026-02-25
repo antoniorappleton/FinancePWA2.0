@@ -1,8 +1,11 @@
 // js/screens/dashboard.js
 import { db } from "../firebase-config.js";
 import {
-  getDocs, collection, query, orderBy, limit, addDoc, serverTimestamp
+  onSnapshot, collection, query, orderBy, limit, addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+let lastAtivosSnap = null;
+let lastAcoesSnap = null;
 
 export async function initScreen() {
   console.log("✅ dashboard.js iniciado");
@@ -14,100 +17,142 @@ export async function initScreen() {
   const posicoesEl      = document.getElementById("posicoesAtivas");
   const objetivosEl     = document.getElementById("objetivosFinanceiros");
   const taxaSucessoEl   = document.getElementById("taxaSucesso");
-  const objetivoTotalEl = document.getElementById("objetivoTotal");
+  const objectiveTotalEl = document.getElementById("objetivoTotal");
   const valorCarteiraEl = document.getElementById("valorCarteira");
 
-  // --- ACUMULADORES ---
-  let totalInvestido = 0;
-  let totalLucro = 0;
-  let objetivoFinanceiroTotal = 0;
-  let objetivosAtingidos = 0;
+  // Função interna para atualizar KPIs baseada nos snapshots guardados
+  const atualizarKPIs = () => {
+    if (!lastAtivosSnap || !lastAcoesSnap) return;
 
-  try {
-    // 1) Buscar ativos e preços atuais
-    const [ativosSnapshot, acoesSnapshot] = await Promise.all([
-      getDocs(collection(db, "ativos")),
-      getDocs(collection(db, "acoesDividendos")),
-    ]);
+    let totalInvestido = 0;
+    let lucroNaoRealizadoTotal = 0;
+    let lucroRealizadoTotal = 0;
+    let objetivoFinanceiroTotal = 0;
+    let objetivosAtingidos = 0;
 
     // Mapa de preços atuais por TICKER
     const valorAtualMap = new Map();
-    acoesSnapshot.forEach((doc) => {
+    lastAcoesSnap.forEach((doc) => {
       const d = doc.data();
       if (d.ticker && typeof d.valorStock === "number") {
         valorAtualMap.set(String(d.ticker).toUpperCase(), d.valorStock);
       }
     });
 
-    // Agrupar ativos por TICKER
+    // Agrupar ativos por TICKER — Seguindo a lógica de Média Ponderada
     const agrupadoPorTicker = new Map();
+    
+    // Processar cronologicamente para calcular o lucro realizado corretamente
+    const movimentosArr = [];
+    lastAtivosSnap.forEach(doc => {
+      const d = doc.data();
+      const dt = d.dataCompra && typeof d.dataCompra.toDate === "function" ? d.dataCompra.toDate() : new Date(0);
+      movimentosArr.push({ ...d, id: doc.id, date: dt });
+    });
+    movimentosArr.sort((a,b) => a.date - b.date);
 
-    ativosSnapshot.forEach((doc) => {
-      const a = doc.data();
+    movimentosArr.forEach((a) => {
       const ticker = (a.ticker || "").toUpperCase();
       if (!ticker) return;
 
-      const grupo = agrupadoPorTicker.get(ticker) || {
+      const g = agrupadoPorTicker.get(ticker) || {
         quantidade: 0,
+        custoMedio: 0,
         investimento: 0,
+        realizado: 0,
         objetivoFinanceiro: 0,
         objetivoDefinido: false,
       };
 
-      const quantidade   = parseFloat(a.quantidade || 0);
-      const precoCompra  = parseFloat(a.precoCompra || 0);
-      const objetivo     = parseFloat(a.objetivoFinanceiro || 0);
+      const q = parseFloat(a.quantidade || 0);
+      const p = parseFloat(a.precoCompra || 0);
+      const obj = parseFloat(a.objetivoFinanceiro || 0);
 
-      grupo.quantidade   += quantidade;
-      grupo.investimento += precoCompra * quantidade;
-
-      // objetivo conta uma única vez por ticker
-      if (!grupo.objetivoDefinido && objetivo > 0) {
-        grupo.objetivoFinanceiro = objetivo;
-        grupo.objetivoDefinido   = true;
+      if (q > 0) {
+        // Compra: atualiza custo médio
+        const totalAntes = g.quantidade * g.custoMedio;
+        const totalCompra = q * p;
+        const novaQtd = g.quantidade + q;
+        g.custoMedio = novaQtd > 0 ? (totalAntes + totalCompra) / novaQtd : 0;
+        g.quantidade = novaQtd;
+      } else if (q < 0) {
+        // Venda: realiza lucro com base no custo médio
+        const sellQtd = Math.abs(q);
+        const lucroVenda = (p - g.custoMedio) * sellQtd;
+        g.realizado += lucroVenda;
+        g.quantidade -= sellQtd;
+        if (g.quantidade <= 0) {
+          g.quantidade = 0;
+          g.custoMedio = 0;
+        }
       }
 
-      agrupadoPorTicker.set(ticker, grupo);
+      g.investimento = g.quantidade * g.custoMedio;
+
+      if (!g.objetivoDefinido && obj > 0) {
+        g.objetivoFinanceiro = obj;
+        g.objetivoDefinido   = true;
+      }
+      agrupadoPorTicker.set(ticker, g);
     });
 
     let totalObjetivos = 0;
-
-    // Calcular KPIs globais
     agrupadoPorTicker.forEach((g, ticker) => {
       const precoAtual = valorAtualMap.get(ticker) || 0;
-      const atual      = g.quantidade * precoAtual;
-      const lucro      = atual - g.investimento;
+      const valorMercadoAtual = g.quantidade * precoAtual;
+      const lucroNaoRealizado = valorMercadoAtual - g.investimento;
 
       totalInvestido += g.investimento;
-      totalLucro     += lucro;
+      lucroNaoRealizadoTotal += lucroNaoRealizado;
+      lucroRealizadoTotal += g.realizado;
 
-      if (g.objetivoDefinido) {
+      if (g.objetivoDefinido && g.quantidade > 0) {
         totalObjetivos++;
         objetivoFinanceiroTotal += g.objetivoFinanceiro;
-        if (lucro >= g.objetivoFinanceiro) objetivosAtingidos++;
+        if ((lucroNaoRealizado + g.realizado) >= g.objetivoFinanceiro) objetivosAtingidos++;
       }
     });
 
-    const retorno     = totalInvestido > 0 ? (totalLucro / totalInvestido) * 100 : 0;
-    const taxaSucesso = objetivoFinanceiroTotal > 0 ? (totalLucro / objetivoFinanceiroTotal) * 100 : 0;
-    const valorCarteira = totalInvestido + totalLucro; // 💰 investido + lucro/prejuízo
+    const totalLucroAcumulado = lucroNaoRealizadoTotal + lucroRealizadoTotal;
+    const retorno = totalInvestido > 0 ? (totalLucroAcumulado / totalInvestido) * 100 : 0;
+    
+    // Taxa de Sucesso:
+    // Main (Atual): Lucro Aberto / Objetivo Total
+    // Sub (Acumulada): Lucro Acumulado / Objetivo Total
+    const taxaSucessoAtual = objetivoFinanceiroTotal > 0 ? (lucroNaoRealizadoTotal / objetivoFinanceiroTotal) * 100 : 0;
+    const taxaSucessoAcumulada = objetivoFinanceiroTotal > 0 ? (totalLucroAcumulado / objetivoFinanceiroTotal) * 100 : 0;
+    
+    const valorCarteira = totalInvestido + lucroNaoRealizadoTotal; 
 
-    // Atualizar UI
-    if (valorTotalEl)     valorTotalEl.textContent     = `€${totalInvestido.toFixed(2)}`;
-    if (lucroTotalEl)     lucroTotalEl.textContent     = `€${totalLucro.toFixed(2)}`;
-    if (retornoEl)        retornoEl.textContent        = `${retorno.toFixed(1)}%`;
-    if (posicoesEl)       posicoesEl.textContent       = agrupadoPorTicker.size;
+    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+    const lucroAcumuladoEl = document.getElementById("lucroAcumulado");
+    const taxaSucessoAcumEl = document.getElementById("taxaSucessoAcumulada");
+
+    if (valorTotalEl)     valorTotalEl.textContent     = fmtEUR.format(totalInvestido);
+    if (lucroTotalEl)     lucroTotalEl.textContent     = fmtEUR.format(lucroNaoRealizadoTotal);
+    if (lucroAcumuladoEl) lucroAcumuladoEl.textContent = `Total acumulado: ${fmtEUR.format(totalLucroAcumulado)}`;
+    if (retornoEl)        retornoEl.textContent        = totalInvestido > 0 ? `${retorno.toFixed(1)}%` : "---";
+    if (posicoesEl)       posicoesEl.textContent       = Array.from(agrupadoPorTicker.values()).filter(g => g.quantidade > 0).length;
     if (objetivosEl)      objetivosEl.textContent      = `${objetivosAtingidos}/${totalObjetivos}`;
-    if (objetivoTotalEl)  objetivoTotalEl.textContent  = `€${objetivoFinanceiroTotal.toFixed(2)}`;
-    if (taxaSucessoEl)    taxaSucessoEl.textContent    = `${taxaSucesso.toFixed(1)}%`;
-    if (valorCarteiraEl)  valorCarteiraEl.textContent  = `€${valorCarteira.toFixed(2)} valor em carteira`;
+    if (objectiveTotalEl) objectiveTotalEl.textContent = fmtEUR.format(objetivoFinanceiroTotal);
+    if (taxaSucessoEl)    taxaSucessoEl.textContent    = `${taxaSucessoAtual.toFixed(1)}%`;
+    if (taxaSucessoAcumEl) taxaSucessoAcumEl.textContent = `Total acumulado: ${taxaSucessoAcumulada.toFixed(1)}%`;
+    if (valorCarteiraEl)  valorCarteiraEl.textContent  = `${fmtEUR.format(valorCarteira)} valor em carteira`;
+  };
 
-  } catch (err) {
-    console.error("❌ Erro nos KPIs:", err);
-  }
+  // Listeners em tempo real
+  onSnapshot(collection(db, "ativos"), (snap) => {
+    lastAtivosSnap = snap;
+    atualizarKPIs();
+    // Também atualizamos a atividade recente se estivermos no dashboard
+    const contAtividade = document.getElementById("atividadeRecente");
+    if (contAtividade) carregarAtividadeRecenteSimplificada(snap);
+  });
 
-  // 2) Atividades recentes (apenas campos solicitados, sem barras) — com expand/colapse
-  await carregarAtividadeRecenteSimplificada();
+  onSnapshot(collection(db, "acoesDividendos"), (snap) => {
+    lastAcoesSnap = snap;
+    atualizarKPIs();
+  });
 
   // 3) Botões
   document.getElementById("btnOportunidades")?.addEventListener("click", openOportunidades);
@@ -199,10 +244,7 @@ export async function initScreen() {
     try {
       await addDoc(collection(db, "ativos"), payload);
       closeAddModal();
-
-      // Atualiza o painel rapidamente. Para máxima simplicidade, recarrega:
-      // (se preferires sem refresh, dá para chamar as funções de KPI e atividade novamente)
-      window.location.reload();
+      // Removido window.location.reload() - a atualização é agora em tempo real via onSnapshot
     } catch (err) {
       console.error("❌ Erro ao guardar ativo:", err);
       alert("Não foi possível guardar. Tenta novamente.");
@@ -217,14 +259,16 @@ export async function initScreen() {
 let atividadesCache = [];     // guarda todos os docs formatados
 let atividadesExpandido = false; // estado de expansão
 
-async function carregarAtividadeRecenteSimplificada() {
+async function carregarAtividadeRecenteSimplificada(snapAtivos) {
   const cont = document.getElementById("atividadeRecente");
   if (!cont) return;
 
   try {
-    // Trazemos MAIS do que 4 para já termos tudo em cache
-    const q = query(collection(db, "ativos"), orderBy("dataCompra", "desc"), limit(50));
-    const snapAtivos = await getDocs(q);
+    // Se não recebermos o snap, fazemos uma leitura única (compatibilidade)
+    if (!snapAtivos) {
+      const q = query(collection(db, "ativos"), orderBy("dataCompra", "desc"), limit(50));
+      snapAtivos = await getDocs(q);
+    }
 
     if (snapAtivos.empty) {
       cont.innerHTML = `<p class="muted">Sem atividades ainda.</p>`;
