@@ -1,7 +1,7 @@
 // js/screens/dashboard.js
 import { db } from "../firebase-config.js";
 import {
-  onSnapshot, collection, query, orderBy, limit, addDoc, serverTimestamp
+  onSnapshot, collection, query, orderBy, limit, addDoc, serverTimestamp, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let lastAtivosSnap = null;

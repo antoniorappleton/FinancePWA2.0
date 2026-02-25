@@ -82,21 +82,27 @@ export function initScreen() {
     }
   });
 
+  const authForm = $("#authForm");
   const emailEl = $("#authEmail");
   const passEl = $("#authPassword");
 
-  $("#btnSignIn")?.addEventListener("click", async () => {
+  const handleSignIn = async (e) => {
+    if (e) e.preventDefault();
     showMsg("");
     try {
       await doSignIn(emailEl.value.trim(), passEl.value);
       showMsg("Sessão iniciada.");
       document.body.classList.remove("auth-screen");
-      window.navigateTo("dashboard");
+      window.navigateTo?.("dashboard");
     } catch (e) {
       showMsg(mapAuthError(e), "error");
       console.error(e);
     }
-  });
+  };
+
+  authForm?.addEventListener("submit", handleSignIn);
+  // Mantemos o listener no botão para compatibilidade direta, embora o form submit já o cubra
+  $("#btnSignIn")?.addEventListener("click", handleSignIn);
 
   $("#btnRegister")?.addEventListener("click", async () => {
     showMsg("");
