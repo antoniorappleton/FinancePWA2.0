@@ -459,6 +459,7 @@ function wirePortfolioHelpModal(){
   const okBtn    = document.getElementById("prtHelpOK");
   const laterBtn = document.getElementById("prtHelpLater");
   const dontShow = document.getElementById("prtHelpDontShow");
+  const helpIcon = document.getElementById("btnPrtHelp");
 
   const close = (persist) => {
     if (persist && dontShow?.checked){ try{ localStorage.setItem(HELP_KEY,"1"); }catch{} }
@@ -468,10 +469,12 @@ function wirePortfolioHelpModal(){
   closeBtn?.addEventListener("click", ()=>close(false));
   laterBtn?.addEventListener("click", ()=>close(false));
   okBtn?.addEventListener("click", ()=>close(true));
+  helpIcon?.addEventListener("click", ()=>showPortfolioHelp(true));
 
   modal.addEventListener("click", (e)=>{ if (e.target===modal) close(false); });
   document.addEventListener("keydown", (e)=>{ if (!modal.classList.contains("hidden") && e.key==="Escape") close(false); });
 }
+
 function showPortfolioHelp(force=false){
   const modal = document.getElementById("prtHelpModal");
   if (!modal) return;
@@ -491,6 +494,11 @@ export async function initScreen(){
   if (!cont) return;
 
   cont.innerHTML = "A carregar…";
+  
+  // Registrar ajuda
+  wirePortfolioHelpModal();
+  showPortfolioHelp();
+
   await ensureChartJS();
 
   const handleUpdate = async () => {
