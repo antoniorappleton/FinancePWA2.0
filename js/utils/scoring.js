@@ -147,7 +147,13 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const s200 = Number(acao.SMA200 || acao.sma200 || 0);
 
   // Calculate yield
-  let yPct = Number(acao["Dividend Yield"] || acao.yield || 0);
+  let rawYield = Number(acao["Dividend Yield"] || acao.yield || 0);
+  // Se for uma fração muito pequena (ex: 0.042), converte para percentagem (4.22)
+  let yPct =
+    Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1
+      ? rawYield * 100
+      : rawYield;
+
   if (yPct === 0 && p > 0) {
     const div = Number(acao.dividendoMedio24m || acao.dividendo || 0);
     yPct = (div / p) * 100;

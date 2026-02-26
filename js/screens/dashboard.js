@@ -440,13 +440,19 @@ async function carregarTop10Crescimento(periodo = "1m") {
       const d = doc.data();
       const result = calculateLucroMaximoScore(d, periodo);
       if (d.ticker && result.score > 0) {
+        let rawYield = Number(d["Dividend Yield"] || d.yield || 0);
+        let yPct =
+          Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1
+            ? rawYield * 100
+            : rawYield;
+
         allCands.push({
           ticker: String(d.ticker).toUpperCase(),
           nome: d.nome || d.ticker,
           setor: (d.setor || "Outros").trim(),
           score: result.score,
           rAnnual: result.rAnnual,
-          yieldPct: Number(d["Dividend Yield"] || d.yield || 0),
+          yieldPct: yPct,
           raw: d,
         });
       }

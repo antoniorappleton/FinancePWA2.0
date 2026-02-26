@@ -29,7 +29,11 @@ import {
   onSnapshot,
   query,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { calculateLucroMaximoScore, annualizeRate, anualPreferido } from "../utils/scoring.js";
+import {
+  calculateLucroMaximoScore,
+  annualizeRate,
+  anualPreferido,
+} from "../utils/scoring.js";
 
 /* =========================================================
 Carregamento “on-demand” de libs (Chart.js, html2canvas, jsPDF)
@@ -554,8 +558,18 @@ function fetchAcoes() {
       if (!ticker) return;
 
       const valor = toNum(d.valorStock);
-      const anual = toNum(d.dividendoMedio24m) || anualPreferido(d);
-      const y = computeYieldPct(anual, valor);
+      const annual = toNum(d.dividendoMedio24m) || anualPreferido(d);
+      let rawYield = Number(
+        d["Dividend Yield"] || d.yield || computeYieldPct(annual, valor),
+      );
+      let yFinal =
+        Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1
+          ? rawYield * 100
+          : rawYield;
+
+      let rY24 = Number(d.yield24 || 0);
+      let y24Final =
+        Math.abs(rY24) > 0 && Math.abs(rY24) < 1 ? rY24 * 100 : rY24;
 
       rows.push({
         ticker,
@@ -571,7 +585,7 @@ function fetchAcoes() {
 
         divPer: perPayment(d),
         divAnual: anual,
-        yield: Number.isFinite(y) ? y : null,
+        yield: Number.isFinite(yFinal) ? yFinal : null,
 
         g1w: Number(d.taxaCrescimento_1semana) || 0,
         g1m: Number(d.taxaCrescimento_1mes) || 0,
@@ -588,7 +602,7 @@ function fetchAcoes() {
               : null;
           })(),
 
-        yield24: Number(d.yield24) || null,
+        yield24: y24Final || null,
         pe:
           Number(d.pe) ||
           Number(d.peRatio) ||
