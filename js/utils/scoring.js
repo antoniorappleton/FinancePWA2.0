@@ -34,7 +34,7 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
-function annualizeRate(row, periodoSel) {
+export function annualizeRate(row, periodoSel) {
   const w = asRate(row.taxaCrescimento_1semana || row.g1w);
   const m = asRate(row.taxaCrescimento_1mes || row.g1m);
   const y = asRate(row.taxaCrescimento_1ano || row.g1y);
@@ -71,7 +71,7 @@ function annualizeRate(row, periodoSel) {
   );
 }
 
-function scorePE(pe) {
+export function scorePE(pe) {
   const v = Number(pe);
   if (!Number.isFinite(v) || v <= 0) return 0.5; // Neutral default
   const lo = 10,
@@ -83,7 +83,7 @@ function scorePE(pe) {
   return clamp(0.1 + 0.9 * curve, 0, 1);
 }
 
-function scoreTrend(preco, sma50, sma200) {
+export function scoreTrend(preco, sma50, sma200) {
   let t = 0;
   const p = Number(preco),
     s50 = Number(sma50),
@@ -98,7 +98,7 @@ function scoreTrend(preco, sma50, sma200) {
   return clamp(t, 0, 1);
 }
 
-function scoreEVEBITDA(evebitda, setor) {
+export function scoreEVEBITDA(evebitda, setor) {
   const v = Number(evebitda);
   if (!Number.isFinite(v) || v <= 0) return 0.5; // Neutral default
   const A =
@@ -113,10 +113,24 @@ function scoreEVEBITDA(evebitda, setor) {
   return clamp(0.1 + 0.9 * curve, 0, 1);
 }
 
-function scoreDividendYield(yPct) {
+export function scoreDividendYield(yPct) {
   const v = Number(yPct);
   if (!Number.isFinite(v)) return 0;
   return clamp(v / 8, 0, 1);
+}
+
+/** Proxy muito simples de volatilidade [0..1] se não houver `row.volatility`. */
+export function proxyVol(row) {
+  const w = Math.min(
+    1,
+    Math.abs(asRate(row.taxaCrescimento_1semana || row.g1w)) * 10,
+  );
+  const m = Math.min(
+    1,
+    Math.abs(asRate(row.taxaCrescimento_1mes || row.g1m)) * 3,
+  );
+  const y = Math.min(1, Math.abs(asRate(row.taxaCrescimento_1ano || row.g1y)));
+  return Math.max(0, Math.min(1, (w + m + y) / 3));
 }
 
 export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
@@ -146,19 +160,41 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
 
   const W = SCORING_CFG.WEIGHTS;
 
-  // Risk adj
-  const w = asRate(acao.taxaCrescimento_1semana || acao.g1w);
-  const m = asRate(acao.taxaCrescimento_1mes || acao.g1m);
-  const y = asRate(acao.taxaCrescimento_1ano || acao.g1y);
+  // Ajuste de risco via volatilidade (ou proxy)
+  const vol = Number.isFinite(acao.volatility)
+    ? Math.max(0, Math.min(1, acao.volatility))
+    : proxyVol(acao);
+  const riskAdj = 1 / (1 + 0.75 * vol); // 0.57..1
+
   let score = clamp(
     W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + W.Rsk * 1.0,
     0,
     1,
   );
+  score *= riskAdj;
 
   return {
     score,
     rAnnual,
+    vol,
+    riskAdj,
     components: { R, V, T, D, E },
   };
+}
+/** Converte dividendos para valor anual com base na periodicidade. */
+export function anualizarDividendo(dividendoPorPagamento, periodicidade) {
+  const d = Number(dividendoPorPagamento || 0);
+  const p = String(periodicidade || "").toLowerCase();
+  if (d <= 0) return 0;
+  if (p === "mensal" || p === "monthly") return d * 12;
+  if (p === "trimestral" || p === "quarterly") return d * 4;
+  if (p === "semestral" || p === "semi-annual") return d * 2;
+  return d; // anual (ou n/a)
+}
+
+/** Retorna o dividendo anual preferido (prioriza média 24m, depois anualiza o atual). */
+export function anualPreferido(doc) {
+  const d24 = Number(doc.dividendoMedio24m || 0);
+  if (d24 > 0) return d24;
+  return anualizarDividendo(doc.dividendo, doc.periodicidade);
 }

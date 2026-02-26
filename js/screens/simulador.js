@@ -1,7 +1,10 @@
 // js/screens/simulador.js
 // Requer Chart.js incluído na página (ex.: <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>)
 
-import { getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getDocs,
+  collection,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from "../firebase-config.js";
 
 /* =========================
@@ -22,10 +25,17 @@ function toNumber(v) {
   const n = parseFloat(String(v ?? "").replace(",", "."));
   return isNaN(n) ? 0 : n;
 }
-function euro(v){ return new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(v||0); }
-function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function euro(v) {
+  return new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(v || 0);
+}
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
 function limparInputsSimulacao() {
-  ["nomeAcao","tp1","tp2","investimento","dividendo"].forEach(id => {
+  ["nomeAcao", "tp1", "tp2", "investimento", "dividendo"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
@@ -34,12 +44,18 @@ function limparInputsSimulacao() {
 /* =========================
    SIMULAÇÃO + GRÁFICO
    ========================= */
-function guardarSimulacao({ nomeAcao, tp1, tp2, valorInvestido, dividendo = 0 }) {
+function guardarSimulacao({
+  nomeAcao,
+  tp1,
+  tp2,
+  valorInvestido,
+  dividendo = 0,
+}) {
   const crescimento = tp1 > 0 ? ((tp2 - tp1) / tp1) * 100 : 0;
   const numeroAcoes = tp1 > 0 ? valorInvestido / tp1 : 0;
   const lucroValorizacao = (tp2 - tp1) * numeroAcoes;
-  const lucroDividendos  = numeroAcoes * dividendo;
-  const lucroTotal       = lucroValorizacao + lucroDividendos;
+  const lucroDividendos = numeroAcoes * dividendo;
+  const lucroTotal = lucroValorizacao + lucroDividendos;
 
   const novaSimulacao = {
     nomeAcao: (nomeAcao || "—").trim(),
@@ -84,7 +100,7 @@ function atualizarTabela() {
   mostrarTotalLucro(0);
 
   // Se clicarem nas checkboxes, recalcula automático
-  corpo.querySelectorAll(".checkbox-lucro").forEach(cb => {
+  corpo.querySelectorAll(".checkbox-lucro").forEach((cb) => {
     cb.addEventListener("change", atualizarSomaLucros);
   });
 }
@@ -98,7 +114,7 @@ function removerSimulacao(index) {
 function atualizarSomaLucros() {
   const checkboxes = document.querySelectorAll(".checkbox-lucro");
   let total = 0;
-  checkboxes.forEach(cb => {
+  checkboxes.forEach((cb) => {
     if (cb.checked) total += toNumber(cb.dataset.lucro);
   });
   mostrarTotalLucro(total);
@@ -127,8 +143,8 @@ function atualizarGrafico() {
   const canvas = document.getElementById("graficoLucro");
   if (!canvas) return;
 
-  const labels = simulacoes.map(s => s.nomeAcao);
-  const dados  = simulacoes.map(s => s.lucro);
+  const labels = simulacoes.map((s) => s.nomeAcao);
+  const dados = simulacoes.map((s) => s.lucro);
 
   if (grafico) grafico.destroy();
 
@@ -141,10 +157,14 @@ function atualizarGrafico() {
         {
           label: "Lucro (€)",
           data: dados,
-          backgroundColor: dados.map(v => v >= 0 ? "rgba(46, 204, 113, 0.6)" : "rgba(231, 76, 60, 0.6)"),
-          borderColor:     dados.map(v => v >= 0 ? "rgba(46, 204, 113, 1)"   : "rgba(231, 76, 60, 1)"),
-          borderWidth: 1
-        }
+          backgroundColor: dados.map((v) =>
+            v >= 0 ? "rgba(46, 204, 113, 0.6)" : "rgba(231, 76, 60, 0.6)",
+          ),
+          borderColor: dados.map((v) =>
+            v >= 0 ? "rgba(46, 204, 113, 1)" : "rgba(231, 76, 60, 1)",
+          ),
+          borderWidth: 1,
+        },
       ],
     },
     options: {
@@ -161,18 +181,24 @@ function atualizarGrafico() {
 function simularEGUardar() {
   document.querySelector(".tabela-scroll-wrapper")?.classList.remove("hidden");
 
-  const nome         = document.getElementById("nomeAcao")?.value?.trim();
-  const tp1          = toNumber(document.getElementById("tp1")?.value);
-  const tp2          = toNumber(document.getElementById("tp2")?.value);
+  const nome = document.getElementById("nomeAcao")?.value?.trim();
+  const tp1 = toNumber(document.getElementById("tp1")?.value);
+  const tp2 = toNumber(document.getElementById("tp2")?.value);
   const investimento = toNumber(document.getElementById("investimento")?.value);
-  const dividendo    = toNumber(document.getElementById("dividendo")?.value);
+  const dividendo = toNumber(document.getElementById("dividendo")?.value);
 
   if (!nome || tp1 <= 0 || tp2 <= 0 || investimento <= 0) {
     alert("Preenche todos os campos com valores > 0!");
     return;
   }
 
-  guardarSimulacao({ nomeAcao: nome, tp1, tp2, valorInvestido: investimento, dividendo });
+  guardarSimulacao({
+    nomeAcao: nome,
+    tp1,
+    tp2,
+    valorInvestido: investimento,
+    dividendo,
+  });
   limparInputsSimulacao(); // limpa inputs mas mantém tabela/gráfico
 }
 
@@ -190,9 +216,9 @@ function limparGrafico() {
    ========================= */
 function calcularMediaPonderada() {
   const invest1 = toNumber(document.getElementById("invest1")?.value);
-  const preco1  = toNumber(document.getElementById("preco1")?.value);
+  const preco1 = toNumber(document.getElementById("preco1")?.value);
   const invest2 = toNumber(document.getElementById("invest22")?.value);
-  const preco2  = toNumber(document.getElementById("preco2")?.value);
+  const preco2 = toNumber(document.getElementById("preco2")?.value);
 
   const out = document.getElementById("resultadoReforco");
 
@@ -220,8 +246,8 @@ function calcularMediaPonderada() {
    ========================= */
 // Fórmula: n = investimento / tp1 ; tp2 = tp1 + lucroDesejado / n
 function calcularTP2() {
-  const tp1   = toNumber(document.getElementById("tp1Input")?.value);
-  const inv   = toNumber(document.getElementById("investimentoInput")?.value);
+  const tp1 = toNumber(document.getElementById("tp1Input")?.value);
+  const inv = toNumber(document.getElementById("investimentoInput")?.value);
   const lucro = toNumber(document.getElementById("lucroDesejadoInput")?.value);
 
   const out = document.getElementById("resultadoTP2");
@@ -232,7 +258,7 @@ function calcularTP2() {
   }
 
   const nAcoes = inv / tp1;
-  const tp2 = tp1 + (lucro / nAcoes);
+  const tp2 = tp1 + lucro / nAcoes;
   const crescimento = tp1 > 0 ? ((tp2 - tp1) / tp1) * 100 : 0;
 
   out.innerHTML = `
@@ -249,48 +275,51 @@ function calcularTP2() {
 // === MOTOR LOCAL (TOP 10) — configurações mais realistas ===
 const TOP_CFG = {
   // Máximo/mínimo anual admitido depois da anualização
-  MAX_ANNUAL_RETURN: 0.20,   // Reduzido para 20% (mais conservador)
-  MIN_ANNUAL_RETURN: -0.5,   // -50%/ano
+  MAX_ANNUAL_RETURN: 0.2, // Reduzido para 20% (mais conservador)
+  MIN_ANNUAL_RETURN: -0.5, // -50%/ano
 
   // Limite prudente por ticker (quando fracionado/inteiras)
-  CAP_PCT_POR_TICKER: 0.30,  // 30% do capital por ativo
+  CAP_PCT_POR_TICKER: 0.3, // 30% do capital por ativo
 
   // Blends por período (mantém)
   BLEND_WEIGHTS: {
-    "1s": { w: 0.60, m: 0.25, y: 0.15 }, 
-    "1m": { w: 0.15, m: 0.65, y: 0.20 },
-    "1a": { w: 0.10, m: 0.20, y: 0.70 },
+    "1s": { w: 0.6, m: 0.25, y: 0.15 },
+    "1m": { w: 0.15, m: 0.65, y: 0.2 },
+    "1a": { w: 0.1, m: 0.2, y: 0.7 },
   },
 
   // Se a taxa "primária" for alta, capamos o blend
-  REALISM_CAP: { enabled: true, trigger: 0.20, cap: 0.15 }, 
+  REALISM_CAP: { enabled: true, trigger: 0.2, cap: 0.15 },
   // se a taxa primária ≥20%/ano, capar o blend a 15%/ano
 };
 
-
 const clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
-const toNum   = (x) => Number(x || 0);
+const toNum = (x) => Number(x || 0);
 
 // === Render do resultado TOP 10 (drop-in) ===
-function renderResultado(destEl, resultado, opts){
-  const { linhas, totalLucro, totalGasto, restante=0 } = resultado;
+function renderResultado(destEl, resultado, opts) {
+  const { linhas, totalLucro, totalGasto, restante = 0 } = resultado;
 
-  if (!linhas || linhas.length===0){
+  if (!linhas || linhas.length === 0) {
     destEl.innerHTML = `<div class="card"><p class="muted">Sem ações elegíveis com retorno positivo para o período selecionado.</p></div>`;
     return;
   }
 
-  const rows = linhas.map(l=>`
+  const rows = linhas
+    .map(
+      (l) => `
     <tr>
       <td>${l.nome} <span class="muted">(${l.ticker})</span></td>
       <td>${euro(l.preco)}</td>
-      <td>${l.quantidade.toFixed( opts.acoesCompletas ? 0 : 4 )}</td>
+      <td>${l.quantidade.toFixed(opts.acoesCompletas ? 0 : 4)}</td>
       <td>${euro(l.investido)}</td>
       <td>${euro(l.lucro)}</td>
-      <td>${(l.taxaPct||0).toFixed(2)}%</td>
-      <td>${euro(l.dividendoAnual||0)}/ano</td>
+      <td>${(l.taxaPct || 0).toFixed(2)}%</td>
+      <td>${euro(l.dividendoAnual || 0)}/ano</td>
     </tr>
-  `).join("");
+  `,
+    )
+    .join("");
 
   destEl.innerHTML = `
     <div class="card">
@@ -312,11 +341,11 @@ function renderResultado(destEl, resultado, opts){
       </div>
       <p style="margin-top:.6rem">
         <strong>Total investido:</strong> ${euro(totalGasto)}
-        ${opts.acoesCompletas && restante>0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
+        ${opts.acoesCompletas && restante > 0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
         <br/>
-        <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte>1?"períodos":"período"}):</strong> ${euro(totalLucro)}
+        <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte > 1 ? "períodos" : "período"}):</strong> ${euro(totalLucro)}
         <span class="${totalLucro >= 0 ? "up" : "down"}" style="font-weight:bold; margin-left:8px;">
-          (${totalGasto > 0 ? (totalLucro/totalGasto*100).toFixed(2) : 0}%)
+          (${totalGasto > 0 ? ((totalLucro / totalGasto) * 100).toFixed(2) : 0}%)
         </span>
       </p>
       <p class="muted" style="margin-top:.3rem">
@@ -326,63 +355,23 @@ function renderResultado(destEl, resultado, opts){
   `;
 }
 
+import { annualizeRate, anualPreferido } from "../utils/scoring.js";
 
-function annualizeRate_TOP(row, periodoSel) {
-  const asRate = (x) => {
-    const n = Number(x);
-    if (!Number.isFinite(n)) return 0;
-    return Math.abs(n) > 1 ? n / 100 : n; // aceita % ou fração
-  };
-  const w = asRate(row?.g1w);
-  const m = asRate(row?.g1m);
-  const y = asRate(row?.g1y);
-
-  const rw = Math.pow(1 + (w || 0), 52) - 1; // 1s → ano
-  const rm = Math.pow(1 + (m || 0), 12) - 1; // 1m → ano
-  const ry = y || 0;                         // 1a → ano
-
-  const clampAnnual = (r) => clamp2(r, TOP_CFG.MIN_ANNUAL_RETURN, TOP_CFG.MAX_ANNUAL_RETURN);
-  const Rw = clampAnnual(rw), Rm = clampAnnual(rm), Ry = clampAnnual(ry);
-
-  const BW = TOP_CFG.BLEND_WEIGHTS[periodoSel] || TOP_CFG.BLEND_WEIGHTS["1m"];
-  const r_blend = (BW.w * Rw) + (BW.m * Rm) + (BW.y * Ry);
-
-  // corta exageros se a taxa primária for “irrealista”
-  const r_primary = (periodoSel === "1s") ? Rw : (periodoSel === "1m") ? Rm : Ry;
-  if (TOP_CFG.REALISM_CAP?.enabled && r_primary >= TOP_CFG.REALISM_CAP.trigger) {
-  return Math.min(r_blend, TOP_CFG.REALISM_CAP.cap);
-  }
-
-  return r_blend;
-}
-
-function anualizarDividendo_TOP(dividendoPorPagamento, periodicidade){
-  const d = toNum(dividendoPorPagamento);
-  const p = String(periodicidade||"").toLowerCase();
-  if (d <= 0) return 0;
-  if (p === "mensal") return d * 12;
-  if (p === "trimestral") return d * 4;
-  if (p === "semestral") return d * 2;
-  return d; // anual (ou n/a)
-}
-function anualPreferido_TOP(doc){
-  const d24 = toNum(doc.dividendoMedio24m);
-  if (d24 > 0) return d24;
-  return anualizarDividendo_TOP(doc.dividendo, doc.periodicidade);
-}
-
-function calcularMetricasBase_TOP(acao, { periodo="1m", horizonte=1, incluirDiv=true } = {}){
+function calcularMetricasBase_TOP(
+  acao,
+  { periodo = "1m", horizonte = 1, incluirDiv = true } = {},
+) {
   const precoAtual = toNum(acao.valorStock);
   if (!(precoAtual > 0)) return null;
 
-  const anualDiv = toNum(acao.divAnual ?? anualPreferido_TOP(acao));
-  const rAnnual = annualizeRate_TOP(acao, periodo);
+  const anualDiv = toNum(acao.divAnual ?? anualPreferido(acao));
+  const rAnnual = annualizeRate(acao, periodo);
   const h = Math.max(1, Number(horizonte || 1));
 
   const valorizacao = precoAtual * (Math.pow(1 + rAnnual, h) - 1);
   const dividendos = incluirDiv ? anualDiv * h : 0;
   const lucroUnidade = dividendos + valorizacao;
-  const retornoPorEuro = precoAtual > 0 ? (lucroUnidade / precoAtual) : 0;
+  const retornoPorEuro = precoAtual > 0 ? lucroUnidade / precoAtual : 0;
 
   return {
     preco: precoAtual,
@@ -396,31 +385,48 @@ function calcularMetricasBase_TOP(acao, { periodo="1m", horizonte=1, incluirDiv=
 }
 
 // “Lucro Máximo” = score baseado só em retorno/€
-function prepararCandidatos_TOP(rows, { periodo, horizonte, incluirDiv, modoEstrito=true }){
-  let cands = rows.map(a => {
-      const metrics = calcularMetricasBase_TOP(a, { periodo, horizonte, incluirDiv });
+function prepararCandidatos_TOP(
+  rows,
+  { periodo, horizonte, incluirDiv, modoEstrito = true },
+) {
+  let cands = rows
+    .map((a) => {
+      const metrics = calcularMetricasBase_TOP(a, {
+        periodo,
+        horizonte,
+        incluirDiv,
+      });
       return metrics ? { ...a, metrics } : null;
-  }).filter(Boolean)
-    .filter(c => c.metrics.lucroUnidade > 0);
+    })
+    .filter(Boolean)
+    .filter((c) => c.metrics.lucroUnidade > 0);
 
   if (!cands.length) return [];
 
-  const rets = cands.map(c => c.metrics.retornoPorEuro).filter(x => x > 0 && isFinite(x));
-  const p99 = Math.max(rets.sort((x,y)=>x-y)[Math.floor((rets.length-1)*0.99)] || 1, 1e-9);
+  const rets = cands
+    .map((c) => c.metrics.retornoPorEuro)
+    .filter((x) => x > 0 && isFinite(x));
+  const p99 = Math.max(
+    rets.sort((x, y) => x - y)[Math.floor((rets.length - 1) * 0.99)] || 1,
+    1e-9,
+  );
 
-  cands = cands.map(c => {
-    const R = clamp2(c.metrics.retornoPorEuro / p99, 0, 1);
-    const score = modoEstrito ? R : R; // (se no futuro quiseres outro score, muda aqui)
-    return { ...c, score, __R: R };
-  }).filter(c => c.score > 0);
+  cands = cands
+    .map((c) => {
+      const R = clamp2(c.metrics.retornoPorEuro / p99, 0, 1);
+      const score = modoEstrito ? R : R; // (se no futuro quiseres outro score, muda aqui)
+      return { ...c, score, __R: R };
+    })
+    .filter((c) => c.score > 0);
 
   return cands;
 }
 
-function makeLinha_TOP(c, qtd){
+function makeLinha_TOP(c, qtd) {
   const investido = qtd * c.metrics.preco;
   return {
-    nome: c.nome, ticker: c.ticker,
+    nome: c.nome,
+    ticker: c.ticker,
     preco: c.metrics.preco,
     quantidade: qtd,
     investido,
@@ -432,50 +438,66 @@ function makeLinha_TOP(c, qtd){
     valorizAlloc: qtd * c.metrics.valorizacao,
   };
 }
-function sumarizar_TOP(linhas, investimento, gasto){
-  const totalLucro = linhas.reduce((s,l)=>s+l.lucro,0);
-  const totalDivAnual = linhas.reduce((s,l)=>s+l.divAnualAlloc,0);
-  const totalDivPeriodo = linhas.reduce((s,l)=>s+l.divPeriodoAlloc,0);
-  const totalValoriz = linhas.reduce((s,l)=>s+l.valorizAlloc,0);
+function sumarizar_TOP(linhas, investimento, gasto) {
+  const totalLucro = linhas.reduce((s, l) => s + l.lucro, 0);
+  const totalDivAnual = linhas.reduce((s, l) => s + l.divAnualAlloc, 0);
+  const totalDivPeriodo = linhas.reduce((s, l) => s + l.divPeriodoAlloc, 0);
+  const totalValoriz = linhas.reduce((s, l) => s + l.valorizAlloc, 0);
   return {
-    linhas, totalLucro, totalGasto: gasto,
-    totalDivAnual, totalDivPeriodo, totalValoriz,
+    linhas,
+    totalLucro,
+    totalGasto: gasto,
+    totalDivAnual,
+    totalDivPeriodo,
+    totalValoriz,
     restante: Math.max(0, investimento - gasto),
   };
 }
 
 // FRACIONADO (proporcional ao score) com cap por ticker
-function distribuirFracoes_porScore_TOP(cands, investimento){
-  const somaScore = cands.reduce((s,c)=>s+c.score,0);
-  if (!(somaScore>0)) return { linhas:[], totalLucro:0, totalGasto:0, totalDivAnual:0, totalDivPeriodo:0, totalValoriz:0, restante: investimento };
+function distribuirFracoes_porScore_TOP(cands, investimento) {
+  const somaScore = cands.reduce((s, c) => s + c.score, 0);
+  if (!(somaScore > 0))
+    return {
+      linhas: [],
+      totalLucro: 0,
+      totalGasto: 0,
+      totalDivAnual: 0,
+      totalDivPeriodo: 0,
+      totalValoriz: 0,
+      restante: investimento,
+    };
 
   const capAbs = (TOP_CFG.CAP_PCT_POR_TICKER ?? 0.35) * investimento;
-  const ord = [...cands].sort((a,b)=>b.score - a.score);
+  const ord = [...cands].sort((a, b) => b.score - a.score);
 
-  const alvos = new Map(ord.map(c => [c, (c.score/somaScore)*investimento]));
+  const alvos = new Map(
+    ord.map((c) => [c, (c.score / somaScore) * investimento]),
+  );
 
-  const alloc = new Map(); let restante = 0;
-  for (const c of ord){
+  const alloc = new Map();
+  let restante = 0;
+  for (const c of ord) {
     const alvo = alvos.get(c) || 0;
     const investido = Math.min(alvo, capAbs);
     alloc.set(c, investido);
-    if (alvo > capAbs) restante += (alvo - capAbs);
+    if (alvo > capAbs) restante += alvo - capAbs;
   }
 
   let progress = true;
-  while (restante > 1e-6 && progress){
+  while (restante > 1e-6 && progress) {
     progress = false;
-    const elig = ord.filter(c => (alloc.get(c)||0) + 1e-9 < capAbs);
+    const elig = ord.filter((c) => (alloc.get(c) || 0) + 1e-9 < capAbs);
     if (!elig.length) break;
-    const somaElig = elig.reduce((s,c)=>s+c.score,0) || 1;
+    const somaElig = elig.reduce((s, c) => s + c.score, 0) || 1;
 
-    for (const c of elig){
+    for (const c of elig) {
       if (restante <= 1e-6) break;
-      const share = (c.score/somaElig) * restante;
-      const margem = Math.max(0, capAbs - (alloc.get(c)||0));
+      const share = (c.score / somaElig) * restante;
+      const margem = Math.max(0, capAbs - (alloc.get(c) || 0));
       const add = Math.min(share, margem);
-      if (add > 1e-6){
-        alloc.set(c, (alloc.get(c)||0) + add);
+      if (add > 1e-6) {
+        alloc.set(c, (alloc.get(c) || 0) + add);
         restante -= add;
         progress = true;
       }
@@ -484,10 +506,10 @@ function distribuirFracoes_porScore_TOP(cands, investimento){
 
   const linhas = [];
   let gasto = 0;
-  for (const c of ord){
+  for (const c of ord) {
     const investido = alloc.get(c) || 0;
     if (investido <= 0) continue;
-    const qtd = (c.metrics.preco > 0) ? investido / c.metrics.preco : 0;
+    const qtd = c.metrics.preco > 0 ? investido / c.metrics.preco : 0;
     if (qtd <= 0) continue;
     linhas.push(makeLinha_TOP(c, qtd));
     gasto += investido;
@@ -496,68 +518,77 @@ function distribuirFracoes_porScore_TOP(cands, investimento){
 }
 
 // INTEIROS (cap prudente + guloso por retorno/€)
-function distribuirInteiros_porScore_capped_TOP(cands, invest){
+function distribuirInteiros_porScore_capped_TOP(cands, invest) {
   if (!(invest > 0) || !Array.isArray(cands) || cands.length === 0) {
     return { linhas: [], totalLucro: 0, totalGasto: 0, restante: invest };
   }
 
-  const ord = [...cands].sort((a,b)=>b.score - a.score);
+  const ord = [...cands].sort((a, b) => b.score - a.score);
   const n = ord.length;
   const capTop = 0.35 * invest;
 
   // targets prudentes
   const targets = new Map();
-  if (n === 1){
+  if (n === 1) {
     targets.set(ord[0], Math.min(capTop, invest));
-  } else if (n === 2){
+  } else if (n === 2) {
     targets.set(ord[0], 0.65 * invest);
     targets.set(ord[1], 0.35 * invest);
   } else {
-    const top = ord[0], rest = ord.slice(1);
-    const s = rest.reduce((x,c)=>x+c.score,0) || 1;
+    const top = ord[0],
+      rest = ord.slice(1);
+    const s = rest.reduce((x, c) => x + c.score, 0) || 1;
     const topT = Math.min(capTop, invest);
     const rem = Math.max(0, invest - topT);
     targets.set(top, topT);
     for (const c of rest) targets.set(c, rem * (c.score / s));
   }
 
-  const base = ord.map(c=>{
-    const p = c.metrics.preco, alvo = targets.get(c) || 0;
-    const q = Math.max(0, Math.floor(p>0 ? (alvo/p) : 0));
+  const base = ord.map((c) => {
+    const p = c.metrics.preco,
+      alvo = targets.get(c) || 0;
+    const q = Math.max(0, Math.floor(p > 0 ? alvo / p : 0));
     return { c, q };
   });
 
   // ✅ bug fix: usar x.c
-  let gasto = base.reduce((s,x)=>s + x.q * x.c.metrics.preco, 0);
+  let gasto = base.reduce((s, x) => s + x.q * x.c.metrics.preco, 0);
   let restante = invest - gasto;
 
-  while (restante >= Math.min(...ord.map(c=>c.metrics.preco)) - 1e-9){
-    let best = null, bestR = -Infinity;
-    for (const c of ord){
+  while (restante >= Math.min(...ord.map((c) => c.metrics.preco)) - 1e-9) {
+    let best = null,
+      bestR = -Infinity;
+    for (const c of ord) {
       const p = c.metrics.preco;
       if (p > restante + 1e-9) continue;
-      const invNow = (base.find(x=>x.c===c)?.q || 0) * p;
+      const invNow = (base.find((x) => x.c === c)?.q || 0) * p;
       if (invNow + p > capTop + 1e-9) continue;
 
       const rpe = (c.metrics.lucroUnidade || 0) / p;
-      if (rpe > bestR){ bestR = rpe; best = c; }
+      if (rpe > bestR) {
+        bestR = rpe;
+        best = c;
+      }
     }
     if (!best) break;
-    const rec = base.find(x=>x.c===best);
+    const rec = base.find((x) => x.c === best);
     rec.q += 1;
     gasto += best.metrics.preco;
     restante = invest - gasto;
   }
 
-  const linhas = base.filter(x=>x.q>0).map(x=>makeLinha_TOP(x.c, x.q));
+  const linhas = base
+    .filter((x) => x.q > 0)
+    .map((x) => makeLinha_TOP(x.c, x.q));
   return sumarizar_TOP(linhas, invest, gasto);
 }
 
-async function fetchAcoesBase(){
+async function fetchAcoesBase() {
   const snap = await getDocs(collection(db, "acoesDividendos"));
   const out = [];
-  snap.forEach(doc=>{
-    const d = doc.data(); if (!d || !d.ticker) return;
+  snap.forEach((doc) => {
+    const d = doc.data();
+    if (!d || !d.ticker) return;
     out.push({
       nome: d.nome || d.ticker,
       ticker: String(d.ticker).toUpperCase(),
@@ -570,37 +601,43 @@ async function fetchAcoesBase(){
       g1w: Number(d.taxaCrescimento_1semana || 0),
       g1m: Number(d.taxaCrescimento_1mes || 0),
       g1y: Number(d.taxaCrescimento_1ano || 0),
-      raw: d
+      raw: d,
     });
   });
   return out;
 }
 
-async function distribuirInvestimento(opts){
-  const { investimento, periodoSel, horizonte, acoesCompletas, usarTotal, incluirDiv } = opts;
-  const periodo = (periodoSel === "1ano") ? "1a" : periodoSel;
+async function distribuirInvestimento(opts) {
+  const {
+    investimento,
+    periodoSel,
+    horizonte,
+    acoesCompletas,
+    usarTotal,
+    incluirDiv,
+  } = opts;
+  const periodo = periodoSel === "1ano" ? "1a" : periodoSel;
 
   const base = await fetchAcoesBase();
 
   const cands = prepararCandidatos_TOP(base, {
     periodo,
     horizonte: Number(horizonte || 1),
-    incluirDiv: (incluirDiv ?? true),  // ← aqui
-    modoEstrito: !!usarTotal           // “Lucro Máximo” quando ligado
+    incluirDiv: incluirDiv ?? true, // ← aqui
+    modoEstrito: !!usarTotal, // “Lucro Máximo” quando ligado
   });
 
-  if (!cands.length){
+  if (!cands.length) {
     return { linhas: [], totalLucro: 0, totalGasto: 0, restante: investimento };
   }
 
   const TOP_N = 10;
-  const universo = [...cands].sort((a,b)=>b.score - a.score).slice(0, TOP_N);
+  const universo = [...cands].sort((a, b) => b.score - a.score).slice(0, TOP_N);
 
   return acoesCompletas
     ? distribuirInteiros_porScore_capped_TOP(universo, investimento)
     : distribuirFracoes_porScore_TOP(universo, investimento);
 }
-
 
 /* =========================
    EMAIL (mailto)
@@ -642,7 +679,7 @@ export function initScreen() {
   const buttons = document.querySelectorAll(".sim-sidebar .btn[data-target]");
   const panels = document.querySelectorAll(".sim-content .panel");
   function activatePanel(id) {
-    panels.forEach(p => p.classList.remove("active"));
+    panels.forEach((p) => p.classList.remove("active"));
     const t = document.getElementById(id);
     if (t) {
       t.classList.add("active");
@@ -651,7 +688,7 @@ export function initScreen() {
       }
     }
   }
-  buttons.forEach(btn => {
+  buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const targetId = btn.getAttribute("data-target");
       activatePanel(targetId);
@@ -659,7 +696,7 @@ export function initScreen() {
   });
 
   // Quick amount
-  document.querySelectorAll("[data-quick]").forEach(el => {
+  document.querySelectorAll("[data-quick]").forEach((el) => {
     el.addEventListener("click", () => {
       const v = toNumber(el.getAttribute("data-quick"));
       const investInput = document.getElementById("investimento");
@@ -668,30 +705,42 @@ export function initScreen() {
   });
 
   // Simular com gráfico
-  document.getElementById("btnSimularGrafico")?.addEventListener("click", simularEGUardar);
+  document
+    .getElementById("btnSimularGrafico")
+    ?.addEventListener("click", simularEGUardar);
 
   // 🔹 Limpar só inputs (NÃO mexe em tabela/gráfico)
-  document.getElementById("btnLimparInputs")?.addEventListener("click", limparInputsSimulacao);
+  document
+    .getElementById("btnLimparInputs")
+    ?.addEventListener("click", limparInputsSimulacao);
 
   // 🔹 Limpar gráfico + tabela (tudo)
-  document.getElementById("btnLimparGrafico")?.addEventListener("click", limparGrafico);
+  document
+    .getElementById("btnLimparGrafico")
+    ?.addEventListener("click", limparGrafico);
 
   // Enviar email
-  document.getElementById("btnEnviarEmail")?.addEventListener("click", enviarEmailResumo);
+  document
+    .getElementById("btnEnviarEmail")
+    ?.addEventListener("click", enviarEmailResumo);
 
   // Delegation: remover linha + checkboxes
-  document.querySelector("#tabelaSimulacoes tbody")?.addEventListener("click", (e) => {
-    const rm = e.target.closest(".btn-remove");
-    if (rm) {
-      const idx = parseInt(rm.dataset.index, 10);
-      if (!isNaN(idx)) removerSimulacao(idx);
-    }
-  });
+  document
+    .querySelector("#tabelaSimulacoes tbody")
+    ?.addEventListener("click", (e) => {
+      const rm = e.target.closest(".btn-remove");
+      if (rm) {
+        const idx = parseInt(rm.dataset.index, 10);
+        if (!isNaN(idx)) removerSimulacao(idx);
+      }
+    });
 
   // Reforço (média ponderada)
-  document.getElementById("btnCalcularReforco")?.addEventListener("click", calcularMediaPonderada);
+  document
+    .getElementById("btnCalcularReforco")
+    ?.addEventListener("click", calcularMediaPonderada);
   document.getElementById("btnLimparReforco")?.addEventListener("click", () => {
-    ["invest1","preco1","invest22","preco2"].forEach(id => {
+    ["invest1", "preco1", "invest22", "preco2"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
@@ -700,9 +749,11 @@ export function initScreen() {
   });
 
   // TP2
-  document.getElementById("btnCalcularTP2")?.addEventListener("click", calcularTP2);
+  document
+    .getElementById("btnCalcularTP2")
+    ?.addEventListener("click", calcularTP2);
   document.getElementById("btnLimparTP2")?.addEventListener("click", () => {
-    ["tp1Input","investimentoInput","lucroDesejadoInput"].forEach(id => {
+    ["tp1Input", "investimentoInput", "lucroDesejadoInput"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
@@ -727,34 +778,50 @@ export function initScreen() {
   });
 
   // simular
-  document.getElementById("btnSimularTop10")?.addEventListener("click", async () => {
-  const investimento = Number(document.getElementById("inputInvestimento")?.value || 0);
-  const periodoSel   = (document.getElementById("inputPeriodo")?.value || "1ano");
-  const horizonte    = Math.max(1, Number(document.getElementById("inputHorizonte")?.value || 1));
-  const usarTotal      = !!document.getElementById("chkUsarTotal")?.checked;
-  const acoesCompletas = !!document.getElementById("chkAcoesCompletas")?.checked;
-  const incluirDiv     = document.getElementById("chkIncluirDiv")
-                          ? !!document.getElementById("chkIncluirDiv").checked
-                          : true; // default: inclui dividendos
+  document
+    .getElementById("btnSimularTop10")
+    ?.addEventListener("click", async () => {
+      const investimento = Number(
+        document.getElementById("inputInvestimento")?.value || 0,
+      );
+      const periodoSel =
+        document.getElementById("inputPeriodo")?.value || "1ano";
+      const horizonte = Math.max(
+        1,
+        Number(document.getElementById("inputHorizonte")?.value || 1),
+      );
+      const usarTotal = !!document.getElementById("chkUsarTotal")?.checked;
+      const acoesCompletas =
+        !!document.getElementById("chkAcoesCompletas")?.checked;
+      const incluirDiv = document.getElementById("chkIncluirDiv")
+        ? !!document.getElementById("chkIncluirDiv").checked
+        : true; // default: inclui dividendos
 
-  if (!investimento || investimento <= 0){
-    alert("Indica o montante a investir.");
-    return;
-  }
+      if (!investimento || investimento <= 0) {
+        alert("Indica o montante a investir.");
+        return;
+      }
 
-  const opts = { investimento, periodoSel, horizonte, usarTotal, acoesCompletas, incluirDiv };
-  const box = document.getElementById("resultadoSimulacao");
-  if (box) box.innerHTML = `<div class="card">A simular…</div>`;
+      const opts = {
+        investimento,
+        periodoSel,
+        horizonte,
+        usarTotal,
+        acoesCompletas,
+        incluirDiv,
+      };
+      const box = document.getElementById("resultadoSimulacao");
+      if (box) box.innerHTML = `<div class="card">A simular…</div>`;
 
-  try{
-    const resultado = await distribuirInvestimento(opts);
-    if (box) renderResultado(box, resultado, opts);
-  }catch(err){
-    console.error(err);
-    if (box) box.innerHTML = `<div class="card"><p class="muted">Ocorreu um erro na simulação.</p></div>`;
-  }
-});
-
+      try {
+        const resultado = await distribuirInvestimento(opts);
+        if (box) renderResultado(box, resultado, opts);
+      } catch (err) {
+        console.error(err);
+        if (box)
+          box.innerHTML = `<div class="card"><p class="muted">Ocorreu um erro na simulação.</p></div>`;
+      }
+    });
 
   // limpar
   document.getElementById("btnLimparTop10")?.addEventListener("click", () => {

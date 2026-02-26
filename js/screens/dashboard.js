@@ -434,48 +434,123 @@ async function carregarTop10Crescimento(periodo = "1m") {
 
   try {
     const snap = await getDocs(collection(db, "acoesDividendos"));
-    const dataBySector = new Map();
+    const allCands = [];
 
     snap.forEach((doc) => {
       const d = doc.data();
       const result = calculateLucroMaximoScore(d, periodo);
-
-      if (d.ticker) {
-        const sector = (d.setor || "Outros").trim();
-        if (!dataBySector.has(sector)) {
-          dataBySector.set(sector, { name: sector, value: 0, children: [] });
-        }
-
-        const group = dataBySector.get(sector);
-        // Use a base of 0.15 to ensure even poor assets have enough area to be visible
-        const visualValue = 0.15 + 0.85 * Math.max(0, result.score);
-        group.value += visualValue;
-        group.children.push({
-          name: String(d.ticker).toUpperCase(),
-          fullName: d.nome || d.ticker,
-          value: visualValue,
-          colorValue: result.score,
-          growth: result.rAnnual,
-          yield: Number(d["Dividend Yield"] || d.yield || 0),
-          meta: {
-            valorStock: Number(d.valorStock || 0),
-            pe: d["P/E ratio (Preço/Lucro)"] || d.pe || "—",
-            evebitda: d["EV/Ebitda"] || d.evEbitda || "—",
-            marketCap: Number(d["Market Cap"] || d.marketCap || 0),
-            setor: d.setor,
-            mercado: d.mercado,
-            periodo: d.periodicidade,
-            divMedio: d.dividendoMedio24m,
-          },
+      if (d.ticker && result.score > 0) {
+        allCands.push({
+          ticker: String(d.ticker).toUpperCase(),
+          nome: d.nome || d.ticker,
+          setor: (d.setor || "Outros").trim(),
+          score: result.score,
+          rAnnual: result.rAnnual,
+          yieldPct: Number(d["Dividend Yield"] || d.yield || 0),
+          raw: d,
         });
       }
     });
 
+    if (!allCands.length) {
+      container.innerHTML =
+        "<div style='display:flex;align-items:center;justify-content:center;height:100%;color:#666;'>😕 Nenhuma oportunidade encontrada.</div>";
+      return;
+    }
+
+    // --- CÁLCULO DE ALOCAÇÃO COM CAPS (Simulação de 1000€ para definir área visual) ---
+    const investimentoSimulado = 1000;
+    const somaScore = allCands.reduce((s, c) => s + c.score, 0) || 1;
+    const allocMap = new Map();
+
+    // 1) Proporção inicial
+    allCands.forEach((c) => {
+      allocMap.set(c.ticker, (c.score / somaScore) * investimentoSimulado);
+    });
+
+    // 2) Aplicar caps (15% ticker, 30% setor)
+    const capTicker = 0.15 * investimentoSimulado;
+    const capSetor = 0.3 * investimentoSimulado;
+
+    // Cap Ticker
+    let excedente = 0;
+    for (const [t, v] of allocMap) {
+      if (v > capTicker) {
+        excedente += v - capTicker;
+        allocMap.set(t, capTicker);
+      }
+    }
+
+    // Redistribuição simples respeitando cap setorial (max 10 iterações)
+    let safety = 0;
+    while (excedente > 0.01 && safety++ < 10) {
+      const porSetor = new Map();
+      allCands.forEach((c) => {
+        const v = allocMap.get(c.ticker) || 0;
+        porSetor.set(c.setor, (porSetor.get(c.setor) || 0) + v);
+      });
+
+      const elegiveis = allCands.filter((c) => {
+        const v = allocMap.get(c.ticker) || 0;
+        const sV = porSetor.get(c.setor) || 0;
+        return v < capTicker - 0.01 && sV < capSetor - 0.01;
+      });
+
+      if (!elegiveis.length) break;
+
+      const somaScoreEleg = elegiveis.reduce((s, c) => s + c.score, 0) || 1;
+      let redistribuidoNestaRonda = 0;
+
+      for (const c of elegiveis) {
+        const share = (c.score / somaScoreEleg) * excedente;
+        const margemTicker = capTicker - allocMap.get(c.ticker);
+        const margemSetor = capSetor - porSetor.get(c.setor);
+        const add = Math.min(share, margemTicker, margemSetor);
+        if (add > 0) {
+          allocMap.set(c.ticker, allocMap.get(c.ticker) + add);
+          redistribuidoNestaRonda += add;
+        }
+      }
+      excedente -= redistribuidoNestaRonda;
+      if (redistribuidoNestaRonda < 0.01) break;
+    }
+
+    // --- PREPARAR DADOS PARA O TREEMAP ---
+    const dataBySector = new Map();
+    allCands.forEach((c) => {
+      if (!dataBySector.has(c.setor)) {
+        dataBySector.set(c.setor, { name: c.setor, value: 0, children: [] });
+      }
+      const group = dataBySector.get(c.setor);
+      const allocation = allocMap.get(c.ticker) || 0;
+
+      // A área visual (value) agora é a alocação calculada
+      // Mas garantimos um mínimo para não desaparecerem os pequenos
+      const visualArea = Math.max(1, allocation);
+
+      group.value += visualArea;
+      group.children.push({
+        name: c.ticker,
+        fullName: c.nome,
+        value: visualArea,
+        colorValue: c.score, // Cor continua a ser o score (qualidade)
+        growth: c.rAnnual,
+        yield: c.yieldPct,
+        meta: {
+          valorStock: Number(c.raw.valorStock || 0),
+          pe: c.raw["P/E ratio (Preço/Lucro)"] || c.raw.pe || "—",
+          evebitda: c.raw["EV/Ebitda"] || c.raw.evEbitda || "—",
+          marketCap: Number(c.raw["Market Cap"] || c.raw.marketCap || 0),
+          setor: c.setor,
+          mercado: c.raw.mercado,
+          periodo: c.raw.periodicidade,
+          divMedio: c.raw.dividendoMedio24m,
+        },
+      });
+    });
+
     const finalData = Array.from(dataBySector.values());
-    const totalAssets = finalData.reduce(
-      (sum, g) => sum + g.children.length,
-      0,
-    );
+    const totalAssets = allCands.length;
 
     if (totalAssets === 0) {
       container.innerHTML =
@@ -483,7 +558,6 @@ async function carregarTop10Crescimento(periodo = "1m") {
       return;
     }
 
-    // Calculate dynamic height: approx 15px per asset, giving more space for labels
     const dynamicHeight = Math.max(700, Math.min(3000, totalAssets * 15));
     treemapInstance.render(finalData, dynamicHeight);
   } catch (err) {

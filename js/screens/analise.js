@@ -29,6 +29,7 @@ import {
   onSnapshot,
   query,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { calculateLucroMaximoScore, annualizeRate, anualPreferido } from "../utils/scoring.js";
 
 /* =========================================================
 Carregamento “on-demand” de libs (Chart.js, html2canvas, jsPDF)
@@ -46,17 +47,17 @@ async function ensureScript(src) {
 async function ensureChartJS() {
   if (window.Chart) return;
   await ensureScript(
-    "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js",
   );
 }
 async function ensurePDFLibs() {
   if (!window.html2canvas)
     await ensureScript(
-      "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+      "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
     );
   if (!window.jspdf)
     await ensureScript(
-      "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+      "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js",
     );
 }
 
@@ -64,7 +65,7 @@ async function ensureAutoTable() {
   // só carrega o plugin se ainda não existir
   if (!window.jspdf?.autoTable) {
     await ensureScript(
-      "https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"
+      "https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js",
     );
   }
 }
@@ -161,20 +162,6 @@ window.ANL_CFG = CFG; // podes ajustar via consola se quiseres
      • dividendo         = POR PAGAMENTO (média por pagamento 24m)
      • periodicidade + mes (distribuição mensal)
    ========================================================= */
-function anualizarDividendo(dividendoPorPagamento, periodicidade) {
-  const d = toNum(dividendoPorPagamento);
-  const p = String(periodicidade || "").toLowerCase();
-  if (d <= 0) return 0;
-  if (p === "mensal") return d * 12;
-  if (p === "trimestral") return d * 4;
-  if (p === "semestral") return d * 2;
-  return d; // anual (ou n/A)
-}
-function anualPreferido(doc) {
-  const d24 = toNum(doc.dividendoMedio24m);
-  if (d24 > 0) return d24; // anual (média 24m)
-  return anualizarDividendo(doc.dividendo, doc.periodicidade);
-}
 function perPayment(doc) {
   const base = toNum(doc.dividendo); // por pagamento (média 24m)
   if (base > 0) return base;
@@ -245,7 +232,7 @@ function markSortedHeader() {
     .forEach((th) => th.classList.remove("sorted-asc", "sorted-desc"));
   if (sortKey) {
     const th = document.querySelector(
-      `#anlTable thead th[data-sort="${sortKey}"]`
+      `#anlTable thead th[data-sort="${sortKey}"]`,
     );
     if (th) th.classList.add(sortDir === "asc" ? "sorted-asc" : "sorted-desc");
   }
@@ -405,7 +392,7 @@ function renderHeatmap(rows) {
     .filter((v) => v > 0)
     .sort((a, b) => a - b);
   const q1 = percentile(perPayments, 0.25) || 0.01;
-  const q2 = percentile(perPayments, 0.50) || 0.02;
+  const q2 = percentile(perPayments, 0.5) || 0.02;
   const q3 = percentile(perPayments, 0.75) || 0.03;
 
   // 3. Data Rows
@@ -414,7 +401,7 @@ function renderHeatmap(rows) {
     const idxMes = mesToIdx.get(String(r.mes || "")) ?? NaN;
     const meses = mesesPagamento(per, idxMes);
     const perPay = perPayment(r);
-    
+
     let klass = "";
     if (perPay > 0) {
       if (perPay <= q1) klass = "pay-1";
@@ -424,7 +411,7 @@ function renderHeatmap(rows) {
     }
 
     const tickerNome = `${r.ticker}${r.nome ? ` <span class="muted" style="font-size:0.75rem; margin-left:4px;">— ${r.nome}</span>` : ""}`;
-    html += `<div class="cell sticky-col" title="${r.ticker} — ${r.nome || ''}"><strong>${r.ticker}</strong></div>`;
+    html += `<div class="cell sticky-col" title="${r.ticker} — ${r.nome || ""}"><strong>${r.ticker}</strong></div>`;
 
     for (let m = 0; m < 12; m++) {
       if (!meses.includes(m)) {
@@ -461,11 +448,11 @@ function renderTable(rows) {
     const lo = Math.max(1, Number(A.lo) || 6);
     const hi = Math.max(lo + 1, Number(A.hi) || 20);
     let klass = "ok";
-    if (x > hi) klass = "danger"; // caro
+    if (x > hi)
+      klass = "danger"; // caro
     else if (x >= (lo + hi) / 2) klass = "warn"; // meio-termo
     return `<span class="badge ${klass}">${x.toFixed(2)}</span>`;
   };
-
 
   const badgePE = (pe) => {
     if (!Number.isFinite(pe) || pe <= 0)
@@ -538,16 +525,16 @@ function renderTable(rows) {
     })
     .join("");
 
-    // listeners dos checkboxes de seleção
-    tb.querySelectorAll(".anlRowSel").forEach((ch) => {
-      ch.addEventListener("change", (e) => {
-        const t = e.target.getAttribute("data-ticker");
-        if (!t) return;
-        if (e.target.checked) selectedTickers.add(t);
-        else selectedTickers.delete(t);
-        updateSelCount();
-      });
+  // listeners dos checkboxes de seleção
+  tb.querySelectorAll(".anlRowSel").forEach((ch) => {
+    ch.addEventListener("change", (e) => {
+      const t = e.target.getAttribute("data-ticker");
+      if (!t) return;
+      if (e.target.checked) selectedTickers.add(t);
+      else selectedTickers.delete(t);
+      updateSelCount();
     });
+  });
 }
 
 /* =========================================================
@@ -596,31 +583,43 @@ function fetchAcoes() {
           (() => {
             const ev = Number(d.EV) || Number(d.ev);
             const ebt = Number(d.Ebitda) || Number(d.ebitda);
-            return Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0 ? ev / ebt : null;
+            return Number.isFinite(ev) && Number.isFinite(ebt) && ebt > 0
+              ? ev / ebt
+              : null;
           })(),
 
         yield24: Number(d.yield24) || null,
-        pe: Number(d.pe) || Number(d.peRatio) || Number(d["P/E ratio (Preço/Lucro)"]) || null,
+        pe:
+          Number(d.pe) ||
+          Number(d.peRatio) ||
+          Number(d["P/E ratio (Preço/Lucro)"]) ||
+          null,
         sma50: Number(d.sma50) || Number(d.SMA50) || null,
         sma200: Number(d.sma200) || Number(d.SMA200) || null,
 
         delta50: (() => {
           const raw = Number(d.delta50);
           if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
-          const p = valor, s = Number(d.sma50) || Number(d.SMA50);
-          return Number.isFinite(p) && Number.isFinite(s) && s > 0 ? (p - s) / s : null;
+          const p = valor,
+            s = Number(d.sma50) || Number(d.SMA50);
+          return Number.isFinite(p) && Number.isFinite(s) && s > 0
+            ? (p - s) / s
+            : null;
         })(),
 
         delta200: (() => {
           const raw = Number(d.delta200);
           if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
-          const p = valor, s = Number(d.sma200) || Number(d.SMA200);
-          return Number.isFinite(p) && Number.isFinite(s) && s > 0 ? (p - s) / s : null;
+          const p = valor,
+            s = Number(d.sma200) || Number(d.SMA200);
+          return Number.isFinite(p) && Number.isFinite(s) && s > 0
+            ? (p - s) / s
+            : null;
         })(),
       });
     });
     ALL_ROWS = rows;
-    
+
     // Atualizar UI automaticamente se já estivermos inicializados
     if (document.getElementById("anlTable")) {
       populateFilters();
@@ -647,7 +646,7 @@ function applyFilters() {
   let rows = [...ALL_ROWS];
   if (term)
     rows = rows.filter(
-      (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term)
+      (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term),
     );
   if (setor) rows = rows.filter((r) => r.setor === setor);
   if (mercado) rows = rows.filter((r) => r.mercado === mercado);
@@ -714,7 +713,10 @@ function countBy(arr, keyFn) {
 
 /** Percentil com interpolação linear (0..1). */
 function percentile(arr, p) {
-  const a = (arr || []).filter(Number.isFinite).slice().sort((x, y) => x - y);
+  const a = (arr || [])
+    .filter(Number.isFinite)
+    .slice()
+    .sort((x, y) => x - y);
   if (!a.length) return 0;
   if (p <= 0) return a[0];
   if (p >= 1) return a[a.length - 1];
@@ -725,155 +727,37 @@ function percentile(arr, p) {
   return a[lower] * (1 - weight) + a[upper] * weight;
 }
 
-/** Proxy muito simples de volatilidade [0..1] se não houver `row.volatility`. */
-function proxyVol(row) {
-  const w = Math.min(1, Math.abs(asRate(row?.g1w)) * 10); // semana tem peso alto
-  const m = Math.min(1, Math.abs(asRate(row?.g1m)) * 3);  // mês moderado
-  const y = Math.min(1, Math.abs(asRate(row?.g1y)));      // ano menor (já anual)
-  return Math.max(0, Math.min(1, (w + m + y) / 3));
-}
-
 /* ---------------------------------------------
-   Anualização prudente e cap económico suave
+   Estender CFG — pesos e âncoras (Removidos/Unificados)
 ----------------------------------------------*/
-
-/** Calcula taxa anualizada prudente a partir de g1w/g1m/g1y. */
-function annualizeRate(row, periodoSel) {
-  const w = asRate(row?.g1w);
-  const m = asRate(row?.g1m);
-  const y = asRate(row?.g1y);
-
-  // anualizações (compounding)
-  const rw = Math.pow(1 + w, 52) - 1;
-  const rm = Math.pow(1 + m, 12) - 1;
-  const ry = y || 0;
-
-  // clamp técnico (protege extremos)
-  const clampRate = (r) => clamp(r, CFG.MIN_ANNUAL_RETURN, CFG.MAX_ANNUAL_RETURN);
-  const Rw = clampRate(rw), Rm = clampRate(rm), Ry = clampRate(ry);
-
-  // mistura conforme período escolhido
-  const BW = CFG.BLEND_WEIGHTS?.[periodoSel] || CFG.BLEND_WEIGHTS?.["1m"] || { w:0.1, m:0.75, y:0.15 };
-  let r_blend = (BW.w * Rw) + (BW.m * Rm) + (BW.y * Ry);
-
-  // prudence factor (ligeiro conservadorismo)
-  r_blend *= 0.75;
-
-  // penalização por volatilidade (usa row.volatility ou proxy)
-  const vol = Number.isFinite(row?.volatility) ? Math.max(0, Math.min(1, row.volatility)) : proxyVol(row);
-  r_blend *= (1 - Math.min(0.7, 0.7 * vol)); // corta até 70% em casos muito voláteis
-
-  // cap económico "suave": limita exuberância quando o sinal primário já é muito alto
-  const r_primary = (periodoSel === "1s") ? Rw : (periodoSel === "1m") ? Rm : Ry;
-  const RC = CFG.REALISM_CAP || { enabled: true, trigger: 0.60, cap: 0.15 };
-  if (RC.enabled && r_primary > RC.trigger) {
-    const over = Math.max(0, r_primary - RC.trigger);
-    const span = Math.max(1e-9, RC.cap - RC.trigger);
-    const damp = 1 - Math.max(0, Math.min(1, over / span)) ** 0.75; // curva suave
-    r_blend = Math.min(r_blend, RC.cap * Math.max(0.5, damp));
-  }
-
-  return clamp(r_blend, CFG.MIN_ANNUAL_RETURN, CFG.MAX_ANNUAL_RETURN);
-}
-
-/* ---------------------------------------------
-   Scorings secundários (valuation / técnico)
-----------------------------------------------*/
-
-/** P/E — score 0..1 (baixo melhor). Curva suave e robusta. */
-function scorePE(pe) {
-  const v = Number(pe);
-  if (!Number.isFinite(v) || v <= 0) return 0.4;  // neutro-ligeiro
-  const lo = 10, hi = 30;                         // âncoras simples
-  if (v <= lo * 0.6) return 1.0;
-  if (v >= hi * 2)   return 0.1;
-  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo))); // 0..1
-  const curve = 1 - Math.pow(t, 0.8);                       // côncava
-  return clamp(0.1 + 0.9 * curve, 0, 1);
-}
-
-/** Tendência — combinação simples de preço vs SMA50/200 e golden cross. */
-function scoreTrend(preco, sma50, sma200) {
-  let t = 0;
-  const p = Number(preco), s50 = Number(sma50), s200 = Number(sma200);
-  if (Number.isFinite(p) && Number.isFinite(s50)  && p > s50)  t += 0.2;
-  if (Number.isFinite(p) && Number.isFinite(s200) && p > s200) t += 0.3;
-  if (Number.isFinite(s50) && Number.isFinite(s200) && s50 > s200) t += 0.1;
-
-  // opcional: distância normalizada ao SMA50 (boost pequeno, capado)
-  if (Number.isFinite(p) && Number.isFinite(s50) && s50 > 0) {
-    const dist = clamp((p - s50) / s50, -0.2, 0.2); // ±20%
-    t += dist * 0.5;
-  }
-  return clamp(t, 0, 1);
-}
-
-/** EV/EBITDA — score 0..1 (baixo melhor), com âncoras por setor. */
-function scoreEVEBITDA(evebitda, setor) {
-  const v = Number(evebitda);
-  if (!Number.isFinite(v) || v <= 0) return 0.4; // neutro-ligeiro
-
-  const A = (CFG.EVEBITDA_ANCHORS?.[String(setor || "—")] || CFG.EVEBITDA_ANCHORS?.default || { lo: 6, hi: 20 });
-  const lo = Math.max(1, Number(A.lo) || 6);
-  const hi = Math.max(lo + 1, Number(A.hi) || 20);
-
-  if (v <= lo * 0.6) return 1.0; // muito barato
-  if (v >= hi * 2)   return 0.1; // muito caro
-
-  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo))); // 0..1
-  const curve = 1 - Math.pow(t, 0.75);                      // côncava
-  return clamp(0.1 + 0.9 * curve, 0, 1);
-}
-
-/** Dividend Yield — score 0..1 (cap em 8%). */
-function scoreDividendYield(row) {
-  let yPct = Number(row.yield);
-  if (!Number.isFinite(yPct)) {
-    const anual = Number(row.divAnual ?? anualPreferido(row)) || 0;
-    const preco = Number(row.valorStock) || 0;
-    yPct = preco > 0 ? (anual / preco) * 100 : 0;
-  }
-  const capYield = 8;
-  return clamp(yPct / capYield, 0, 1);
-}
 
 /* ---------------------------------------------
    Estender CFG — pesos e âncoras
 ----------------------------------------------*/
 
-// Âncoras por setor para EV/EBITDA (ajusta ao teu universo)
-CFG.EVEBITDA_ANCHORS = CFG.EVEBITDA_ANCHORS || {
-  default:             { lo: 6,  hi: 20 },
-  "Tecnologia":        { lo: 8,  hi: 25 },
-  "Saúde":             { lo: 7,  hi: 22 },
-  "Consumo Cíclico":   { lo: 7,  hi: 22 },
-  "Consumo":           { lo: 7,  hi: 22 },
-  "Indústria":         { lo: 6,  hi: 20 },
-  "Financeiro":        { lo: 5,  hi: 16 },
-  "Utilities":         { lo: 5,  hi: 14 },
-  "Energia":           { lo: 5,  hi: 14 },
-  "Imobiliário":       { lo: 6,  hi: 18 },
-};
-
 /* ---------------------------------------------
    Métricas base do ativo e score composto
 ----------------------------------------------*/
 
-function calcularMetricasBase(acao, { periodo = "1m", horizonte = 1, incluirDiv = true } = {}) {
+function calcularMetricasBase(
+  acao,
+  { periodo = "1m", horizonte = 1, incluirDiv = true } = {},
+) {
   const precoAtual = toNum(acao.valorStock);
-  const anualDiv   = toNum(acao.divAnual ?? anualPreferido(acao)); // média 24m preferida
-  const rAnnual    = annualizeRate(acao, periodo);
-  const h          = Math.max(1, Number(horizonte || 1));
+  const anualDiv = toNum(acao.divAnual ?? anualPreferido(acao)); // média 24m preferida
+  const rAnnual = annualizeRate(acao, periodo);
+  const h = Math.max(1, Number(horizonte || 1));
 
   // desconto de fiabilidade com o tempo (cada ano -15% de confiança)
   const decay = Math.exp(-0.15 * (h - 1));
 
   // valorização prudente (não usa rAnnual a 100%)
-  const valorizacaoNoHorizonte = precoAtual * (Math.pow(1 + rAnnual * 0.8, h) - 1) * decay;
-  const dividendosNoHorizonte  = (incluirDiv ? anualDiv * h : 0) * decay;
+  const valorizacaoNoHorizonte =
+    precoAtual * (Math.pow(1 + rAnnual * 0.8, h) - 1) * decay;
+  const dividendosNoHorizonte = (incluirDiv ? anualDiv * h : 0) * decay;
 
-  const lucroUnidade   = dividendosNoHorizonte + valorizacaoNoHorizonte;
-  const retornoPorEuro = precoAtual > 0 ? (lucroUnidade / precoAtual) : 0;
+  const lucroUnidade = dividendosNoHorizonte + valorizacaoNoHorizonte;
+  const retornoPorEuro = precoAtual > 0 ? lucroUnidade / precoAtual : 0;
 
   return {
     preco: precoAtual,
@@ -886,53 +770,58 @@ function calcularMetricasBase(acao, { periodo = "1m", horizonte = 1, incluirDiv 
   };
 }
 
-/** Gera candidatos com score composto; aceita modo estrito (só retorno/€). */
-function prepararCandidatos(rows, { periodo, horizonte, incluirDiv, modoEstrito = false }) {
-  let cands = rows.map(a => ({
-    ...a,
-    metrics: calcularMetricasBase(a, { periodo, horizonte, incluirDiv }),
-  })).filter(c =>
-    c.metrics.preco > 0 &&
-    Number.isFinite(c.metrics.lucroUnidade) &&
-    c.metrics.lucroUnidade > 0
-  );
+/** Gera candidatos com score composto; segue os princípios de Lucro Máximo. */
+function prepararCandidatos(
+  rows,
+  { periodo, horizonte, incluirDiv, modoEstrito = false },
+) {
+  let cands = rows
+    .map((a) => {
+      const result = calculateLucroMaximoScore(a, periodo);
+      return {
+        ...a,
+        score: result.score,
+        metrics: calcularMetricasBase(a, { periodo, horizonte, incluirDiv }),
+        __R: result.components.R,
+        __V: result.components.V,
+        __T: result.components.T,
+        __D: result.components.D,
+        __E: result.components.E,
+        vol: result.vol,
+        riskAdj: result.riskAdj,
+      };
+    })
+    .filter(
+      (c) =>
+        c.metrics.preco > 0 &&
+        Number.isFinite(c.metrics.lucroUnidade) &&
+        c.metrics.lucroUnidade > 0 &&
+        c.score > 0,
+    );
+
   if (!cands.length) return [];
 
-  // normalização do retorno/€ por p99 (resiste a outliers)
-  const rets = cands.map(c => c.metrics.retornoPorEuro).filter(x => Number.isFinite(x) && x > 0);
-  const p99  = Math.max(percentile(rets, 0.99), 1e-9);
+  // Se modo estrito, recalculamos score apenas com base no retorno/euro (legado ou teste)
+  if (modoEstrito) {
+    const rets = cands
+      .map((c) => c.metrics.retornoPorEuro)
+      .filter((x) => x > 0);
+    const p99 = Math.max(percentile(rets, 0.99), 1e-9);
+    cands.forEach((c) => {
+      c.score = clamp(c.metrics.retornoPorEuro / p99, 0, 1);
+    });
+  }
 
   // penalização setorial suave (diversificação): 1/sqrt(contagem no setor)
-  const bySetor = countBy(cands, c => c.setor);
+  const bySetor = countBy(cands, (c) => c.setor);
   const setorFactor = (s) => 1 / Math.sqrt(bySetor[String(s ?? "—")] || 1);
 
-  // compor score
-  const out = cands.map(c => {
-    const R = clamp(c.metrics.retornoPorEuro / p99, 0, 1);
-    if (modoEstrito) return { ...c, score: R, __R: R };
-
-    const V = scorePE(c.pe);
-    const T = scoreTrend(c.metrics.preco, c.sma50, c.sma200);
-    const D = scoreDividendYield(c);                 // definido noutro ponto do ficheiro
-    const E = scoreEVEBITDA(c.evEbitda, c.setor);    // NOVO componente (valuation)
-
-    const W = CFG.WEIGHTS;
-
-    // ajuste de risco via volatilidade (ou proxy)
-    const vol = Number.isFinite(c?.volatility) ? Math.max(0, Math.min(1, c.volatility)) : proxyVol(c);
-    const riskAdj = 1 / (1 + 0.75 * vol); // 0.57..1
-
-    let score = clamp(
-      (W.R||0)*R + (W.V||0)*V + (W.T||0)*T + (W.D||0)*D + (W.E||0)*E + (W.Rsk||0)*1.0,
-      0, 1
-    );
-    score *= riskAdj;
-    score *= setorFactor(c.setor); // deconcentra suavemente
-
-    return { ...c, score, __R: R, __V: V, __T: T, __D: D, __E: E };
-  }).filter(c => c.score > 0);
-
-  return out;
+  return cands
+    .map((c) => ({
+      ...c,
+      score: c.score * setorFactor(c.setor),
+    }))
+    .filter((c) => c.score > 0);
 }
 
 /* ---------------------------------------------
@@ -957,15 +846,16 @@ function makeLinha(c, qtd) {
 }
 
 function sumarizar(linhas, investimento, gasto) {
-  const sum = (k) => (linhas || []).reduce((s, l) => s + (Number(l[k]) || 0), 0);
+  const sum = (k) =>
+    (linhas || []).reduce((s, l) => s + (Number(l[k]) || 0), 0);
   return {
     linhas,
-    totalLucro:      sum("lucro"),
-    totalGasto:      gasto,
-    totalDivAnual:   sum("divAnualAlloc"),
+    totalLucro: sum("lucro"),
+    totalGasto: gasto,
+    totalDivAnual: sum("divAnualAlloc"),
     totalDivPeriodo: sum("divPeriodoAlloc"),
-    totalValoriz:    sum("valorizAlloc"),
-    restante:        Math.max(0, investimento - gasto),
+    totalValoriz: sum("valorizAlloc"),
+    restante: Math.max(0, investimento - gasto),
   };
 }
 
@@ -975,13 +865,13 @@ function sumarizar(linhas, investimento, gasto) {
 
 function aplicarCapsSetorETicker(allocMap, investimento, getSetorOf) {
   const capTicker = (CFG.CAP_PCT_POR_TICKER ?? 0.18) * investimento;
-  const capSetor  = (CFG.CAP_PCT_POR_SETOR  ?? 0.30) * investimento;
+  const capSetor = (CFG.CAP_PCT_POR_SETOR ?? 0.3) * investimento;
 
   // 1) aplica cap por ticker
   let excedente = 0;
   for (const [c, v] of allocMap) {
     const nv = Math.min(v, capTicker);
-    excedente += (v - nv);
+    excedente += v - nv;
     allocMap.set(c, nv);
   }
 
@@ -996,10 +886,12 @@ function aplicarCapsSetorETicker(allocMap, investimento, getSetorOf) {
     }
 
     // elegíveis = tickers com margem de ticker e setor
-    const elegiveis = [...allocMap.keys()].filter(c => {
+    const elegiveis = [...allocMap.keys()].filter((c) => {
       const s = String(getSetorOf(c) ?? "—");
-      return (allocMap.get(c) || 0) + 1e-9 < capTicker &&
-             (porSetor.get(s) || 0) + 1e-9 < capSetor;
+      return (
+        (allocMap.get(c) || 0) + 1e-9 < capTicker &&
+        (porSetor.get(s) || 0) + 1e-9 < capSetor
+      );
     });
     if (!elegiveis.length) break;
 
@@ -1008,12 +900,12 @@ function aplicarCapsSetorETicker(allocMap, investimento, getSetorOf) {
       if (excedente <= 1e-6) break;
       const s = String(getSetorOf(c) ?? "—");
       const margemTicker = capTicker - (allocMap.get(c) || 0);
-      const margemSetor  = capSetor  - (porSetor.get(s) || 0);
+      const margemSetor = capSetor - (porSetor.get(s) || 0);
       const margem = Math.max(0, Math.min(margemTicker, margemSetor));
       if (margem <= 0) continue;
 
-      const share = (c.score || 0) / somaScore * excedente;
-      const add   = Math.min(share, margem);
+      const share = ((c.score || 0) / somaScore) * excedente;
+      const add = Math.min(share, margem);
       if (add > 0) {
         allocMap.set(c, (allocMap.get(c) || 0) + add);
         porSetor.set(s, (porSetor.get(s) || 0) + add);
@@ -1069,14 +961,16 @@ function distribuirInteiros_porScore(cands, investimento) {
   const soma = ord.reduce((s, c) => s + (c.score || 0), 0) || 1;
 
   // alvo em €, depois arredonda para quantidades inteiras
-  const allocEuros = new Map(ord.map(c => [c, (c.score / soma) * investimento]));
+  const allocEuros = new Map(
+    ord.map((c) => [c, (c.score / soma) * investimento]),
+  );
   aplicarCapsSetorETicker(allocEuros, investimento, (c) => c.setor);
 
   // quantidades base (floor)
-  const base = ord.map(c => {
+  const base = ord.map((c) => {
     const alvo = allocEuros.get(c) || 0;
     const p = c.metrics.preco || Infinity;
-    const qtd = Math.max(0, Math.floor(p > 0 ? (alvo / p) : 0));
+    const qtd = Math.max(0, Math.floor(p > 0 ? alvo / p : 0));
     return { c, qtd };
   });
 
@@ -1085,9 +979,10 @@ function distribuirInteiros_porScore(cands, investimento) {
 
   // greedy 1-a-1 (max retorno/€) com caps
   const capTicker = (CFG.CAP_PCT_POR_TICKER ?? 0.18) * investimento;
-  const capSetor  = (CFG.CAP_PCT_POR_SETOR  ?? 0.30) * investimento;
-  const investedTicker = (c) => (base.find(x => x.c === c)?.qtd || 0) * (c.metrics.preco || 0);
-  const investedSetor  = () => {
+  const capSetor = (CFG.CAP_PCT_POR_SETOR ?? 0.3) * investimento;
+  const investedTicker = (c) =>
+    (base.find((x) => x.c === c)?.qtd || 0) * (c.metrics.preco || 0);
+  const investedSetor = () => {
     const m = new Map();
     for (const x of base) {
       const s = String(x.c.setor ?? "—");
@@ -1096,11 +991,12 @@ function distribuirInteiros_porScore(cands, investimento) {
     return m;
   };
 
-  const minPreco = Math.min(...ord.map(c => c.metrics.preco || Infinity));
+  const minPreco = Math.min(...ord.map((c) => c.metrics.preco || Infinity));
   let guard = 0;
   while (restante + 1e-9 >= minPreco && guard++ < 500) {
     const setMap = investedSetor();
-    let best = null, bestRPE = -Infinity;
+    let best = null,
+      bestRPE = -Infinity;
 
     for (const c of ord) {
       const p = c.metrics.preco || Infinity;
@@ -1113,20 +1009,24 @@ function distribuirInteiros_porScore(cands, investimento) {
       if ((setMap.get(s) || 0) + p > capSetor + 1e-9) continue;
 
       const rpe = (c.metrics.lucroUnidade || 0) / p;
-      if (rpe > bestRPE) { bestRPE = rpe; best = c; }
+      if (rpe > bestRPE) {
+        bestRPE = rpe;
+        best = c;
+      }
     }
 
     if (!best) break;
-    const rec = base.find(x => x.c === best);
+    const rec = base.find((x) => x.c === best);
     rec.qtd += 1;
     gasto += best.metrics.preco;
     restante = investimento - gasto;
   }
 
-  const linhas = base.filter(x => x.qtd > 0).map(x => makeLinha(x.c, x.qtd));
+  const linhas = base
+    .filter((x) => x.qtd > 0)
+    .map((x) => makeLinha(x.c, x.qtd));
   return sumarizar(linhas, investimento, gasto);
 }
-
 
 /* =========================================================
    Modal Simulação (open/close + render)
@@ -1212,10 +1112,10 @@ function renderResultadoSimulacao(res) {
         <td>${Number(l.quantidade).toFixed(2)}</td>
         <td>${fmtEUR(l.investido)}</td>
         <td>${fmtEUR(lucroLinha)}${
-        noGrowth
-          ? ` <span class="badge muted" title="Sem valorização (taxa=0)">r=0%</span>`
-          : ""
-      }</td>
+          noGrowth
+            ? ` <span class="badge muted" title="Sem valorização (taxa=0)">r=0%</span>`
+            : ""
+        }</td>
         <td>${fmtEUR(l.divAnualAlloc)}</td>
         <td>${fmtEUR(l.divPeriodoAlloc)}</td>
         <td>${fmtEUR(l.valorizAlloc)}</td>
@@ -1227,8 +1127,8 @@ function renderResultadoSimulacao(res) {
     <div class="card" style="margin-bottom:10px;">
       <div class="card-content" style="display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
         <div><strong>Horizonte:</strong> ${horizonte} ${
-    horizonte === 1 ? "ano" : "anos"
-  }</div>
+          horizonte === 1 ? "ano" : "anos"
+        }</div>
         <div><strong>Período de crescimento:</strong> ${periodoLabel}</div>
         <div><strong>Dividendos:</strong> ${
           incluirDiv ? "incluídos" : "excluídos"
@@ -1267,18 +1167,18 @@ function renderResultadoSimulacao(res) {
         <div><strong>Retorno total (€):</strong> ${fmtEUR(retornoTotal)}</div>
         <div><strong>Retorno total (%):</strong> ${retornoPct.toFixed(2)}%</div>
         <div><strong>Dividendos anuais (soma aloc.):</strong> ${fmtEUR(
-          res.totalDivAnual
+          res.totalDivAnual,
         )}</div>
         <div><strong>Dividendos no horizonte:</strong> ${fmtEUR(
-          res.totalDivPeriodo
+          res.totalDivPeriodo,
         )}</div>
         <div><strong>Valorização no horizonte:</strong> ${fmtEUR(
-          res.totalValoriz
+          res.totalValoriz,
         )}</div>
         ${
           res.restante > 0
             ? `<div><strong>Restante não investido:</strong> ${fmtEUR(
-                res.restante
+                res.restante,
               )}</div>`
             : ""
         }
@@ -1343,7 +1243,6 @@ async function renderSelectedSectorChart(rowsSelecionadas) {
 [S11] Relatório (PDF) — V2 profissional (única parte alterada)
 ========================================================= */
 
-
 const _fmtEUR = (n) =>
   Number(n || 0).toLocaleString("pt-PT", {
     style: "currency",
@@ -1377,7 +1276,7 @@ const pieOptsForPdf = {
         const sum =
           (ctx.chart.data.datasets[0].data || []).reduce(
             (a, b) => a + Number(b || 0),
-            0
+            0,
           ) || 1;
         const pct = (val / sum) * 100;
         return `${lbl}\n${pct.toFixed(1)}%`;
@@ -1398,7 +1297,7 @@ async function buildTempReportCharts(rows) {
   await ensureChartJS();
   if (!window.ChartDataLabels) {
     await ensureScript(
-      "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"
+      "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2",
     );
   }
   const DATALABELS = window.ChartDataLabels || null;
@@ -1434,7 +1333,7 @@ async function buildTempReportCharts(rows) {
               const sum =
                 (ctx.chart.data.datasets[0].data || []).reduce(
                   (a, b) => a + Number(b || 0),
-                  0
+                  0,
                 ) || 1;
               const pct = (val / sum) * 100;
               return `${lbl}\n${pct.toFixed(1)}%`;
@@ -1454,7 +1353,7 @@ async function buildTempReportCharts(rows) {
   const invest = rows.map((r) => Number(r.investido || 0));
   const lucro = rows.map((r) => Number(r.lucro || 0));
   const divH = rows.map((r) =>
-    Number((r.divHoriz ?? r.dividendoHorizonte) || 0)
+    Number((r.divHoriz ?? r.dividendoHorizonte) || 0),
   );
   const valH = rows.map((r) => Number(r.valorizacao || 0));
 
@@ -1465,7 +1364,7 @@ async function buildTempReportCharts(rows) {
     const setor = (base?.setor || "—").trim();
     sectorMap.set(
       setor,
-      (sectorMap.get(setor) || 0) + Number(r.investido || 0)
+      (sectorMap.get(setor) || 0) + Number(r.investido || 0),
     );
   });
   const sectorLabels = Array.from(sectorMap.keys());
@@ -1508,7 +1407,7 @@ async function buildTempReportCharts(rows) {
           {
             data: sectorInvest,
             backgroundColor: sectorLabels.map(
-              (_, i) => PALETTE[i % PALETTE.length]
+              (_, i) => PALETTE[i % PALETTE.length],
             ),
           },
         ],
@@ -1601,7 +1500,7 @@ async function renderReportPreview(data, { horizonte }) {
   // plugin (labels nas fatias) — carregar e usar de forma segura
   if (!window.ChartDataLabels) {
     await ensureScript(
-      "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"
+      "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2",
     );
   }
   const DATALABELS = window.ChartDataLabels || null;
@@ -1620,11 +1519,11 @@ async function renderReportPreview(data, { horizonte }) {
   const totInvest = data.reduce((s, a) => s + Number(a.investido || 0), 0);
   const totDivAnual = data.reduce(
     (s, a) => s + Number(a.dividendoAnual || a.divAnual || 0),
-    0
+    0,
   );
   const totDivHoriz = data.reduce(
     (s, a) => s + Number(a.dividendoHorizonte || a.divHoriz || 0),
-    0
+    0,
   );
   const totVal = data.reduce((s, a) => s + Number(a.valorizacao || 0), 0);
   const totLucro = data.reduce((s, a) => s + Number(a.lucro || 0), 0);
@@ -1634,7 +1533,7 @@ async function renderReportPreview(data, { horizonte }) {
   _e("repKpiInv").textContent = fmtEUR(totInvest);
   _e("repKpiRet").textContent = `${fmtEUR(totLucro)} (${retPct.toFixed(1)}%)`;
   _e("repKpiDiv").textContent = `${fmtEUR(totDivAnual)} / ${fmtEUR(
-    totDivHoriz
+    totDivHoriz,
   )}  (H=${horizonte})`;
   _e("repKpiVal").textContent = fmtEUR(totVal);
 
@@ -1667,7 +1566,7 @@ async function renderReportPreview(data, { horizonte }) {
   const byTickerInvest = data.map((a) => Number(a.investido || 0));
   const byTickerLucro = data.map((a) => Number(a.lucro || 0));
   const byTickerDivH = data.map((a) =>
-    Number(a.dividendoHorizonte || a.divHoriz || 0)
+    Number(a.dividendoHorizonte || a.divHoriz || 0),
   );
   const byTickerValH = data.map((a) => Number(a.valorizacao || 0));
 
@@ -1678,7 +1577,7 @@ async function renderReportPreview(data, { horizonte }) {
     const setor = canon(base?.setor || "—");
     sectorMap.set(
       setor,
-      (sectorMap.get(setor) || 0) + Number(a.investido || 0)
+      (sectorMap.get(setor) || 0) + Number(a.investido || 0),
     );
   });
   const bySectorLabels = Array.from(sectorMap.keys());
@@ -1737,7 +1636,7 @@ async function renderReportPreview(data, { horizonte }) {
           {
             data: byTickerInvest,
             backgroundColor: byTickerLabels.map(
-              (_, i) => PALETTE[i % PALETTE.length]
+              (_, i) => PALETTE[i % PALETTE.length],
             ),
           },
         ],
@@ -1758,7 +1657,7 @@ async function renderReportPreview(data, { horizonte }) {
           {
             data: bySectorInvest,
             backgroundColor: bySectorLabels.map(
-              (_, i) => PALETTE[i % PALETTE.length]
+              (_, i) => PALETTE[i % PALETTE.length],
             ),
           },
         ],
@@ -1832,13 +1731,13 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
 
   // 1) se houver simulação recente, usa-a; senão, normaliza 'rows' básicas
   const horizonteUI = Number(
-    document.getElementById("anlSimHoriz")?.value || 1
+    document.getElementById("anlSimHoriz")?.value || 1,
   );
   const horizonte = Math.max(
     1,
     Number(
-      opts.horizonte ?? __ANL_LAST_SIM?.opts?.horizonte ?? horizonteUI ?? 1
-    )
+      opts.horizonte ?? __ANL_LAST_SIM?.opts?.horizonte ?? horizonteUI ?? 1,
+    ),
   );
   let data;
 
@@ -1859,11 +1758,13 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
         String(r.nome ?? r.Nome ?? r.ativo ?? "").trim() || r.ticker || "Ativo";
       const ticker = String(r.ticker ?? r.Ticker ?? "").toUpperCase();
       const investido = Number(
-        r.investido ?? (r.quantidade || 0) * (r.preco || r.valorStock || 0) ?? 0
+        r.investido ??
+          (r.quantidade || 0) * (r.preco || r.valorStock || 0) ??
+          0,
       );
       const divAnual = Number(r.dividendoAnual ?? r.dividendo ?? 0);
       const divHoriz = Number(
-        r.dividendoHorizonte ?? (divAnual * horizonte || 0)
+        r.dividendoHorizonte ?? (divAnual * horizonte || 0),
       );
       const valoriz = Number(r.valorizacao ?? 0);
       const lucro = Number(r.lucro ?? (divHoriz + valoriz || 0));
@@ -1911,7 +1812,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
       horizonte > 1 ? "períodos" : "período"
     }`,
     M,
-    (y += 18)
+    (y += 18),
   );
   y += 12;
   doc.setDrawColor(...COLOR_PRIMARY);
@@ -1950,7 +1851,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
     M + boxW + 24,
     y,
     "Retorno Total",
-    `${_fmtEUR(totLucro)} (${_pct(retornoPct)})`
+    `${_fmtEUR(totLucro)} (${_pct(retornoPct)})`,
   );
   y += boxH + 12;
   kpiBox(
@@ -1958,7 +1859,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
     y,
     "Dividendos (Anual / Horizonte)",
     `${_fmtEUR(totDivAnual)} / ${_fmtEUR(totDivHoriz)}`,
-    `H = ${horizonte}`
+    `H = ${horizonte}`,
   );
   kpiBox(M + boxW + 24, y, "Valorização Projetada", _fmtEUR(totVal));
   y += boxH + 18;
@@ -1989,7 +1890,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
         lucro: a.lucro,
         divHoriz: a.divHoriz,
         valorizacao: a.valorizacao,
-      }))
+      })),
     );
   }
 
@@ -2115,7 +2016,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
   doc.text(
     `© ${new Date().getFullYear()} APPletonFinance — Simulação de Investimentos`,
     M,
-    pageH - 14
+    pageH - 14,
   );
   const fileName = `Relatorio_Portefolio_${new Date()
     .toISOString()
@@ -2232,7 +2133,7 @@ function hookHeatmapScrollSync() {
     () => {
       head.scrollLeft = body.scrollLeft;
     },
-    { passive: true }
+    { passive: true },
   );
 }
 
@@ -2290,7 +2191,7 @@ export async function initScreen() {
     let rows = [...ALL_ROWS];
     if (term)
       rows = rows.filter(
-        (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term)
+        (r) => keyStr(r.ticker).includes(term) || keyStr(r.nome).includes(term),
       );
     if (setor) rows = rows.filter((r) => r.setor === setor);
     if (mercado) rows = rows.filter((r) => r.mercado === mercado);
@@ -2354,10 +2255,10 @@ export async function initScreen() {
     .getElementById("anlSimCalcular")
     ?.addEventListener("click", async () => {
       const investimento = Number(
-        document.getElementById("anlSimInvest")?.value || 0
+        document.getElementById("anlSimInvest")?.value || 0,
       );
       const horizonte = Number(
-        document.getElementById("anlSimHoriz")?.value || 1
+        document.getElementById("anlSimHoriz")?.value || 1,
       );
       const periodo = document.getElementById("anlSimPeriodo")?.value || "1m";
       const incluirDiv = !!document.getElementById("anlSimIncluiDiv")?.checked;
@@ -2372,7 +2273,7 @@ export async function initScreen() {
         return;
       }
       const selecionadas = ALL_ROWS.filter((r) =>
-        selectedTickers.has(r.ticker)
+        selectedTickers.has(r.ticker),
       );
       let candidatos = prepararCandidatos(selecionadas, {
         periodo,
@@ -2382,7 +2283,7 @@ export async function initScreen() {
       });
       if (candidatos.length === 0) {
         alert(
-          "Nenhum ativo com retorno positivo ou dados válidos para este cenário."
+          "Nenhum ativo com retorno positivo ou dados válidos para este cenário.",
         );
         return;
       }
@@ -2444,11 +2345,11 @@ export async function initScreen() {
     } else {
       // fallback: construir algo a partir da seleção atual (sem simulação)
       const selecionadas = ALL_ROWS.filter((r) =>
-        selectedTickers.has(r.ticker)
+        selectedTickers.has(r.ticker),
       );
       if (!selecionadas.length) {
         alert(
-          "Seleciona pelo menos uma ação (e idealmente executa a simulação)."
+          "Seleciona pelo menos uma ação (e idealmente executa a simulação).",
         );
         return;
       }
@@ -2503,9 +2404,15 @@ export async function initScreen() {
   });
 
   // ALGORITMO — botões + clique no backdrop
-  document.getElementById("anlAlgoHelp")?.addEventListener("click", openAlgoModal);
-  document.getElementById("anlAlgoClose")?.addEventListener("click", closeAlgoModal);
-  document.getElementById("anlAlgoOk")?.addEventListener("click", closeAlgoModal);
+  document
+    .getElementById("anlAlgoHelp")
+    ?.addEventListener("click", openAlgoModal);
+  document
+    .getElementById("anlAlgoClose")
+    ?.addEventListener("click", closeAlgoModal);
+  document
+    .getElementById("anlAlgoOk")
+    ?.addEventListener("click", closeAlgoModal);
   document.getElementById("anlAlgoModal")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeAlgoModal();
   });
@@ -2562,7 +2469,7 @@ if (!window.__ANL_AUTO_INIT__) {
         const horizonte = Number(
           document.getElementById("anlSimHoriz")?.value ||
             __ANL_LAST_SIM?.opts?.horizonte ||
-            1
+            1,
         );
 
         // 3) Dados do relatório: usa simulação se existir; senão, lê a tabela do preview
@@ -2571,7 +2478,7 @@ if (!window.__ANL_AUTO_INIT__) {
           rowsForReport = __ANL_LAST_SIM.rows;
         } else {
           const trs = Array.from(
-            document.querySelectorAll("#repTable tbody tr")
+            document.querySelectorAll("#repTable tbody tr"),
           );
           rowsForReport = trs.map((tr) => {
             const td = tr.querySelectorAll("td");
@@ -2580,7 +2487,7 @@ if (!window.__ANL_AUTO_INIT__) {
                 (s || "")
                   .replace(/[^\d,.-]/g, "")
                   .replace(/\./g, "")
-                  .replace(",", ".")
+                  .replace(",", "."),
               ) || 0;
             return {
               nome: td[0]?.textContent?.trim() || "",
@@ -2596,7 +2503,7 @@ if (!window.__ANL_AUTO_INIT__) {
 
         if (!rowsForReport.length) {
           alert(
-            "Sem dados para exportar. Executa a simulação ou abre o relatório com seleção válida."
+            "Sem dados para exportar. Executa a simulação ou abre o relatório com seleção válida.",
           );
           return;
         }
@@ -2609,7 +2516,7 @@ if (!window.__ANL_AUTO_INIT__) {
       } catch (e) {
         console.error("[repExportPdf] erro:", e);
         alert(
-          "Falhou a exportação do PDF. Consulta a consola para mais detalhes."
+          "Falhou a exportação do PDF. Consulta a consola para mais detalhes.",
         );
       }
     });
