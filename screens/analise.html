@@ -1,7 +1,44 @@
 <!-- screens/analise.html -->
 <div class="page" data-screen-title="Análises">
-  <div class="dashboard-header">
-    <p class="subtitle">Visão das Ações em Base Dados</p>
+  <div
+    class="dashboard-header"
+    style="display: flex; justify-content: space-between; align-items: center"
+  >
+    <div>
+      <p class="subtitle">Visão das Ações em Base Dados</p>
+    </div>
+    <button
+      id="anlAlgoHelp"
+      class="icon-btn"
+      title="Ver como funciona o algoritmo"
+      style="
+        background: var(--muted);
+        padding: 8px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary, #4f46e5);
+        border: 1px solid var(--border);
+      "
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </button>
   </div>
 
   <!-- TOOLBAR / PESQUISA E FILTROS -->
@@ -76,19 +113,37 @@
       </div>
 
       <div class="legend" style="margin-top: 6px">
-        <span style="font-size: 0.85rem; margin-right: 8px">Intensidade do dividendo:</span>
+        <span style="font-size: 0.85rem; margin-right: 8px"
+          >Intensidade do dividendo:</span
+        >
         <div class="legend-item">
-          <div class="legend-box level-1" style="background: rgba(16, 185, 129, .10); border: 1px solid var(--border);">
-          </div> Baixa
+          <div
+            class="legend-box level-1"
+            style="
+              background: rgba(16, 185, 129, 0.1);
+              border: 1px solid var(--border);
+            "
+          ></div>
+          Baixa
         </div>
         <div class="legend-item">
-          <div class="legend-box level-2" style="background: rgba(16, 185, 129, .30);"></div>
+          <div
+            class="legend-box level-2"
+            style="background: rgba(16, 185, 129, 0.3)"
+          ></div>
         </div>
         <div class="legend-item">
-          <div class="legend-box level-3" style="background: rgba(16, 185, 129, .55);"></div>
+          <div
+            class="legend-box level-3"
+            style="background: rgba(16, 185, 129, 0.55)"
+          ></div>
         </div>
         <div class="legend-item">
-          <div class="legend-box level-4" style="background: rgba(16, 185, 129, .80);"></div> Alta
+          <div
+            class="legend-box level-4"
+            style="background: rgba(16, 185, 129, 0.8)"
+          ></div>
+          Alta
         </div>
       </div>
     </div>
@@ -98,11 +153,23 @@
   <div class="card" style="margin-top: 12px">
     <div class="card-content" style="display: block">
       <!-- Seleção + Simulador -->
-      <div class="analysis-toolbar" style="padding: 0.6rem 1rem; border: 0; background: transparent">
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap">
+      <div
+        class="analysis-toolbar"
+        style="padding: 0.6rem 1rem; border: 0; background: transparent"
+      >
+        <div
+          style="
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+          "
+        >
           <button class="btn outline" id="anlSimular">Usar no simulador</button>
           <button class="btn ghost" id="anlClearSel">Limpar seleção</button>
-          <span class="muted">Selecionados: <strong id="anlSelCount">0</strong></span>
+          <span class="muted"
+            >Selecionados: <strong id="anlSelCount">0</strong></span
+          >
         </div>
       </div>
 
@@ -111,7 +178,11 @@
           <thead>
             <tr>
               <th class="sticky-col" style="width: 44px">
-                <input type="checkbox" id="anlSelectAll" title="Selecionar todos os filtrados" />
+                <input
+                  type="checkbox"
+                  id="anlSelectAll"
+                  title="Selecionar todos os filtrados"
+                />
               </th>
               <th data-sort="ticker" class="sortable sticky-col">Ticker</th>
               <th data-sort="nome" class="sortable">Nome</th>
@@ -144,12 +215,8 @@
 <div id="anlSimModal" class="modal hidden">
   <div class="modal-dialog">
     <div class="modal-header">
-      <div style="display:flex; align-items:center; gap:8px;">
+      <div style="display: flex; align-items: center; gap: 8px">
         <h3>Simular investimento (lucro máximo)</h3>
-        <button class="icon-btn" id="anlAlgoHelp" title="Ver como funciona o algoritmo"
-          style="font-size:1.1rem; color:var(--primary,#4f46e5);">
-          <i class="fas fa-question-circle"></i>
-        </button>
       </div>
       <button class="icon-btn" id="anlSimClose" title="Fechar">✖</button>
     </div>
@@ -158,7 +225,13 @@
       <div class="form-grid">
         <label>
           Investimento total (€)
-          <input id="anlSimInvest" type="number" min="1" step="0.01" placeholder="Ex.: 1000" />
+          <input
+            id="anlSimInvest"
+            type="number"
+            min="1"
+            step="0.01"
+            placeholder="Ex.: 1000"
+          />
         </label>
         <label>
           Horizonte (anos)
@@ -205,8 +278,14 @@
 </div>
 
 <!-- PREVIEW DO RELATÓRIO -->
-<div id="anlReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="repTitle">
-  <div class="modal-content" style="max-width:1100px;">
+<div
+  id="anlReportModal"
+  class="modal hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="repTitle"
+>
+  <div class="modal-content" style="max-width: 1100px">
     <div class="modal-header">
       <h3 id="repTitle">Relatório Financeiro — Pré-visualização</h3>
       <button id="repCloseTop" class="btn outline" title="Fechar">✕</button>
@@ -260,7 +339,7 @@
 
       <!-- TABELA -->
       <section class="rep-table">
-        <table id="repTable" class="fine-table" style="width:100%">
+        <table id="repTable" class="fine-table" style="width: 100%">
           <thead>
             <tr>
               <th>Ativo</th>
@@ -291,55 +370,86 @@
   </div>
 </div>
 
-
 <!-- MODAL: Explicação do Algoritmo -->
 <div id="anlAlgoModal" class="modal hidden">
-  <div class="modal-dialog" style="max-width: 600px;">
+  <div class="modal-dialog" style="max-width: 600px">
     <div class="modal-header">
       <h3>Como funciona o Lucro Máximo?</h3>
       <button class="icon-btn" id="anlAlgoClose" title="Fechar">✖</button>
     </div>
     <div class="modal-body">
       <div class="algo-explanation">
-        <p>O algoritmo de <strong>Lucro Máximo</strong> utiliza um sistema de pontuação composta para decidir como
-          distribuir o seu investimento entre as ações selecionadas. O objetivo é equilibrar retorno projetado,
-          segurança e diversificação.</p>
+        <p>
+          O algoritmo de <strong>Lucro Máximo</strong> utiliza um sistema de
+          pontuação composta para decidir como distribuir o seu investimento
+          entre as ações selecionadas. O objetivo é equilibrar retorno
+          projetado, segurança e diversificação.
+        </p>
 
-        <div class="algo-step" style="margin-top: 15px;">
-          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px;">1. Atribuição de Pontuação (Score)</h4>
+        <div class="algo-step" style="margin-top: 15px">
+          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">
+            1. Atribuição de Pontuação (Score)
+          </h4>
           <p>Cada ação recebe uma pontuação de 0 a 1 com base em 5 pilares:</p>
-          <ul style="margin-left: 20px; margin-top: 5px;">
-            <li><strong>Valorização (ROI):</strong> Projeção de crescimento com base no histórico recente.</li>
-            <li><strong>Dividendos:</strong> O <em>Yield</em> atual da ação (capado a 8% para evitar riscos excessivos).
+          <ul style="margin-left: 20px; margin-top: 5px">
+            <li>
+              <strong>Valorização (ROI):</strong> Projeção de crescimento com
+              base no histórico recente.
             </li>
-            <li><strong>Valuation (P/E):</strong> Beneficia ações que estão "baratas" em relação ao seu lucro.</li>
-            <li><strong>Tendência:</strong> Avalia se o preço está acima das médias móveis (50 e 200 dias).</li>
-            <li><strong>EV/EBITDA:</strong> Um indicador robusto de valor operacional por setor.</li>
+            <li>
+              <strong>Dividendos:</strong> O <em>Yield</em> atual da ação
+              (capado a 8% para evitar riscos excessivos).
+            </li>
+            <li>
+              <strong>Valuation (P/E):</strong> Beneficia ações que estão
+              "baratas" em relação ao seu lucro.
+            </li>
+            <li>
+              <strong>Tendência:</strong> Avalia se o preço está acima das
+              médias móveis (50 e 200 dias).
+            </li>
+            <li>
+              <strong>EV/EBITDA:</strong> Um indicador robusto de valor
+              operacional por setor.
+            </li>
           </ul>
         </div>
 
-        <div class="algo-step" style="margin-top: 15px;">
-          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px;">2. Ajuste de Risco</h4>
-          <p>Ações com alta volatilidade sofrem uma penalização automática no score para proteger o seu capital de
-            grandes oscilações.</p>
+        <div class="algo-step" style="margin-top: 15px">
+          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">
+            2. Ajuste de Risco
+          </h4>
+          <p>
+            Ações com alta volatilidade sofrem uma penalização automática no
+            score para proteger o seu capital de grandes oscilações.
+          </p>
         </div>
 
-        <div class="algo-step" style="margin-top: 15px;">
-          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px;">3. Distribuição de Montantes</h4>
-          <p>O dinheiro é distribuído proporcionalmente ao score final. Quanto melhor a pontuação, maior a fatia do
-            investimento.</p>
+        <div class="algo-step" style="margin-top: 15px">
+          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">
+            3. Distribuição de Montantes
+          </h4>
+          <p>
+            O dinheiro é distribuído proporcionalmente ao score final. Quanto
+            melhor a pontuação, maior a fatia do investimento.
+          </p>
         </div>
 
-        <div class="algo-step" style="margin-top: 15px;">
-          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px;">4. Travões de Segurança (Caps)</h4>
+        <div class="algo-step" style="margin-top: 15px">
+          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">
+            4. Travões de Segurança (Caps)
+          </h4>
           <p>Para evitar concentrar tudo numa só empresa, aplicamos limites:</p>
-          <ul style="margin-left: 20px; margin-top: 5px;">
+          <ul style="margin-left: 20px; margin-top: 5px">
             <li><strong>Máximo por Ação:</strong> 15% do total.</li>
             <li><strong>Máximo por Setor:</strong> 30% do total.</li>
           </ul>
         </div>
       </div>
-      <div class="actions-row" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+      <div
+        class="actions-row"
+        style="margin-top: 20px; display: flex; justify-content: flex-end"
+      >
         <button class="btn" id="anlAlgoOk">Entendi</button>
       </div>
     </div>
@@ -351,22 +461,22 @@
   .portfolio-charts.three-cols {
     display: grid;
     gap: 12px;
-    grid-template-columns: repeat(3, minmax(0, 1fr))
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  @media (max-width:980px) {
+  @media (max-width: 980px) {
     .portfolio-charts.three-cols {
-      grid-template-columns: 1fr
+      grid-template-columns: 1fr;
     }
   }
 
   .chart-wrap {
-    height: 260px
+    height: 260px;
   }
 
   .chart-wrap canvas {
     width: 100% !important;
-    height: 100% !important
+    height: 100% !important;
   }
 
   .dividend-header {
@@ -375,7 +485,7 @@
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    margin-bottom: 6px
+    margin-bottom: 6px;
   }
 
   .legend {
@@ -383,32 +493,32 @@
     display: flex;
     gap: 12px;
     align-items: center;
-    flex-wrap: wrap
+    flex-wrap: wrap;
   }
 
   .legend-item {
     display: inline-flex;
     align-items: center;
-    gap: 6px
+    gap: 6px;
   }
 
   .legend-box {
     width: 14px;
     height: 14px;
     border-radius: 4px;
-    display: inline-block
+    display: inline-block;
   }
 
   .legend-box.weak {
-    background: rgba(34, 197, 94, .18)
+    background: rgba(34, 197, 94, 0.18);
   }
 
   .legend-box.med {
-    background: rgba(34, 197, 94, .38)
+    background: rgba(34, 197, 94, 0.38);
   }
 
   .legend-box.strong {
-    background: rgba(34, 197, 94, .58)
+    background: rgba(34, 197, 94, 0.58);
   }
 
   .dividend-heatmap-container {
@@ -459,7 +569,7 @@
 
   [data-theme="dark"] .dividend-heatmap-grid .cell {
     background: #111;
-    border-color: rgba(255, 255, 255, .1);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   [data-theme="dark"] .dividend-heatmap-grid .header-cell {
@@ -476,19 +586,19 @@
 
   /* Heatmap Colors — Vivid Gradient (Using !important to ensure visibility over theme defaults) */
   .dividend-heatmap-grid .cell.pay-1 {
-    background: rgba(16, 185, 129, .18) !important;
+    background: rgba(16, 185, 129, 0.18) !important;
   }
 
   .dividend-heatmap-grid .cell.pay-2 {
-    background: rgba(16, 185, 129, .35) !important;
+    background: rgba(16, 185, 129, 0.35) !important;
   }
 
   .dividend-heatmap-grid .cell.pay-3 {
-    background: rgba(16, 185, 129, .55) !important;
+    background: rgba(16, 185, 129, 0.55) !important;
   }
 
   .dividend-heatmap-grid .cell.pay-4 {
-    background: rgba(16, 185, 129, .85) !important;
+    background: rgba(16, 185, 129, 0.85) !important;
     color: #fff !important;
     font-weight: 600 !important;
   }
@@ -503,7 +613,7 @@
     bottom: 100%;
     left: 0;
     transform: translateY(-4px);
-    background: rgba(0, 0, 0, .85);
+    background: rgba(0, 0, 0, 0.85);
     color: #fff;
     font-size: 11px;
     padding: 4px 8px;
@@ -515,101 +625,101 @@
 
   .table-scroll {
     overflow: auto;
-    max-height: 62vh
+    max-height: 62vh;
   }
 
   #anlTable thead th {
     position: sticky;
     top: 0;
     z-index: 3;
-    background: var(--card, #fff)
+    background: var(--card, #fff);
   }
 
   #anlTable thead th.sortable {
     cursor: pointer;
-    user-select: none
+    user-select: none;
   }
 
   #anlTable thead th.sorted-asc::after {
     content: " ↑";
-    opacity: .7
+    opacity: 0.7;
   }
 
   #anlTable thead th.sorted-desc::after {
     content: " ↓";
-    opacity: .7
+    opacity: 0.7;
   }
 
   #anlTable .sticky-col {
     position: sticky;
     left: 0;
     z-index: 2;
-    background: var(--card, #fff)
+    background: var(--card, #fff);
   }
 
   #anlTable th.sticky-col:nth-child(2),
   #anlTable td.sticky-col:nth-child(2) {
-    left: 44px
+    left: 44px;
   }
 
   .badge {
     display: inline-block;
     padding: 2px 6px;
     border-radius: 999px;
-    font-size: .75rem
+    font-size: 0.75rem;
   }
 
   .badge.ok {
     background: #e6f7ee;
-    color: #106f3a
+    color: #106f3a;
   }
 
   .badge.warn {
     background: #fff3cd;
-    color: #7c5b00
+    color: #7c5b00;
   }
 
   .badge.danger {
     background: #fde2e2;
-    color: #8a1f1f
+    color: #8a1f1f;
   }
 
   .badge.muted {
     background: #f2f2f2;
-    color: #666
+    color: #666;
   }
 
   .badge.up {
     background: #e6f7ee;
-    color: #106f3a
+    color: #106f3a;
   }
 
   .badge.down {
     background: #fde2e2;
-    color: #8a1f1f
+    color: #8a1f1f;
   }
 
   .up {
-    color: #106f3a
+    color: #106f3a;
   }
 
   .down {
-    color: #8a1f1f
+    color: #8a1f1f;
   }
 
   .modal.hidden {
-    display: none
+    display: none;
   }
 
   .modal {
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, .45);
+    background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(2px);
     display: flex;
     align-items: center;
-    justify-content: center
+    justify-content: center;
   }
 
   .modal-dialog {
@@ -622,7 +732,7 @@
     background: var(--card, #fff);
     color: var(--card-foreground, #111);
     border: 1px solid var(--border, #e5e7eb);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, .35)
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
   }
 
   .modal-header {
@@ -634,12 +744,12 @@
     background: var(--background, #fff);
     position: sticky;
     top: 0;
-    z-index: 2
+    z-index: 2;
   }
 
   .modal-body {
     padding: 14px 16px;
-    overflow: auto
+    overflow: auto;
   }
 
   .icon-btn {
@@ -647,16 +757,16 @@
     border: 0;
     font-size: 18px;
     cursor: pointer;
-    color: inherit
+    color: inherit;
   }
 
   #anlSimModal .form-grid input,
   #anlSimModal .form-grid select {
-    padding: .6rem .7rem;
+    padding: 0.6rem 0.7rem;
     border-radius: 10px;
     border: 1px solid var(--border, #e5e7eb);
     background: var(--card, #fff);
-    color: var(--card-foreground, #111)
+    color: var(--card-foreground, #111);
   }
 
   .sim-options {
@@ -665,49 +775,49 @@
     align-items: center;
     flex-wrap: wrap;
     grid-column: 1 / -1;
-    margin-top: .4rem
+    margin-top: 0.4rem;
   }
 
   .chk-inline {
     display: flex;
     align-items: center;
-    gap: .5rem
+    gap: 0.5rem;
   }
 
   .push-right {
-    margin-left: auto
+    margin-left: auto;
   }
 
   [data-theme="dark"] .modal-dialog {
     background: #111;
     color: #fff;
-    border-color: rgba(255, 255, 255, .08)
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   [data-theme="dark"] .modal-header {
     background: #111;
-    border-color: rgba(255, 255, 255, .08)
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   [data-theme="dark"] #anlSimModal .form-grid input,
   [data-theme="dark"] #anlSimModal .form-grid select {
     background: #1a1a1a;
     color: #eee;
-    border-color: rgba(255, 255, 255, .12)
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .tabela-scroll-wrapper {
-    overflow: auto
+    overflow: auto;
   }
 
   .actions-row.sticky-actions {
     display: flex;
-    gap: .6rem;
+    gap: 0.6rem;
     justify-content: flex-end;
     position: sticky;
     bottom: 0;
     background: var(--card, #fff);
-    padding-top: 8px
+    padding-top: 8px;
   }
 
   /* pizza modal */
@@ -719,30 +829,30 @@
     height: 320px;
     display: flex;
     align-items: center;
-    justify-content: center
+    justify-content: center;
   }
 
   .pie-wrap canvas {
     width: 100% !important;
     height: 100% !important;
-    max-height: 300px
+    max-height: 300px;
   }
 
-  @media (max-width:480px) {
+  @media (max-width: 480px) {
     .dividend-heatmap .months {
-      grid-template-columns: repeat(12, minmax(84px, 1fr))
+      grid-template-columns: repeat(12, minmax(84px, 1fr));
     }
 
     .dividend-heatmap .row .months {
-      grid-template-columns: repeat(12, minmax(84px, 1fr))
+      grid-template-columns: repeat(12, minmax(84px, 1fr));
     }
 
     .pie-wrap {
-      max-width: 360px
+      max-width: 360px;
     }
 
     .pie-wrap canvas {
-      max-height: 260px
+      max-height: 260px;
     }
   }
 </style>
