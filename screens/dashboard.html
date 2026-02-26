@@ -161,6 +161,10 @@
                   margin: 8px 0;
                 "
               />
+              <p style="font-size: 11px; opacity: 0.8">
+                O score final é ajustado pelo <strong>risco</strong> (oscilação
+                de preço).
+              </p>
             </div>
           </div>
         </div>
@@ -169,32 +173,36 @@
       </div>
 
       <div
-        id="treemapContainer"
-        style="
-          flex: 1;
-          min-height: 550px;
-          margin: 0 16px 16px;
-          background: #000;
-          border-radius: 4px;
-          border: 1px solid #333;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding-right: 2px;
-          box-sizing: border-box;
-        "
+        class="modal-body"
+        style="flex: 1; display: flex; flex-direction: column; padding: 0"
       >
-        <!-- Treemap gerado aqui -->
         <div
+          id="treemapContainer"
           style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #444;
-            font-family: monospace;
+            flex: 1;
+            min-height: 500px;
+            margin: 16px;
+            background: #000;
+            border-radius: 4px;
+            border: 1px solid #333;
+            overflow: auto;
+            padding-right: 2px;
+            box-sizing: border-box;
           "
         >
-          LOADING TREEMAP DATA...
+          <!-- Treemap gerado aqui -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100%;
+              color: #444;
+              font-family: monospace;
+            "
+          >
+            LOADING TREEMAP DATA...
+          </div>
         </div>
       </div>
     </div>
