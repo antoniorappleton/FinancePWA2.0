@@ -111,9 +111,59 @@
   <div id="opModal" class="modal hidden">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h2 style="color: var(--primary-main)">
-          Mapa de Mercado - Lucro Máximo
+        <h2 style="color: var(--primary-main); margin: 0">
+          Mapa de Mercado
+          <span style="font-weight: normal; opacity: 0.7">- Lucro Máximo</span>
         </h2>
+
+        <div class="treemap-legend">
+          <span style="font-size: 10px; color: #888; font-weight: bold"
+            >QUALIDADE (SCORE):</span
+          >
+          <div class="legend-item">
+            <div class="legend-gradient"></div>
+            <div class="legend-values">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <div class="info-trigger">
+            <i class="fas fa-info-circle"></i>
+            <div class="info-popover">
+              <h4>Algoritmo Lucro Máximo</h4>
+              <p>
+                O <strong>tamanho</strong> do bloco reflete a alocação sugerida
+                (scores mais altos = maior área), respeitando limites de
+                diversificação (15% por ativo, 30% por setor).
+              </p>
+              <p>
+                A <strong>cor</strong> reflete a pontuação de qualidade final
+                (Score):
+              </p>
+              <ul class="weight-list">
+                <li><span>Retorno Estimado</span> <strong>35%</strong></li>
+                <li><span>Tendência (SMA)</span> <strong>20%</strong></li>
+                <li><span>Valuation (P/E)</span> <strong>15%</strong></li>
+                <li><span>Dividend Yield</span> <strong>15%</strong></li>
+                <li><span>EV/EBITDA</span> <strong>10%</strong></li>
+                <li><span>Base Interna</span> <strong>5%</strong></li>
+              </ul>
+              <hr
+                style="
+                  border: 0;
+                  border-top: 1px solid rgba(255, 255, 255, 0.1);
+                  margin: 8px 0;
+                "
+              />
+              <p style="font-size: 11px; opacity: 0.8">
+                O score final é penalizado pela
+                <strong>volatilidade</strong> (Risco).
+              </p>
+            </div>
+          </div>
+        </div>
+
         <button class="icon-btn" id="opClose" title="Fechar">✖</button>
       </div>
 
