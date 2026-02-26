@@ -584,7 +584,7 @@ function fetchAcoes() {
         observacao: d.observacao || d["Observação"] || "",
 
         divPer: perPayment(d),
-        divAnual: anual,
+        divAnual: annual,
         yield: Number.isFinite(yFinal) ? yFinal : null,
 
         g1w: Number(d.taxaCrescimento_1semana) || 0,
