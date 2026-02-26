@@ -733,6 +733,66 @@ select:focus {
   letter-spacing: 0.5px;
 }
 
+@media (max-width: 600px) {
+  #opModal .modal-header {
+    display: grid !important;
+    grid-template-areas:
+      "title close"
+      "legend legend" !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    align-items: start !important;
+  }
+
+  #opModal .modal-header h2 {
+    grid-area: title !important;
+    font-size: 1.2rem !important;
+    margin: 0 !important;
+    width: auto !important;
+    line-height: 1.3 !important;
+  }
+
+  #opModal .modal-header #opClose {
+    grid-area: close !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #opModal .treemap-legend {
+    grid-area: legend !important;
+    width: 100% !important;
+    margin: 8px 0 0 0 !important;
+    padding: 10px 14px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    border-radius: 12px !important;
+  }
+
+  #opModal .legend-gradient {
+    width: 100px !important;
+  }
+
+  #opModal .legend-values {
+    font-size: 9px !important;
+  }
+
+  #opModal .treemap-legend>span {
+    font-size: 9px !important;
+  }
+
+  #opModal .info-popover {
+    width: 260px !important;
+    right: -10px !important;
+    padding: 12px !important;
+  }
+}
+
 /* Weighting Info Popover */
 .info-trigger {
   position: relative;
