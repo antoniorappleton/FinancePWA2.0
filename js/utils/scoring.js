@@ -1,5 +1,18 @@
 // js/utils/scoring.js
 
+const SETTINGS_STORAGE_KEY = "app.settings";
+
+function getUserWeights() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.weights || null;
+  } catch {
+    return null;
+  }
+}
+
 export const SCORING_CFG = {
   MAX_ANNUAL_RETURN: 0.8,
   MIN_ANNUAL_RETURN: -0.8,
@@ -164,7 +177,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const D = scoreDividendYield(yPct);
   const E = scoreEVEBITDA(eve, acao.setor);
 
-  const W = SCORING_CFG.WEIGHTS;
+  const W = getUserWeights() || SCORING_CFG.WEIGHTS;
 
   // Ajuste de risco via volatilidade (ou proxy)
   const vol = Number.isFinite(acao.volatility)
@@ -173,7 +186,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const riskAdj = 1 / (1 + 0.75 * vol); // 0.57..1
 
   let score = clamp(
-    W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + W.Rsk * 1.0,
+    W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.Rsk || 0.05) * 1.0,
     0,
     1,
   );

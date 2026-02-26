@@ -141,7 +141,7 @@ const CFG = {
 
   // peso dos componentes no score [0..1]
   // R = retorno/€, V = P/E, T = tendência (SMA), D = dividend yield, E = EV/EBITDA, Rsk = constante
-  WEIGHTS: { R: 0.1, V: 0.2, T: 0.25, D: 0.2, E: 0.2, Rsk: 0.05 },
+  // Nota: Estes pesos são agora geridos dinamicamente nos Settings através do scoring.js
 
   // teto duro por ticker (usado em frações e inteiros)
   CAP_PCT_POR_TICKER: 0.15,
@@ -817,12 +817,11 @@ function prepararCandidatos(
 
   // Se modo estrito, recalculamos score apenas com base no retorno/euro (legado ou teste)
   if (modoEstrito) {
-    const rets = cands
-      .map((c) => c.metrics.retornoPorEuro)
-      .filter((x) => x > 0);
-    const p99 = Math.max(percentile(rets, 0.99), 1e-9);
-    cands.forEach((c) => {
-      c.score = clamp(c.metrics.retornoPorEuro / p99, 0, 1);
+    cands = cands.map((c) => {
+      // Usa o score centralizado do scoring.js
+      const centralResult = calculateLucroMaximoScore(c.raw || c, periodo);
+      const score = centralResult.score;
+      return { ...c, score, __R: centralResult.components.R };
     });
   }
 

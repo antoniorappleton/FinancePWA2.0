@@ -16,9 +16,15 @@ import { Treemap } from "../components/treemap.js";
 let lastAtivosSnap = null;
 let lastAcoesSnap = null;
 let treemapInstance = null;
+let unsubAtivos = null;
+let unsubAcoes = null;
 
 export async function initScreen() {
   console.log("✅ dashboard.js iniciado");
+
+  // Limpar listeners antigos se existirem (evita leaks ao navegar entre screens)
+  if (unsubAtivos) unsubAtivos();
+  if (unsubAcoes) unsubAcoes();
 
   // --- ELEMENTOS DA UI ---
   const valorTotalEl = document.getElementById("valorTotal");
@@ -176,18 +182,30 @@ export async function initScreen() {
       valorCarteiraEl.textContent = `${fmtEUR.format(valorCarteira)} valor em carteira`;
   };
 
+  // Se já tivermos dados de uma navegação anterior, mostramos logo
+  if (lastAtivosSnap && lastAcoesSnap) {
+    console.log("⚡ Usando snapshots em cache para renderização imediata");
+    atualizarKPIs();
+    const contAtividade = document.getElementById("atividadeRecente");
+    if (contAtividade) carregarAtividadeRecenteSimplificada(lastAtivosSnap);
+  }
+
   // Listeners em tempo real
-  onSnapshot(collection(db, "ativos"), (snap) => {
+  unsubAtivos = onSnapshot(collection(db, "ativos"), (snap) => {
     lastAtivosSnap = snap;
     atualizarKPIs();
-    // Também atualizamos a atividade recente se estivermos no dashboard
     const contAtividade = document.getElementById("atividadeRecente");
     if (contAtividade) carregarAtividadeRecenteSimplificada(snap);
   });
 
-  onSnapshot(collection(db, "acoesDividendos"), (snap) => {
+  unsubAcoes = onSnapshot(collection(db, "acoesDividendos"), (snap) => {
     lastAcoesSnap = snap;
     atualizarKPIs();
+    // Se o modal de oportunidades estiver aberto, atualizamos o treemap em tempo real
+    const modal = document.getElementById("opModal");
+    if (modal && !modal.classList.contains("hidden")) {
+      carregarTop10Crescimento(opPeriodoAtual);
+    }
   });
 
   // 3) Botões
@@ -433,7 +451,14 @@ async function carregarTop10Crescimento(periodo = "1m") {
   }
 
   try {
-    const snap = await getDocs(collection(db, "acoesDividendos"));
+    // OPTIMIZAÇÃO: Usa o snapshot já carregado em vez de fazer getDocs lento
+    let snap = lastAcoesSnap;
+    if (!snap) {
+      console.log("⏳ Fetching acoesDividendos for Treemap...");
+      snap = await getDocs(collection(db, "acoesDividendos"));
+      lastAcoesSnap = snap;
+    }
+
     const allCands = [];
 
     snap.forEach((doc) => {

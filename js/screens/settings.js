@@ -21,6 +21,16 @@ const defaultSettings = {
   darkMode: false,          // mantém compat com versões antigas
   language: "pt-PT",
   currency: "EUR",
+
+  // Algoritmo Pesos
+  weights: {
+    R: 0.1,
+    V: 0.2,
+    T: 0.25,
+    D: 0.2,
+    E: 0.2,
+    Rsk: 0.05
+  }
 };
 
 /* ---------------- helpers de storage ---------------- */
@@ -75,6 +85,16 @@ export function initScreen() {
   const btnCancel = document.getElementById("cfgCancel");
   const btnLogout = document.getElementById("btnLogout");
 
+  // Pesos
+  const weightsUI = {
+    R: { el: document.getElementById("cfgWeightR"), val: document.getElementById("valR") },
+    V: { el: document.getElementById("cfgWeightV"), val: document.getElementById("valV") },
+    T: { el: document.getElementById("cfgWeightT"), val: document.getElementById("valT") },
+    D: { el: document.getElementById("cfgWeightD"), val: document.getElementById("valD") },
+    E: { el: document.getElementById("cfgWeightE"), val: document.getElementById("valE") },
+    Rsk: { el: document.getElementById("cfgWeightRsk"), val: document.getElementById("valRsk") }
+  };
+
   if (!elLanguage || !elCurrency || !elDark || !btnSave || !btnCancel) {
     console.warn("⚠️ settings.js: elementos não encontrados. Confirma o HTML dos IDs.");
     return;
@@ -105,9 +125,26 @@ export function initScreen() {
   if (elEmailN) elEmailN.checked = !!state.emailNotifications;
   if (elPush)   elPush.checked   = !!state.pushNotifications;
   if (elWeekly) elWeekly.checked = !!state.weeklyReports;
-
   if (el2FA)   el2FA.checked   = !!state.twoFactor;
   if (elLogin) elLogin.checked = !!state.loginNotifications;
+
+  // Preenche Pesos (0-10 scale para o utilizador, 0-1 interno)
+  const elTotalWeight = document.getElementById("valTotalWeight");
+  const updateWeightsUI = () => {
+    let sum = 0;
+    Object.keys(weightsUI).forEach(k => {
+      const item = weightsUI[k];
+      if (item.el) {
+        const val = (state.weights[k] || 0) * 10;
+        item.el.value = val;
+        if (item.val) item.val.textContent = val.toFixed(1);
+        sum += val;
+      }
+    });
+    if (elTotalWeight) elTotalWeight.textContent = sum.toFixed(1);
+  };
+
+  updateWeightsUI();
 
   // Aplica tema no arranque deste screen
   applyTheme(!!state.darkMode);
@@ -141,6 +178,47 @@ export function initScreen() {
     state.loginNotifications = !!elLogin.checked;
   });
 
+  // Lógica de Redistribuição Proporcional
+  function redistribute(changedKey, newValue) {
+    const keys = Object.keys(weightsUI);
+    const otherKeys = keys.filter(k => k !== changedKey);
+    const targetTotal = 10;
+    
+    state.weights[changedKey] = newValue / 10;
+    const remaining = targetTotal - newValue;
+    const currentOthersSum = otherKeys.reduce((s, k) => s + (state.weights[k] * 10), 0);
+
+    if (currentOthersSum > 0.01) {
+      const ratio = remaining / currentOthersSum;
+      otherKeys.forEach(k => {
+        state.weights[k] = (state.weights[k] * ratio);
+      });
+    } else {
+      const equalShare = remaining / otherKeys.length;
+      otherKeys.forEach(k => {
+        state.weights[k] = equalShare / 10;
+      });
+    }
+
+    keys.forEach(k => { if (state.weights[k] < 0) state.weights[k] = 0; });
+
+    const finalSum = keys.reduce((s, k) => s + state.weights[k], 0);
+    const diff = 1.0 - finalSum;
+    if (Math.abs(diff) > 0.0001) {
+      const adjKey = otherKeys.sort((a,b) => state.weights[b] - state.weights[a])[0];
+      state.weights[adjKey] = Math.max(0, state.weights[adjKey] + diff);
+    }
+    updateWeightsUI();
+  }
+
+  // Listeners Pesos
+  Object.keys(weightsUI).forEach(k => {
+    const item = weightsUI[k];
+    item.el?.addEventListener("input", () => {
+      redistribute(k, parseFloat(item.el.value));
+    });
+  });
+
   // Botões
   btnSave.addEventListener("click", () => {
     saveSettings(state);
@@ -161,6 +239,15 @@ export function initScreen() {
 
     if (el2FA)   el2FA.checked   = !!state.twoFactor;
     if (elLogin) elLogin.checked = !!state.loginNotifications;
+
+    Object.keys(weightsUI).forEach(k => {
+      const item = weightsUI[k];
+      if (item.el) {
+        const val = state.weights[k];
+        item.el.value = val;
+        if (item.val) item.val.textContent = Number(val).toFixed(2);
+      }
+    });
 
     applyTheme(state.darkMode);
   });
