@@ -1,3 +1,12 @@
+<style>
+  #opModal .modal-dialog {
+    width: min(1000px, 95vw);
+    height: 90vh;
+  }
+  #treemapContainer svg {
+    border-radius: 4px;
+  }
+</style>
 <div class="dashboard" data-screen-title="Dashboard">
   <div class="dashboard-header">
     <div class="dashboard-title">
@@ -51,7 +60,9 @@
           <p class="value posicoes-ativas" id="posicoesAtivas">0</p>
           <p class="subvalue">
             Objetivos:
-            <span class="objetivos-financeiros" id="objetivosFinanceiros">0/0</span>
+            <span class="objetivos-financeiros" id="objetivosFinanceiros"
+              >0/0</span
+            >
           </p>
         </div>
         <div class="icon-box">
@@ -100,18 +111,40 @@
   <div id="opModal" class="modal hidden">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3>Top 10 Oportunidades</h3>
+        <h2 style="color: var(--primary-main)">
+          Mapa de Mercado - Lucro Máximo
+        </h2>
         <button class="icon-btn" id="opClose" title="Fechar">✖</button>
       </div>
 
-      <div class="modal-toolbar">
-        <button class="chip" data-periodo="1s">1 semana</button>
-        <button class="chip" data-periodo="1m">1 mês</button>
-        <button class="chip" data-periodo="1ano">1 ano</button>
-      </div>
-
-      <div class="top10-box">
-        <ul id="listaTop10"></ul>
+      <div
+        id="treemapContainer"
+        style="
+          flex: 1;
+          min-height: 550px;
+          margin: 0 16px 16px;
+          background: #000;
+          border-radius: 4px;
+          border: 1px solid #333;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding-right: 2px;
+          box-sizing: border-box;
+        "
+      >
+        <!-- Treemap gerado aqui -->
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #444;
+            font-family: monospace;
+          "
+        >
+          LOADING TREEMAP DATA...
+        </div>
       </div>
     </div>
   </div>
@@ -136,12 +169,22 @@
 
           <label>
             Nome
-            <input id="nomeAtivo" type="text" placeholder="Ex.: Apple Inc." required />
+            <input
+              id="nomeAtivo"
+              type="text"
+              placeholder="Ex.: Apple Inc."
+              required
+            />
           </label>
 
           <label>
             Ticker
-            <input id="tickerAtivo" type="text" placeholder="Ex.: AAPL" required />
+            <input
+              id="tickerAtivo"
+              type="text"
+              placeholder="Ex.: AAPL"
+              required
+            />
           </label>
 
           <label>
@@ -163,7 +206,9 @@
               <option value="Finanças">Finanças</option>
               <option value="Imobiliário">Imobiliário</option>
               <option value="Indústria">Indústria</option>
-              <option value="Infraestruturas / Energia">Infraestruturas / Energia</option>
+              <option value="Infraestruturas / Energia">
+                Infraestruturas / Energia
+              </option>
               <option value="Materiais">Materiais</option>
               <option value="Mineração (Ouro)">Mineração (Ouro)</option>
               <option value="Restauração">Restauração</option>
@@ -186,12 +231,24 @@
 
           <label>
             Quantidade
-            <input id="quantidadeAtivo" type="number" step="0.0001" min="0.0001" required />
+            <input
+              id="quantidadeAtivo"
+              type="number"
+              step="0.0001"
+              min="0.0001"
+              required
+            />
           </label>
 
           <label id="labelPreco">
             Preço da transação (€)
-            <input id="precoAtivo" type="number" step="0.0001" min="0" required />
+            <input
+              id="precoAtivo"
+              type="number"
+              step="0.0001"
+              min="0"
+              required
+            />
           </label>
 
           <label>
