@@ -582,10 +582,10 @@ function fetchAcoes() {
         mercado: canon(d.mercado || ""),
         valorStock: valor,
         dividendo: toNum(d.dividendo),
-        dividendoMedio24m: toNum(d.dividendoMedio24m),
+        dividendoMedio24m: toNum(d.divMedio24m || d.dividendoMedio24m),
         periodicidade: d.periodicidade || "",
         mes: d.mes || "",
-        observacao: d.observacao || d["Observação"] || "",
+        observacao: d.observacoes || d.observacao || d["Observação"] || "",
 
         divPer: perPayment(d),
         divAnual: annual,
@@ -596,9 +596,9 @@ function fetchAcoes() {
         g1y: Number(d.priceChange_1y || d.taxaCrescimento_1ano || d.g1y) || 0,
 
         roic: Number(d.roic || d.ROIC || 0),
-        eps_yoy: Number(d.eps_yoy || d.EPS_YoY || 0),
-        eps_next_y: Number(d.eps_next_y || d["EPS next Y"] || 0),
-        market_cap: Number(d.market_cap || d["Market Cap"] || 0),
+        eps_yoy: Number(d.epsYoY || d.eps_yoy || d.EPS_YoY || 0),
+        eps_next_y: Number(d.epsNextY || d.eps_next_y || d["EPS next Y"] || 0),
+        market_cap: Number(d.marketCap || d.market_cap || d["Market Cap"] || 0),
 
         evEbitda:
           Number(d.evEbitda) ||

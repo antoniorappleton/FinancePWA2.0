@@ -166,7 +166,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const rAnnual = annualizeRate(acao, periodoSel);
   const p99 = 0.8; // Normalization factor
   const R_Price = clamp(rAnnual / p99, 0, 1);
-  const epsYoY = Number(acao.eps_yoy || acao.EPS_YoY || 0);
+  const epsYoY = Number(acao.epsYoY || acao.eps_yoy || acao.EPS_YoY || 0);
   const R_Eps = scoreEPS(epsYoY);
   // Pilar R: 40% Preço, 60% Lucros (EPS)
   const R = R_Price * 0.4 + R_Eps * 0.6;
@@ -196,7 +196,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
       : rawYield;
 
   if (yPct === 0 && p > 0) {
-    const div = Number(acao.dividendoMedio24m || acao.dividendo || 0);
+    const div = Number(acao.divMedio24m || acao.dividendoMedio24m || acao.dividendo || 0);
     yPct = (div / p) * 100;
   }
 
