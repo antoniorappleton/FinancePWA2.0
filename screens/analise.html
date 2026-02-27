@@ -1,17 +1,10 @@
 <!-- screens/analise.html -->
 <div class="page" data-screen-title="Análises">
-  <div
-    class="dashboard-header"
-    style="display: flex; justify-content: space-between; align-items: center"
-  >
+  <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center">
     <div>
       <p class="subtitle">Visão das Ações em Base Dados</p>
     </div>
-    <button
-      id="anlAlgoHelp"
-      class="icon-btn"
-      title="Ver como funciona o algoritmo"
-      style="
+    <button id="anlAlgoHelp" class="icon-btn" title="Ver como funciona o algoritmo" style="
         background: var(--muted);
         padding: 8px;
         border-radius: 50%;
@@ -22,18 +15,9 @@
         justify-content: center;
         color: var(--primary, #4f46e5);
         border: 1px solid var(--border);
-      "
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
+      ">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -113,36 +97,22 @@
       </div>
 
       <div class="legend" style="margin-top: 6px">
-        <span style="font-size: 0.85rem; margin-right: 8px"
-          >Intensidade do dividendo:</span
-        >
+        <span style="font-size: 0.85rem; margin-right: 8px">Intensidade do dividendo:</span>
         <div class="legend-item">
-          <div
-            class="legend-box level-1"
-            style="
+          <div class="legend-box level-1" style="
               background: rgba(16, 185, 129, 0.1);
               border: 1px solid var(--border);
-            "
-          ></div>
+            "></div>
           Baixa
         </div>
         <div class="legend-item">
-          <div
-            class="legend-box level-2"
-            style="background: rgba(16, 185, 129, 0.3)"
-          ></div>
+          <div class="legend-box level-2" style="background: rgba(16, 185, 129, 0.3)"></div>
         </div>
         <div class="legend-item">
-          <div
-            class="legend-box level-3"
-            style="background: rgba(16, 185, 129, 0.55)"
-          ></div>
+          <div class="legend-box level-3" style="background: rgba(16, 185, 129, 0.55)"></div>
         </div>
         <div class="legend-item">
-          <div
-            class="legend-box level-4"
-            style="background: rgba(16, 185, 129, 0.8)"
-          ></div>
+          <div class="legend-box level-4" style="background: rgba(16, 185, 129, 0.8)"></div>
           Alta
         </div>
       </div>
@@ -153,23 +123,16 @@
   <div class="card" style="margin-top: 12px">
     <div class="card-content" style="display: block">
       <!-- Seleção + Simulador -->
-      <div
-        class="analysis-toolbar"
-        style="padding: 0.6rem 1rem; border: 0; background: transparent"
-      >
-        <div
-          style="
+      <div class="analysis-toolbar" style="padding: 0.6rem 1rem; border: 0; background: transparent">
+        <div style="
             display: flex;
             gap: 0.5rem;
             align-items: center;
             flex-wrap: wrap;
-          "
-        >
+          ">
           <button class="btn outline" id="anlSimular">Usar no simulador</button>
           <button class="btn ghost" id="anlClearSel">Limpar seleção</button>
-          <span class="muted"
-            >Selecionados: <strong id="anlSelCount">0</strong></span
-          >
+          <span class="muted">Selecionados: <strong id="anlSelCount">0</strong></span>
         </div>
       </div>
 
@@ -178,11 +141,7 @@
           <thead>
             <tr>
               <th class="sticky-col" style="width: 44px">
-                <input
-                  type="checkbox"
-                  id="anlSelectAll"
-                  title="Selecionar todos os filtrados"
-                />
+                <input type="checkbox" id="anlSelectAll" title="Selecionar todos os filtrados" />
               </th>
               <th data-sort="ticker" class="sortable sticky-col">Ticker</th>
               <th data-sort="nome" class="sortable">Nome</th>
@@ -194,6 +153,8 @@
               <th data-sort="divPer" class="sortable">Dividendo/pag.</th>
               <th data-sort="divAnual" class="sortable">Dividendo/ano</th>
               <th data-sort="pe" class="sortable">P/E</th>
+              <th data-sort="roic" class="sortable">ROIC</th>
+              <th data-sort="eps_yoy" class="sortable">EPS YoY</th>
               <th data-sort="delta50" class="sortable">Δ50d%</th>
               <th data-sort="delta200" class="sortable">Δ200d%</th>
               <th data-sort="g1w" class="sortable">1S</th>
@@ -225,13 +186,7 @@
       <div class="form-grid">
         <label>
           Investimento total (€)
-          <input
-            id="anlSimInvest"
-            type="number"
-            min="1"
-            step="0.01"
-            placeholder="Ex.: 1000"
-          />
+          <input id="anlSimInvest" type="number" min="1" step="0.01" placeholder="Ex.: 1000" />
         </label>
         <label>
           Horizonte (anos)
@@ -278,13 +233,7 @@
 </div>
 
 <!-- PREVIEW DO RELATÓRIO -->
-<div
-  id="anlReportModal"
-  class="modal hidden"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="repTitle"
->
+<div id="anlReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="repTitle">
   <div class="modal-content" style="max-width: 1100px">
     <div class="modal-header">
       <h3 id="repTitle">Relatório Financeiro — Pré-visualização</h3>
@@ -446,10 +395,7 @@
           </ul>
         </div>
       </div>
-      <div
-        class="actions-row"
-        style="margin-top: 20px; display: flex; justify-content: flex-end"
-      >
+      <div class="actions-row" style="margin-top: 20px; display: flex; justify-content: flex-end">
         <button class="btn" id="anlAlgoOk">Entendi</button>
       </div>
     </div>

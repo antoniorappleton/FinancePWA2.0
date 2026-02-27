@@ -2,7 +2,7 @@
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
-function getUserWeights() {
+export function getUserWeights() {
   try {
     const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (!raw) return null;
@@ -48,9 +48,9 @@ function clamp(v, min, max) {
 }
 
 export function annualizeRate(row, periodoSel) {
-  const w = asRate(row.taxaCrescimento_1semana || row.g1w);
-  const m = asRate(row.taxaCrescimento_1mes || row.g1m);
-  const y = asRate(row.taxaCrescimento_1ano || row.g1y);
+  const w = asRate(row.priceChange_1w || row.taxaCrescimento_1semana || row.g1w);
+  const m = asRate(row.priceChange_1m || row.taxaCrescimento_1mes || row.g1m);
+  const y = asRate(row.priceChange_1y || row.taxaCrescimento_1ano || row.g1y);
 
   const rw = Math.pow(1 + w, 52) - 1;
   const rm = Math.pow(1 + m, 12) - 1;
@@ -132,6 +132,22 @@ export function scoreDividendYield(yPct) {
   return clamp(v / 8, 0, 1);
 }
 
+export function scoreROIC(roic) {
+  const v = Number(roic);
+  if (!Number.isFinite(v)) return 0;
+  // 0% -> score 0; 20% -> score 1
+  return clamp(v / 20, 0, 1);
+}
+
+export function scoreEPS(epsYoY) {
+  const v = Number(epsYoY);
+  if (!Number.isFinite(v)) return 0;
+  // Aceita fração ou percentagem
+  const frac = Math.abs(v) > 1 ? v / 100 : v;
+  // 0% growth -> 0.2 score; 40% growth -> 1.0 score
+  return clamp(0.2 + (frac / 0.4) * 0.8, 0, 1);
+}
+
 /** Proxy muito simples de volatilidade [0..1] se não houver `row.volatility`. */
 export function proxyVol(row) {
   const w = Math.min(
@@ -149,12 +165,24 @@ export function proxyVol(row) {
 export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const rAnnual = annualizeRate(acao, periodoSel);
   const p99 = 0.8; // Normalization factor
-  const R = clamp(rAnnual / p99, 0, 1);
+  const R_Price = clamp(rAnnual / p99, 0, 1);
+  const epsYoY = Number(acao.eps_yoy || acao.EPS_YoY || 0);
+  const R_Eps = scoreEPS(epsYoY);
+  // Pilar R: 40% Preço, 60% Lucros (EPS)
+  const R = R_Price * 0.4 + R_Eps * 0.6;
 
   const pe = Number(
     acao["P/E ratio (Preço/Lucro)"] || acao.pe || acao.peRatio || 0,
   );
-  const eve = Number(acao["EV/Ebitda"] || acao.evEbitda || 0);
+  let eve = Number(acao["EV/Ebitda"] || acao.evEbitda || 0);
+
+  // Fallback para EV / Ebitda se o rácio direto não existir
+  if (eve === 0) {
+    const ev = Number(acao.EV || acao.ev || 0);
+    const ebitda = Number(acao.Ebitda || acao.ebitda || 0);
+    if (ebitda > 0) eve = ev / ebitda;
+  }
+
   const p = Number(acao.valorStock || 0);
   const s50 = Number(acao.SMA50 || acao.sma50 || 0);
   const s200 = Number(acao.SMA200 || acao.sma200 || 0);
@@ -175,7 +203,12 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const V = scorePE(pe);
   const T = scoreTrend(p, s50, s200);
   const D = scoreDividendYield(yPct);
-  const E = scoreEVEBITDA(eve, acao.setor);
+
+  // Pilar E: 50% EV/Ebitda, 50% ROIC
+  const E_Ratio = scoreEVEBITDA(eve, acao.setor);
+  const roic = Number(acao.roic || acao.ROIC || 0);
+  const E_Roic = scoreROIC(roic);
+  const E = E_Ratio * 0.5 + E_Roic * 0.5;
 
   const W = getUserWeights() || SCORING_CFG.WEIGHTS;
 

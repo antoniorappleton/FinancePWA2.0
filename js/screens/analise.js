@@ -217,6 +217,8 @@ const SORT_ACCESSORS = {
   mes: (r) => r.mes || "",
   observacao: (r) => r.observacao || "",
   evebitda: (r) => (Number.isFinite(r.evEbitda) ? r.evEbitda : Infinity),
+  roic: (r) => (Number.isFinite(r.roic) ? r.roic : -Infinity),
+  eps_yoy: (r) => (Number.isFinite(r.eps_yoy) ? r.eps_yoy : -Infinity),
 };
 function sortRows(rows) {
   if (!sortKey) return rows;
@@ -517,6 +519,8 @@ function renderTable(rows) {
         <td>${divPerTxt}</td>
         <td>${divAnualTxt}</td>
         <td>${badgePE(r.pe)}</td>
+        <td><span class="badge ${r.roic > 15 ? 'ok' : 'muted'}">${r.roic ? r.roic.toFixed(1) + '%' : '—'}</span></td>
+        <td>${pct(r.eps_yoy)}</td>
         <td>${pct(r.delta50)}</td>
         <td>${pct(r.delta200)}</td>
         <td>${pct(r.g1w)}</td>
@@ -587,9 +591,14 @@ function fetchAcoes() {
         divAnual: annual,
         yield: Number.isFinite(yFinal) ? yFinal : null,
 
-        g1w: Number(d.taxaCrescimento_1semana) || 0,
-        g1m: Number(d.taxaCrescimento_1mes) || 0,
-        g1y: Number(d.taxaCrescimento_1ano) || 0,
+        g1w: Number(d.priceChange_1w || d.taxaCrescimento_1semana || d.g1w) || 0,
+        g1m: Number(d.priceChange_1m || d.taxaCrescimento_1mes || d.g1m) || 0,
+        g1y: Number(d.priceChange_1y || d.taxaCrescimento_1ano || d.g1y) || 0,
+
+        roic: Number(d.roic || d.ROIC || 0),
+        eps_yoy: Number(d.eps_yoy || d.EPS_YoY || 0),
+        eps_next_y: Number(d.eps_next_y || d["EPS next Y"] || 0),
+        market_cap: Number(d.market_cap || d["Market Cap"] || 0),
 
         evEbitda:
           Number(d.evEbitda) ||

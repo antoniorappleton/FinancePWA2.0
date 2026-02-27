@@ -10,7 +10,11 @@ import {
   serverTimestamp,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { calculateLucroMaximoScore } from "../utils/scoring.js";
+import {
+  calculateLucroMaximoScore,
+  getUserWeights,
+  SCORING_CFG,
+} from "../utils/scoring.js";
 import { Treemap } from "../components/treemap.js";
 
 let lastAtivosSnap = null;
@@ -603,6 +607,7 @@ function openOportunidades() {
   if (!modal) return;
 
   modal.classList.remove("hidden");
+  atualizarLegendaPesos();
   setActiveChip(opPeriodoAtual);
   carregarTop10Crescimento(opPeriodoAtual);
 
@@ -619,6 +624,29 @@ function closeOportunidades() {
   modal.classList.add("hidden");
   clearInterval(opInterval);
   opInterval = null;
+}
+
+// =========================
+// ATUALIZA LEGENDA DE PESOS DINAMICAMENTE
+// =========================
+function atualizarLegendaPesos() {
+  const W = getUserWeights() || SCORING_CFG.WEIGHTS;
+
+  const mapping = {
+    "w-R": W.R,
+    "w-T": W.T,
+    "w-V": W.V,
+    "w-D": W.D,
+    "w-E": W.E,
+    "w-Rsk": W.Rsk || 0.05,
+  };
+
+  for (const [id, val] of Object.entries(mapping)) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = `${Math.round(val * 100)}%`;
+    }
+  }
 }
 
 function setActiveChip(periodo) {
