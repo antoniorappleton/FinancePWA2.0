@@ -141,7 +141,7 @@ const CFG = {
 
   // peso dos componentes no score [0..1]
   // R = retorno/€, V = P/E, T = tendência (SMA), D = dividend yield, E = EV/EBITDA, Rsk = constante
-  // Nota: Estes pesos são agora geridos dinamicamente nos Settings através do scoring.js
+  // (Weights are now centrally managed in scoring.js/settings.js)
 
   // teto duro por ticker (usado em frações e inteiros)
   CAP_PCT_POR_TICKER: 0.15,
@@ -519,7 +519,7 @@ function renderTable(rows) {
         <td>${divPerTxt}</td>
         <td>${divAnualTxt}</td>
         <td>${badgePE(r.pe)}</td>
-        <td><span class="badge ${r.roic > 15 ? 'ok' : 'muted'}">${r.roic ? r.roic.toFixed(1) + '%' : '—'}</span></td>
+        <td><span class="badge ${r.roic > 15 ? "ok" : "muted"}">${r.roic ? r.roic.toFixed(1) + "%" : "—"}</span></td>
         <td>${pct(r.eps_yoy)}</td>
         <td>${pct(r.delta50)}</td>
         <td>${pct(r.delta200)}</td>
@@ -591,7 +591,8 @@ function fetchAcoes() {
         divAnual: annual,
         yield: Number.isFinite(yFinal) ? yFinal : null,
 
-        g1w: Number(d.priceChange_1w || d.taxaCrescimento_1semana || d.g1w) || 0,
+        g1w:
+          Number(d.priceChange_1w || d.taxaCrescimento_1semana || d.g1w) || 0,
         g1m: Number(d.priceChange_1m || d.taxaCrescimento_1mes || d.g1m) || 0,
         g1y: Number(d.priceChange_1y || d.taxaCrescimento_1ano || d.g1y) || 0,
 

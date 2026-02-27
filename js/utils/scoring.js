@@ -16,7 +16,7 @@ export function getUserWeights() {
 export const SCORING_CFG = {
   MAX_ANNUAL_RETURN: 0.8,
   MIN_ANNUAL_RETURN: -0.8,
-  WEIGHTS: { R: 0.35, V: 0.15, T: 0.2, D: 0.15, E: 0.1, Rsk: 0.05 },
+  WEIGHTS: { R: 0.1, V: 0.2, T: 0.25, D: 0.2, E: 0.2, Rsk: 0.05 },
   BLEND_WEIGHTS: {
     "1s": { w: 0.75, m: 0.15, y: 0.1 },
     "1m": { w: 0.1, m: 0.75, y: 0.15 },
@@ -48,7 +48,9 @@ function clamp(v, min, max) {
 }
 
 export function annualizeRate(row, periodoSel) {
-  const w = asRate(row.priceChange_1w || row.taxaCrescimento_1semana || row.g1w);
+  const w = asRate(
+    row.priceChange_1w || row.taxaCrescimento_1semana || row.g1w,
+  );
   const m = asRate(row.priceChange_1m || row.taxaCrescimento_1mes || row.g1m);
   const y = asRate(row.priceChange_1y || row.taxaCrescimento_1ano || row.g1y);
 
@@ -196,7 +198,9 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
       : rawYield;
 
   if (yPct === 0 && p > 0) {
-    const div = Number(acao.divMedio24m || acao.dividendoMedio24m || acao.dividendo || 0);
+    const div = Number(
+      acao.divMedio24m || acao.dividendoMedio24m || acao.dividendo || 0,
+    );
     yPct = (div / p) * 100;
   }
 
@@ -219,7 +223,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const riskAdj = 1 / (1 + 0.75 * vol); // 0.57..1
 
   let score = clamp(
-    W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.Rsk || 0.05) * 1.0,
+    W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.Rsk || 0) * 1.0,
     0,
     1,
   );

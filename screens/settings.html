@@ -1,6 +1,9 @@
 <!-- screens/settings.html -->
 <div class="page" data-screen-title="Configurações">
-  <div class="settings" style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px">
+  <div
+    class="settings"
+    style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px"
+  >
     <!-- PERFIL -->
     <div class="card">
       <div class="card-content" style="align-items: flex-start; gap: 16px">
@@ -14,7 +17,12 @@
 
             <label>
               Email (Firebase)
-              <input id="cfgEmail" type="email" placeholder="o.teu@email" disabled />
+              <input
+                id="cfgEmail"
+                type="email"
+                placeholder="o.teu@email"
+                disabled
+              />
             </label>
 
             <label>
@@ -35,12 +43,14 @@
         <div style="flex: 1">
           <p class="label">Segurança</p>
           <div class="form-grid">
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <span>Autenticação de dois fatores</span>
               <label class="switch">
                 <input type="checkbox" id="cfgTwoFactor" />
@@ -48,12 +58,14 @@
               </label>
             </label>
 
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <span>Notificações de login</span>
               <label class="switch">
                 <input type="checkbox" id="cfgLoginNotifications" />
@@ -68,9 +80,14 @@
     <!-- Segurança: alteração de palavra-passe -->
     <div class="form-grid" style="margin-top: 8px">
       <label>
-        <span class="label">Palavra-passe atual
-          <small class="muted"></small></span>
-        <input type="password" id="cfgCurrentPass" autocomplete="current-password" />
+        <span class="label"
+          >Palavra-passe atual <small class="muted"></small
+        ></span>
+        <input
+          type="password"
+          id="cfgCurrentPass"
+          autocomplete="current-password"
+        />
       </label>
       <label>
         <span class="label">Nova palavra-passe</span>
@@ -87,18 +104,24 @@
       </button>
     </div>
 
-    <hr style="
+    <hr
+      style="
         border: none;
         border-top: 1px dashed var(--border);
         opacity: 0.6;
         margin: 8px 0;
-      " />
+      "
+    />
 
     <!-- Segurança: e-mail de recuperação -->
     <div class="form-grid">
       <label>
         <span class="label">E-mail para recuperação</span>
-        <input type="email" id="cfgRecoveryEmail" placeholder="o.teu@email.com" />
+        <input
+          type="email"
+          id="cfgRecoveryEmail"
+          placeholder="o.teu@email.com"
+        />
       </label>
     </div>
     <div class="actions-row" style="justify-content: flex-end; gap: 8px">
@@ -113,12 +136,14 @@
         <div style="flex: 1">
           <p class="label">Notificações</p>
           <div class="form-grid">
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <span>Email</span>
               <label class="switch">
                 <input type="checkbox" id="cfgEmailNotifications" />
@@ -126,12 +151,14 @@
               </label>
             </label>
 
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <span>Push</span>
               <label class="switch">
                 <input type="checkbox" id="cfgPushNotifications" />
@@ -139,12 +166,14 @@
               </label>
             </label>
 
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <span>Relatórios semanais</span>
               <label class="switch">
                 <input type="checkbox" id="cfgWeeklyReports" />
@@ -180,12 +209,14 @@
               </select>
             </label>
 
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <div>
                 <div><strong>Tema escuro</strong></div>
                 <div class="muted">Interface em modo escuro</div>
@@ -205,70 +236,234 @@
       <div class="card-content" style="align-items: flex-start; gap: 16px">
         <div style="flex: 1">
           <p class="label">Pesos do Algoritmo (Lucro Máximo)</p>
-          <div class="muted" style="margin-bottom: 16px">Distribui a importância (Total: 10). Ao aumentar um, os outros
-            diminuem proporcionalmente.</div>
+          <div class="muted" style="margin-bottom: 12px">
+            Distribui a importância (Total: 10). Ao aumentar um, os outros
+            diminuem proporcionalmente.
+          </div>
 
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            <div class="weight-item" style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem;">
+          <div
+            class="profile-presets"
+            style="display: flex; gap: 8px; margin-bottom: 20px"
+          >
+            <button
+              class="btn outline small"
+              id="btnProfCons"
+              style="flex: 1; padding: 6px 4px; font-size: 0.8rem"
+            >
+              Conservador
+            </button>
+            <button
+              class="btn outline small"
+              id="btnProfMod"
+              style="flex: 1; padding: 6px 4px; font-size: 0.8rem"
+            >
+              Moderado
+            </button>
+            <button
+              class="btn outline small"
+              id="btnProfAgre"
+              style="flex: 1; padding: 6px 4px; font-size: 0.8rem"
+            >
+              Agressivo
+            </button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <div
+              class="weight-item"
+              style="display: flex; flex-direction: column; gap: 4px"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 500;
+                  font-size: 0.9rem;
+                "
+              >
                 <span>Crescimento (Preço + EPS)</span>
-                <span id="valR" style="color: var(--premium); font-weight: 700;">1.0</span>
+                <span id="valR" style="color: var(--premium); font-weight: 700"
+                  >1.0</span
+                >
               </div>
-              <input id="cfgWeightR" type="range" min="0" max="10" step="0.1" value="1.0"
-                style="width: 100%; margin-top: 4px;" />
+              <input
+                id="cfgWeightR"
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value="1.0"
+                style="width: 100%; margin-top: 4px"
+              />
             </div>
 
-            <div class="weight-item" style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem;">
+            <div
+              class="weight-item"
+              style="display: flex; flex-direction: column; gap: 4px"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 500;
+                  font-size: 0.9rem;
+                "
+              >
                 <span>P/E Ratio (V)</span>
-                <span id="valV" style="color: var(--premium); font-weight: 700;">2.0</span>
+                <span id="valV" style="color: var(--premium); font-weight: 700"
+                  >2.0</span
+                >
               </div>
-              <input id="cfgWeightV" type="range" min="0" max="10" step="0.1" value="2.0"
-                style="width: 100%; margin-top: 4px;" />
+              <input
+                id="cfgWeightV"
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value="2.0"
+                style="width: 100%; margin-top: 4px"
+              />
             </div>
 
-            <div class="weight-item" style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem;">
+            <div
+              class="weight-item"
+              style="display: flex; flex-direction: column; gap: 4px"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 500;
+                  font-size: 0.9rem;
+                "
+              >
                 <span>Tendência SMA (T)</span>
-                <span id="valT" style="color: var(--premium); font-weight: 700;">2.5</span>
+                <span id="valT" style="color: var(--premium); font-weight: 700"
+                  >2.5</span
+                >
               </div>
-              <input id="cfgWeightT" type="range" min="0" max="10" step="0.1" value="2.5"
-                style="width: 100%; margin-top: 4px;" />
+              <input
+                id="cfgWeightT"
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value="2.5"
+                style="width: 100%; margin-top: 4px"
+              />
             </div>
 
-            <div class="weight-item" style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem;">
+            <div
+              class="weight-item"
+              style="display: flex; flex-direction: column; gap: 4px"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 500;
+                  font-size: 0.9rem;
+                "
+              >
                 <span>Dividend Yield (D)</span>
-                <span id="valD" style="color: var(--premium); font-weight: 700;">2.0</span>
+                <span id="valD" style="color: var(--premium); font-weight: 700"
+                  >2.0</span
+                >
               </div>
-              <input id="cfgWeightD" type="range" min="0" max="10" step="0.1" value="2.0"
-                style="width: 100%; margin-top: 4px;" />
+              <input
+                id="cfgWeightD"
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value="2.0"
+                style="width: 100%; margin-top: 4px"
+              />
             </div>
 
-            <div class="weight-item" style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem;">
+            <div
+              class="weight-item"
+              style="display: flex; flex-direction: column; gap: 4px"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 500;
+                  font-size: 0.9rem;
+                "
+              >
                 <span>Eficiência (EV/EBITDA + ROIC)</span>
-                <span id="valE" style="color: var(--premium); font-weight: 700;">2.0</span>
+                <span id="valE" style="color: var(--premium); font-weight: 700"
+                  >2.0</span
+                >
               </div>
-              <input id="cfgWeightE" type="range" min="0" max="10" step="0.1" value="2.0"
-                style="width: 100%; margin-top: 4px;" />
+              <input
+                id="cfgWeightE"
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value="2.0"
+                style="width: 100%; margin-top: 4px"
+              />
             </div>
 
-            <div class="weight-item" style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem;">
+            <div
+              class="weight-item"
+              style="display: flex; flex-direction: column; gap: 4px"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 500;
+                  font-size: 0.9rem;
+                "
+              >
                 <span>Risco (Rsk)</span>
-                <span id="valRsk" style="color: var(--premium); font-weight: 700;">0.5</span>
+                <span
+                  id="valRsk"
+                  style="color: var(--premium); font-weight: 700"
+                  >0.5</span
+                >
               </div>
-              <input id="cfgWeightRsk" type="range" min="0" max="10" step="0.1" value="0.5"
-                style="width: 100%; margin-top: 4px;" />
+              <input
+                id="cfgWeightRsk"
+                type="range"
+                min="0"
+                max="10"
+                step="0.1"
+                value="0.5"
+                style="width: 100%; margin-top: 4px"
+              />
             </div>
           </div>
 
           <div
-            style="margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-            <strong style="font-size: 0.9rem;">Total de Importância:</strong>
-            <span id="valTotalWeight"
-              style="font-size: 1.1rem; font-weight: 800; color: var(--background); background: var(--foreground); padding: 4px 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">10.0</span>
+            style="
+              margin-top: 20px;
+              padding-top: 12px;
+              border-top: 1px solid var(--border);
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <strong style="font-size: 0.9rem">Total de Importância:</strong>
+            <span
+              id="valTotalWeight"
+              style="
+                font-size: 1.1rem;
+                font-weight: 800;
+                color: var(--background);
+                background: var(--foreground);
+                padding: 4px 10px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              "
+              >10.0</span
+            >
           </div>
         </div>
       </div>
@@ -280,12 +475,14 @@
         <div style="flex: 1">
           <p class="label">Privacidade</p>
           <div class="form-grid">
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <span>Partilha de dados</span>
               <label class="switch">
                 <input type="checkbox" id="cfgDataSharing" />
@@ -293,12 +490,14 @@
               </label>
             </label>
 
-            <label style="
+            <label
+              style="
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 12px;
-              ">
+              "
+            >
               <span>Analytics (anónimo)</span>
               <label class="switch">
                 <input type="checkbox" id="cfgAnalytics" />

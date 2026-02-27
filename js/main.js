@@ -49,9 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // --- Header title helper (global) ---
 export function setHeaderTitleFromScreen(root = document) {
-  const el = root.querySelector('[data-screen-title]');
-  const title = el?.getAttribute('data-screen-title')?.trim();
-  const h1 = document.querySelector('.app-header h1');
+  const el = root.querySelector("[data-screen-title]");
+  const title = el?.getAttribute("data-screen-title")?.trim();
+  const h1 = document.querySelector(".app-header h1");
   if (h1 && title) h1.textContent = title;
 }
 
@@ -68,4 +68,27 @@ window.navigateTo = function (screen, ...args) {
 };
 
 // Também atualiza ao carregar a página (ex: refresh direto num screen)
-document.addEventListener('DOMContentLoaded', () => setHeaderTitleFromScreen(document));
+document.addEventListener("DOMContentLoaded", () =>
+  setHeaderTitleFromScreen(document),
+);
+// --- Toast helper (global) ---
+export function showToast(message, duration = 3000) {
+  const existing = document.querySelector(".toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `<i class="fas fa-check-circle toast-icon"></i> ${message}`;
+
+  document.body.appendChild(toast);
+
+  // Trigger animation
+  setTimeout(() => toast.classList.add("show"), 10);
+
+  // Auto-remove
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+window.showToast = showToast;

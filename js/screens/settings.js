@@ -18,7 +18,7 @@ const defaultSettings = {
   loginNotifications: true,
 
   // Interface
-  darkMode: false,          // mantém compat com versões antigas
+  darkMode: false, // mantém compat com versões antigas
   language: "pt-PT",
   currency: "EUR",
 
@@ -29,8 +29,8 @@ const defaultSettings = {
     T: 0.25,
     D: 0.2,
     E: 0.2,
-    Rsk: 0.05
-  }
+    Rsk: 0.05,
+  },
 };
 
 /* ---------------- helpers de storage ---------------- */
@@ -61,7 +61,9 @@ function applyTheme(dark) {
   if (meta) meta.content = dark ? "#0b0e13" : "#ffffff";
 
   // notificar a app inteira (outros screens podem ouvir este evento)
-  window.dispatchEvent(new CustomEvent("app:theme-changed", { detail: { dark } }));
+  window.dispatchEvent(
+    new CustomEvent("app:theme-changed", { detail: { dark } }),
+  );
 }
 
 /* ---------------- init do screen ---------------- */
@@ -72,31 +74,62 @@ export function initScreen() {
   // Elementos
   const elLanguage = document.getElementById("cfgLanguage");
   const elCurrency = document.getElementById("cfgCurrency");
-  const elDark     = document.getElementById("cfgDarkMode");
+  const elDark = document.getElementById("cfgDarkMode");
 
   const elEmailN = document.getElementById("cfgEmailNotifications");
-  const elPush   = document.getElementById("cfgPushNotifications");
+  const elPush = document.getElementById("cfgPushNotifications");
   const elWeekly = document.getElementById("cfgWeeklyReports");
 
-  const el2FA   = document.getElementById("cfgTwoFactor");
+  const el2FA = document.getElementById("cfgTwoFactor");
   const elLogin = document.getElementById("cfgLoginNotifications");
 
-  const btnSave   = document.getElementById("cfgSave");
+  const btnSave = document.getElementById("cfgSave");
   const btnCancel = document.getElementById("cfgCancel");
   const btnLogout = document.getElementById("btnLogout");
 
+  // Botões de Perfil
+  const btnProfCons = document.getElementById("btnProfCons");
+  const btnProfMod = document.getElementById("btnProfMod");
+  const btnProfAgre = document.getElementById("btnProfAgre");
+
+  const WEIGHT_PRESETS = {
+    conservador: { R: 0.05, V: 0.25, T: 0.1, D: 0.35, E: 0.2, Rsk: 0.05 },
+    moderado: { R: 0.1, V: 0.2, T: 0.25, D: 0.2, E: 0.2, Rsk: 0.05 },
+    agressivo: { R: 0.3, V: 0.15, T: 0.3, D: 0.05, E: 0.15, Rsk: 0.05 },
+  };
+
   // Pesos
   const weightsUI = {
-    R: { el: document.getElementById("cfgWeightR"), val: document.getElementById("valR") },
-    V: { el: document.getElementById("cfgWeightV"), val: document.getElementById("valV") },
-    T: { el: document.getElementById("cfgWeightT"), val: document.getElementById("valT") },
-    D: { el: document.getElementById("cfgWeightD"), val: document.getElementById("valD") },
-    E: { el: document.getElementById("cfgWeightE"), val: document.getElementById("valE") },
-    Rsk: { el: document.getElementById("cfgWeightRsk"), val: document.getElementById("valRsk") }
+    R: {
+      el: document.getElementById("cfgWeightR"),
+      val: document.getElementById("valR"),
+    },
+    V: {
+      el: document.getElementById("cfgWeightV"),
+      val: document.getElementById("valV"),
+    },
+    T: {
+      el: document.getElementById("cfgWeightT"),
+      val: document.getElementById("valT"),
+    },
+    D: {
+      el: document.getElementById("cfgWeightD"),
+      val: document.getElementById("valD"),
+    },
+    E: {
+      el: document.getElementById("cfgWeightE"),
+      val: document.getElementById("valE"),
+    },
+    Rsk: {
+      el: document.getElementById("cfgWeightRsk"),
+      val: document.getElementById("valRsk"),
+    },
   };
 
   if (!elLanguage || !elCurrency || !elDark || !btnSave || !btnCancel) {
-    console.warn("⚠️ settings.js: elementos não encontrados. Confirma o HTML dos IDs.");
+    console.warn(
+      "⚠️ settings.js: elementos não encontrados. Confirma o HTML dos IDs.",
+    );
     return;
   }
 
@@ -120,19 +153,19 @@ export function initScreen() {
   // Preenche UI
   elLanguage.value = state.language;
   elCurrency.value = state.currency;
-  elDark.checked   = !!state.darkMode;
+  elDark.checked = !!state.darkMode;
 
   if (elEmailN) elEmailN.checked = !!state.emailNotifications;
-  if (elPush)   elPush.checked   = !!state.pushNotifications;
+  if (elPush) elPush.checked = !!state.pushNotifications;
   if (elWeekly) elWeekly.checked = !!state.weeklyReports;
-  if (el2FA)   el2FA.checked   = !!state.twoFactor;
+  if (el2FA) el2FA.checked = !!state.twoFactor;
   if (elLogin) elLogin.checked = !!state.loginNotifications;
 
   // Preenche Pesos (0-10 scale para o utilizador, 0-1 interno)
   const elTotalWeight = document.getElementById("valTotalWeight");
   const updateWeightsUI = () => {
     let sum = 0;
-    Object.keys(weightsUI).forEach(k => {
+    Object.keys(weightsUI).forEach((k) => {
       const item = weightsUI[k];
       if (item.el) {
         const val = (state.weights[k] || 0) * 10;
@@ -181,48 +214,66 @@ export function initScreen() {
   // Lógica de Redistribuição Proporcional
   function redistribute(changedKey, newValue) {
     const keys = Object.keys(weightsUI);
-    const otherKeys = keys.filter(k => k !== changedKey);
+    const otherKeys = keys.filter((k) => k !== changedKey);
     const targetTotal = 10;
-    
+
     state.weights[changedKey] = newValue / 10;
     const remaining = targetTotal - newValue;
-    const currentOthersSum = otherKeys.reduce((s, k) => s + (state.weights[k] * 10), 0);
+    const currentOthersSum = otherKeys.reduce(
+      (s, k) => s + state.weights[k] * 10,
+      0,
+    );
 
     if (currentOthersSum > 0.01) {
       const ratio = remaining / currentOthersSum;
-      otherKeys.forEach(k => {
-        state.weights[k] = (state.weights[k] * ratio);
+      otherKeys.forEach((k) => {
+        state.weights[k] = state.weights[k] * ratio;
       });
     } else {
       const equalShare = remaining / otherKeys.length;
-      otherKeys.forEach(k => {
+      otherKeys.forEach((k) => {
         state.weights[k] = equalShare / 10;
       });
     }
 
-    keys.forEach(k => { if (state.weights[k] < 0) state.weights[k] = 0; });
+    keys.forEach((k) => {
+      if (state.weights[k] < 0) state.weights[k] = 0;
+    });
 
     const finalSum = keys.reduce((s, k) => s + state.weights[k], 0);
     const diff = 1.0 - finalSum;
     if (Math.abs(diff) > 0.0001) {
-      const adjKey = otherKeys.sort((a,b) => state.weights[b] - state.weights[a])[0];
+      const adjKey = otherKeys.sort(
+        (a, b) => state.weights[b] - state.weights[a],
+      )[0];
       state.weights[adjKey] = Math.max(0, state.weights[adjKey] + diff);
     }
     updateWeightsUI();
   }
 
   // Listeners Pesos
-  Object.keys(weightsUI).forEach(k => {
+  Object.keys(weightsUI).forEach((k) => {
     const item = weightsUI[k];
     item.el?.addEventListener("input", () => {
       redistribute(k, parseFloat(item.el.value));
     });
   });
 
+  // Listeners Perfis
+  const applyPreset = (id) => {
+    const p = WEIGHT_PRESETS[id];
+    if (!p) return;
+    state.weights = { ...p };
+    updateWeightsUI();
+  };
+  btnProfCons?.addEventListener("click", () => applyPreset("conservador"));
+  btnProfMod?.addEventListener("click", () => applyPreset("moderado"));
+  btnProfAgre?.addEventListener("click", () => applyPreset("agressivo"));
+
   // Botões
   btnSave.addEventListener("click", () => {
     saveSettings(state);
-    // showToast?.("Configurações guardadas!");
+    if (window.showToast) window.showToast("Configurações guardadas!");
   });
 
   btnCancel.addEventListener("click", () => {
@@ -231,21 +282,21 @@ export function initScreen() {
 
     elLanguage.value = state.language;
     elCurrency.value = state.currency;
-    elDark.checked   = !!state.darkMode;
+    elDark.checked = !!state.darkMode;
 
     if (elEmailN) elEmailN.checked = !!state.emailNotifications;
-    if (elPush)   elPush.checked   = !!state.pushNotifications;
+    if (elPush) elPush.checked = !!state.pushNotifications;
     if (elWeekly) elWeekly.checked = !!state.weeklyReports;
 
-    if (el2FA)   el2FA.checked   = !!state.twoFactor;
+    if (el2FA) el2FA.checked = !!state.twoFactor;
     if (elLogin) elLogin.checked = !!state.loginNotifications;
 
-    Object.keys(weightsUI).forEach(k => {
+    Object.keys(weightsUI).forEach((k) => {
       const item = weightsUI[k];
       if (item.el) {
-        const val = state.weights[k];
+        const val = (state.weights[k] || 0) * 10;
         item.el.value = val;
-        if (item.val) item.val.textContent = Number(val).toFixed(2);
+        if (item.val) item.val.textContent = val.toFixed(1);
       }
     });
 
