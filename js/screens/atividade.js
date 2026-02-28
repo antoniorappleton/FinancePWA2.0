@@ -1160,23 +1160,47 @@ async function processAndRender(snap, aSnap) {
                </div>
             </div>
 
-            ${
-              lucroAtual < 0 && precoAtual > 0
-                ? `
-            <div class="recovery-box" style="margin-top:15px; background:rgba(239, 68, 68, 0.05); border:1px solid rgba(239, 68, 68, 0.2); padding:12px; border-radius:8px; font-size:0.85rem;">
-              <div style="font-weight:bold; color:var(--danger-color, #ef4444); margin-bottom:6px;">
-                <i class="fas fa-redo-alt"></i> Simulador de Recuperação Estratégica
-              </div>
-              <div class="muted" style="line-height:1.4;">
-                Se vender agora para reentrar mais baixo, precisará de comprar a 
-                <strong style="color:var(--text-color);">€${(precoAtual / (1 + Math.abs(lucroAtual) / (g.qtd * precoAtual))).toFixed(2)}</strong> 
-                (<span class="down">-${((1 - 1 / (1 + Math.abs(lucroAtual) / (g.qtd * precoAtual))) * 100).toFixed(1)}%</span>) 
-                para recuperar o prejuízo de <strong>€${Math.abs(lucroAtual).toFixed(2)}</strong> quando o preço regressar aos <strong>€${precoAtual.toFixed(2)}</strong> atuais.
-              </div>
-            </div>
-            `
-                : ""
-            }
+            ${(() => {
+              if (!(lucroAtual < 0 && precoAtual > 0)) return "";
+
+              const precoReentrada =
+                precoAtual / (1 + Math.abs(lucroAtual) / (g.qtd * precoAtual));
+              const dropNeeded = (1 - precoReentrada / precoAtual) * 100;
+
+              // Lógica de Probabilidade
+              let prob = "Média";
+              let color = "#EAB308"; // Amarelo
+
+              const isBear = stopLight === "🔴";
+              const isBull = stopLight === "🟢";
+              const isAboveSMA50 = d50 !== null && d50 > 0;
+
+              if (dropNeeded < 4 && (isBear || isAboveSMA50)) {
+                prob = "Alta";
+                color = "#22C55E"; // Verde
+              } else if (dropNeeded > 8 || isBull) {
+                prob = "Baixa";
+                color = "#EF4444"; // Vermelho
+              }
+
+              return `
+              <div class="recovery-box" style="margin-top:15px; background:rgba(239, 68, 68, 0.05); border:1px solid rgba(239, 68, 68, 0.2); padding:12px; border-radius:8px; font-size:0.85rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <div style="font-weight:bold; color:var(--danger-color, #ef4444);">
+                    <i class="fas fa-redo-alt"></i> Simulador de Recuperação
+                  </div>
+                  <div style="background:${color}22; color:${color}; padding:2px 8px; border-radius:12px; font-weight:bold; font-size:0.75rem; border:1px solid ${color}44;">
+                    Probabilidade: ${prob}
+                  </div>
+                </div>
+                <div class="muted" style="line-height:1.4;">
+                  Se vender agora para reentrar mais baixo, precisará de comprar a 
+                  <strong style="color:var(--text-color);">€${precoReentrada.toFixed(2)}</strong> 
+                  (<span class="down">-${dropNeeded.toFixed(1)}%</span>) 
+                  para recuperar o prejuízo de <strong>€${Math.abs(lucroAtual).toFixed(2)}</strong> quando o preço regressar aos <strong>€${precoAtual.toFixed(2)}</strong> atuais.
+                </div>
+              </div>`;
+            })()}
 
             <div class="objective-box" style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px;">
               <div class="obj-header">
