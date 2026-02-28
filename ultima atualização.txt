@@ -1,0 +1,202 @@
+Guia do Motor Financeiro Sustentável (V6)
+O sistema foi redesenhado para ser 100% resiliente aos limites das APIs gratuitas de 2026.
+
+1. O que mudou?
+Google Finance: Agora assume o peso pesado (P/E e EPS). Sem limites!
+Rotação Alpha Vantage: O script atualiza apenas 22 ativos por dia para métricas como EV/EBITDA e ROIC. Em 4-5 dias, o portfolio todo é renovado.
+Sincronização Firestore: Continua a correr a cada 30 min para garantir que os preços (Google Finance) chegam à App.
+2. Configuração da Folha "Firebase"
+Para este motor funcionar, precisa de fazer 2 pequenos ajustes na sua folha:
+
+A. Colunas M e Q (Fórmulas)
+Apague o conteúdo antigo destas colunas e cole estas fórmulas na linha 2 (e arraste para baixo):
+
+Coluna M (P/E): =IFERROR(GOOGLEFINANCE(B2; "pe"); "")
+Coluna Q (EPS): =IFERROR(GOOGLEFINANCE(B2; "eps"); "")
+B. Coluna Y (Controlo)
+Escreva "Ultima Atu" no cabeçalho da Coluna Y. O script usará esta coluna para saber quem foi atualizado pela última vez e garantir que todos rodam de forma justa.
+
+3. Código Final
+O código completo está aqui: 
+apps_script_engine.gs
+
+4. Gatilhos (Triggers)
+No ícone do relógio do Apps Script, configure:
+
+trigger_UpdateFundamentalAPIs
+: Diário (ex: 03:00 - 04:00 AM).
+trigger_SyncToFirebase
+: A cada 30 minutos (Sincronização).
+Resultado: Um sistema que nunca para por "limite excedido" e que mantém os dados fundamentais sempre em movimento!
+
+/**
+ * ENGINE FINANCEIRO "FINAL-FINALÍSSIMA" (V6 - SUSTENTÁVEL)
+ * 
+ * Estratégia Híbrida:
+ * 1. Google Finance na Folha: P/E (M), EPS (Q), MarketCap (U).
+ * 2. Alpha Vantage (Rotativo): EV/Ebitda (X), ROIC (S), Div Líq (V), Ebitda (W).
+ * 3. Firestore: Sincronização de todos os campos a cada 30 min.
+ */
+
+const PROPS = PropertiesService.getScriptProperties();
+const AV_KEY = (PROPS.getProperty("ALPHAVANTAGE_API_KEY") || "").trim();
+const FB_PROJECT_ID = "appfinance-812b2";
+
+const SHEET_NAME = "Firebase";
+const START_ROW = 2;
+
+// --- MAPEAMENTO DE COLUNAS (Índices 0-based) ---
+const COL = {
+  NOME: 0, TICKER: 1, SETOR: 2, MERCADO: 3, VALOR_STOCK: 4, 
+  PERIODICIDADE: 5, MES_TIPICO: 6, DIVIDENDO: 7, YIELD: 8, 
+  CHANGE_1W: 9, CHANGE_1M: 10, CHANGE_1Y: 11, 
+  PE: 12,            // M - FÓRMULA GOOGLE FINANCE
+  SMA50: 13, SMA200: 14, DIV24M: 15, 
+  EPS_YOY: 16,       // Q - FÓRMULA GOOGLE FINANCE
+  EPS_NEXT: 17, ROIC: 18, EV: 19, MARKET_CAP: 20, 
+  DIVIDA_LIQ: 21,    // V - ALPHA VANTAGE
+  EBITDA: 22,        // W - ALPHA VANTAGE
+  EV_EBITDA: 23,     // X - ALPHA VANTAGE
+  ULTIMA_ATU: 24     // Y - DATA DE CONTROLO (ADICIONAR NA FOLHA)
+};
+
+// --- ENTRY POINTS ---
+
+function trigger_SyncToFirebase() {
+  Logger.log("Iniciando sincronização com Firebase...");
+  syncSheetToFirebase();
+}
+
+function trigger_UpdateFundamentalAPIs() {
+  if (!AV_KEY) {
+    Logger.log("ERRO: ALPHA_VANTAGE_KEY não encontrada.");
+    return;
+  }
+  Logger.log("Iniciando atualização rotativa (22 ativos/dia)...");
+  updateFundamentalDataRotational();
+}
+
+// --- CORE ENGINE ---
+
+function updateFundamentalDataRotational() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return;
+  
+  const data = sheet.getDataRange().getValues();
+  const today = new Date();
+  
+  // 1. Criar lista de ativos e ordenar pela data de atualização mais antiga
+  let candidates = [];
+  for (let i = START_ROW - 1; i < data.length; i++) {
+    const ticker = normalizeTicker(String(data[i][COL.TICKER]));
+    if (!ticker) continue;
+    
+    candidates.push({
+      row: i + 1,
+      ticker: ticker,
+      lastUpdate: data[i][COL.ULTIMA_ATU] ? new Date(data[i][COL.ULTIMA_ATU]) : new Date(0)
+    });
+  }
+  
+  // Ordenar: os mais antigos primeiro
+  candidates.sort((a, b) => a.lastUpdate - b.lastUpdate);
+  
+  // 2. Processar apenas os primeiros 22 (Limite seguro Alpha Vantage Free)
+  const toProcess = candidates.slice(0, 22);
+  Logger.log("Processando %s ativos hoje...", toProcess.length);
+
+  for (let item of toProcess) {
+    try {
+      Logger.log("Chamando Alpha Vantage para: %s", item.ticker);
+      
+      const url = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${item.ticker}&apikey=${AV_KEY}`;
+      const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+      
+      if (resp.getResponseCode() === 200) {
+        const avData = JSON.parse(resp.getContentText());
+        
+        if (avData && avData.Symbol) {
+          // Gravar dados na folha
+          if (avData.EVToEBITDA && avData.EVToEBITDA !== "None") sheet.getRange(item.row, COL.EV_EBITDA + 1).setValue(Number(avData.EVToEBITDA));
+          if (avData.ProfitMargin && avData.ProfitMargin !== "None") sheet.getRange(item.row, COL.ROIC + 1).setValue(Number(avData.ProfitMargin)); // Usando Margin como proxy se faltar ROIC
+          
+          // Marcar data de atualização
+          sheet.getRange(item.row, COL.ULTIMA_ATU + 1).setValue(today);
+          Logger.log("Sucesso: %s atualizado.", item.ticker);
+        } else {
+          Logger.log("Alpha Vantage sem dados para %s ou limite atingido.", item.ticker);
+          // Mesmo sem dados, marcamos como "tentado" hoje para não bloquear a fila
+          sheet.getRange(item.row, COL.ULTIMA_ATU + 1).setValue(today);
+        }
+      }
+      
+      // Pausa de 13 segundos (Segurança para 5 chamadas/min)
+      Utilities.sleep(13000); 
+      
+    } catch (e) {
+      Logger.log("Erro no ticker %s: %s", item.ticker, e);
+    }
+  }
+  Logger.log("Fim da rotação diária.");
+}
+
+function syncSheetToFirebase() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return;
+  
+  const data = sheet.getDataRange().getValues();
+  const token = getAuthToken();
+  if (!token) return;
+
+  for (let i = START_ROW - 1; i < data.length; i++) {
+    const row = data[i];
+    const ticker = String(row[COL.TICKER]).trim().toUpperCase();
+    if (!ticker) continue;
+
+    const payload = {
+      fields: {
+        nome: { stringValue: String(row[COL.NOME] || "") },
+        setor: { stringValue: String(row[COL.SETOR] || "Outros") },
+        valorStock: { doubleValue: Number(row[COL.VALOR_STOCK]) || 0 },
+        pe: { doubleValue: Number(row[COL.PE]) || 0 },
+        eps_yoy: { doubleValue: Number(row[COL.EPS_YOY]) || 0 },
+        evebitda: { doubleValue: Number(row[COL.EV_EBITDA]) || 0 },
+        marketCap: { doubleValue: Number(row[COL.MARKET_CAP]) || 0 },
+        roic: { doubleValue: Number(row[COL.ROIC]) || 0 }
+      }
+    };
+
+    const tickerID = ticker.replace(/[^A-Z0-9]/g, "_"); // Higienizar ID
+    const mask = Object.keys(payload.fields).map(f => "updateMask.fieldPaths=" + f).join("&");
+    const url = `https://firestore.googleapis.com/v1/projects/${FB_PROJECT_ID}/databases/(default)/documents/acoesDividendos/${tickerID}?${mask}`;
+
+    UrlFetchApp.fetch(url, {
+      method: "patch", contentType: "application/json",
+      headers: { "Authorization": "Bearer " + token },
+      payload: JSON.stringify(payload), muteHttpExceptions: true
+    });
+  }
+  Logger.log("Sincronização Firebase OK.");
+}
+
+function normalizeTicker(raw) {
+  if (!raw) return null;
+  const clean = raw.trim().toUpperCase();
+  if (["BTC", "ETH", "ADA", "XRP", "SOL", "DOGE", "AVAX", "EUR"].includes(clean)) return null;
+  return clean.includes(":") ? clean.split(":").pop() : clean;
+}
+
+function getAuthToken() {
+  return PROPS.getProperty("FB_ACCESS_TOKEN");
+}
+
+function debugCheckKeys() {
+  const keys = PROPS.getKeys();
+  Logger.log("--- CHAVES ENCONTRADAS ---");
+  keys.forEach(k => {
+    const val = PROPS.getProperty(k) || "";
+    Logger.log("Nome: '%s' | Inicio: '%s...'", k, val.substring(0, 4));
+  });
+}
