@@ -121,31 +121,53 @@
 
 ---
 
-## Cálculo Detalhado para 92 Tickers
+## Cálculo Detalhado para 67 Ações (Sem ETFs/Criptos)
 
 ### Usando FMP Professional ($79):
 ```
 Requests necessários/dia:
-- Quote: 92 (preço atual)
-- Income Statement: 92 (dividendos)
-- Key Metrics: 92 (P/E, EV/EBITDA, etc.)
-- Historical Data: 92 (SMA, crescimento)
+- Quote: 67 (preço atual)
+- Income Statement: 67 (dividendos)
+- Key Metrics: 67 (P/E, EV/EBITDA, etc.)
+- Historical Data: 67 (SMA, crescimento)
 
-Total: ~370 requests/dia
-Mensal: ~11.100 requests
+Total: ~270 requests/dia
+Mensal: ~8.100 requests
 Limite FMP Professional: 5.000/dia = 150.000/mês ✅
 ```
 
 ### Usando Finnhub Professional ($49):
 ```
 Requests necessários/dia:
-- Stock Price: 92
-- Stock Metric: 92
+- Stock Price: 67
+- Stock Metric: 67
 - Stock Symbol Lookup: 1
 
-Total: ~185 requests/dia
-Mensal: ~5.550 requests
+Total: ~135 requests/dia
+Mensal: ~4.050 requests
 Limite Finnhub Professional: 5.000/dia = 150.000/mês ✅
+```
+
+---
+
+## Opção Mais Barata: FMP Starter!
+
+Com apenas 67 ações, podemos usar **FMP Starter** ($29/mês):
+
+```
+Requests necessários/dia: ~270
+Limite FMP Starter: 1.500/dia = 45.000/mês ❌ (Não chega)
+
+Necesário upgrade para Professional ($79)
+```
+
+### Alternativa: Yahoo Finance (Grátis!)
+Se atualizar 1x por dia é suficiente:
+```
+67 tickers × 1 request = 67 requests/dia (~2.000/mês)
+Limite Yahoo Finance: ~2.000 requests/hora ✅
+
+Custo: $0/mês!
 ```
 
 ---
@@ -154,13 +176,14 @@ Limite Finnhub Professional: 5.000/dia = 150.000/mês ✅
 
 | Cenário | Custo Mensal | Recomendação |
 |---------|---------------|---------------|
-| Mínimo (Finnhub) | **$49** | Preços + SMA apenas |
-| Completo (FMP) | **$79** | **RECOMENDADO** |
-| Combinado | $78 | Finnhub + FMP Starter |
+| Yahoo Finance (1x/dia) | **$0** | ✅ GRÁTIS |
+| Finnhub Professional | **$49** | Preços + SMA |
+| FMP Professional | **$79** | **Completo** |
 
-**Para ter TODOS os 92 tickers com TODOS os indicadores necessários (preços, dividendos, P/E, EV/EBITDA, ROIC, SMA50, SMA200, crescimento):**
+**Para 67 ações com atualização DIÁRIA de todos os indicadores:**
 
-➡️ **Custo mensal mínimo: $79/mês (FMP Professional)**
+➡️ **Custo mínimo: $49/mês (Finnhub)**
+➡️ **Custo completo: $79/mês (FMP Professional)**
 
 ---
 
