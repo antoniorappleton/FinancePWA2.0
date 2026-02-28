@@ -1384,7 +1384,7 @@ async function buildTempReportCharts(rows) {
   const sectorMap = new Map();
   rows.forEach((r) => {
     const base = ALL_ROWS.find((x) => x.ticker === r.ticker);
-    const setor = (base?.setor || "—").trim();
+    const setor = String(base?.setor || "—").trim();
     sectorMap.set(
       setor,
       (sectorMap.get(setor) || 0) + Number(r.investido || 0),

@@ -58,7 +58,7 @@ function guardarSimulacao({
   const lucroTotal = lucroValorizacao + lucroDividendos;
 
   const novaSimulacao = {
-    nomeAcao: (nomeAcao || "—").trim(),
+    nomeAcao: String(nomeAcao || "—").trim(),
     tp1: Number(tp1.toFixed(2)),
     tp2: Number(tp2.toFixed(2)),
     valorInvestido: Number(valorInvestido.toFixed(2)),

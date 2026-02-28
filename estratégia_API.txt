@@ -1,0 +1,44 @@
+Motor de Dados: Arquitetura Final-Finalíssima (Produção)
+Este plano detalha a estratégia final para sincronizar os 92 ativos do portfolio, otimizada para os limites rigorosos das APIs gratuitas (FMP: 250/dia, AV: 25/dia).
+
+1. Estratégia de Quotas e Fontes
+
+FMP (Financial Modeling Prep) - Fonte Primária
+Quota: 250 chamadas/dia.
+
+Uso: Apenas para métricas não disponíveis no Google Finance: EPS, P/E (Mensal) e EV/Ebitda.
+
+Notas: O preço em tempo real (valorStock) e o Market Cap são lidos diretamente da folha (Google Finance), poupando drasticamente a quota da API.
+
+Alpha Vantage (AV) - Fallback e Dados Específicos
+Quota: ~25 chamadas/dia.
+Uso: Apenas quando FMP falhar ou para dados específicos (Earnings/EPS) em volume muito baixo.
+
+2. Ciclo de Execução e Triggers
+
+A. Carga Inicial (Manual/One-time)
+Run #1 (Fundamentais): P/E, Div Yield, EPS YoY, ROIC.
+Run #2 (Estrutura V/W): Dívida Líquida + EBITDA.
+Objetivo: Preencher a base de dados nos primeiros 1-2 dias.
+
+B. Manutenção Diária (Automática)
+Preço/Market Cap (Google Finance): A folha Google atualiza estes valores sozinha (internamente).
+Trigger de Sincronização (Apps Script): O gatilho de 15/30 min serve apenas para o script ler os novos valores da folha e enviá-los (push) para o Firestore.
+Scoring: Recalculado 1x por dia após o fecho do mercado (sem novas chamadas API).
+Update Firestore: Apenas se houver mudança material, usando batchWrite.
+
+C. Manutenção Periódica
+Dívida/EBITDA: Atualização Trimestral.
+Dividendos: Atualização Mensal (para captar mudanças de payout).
+EPS Projeção: Atualização Mensal.
+
+3. Robustez e "Modo de Emergência"
+Controlo de Quotas (PropertiesService)
+O script guarda FMP_CALLS_TODAY e AV_CALLS_TODAY.
+Modo Low Cost: Se FMP_REMAINING < 40, o script suspende fundamentais e scoring, mantendo apenas preços essenciais durante o mercado.
+Sanitização e Integridade
+String Conversion: Todos os campos de texto (setor, nome) são convertidos antes do trim().
+UpdateMask: Query parameters explícitos para garantir que o Firestore faz merge correto de todos os campos.
+IMPORTANT
+
+A implementação deve garantir que o script não "morre" silenciosamente. Usaremos Logger.log() extensivo e tratamento de exceções por ticker.

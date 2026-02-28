@@ -487,7 +487,7 @@ async function carregarTop10Crescimento(periodo = "1m") {
         allCands.push({
           ticker: String(d.ticker).toUpperCase(),
           nome: d.nome || d.ticker,
-          setor: (d.setor || "Outros").trim(),
+          setor: String(d.setor || "Outros").trim(),
           score: result.score,
           rAnnual: result.rAnnual,
           yieldPct: yPct,
