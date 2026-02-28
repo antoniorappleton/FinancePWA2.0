@@ -61,7 +61,9 @@
           <p class="value posicoes-ativas" id="posicoesAtivas">0</p>
           <p class="subvalue">
             Objetivos:
-            <span class="objetivos-financeiros" id="objetivosFinanceiros">0/0</span>
+            <span class="objetivos-financeiros" id="objetivosFinanceiros"
+              >0/0</span
+            >
           </p>
         </div>
         <div class="icon-box">
@@ -73,7 +75,7 @@
     <div class="card warning">
       <div class="card-content">
         <div>
-          <p class="label">Taxa de Sucesso (atual)</p>
+          <p class="label">Progresso p/ Objetivo</p>
           <p class="value taxa-sucesso" id="taxaSucesso">0%</p>
           <p id="taxaSucessoAcumulada" class="subvalue muted">—</p>
           <p class="subvalue">
@@ -116,7 +118,9 @@
         </h2>
 
         <div class="treemap-legend">
-          <span style="font-size: 10px; color: #888; font-weight: bold">QUALIDADE (SCORE):</span>
+          <span style="font-size: 10px; color: #888; font-weight: bold"
+            >QUALIDADE (SCORE):</span
+          >
           <div class="legend-item">
             <div class="legend-gradient"></div>
             <div class="legend-values">
@@ -165,11 +169,13 @@
                   <strong id="w-Rsk">5%</strong>
                 </li>
               </ul>
-              <hr style="
+              <hr
+                style="
                   border: 0;
                   border-top: 1px solid rgba(255, 255, 255, 0.1);
                   margin: 8px 0;
-                " />
+                "
+              />
               <p style="font-size: 11px; opacity: 0.8">
                 O score final é ajustado pelo <strong>risco</strong> (oscilação
                 de preço).
@@ -181,8 +187,13 @@
         <button class="icon-btn" id="opClose" title="Fechar">✖</button>
       </div>
 
-      <div class="modal-body" style="flex: 1; display: flex; flex-direction: column; padding: 0">
-        <div id="treemapContainer" style="
+      <div
+        class="modal-body"
+        style="flex: 1; display: flex; flex-direction: column; padding: 0"
+      >
+        <div
+          id="treemapContainer"
+          style="
             flex: 1;
             min-height: 500px;
             margin: 16px;
@@ -192,16 +203,19 @@
             overflow: auto;
             padding-right: 2px;
             box-sizing: border-box;
-          ">
+          "
+        >
           <!-- Treemap gerado aqui -->
-          <div style="
+          <div
+            style="
               display: flex;
               align-items: center;
               justify-content: center;
               height: 100%;
               color: #444;
               font-family: monospace;
-            ">
+            "
+          >
             LOADING TREEMAP DATA...
           </div>
         </div>
@@ -229,12 +243,22 @@
 
           <label>
             Nome
-            <input id="nomeAtivo" type="text" placeholder="Ex.: Apple Inc." required />
+            <input
+              id="nomeAtivo"
+              type="text"
+              placeholder="Ex.: Apple Inc."
+              required
+            />
           </label>
 
           <label>
             Ticker
-            <input id="tickerAtivo" type="text" placeholder="Ex.: AAPL" required />
+            <input
+              id="tickerAtivo"
+              type="text"
+              placeholder="Ex.: AAPL"
+              required
+            />
           </label>
 
           <label>
@@ -281,12 +305,24 @@
 
           <label>
             Quantidade
-            <input id="quantidadeAtivo" type="number" step="0.0001" min="0.0001" required />
+            <input
+              id="quantidadeAtivo"
+              type="number"
+              step="0.0001"
+              min="0.0001"
+              required
+            />
           </label>
 
           <label id="labelPreco">
             Preço da transação (€)
-            <input id="precoAtivo" type="number" step="0.0001" min="0" required />
+            <input
+              id="precoAtivo"
+              type="number"
+              step="0.0001"
+              min="0"
+              required
+            />
           </label>
 
           <label>

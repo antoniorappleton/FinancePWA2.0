@@ -54,8 +54,11 @@ export async function initScreen() {
     const valorAtualMap = new Map();
     lastAcoesSnap.forEach((doc) => {
       const d = doc.data();
-      if (d.ticker && typeof d.valorStock === "number") {
-        valorAtualMap.set(String(d.ticker).toUpperCase(), d.valorStock);
+      if (d.ticker && d.valorStock !== undefined && d.valorStock !== null) {
+        const preco = Number(d.valorStock);
+        if (!isNaN(preco)) {
+          valorAtualMap.set(String(d.ticker).toUpperCase(), preco);
+        }
       }
     });
 
@@ -141,13 +144,19 @@ export async function initScreen() {
     const retorno =
       totalInvestido > 0 ? (totalLucroAcumulado / totalInvestido) * 100 : 0;
 
-    // Taxa de Sucesso:
-    // Main (Atual): Lucro Aberto / Objetivo Total
+    // Progresso para Objetivo (anterior Taxa de Sucesso):
+    // Main (Atual): Lucro Aberto / Objetivo Total (Capado a 0% se negativo para evitar confusões de -1000%)
     // Sub (Acumulada): Lucro Acumulado / Objetivo Total
-    const taxaSucessoAtual =
+    let taxaSucessoAtual =
       objetivoFinanceiroTotal > 0
         ? (lucroNaoRealizadoTotal / objetivoFinanceiroTotal) * 100
         : 0;
+
+    // Se o progresso for negativo (prejuízo), mostramos 0% para o indicador de "sucesso"
+    // mas mantemos o valor real se o usuário quiser ver o quão longe está (opcional).
+    // Conforme o plano: "Limitar o valor mínimo a 0%"
+    if (taxaSucessoAtual < 0) taxaSucessoAtual = 0;
+
     const taxaSucessoAcumulada =
       objetivoFinanceiroTotal > 0
         ? (totalLucroAcumulado / objetivoFinanceiroTotal) * 100
