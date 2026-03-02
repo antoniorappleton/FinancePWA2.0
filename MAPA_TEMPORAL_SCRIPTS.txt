@@ -1,0 +1,56 @@
+/***********************************************************
+ * MAPA TEMPORAL E OPERACIONAL - MOTOR DE DADOS APP FINANCE
+ ***********************************************************
+
+1. INDICADORES EM TEMPO REAL (Google Finance -> Firestore)
+----------------------------------------------------------
+Fonte: GOOGLEFINANCE() na Folha Google.
+Frequência da API: Contínua (20 em 20 min pelo Google).
+Frequência de Upload: A cada 10 minutos (24h/dia).
+
+Indicadores:
+  - Preço Atual (valorStock)
+  - Market Cap
+  - P/E Ratio (Price/Earnings)
+  - EPS (Earnings Per Share)
+  - Médias Móveis (SMA50, SMA200)
+  - Variações (1w, 1m, 1y)
+
+2. INDICADORES FUNDAMENTAIS (FMP/Alpha Vantage -> Folha -> Firestore)
+---------------------------------------------------------------------
+Fonte: Financial Modeling Prep (FMP) com Fallback Alpha Vantage (AV).
+Frequência da API: 1x por dia (Execução às 03:00 AM).
+Volume: Rotação de 40 ativos por dia.
+Ciclo Total: 92 ativos / 40 por dia = ~2.3 dias. 
+Status: 100% do portfólio é renovado a cada 72 horas.
+
+Indicadores:
+  - EV/EBITDA (Enterprise Value / EBITDA)
+  - ROIC (Return on Invested Capital)
+  - Métricas TTM (Trailing Twelve Months)
+
+3. INDICADORES PERIÓDICOS (Folha -> Firestore)
+----------------------------------------------
+Fonte: Dados inseridos ou validados na folha "Firebase".
+Frequência de Upload: A cada 10 minutos (Se houver alteração na folha).
+
+Frequências de atualização lógica:
+  - MENSAL: Calendário de Dividendos, Yield, Periodicidade.
+  - TRIMESTRAL: Dados de Balanço (EBITDA, Dívida Líquida), EPS YoY.
+  - ANUAL: Relatórios anuais consolidantes.
+
+4. MATRIZ DE RESPONSABILIDADE
+-----------------------------
+| Periodicidade | Indicador              | Fonte            | Pipeline        |
+|---------------|------------------------|------------------|-----------------|
+| Minutos       | Preço, Market Cap      | Google Finance   | Upload (10 min) |
+| Horas         | P/E, SMA50, SMA200     | Google Finance   | Upload (10 min) |
+| 2-3 Dias      | EV/EBITDA, ROIC        | FMP / AV         | Rotação (03:00) |
+| Mensal        | Dividendos, Pagamentos  | Manual/Folha     | Upload (10 min) |
+| Trimestral    | EBITDA, Crescimento EPS | FMP / Google Fin | Rotação/Folha   |
+
+FLUXO FINAL:
+[Fontes Externas] --> [Folha "Firebase"] --> [FIRESTORE] --> [APP PWA]
+(Diário/Contínuo)      (Ponto Central)      (Sincronização)   (Visualização)
+
+***********************************************************/
