@@ -8,49 +8,33 @@ Fonte: GOOGLEFINANCE() na Folha Google.
 Frequência da API: Contínua (20 em 20 min pelo Google).
 Frequência de Upload: A cada 10 minutos (24h/dia).
 
-Indicadores:
-  - Preço Atual (valorStock)
-  - Market Cap
-  - P/E Ratio (Price/Earnings)
-  - EPS (Earnings Per Share)
-  - Médias Móveis (SMA50, SMA200)
-  - Variações (1w, 1m, 1y)
+2. INDICADORES FUNDAMENTAIS E TÉCNICOS (FMP -> Folha -> Firestore)
+------------------------------------------------------------------
+Fonte: Financial Modeling Prep (FMP) V8.6 (Timeout Protection).
+Frequência da API: De 6 em 6 horas (4x por dia).
+Volume: Lotes de 20 ativos por execução (Deep Scan).
+Proteção: Soft Deadline aos 5m30s para evitar erros do Google.
+Ciclo Total: 20 ativos x 4 vezes/dia = 80 ativos atualizados/dia.
 
-2. INDICADORES FUNDAMENTAIS (FMP/Alpha Vantage -> Folha -> Firestore)
----------------------------------------------------------------------
-Fonte: Financial Modeling Prep (FMP) com Fallback Alpha Vantage (AV).
-Frequência da API: 1x por dia (Execução às 03:00 AM).
-Volume: Rotação de 40 ativos por dia.
-Ciclo Total: 92 ativos / 40 por dia = ~2.3 dias. 
-Status: 100% do portfólio é renovado a cada 72 horas.
-
-Indicadores:
-  - EV/EBITDA (Enterprise Value / EBITDA)
-  - ROIC (Return on Invested Capital)
-  - Métricas TTM (Trailing Twelve Months)
+Indicadores (100% API):
+  - Dividendo, P/E, EPS, EPS YoY, EPS Next Year
+  - SMA 50, SMA 200, Market Cap, EV, EBITDA, Dívida Líquida
 
 3. INDICADORES PERIÓDICOS (Folha -> Firestore)
 ----------------------------------------------
-Fonte: Dados inseridos ou validados na folha "Firebase".
-Frequência de Upload: A cada 10 minutos (Se houver alteração na folha).
+Fonte: Dados manuais na folha "Firebase".
+Frequência de Upload: A cada 10 minutos.
 
-Frequências de atualização lógica:
-  - MENSAL: Calendário de Dividendos, Yield, Periodicidade.
-  - TRIMESTRAL: Dados de Balanço (EBITDA, Dívida Líquida), EPS YoY.
-  - ANUAL: Relatórios anuais consolidantes.
-
-4. MATRIZ DE RESPONSABILIDADE
------------------------------
-| Periodicidade | Indicador              | Fonte            | Pipeline        |
-|---------------|------------------------|------------------|-----------------|
-| Minutos       | Preço, Market Cap      | Google Finance   | Upload (10 min) |
-| Horas         | P/E, SMA50, SMA200     | Google Finance   | Upload (10 min) |
-| 2-3 Dias      | EV/EBITDA, ROIC        | FMP / AV         | Rotação (03:00) |
-| Mensal        | Dividendos, Pagamentos  | Manual/Folha     | Upload (10 min) |
-| Trimestral    | EBITDA, Crescimento EPS | FMP / Google Fin | Rotação/Folha   |
+4. MATRIZ DE RESPONSABILIDADE (V8.6 - ANTI-TIMEOUT)
+---------------------------------------------------
+| Periodicidade | Indicador               | Fonte            | Pipeline        |
+|---------------|-------------------------|------------------|-----------------|
+| Minutos       | Preço                   | Google Finance   | Upload (10 min) |
+| Cada 6 Horas  | Deep Scan (20 ativos)   | FMP (Multi-Call) | Rotação (Auto)  |
+| Mensal        | Mês Típico/Periodicid.  | Manual/Folha     | Upload (10 min) |
 
 FLUXO FINAL:
 [Fontes Externas] --> [Folha "Firebase"] --> [FIRESTORE] --> [APP PWA]
-(Diário/Contínuo)      (Ponto Central)      (Sincronização)   (Visualização)
+(Deep Scan 6/6h)      (Ponto Central)      (Sincronização)   (Visualização)
 
 ***********************************************************/
