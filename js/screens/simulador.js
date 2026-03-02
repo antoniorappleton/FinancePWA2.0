@@ -231,10 +231,18 @@ function calcularMediaPonderada() {
     const diffPreco = preco1 > 0 ? ((preco2 - preco1) / preco1) * 100 : 0;
 
     out.innerHTML = `
-      <p>📊 <strong>Preço Médio:</strong> ${precoMedio.toFixed(2)} €</p>
-      <p>📈 <strong>Diferença de Preço:</strong> ${diffPreco.toFixed(2)}%</p>
-      <p>📦 <strong>Total de Ações:</strong> ${totalQtd.toFixed(2)}</p>
-      <p>💰 <strong>Total Investido:</strong> ${totalInvestido.toFixed(2)} €</p>
+      <div class="resultado-header">
+        <p>📊 <strong>Preço Médio:</strong> ${precoMedio.toFixed(2)} €</p>
+        <p>📈 <strong>Diferença de Preço:</strong> ${diffPreco.toFixed(2)}%</p>
+        <p>📦 <strong>Total de Ações:</strong> ${totalQtd.toFixed(2)}</p>
+        <p>💰 <strong>Total Investido:</strong> ${totalInvestido.toFixed(2)} €</p>
+      </div>
+      <button class="btn premium full btn-transfer-tp2" 
+              data-pm="${precoMedio.toFixed(2)}" 
+              data-total="${totalInvestido.toFixed(2)}"
+              style="margin-top: 1rem;">
+        🎯 Calcular TP2 com estes dados
+      </button>
     `;
   } else {
     out.innerHTML = `<p style="color:red;">⚠️ Insere valores válidos.</p>`;
@@ -746,6 +754,23 @@ export function initScreen() {
     });
     const out = document.getElementById("resultadoReforco");
     if (out) out.innerHTML = "";
+  });
+
+  // Transferência Reforço -> TP2
+  document.getElementById("resultadoReforco")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-transfer-tp2");
+    if (btn) {
+      const pm = btn.dataset.pm;
+      const total = btn.dataset.total;
+
+      const tp1Input = document.getElementById("tp1Input");
+      const invInput = document.getElementById("investimentoInput");
+
+      if (tp1Input) tp1Input.value = pm;
+      if (invInput) invInput.value = total;
+
+      activatePanel("panel-tp2");
+    }
   });
 
   // TP2
