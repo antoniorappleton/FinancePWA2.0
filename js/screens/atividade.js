@@ -1199,6 +1199,38 @@ async function processAndRender(snap, aSnap) {
                   (<span class="down">-${dropNeeded.toFixed(1)}%</span>) 
                   para recuperar o prejuízo de <strong>€${Math.abs(lucroAtual).toFixed(2)}</strong> quando o preço regressar aos <strong>€${precoAtual.toFixed(2)}</strong> atuais.
                 </div>
+                <!-- Novo: Investimento para Breakeven -->
+                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed rgba(239, 68, 68, 0.2);">
+                  <div style="font-weight:bold; margin-bottom:4px; color:var(--text-color);">Reforço para Breakeven:</div>
+                  ${(() => {
+                    const Io = g.investido;
+                    const Qo = g.qtd;
+                    const Pa = precoAtual;
+
+                    const calcInv = (targetPct) => {
+                      const Pb = Pa * (1 + targetPct / 100);
+                      // In = (Io - Pb * Qo) / (Pb/Pa - 1)
+                      const In = (Io - Pb * Qo) / (Pb / Pa - 1);
+                      return In > 0 ? In : 0;
+                    };
+
+                    const inv2 = calcInv(2);
+                    const inv5 = calcInv(5);
+
+                    let html = "";
+                    if (inv2 > 0) {
+                      html += `<div>• Investir <strong>€${inv2.toFixed(2)}</strong> para breakeven se o preço recuperar <strong>2%</strong> (até €${(Pa * 1.02).toFixed(2)})</div>`;
+                    }
+                    if (inv5 > 0 && inv5 < inv2) {
+                      html += `<div>• Investir <strong>€${inv5.toFixed(2)}</strong> para breakeven se o preço recuperar <strong>5%</strong> (até €${(Pa * 1.05).toFixed(2)})</div>`;
+                    }
+
+                    if (!html) {
+                      return `<div class="muted">A posição já está muito próxima do breakeven com a recuperação atual.</div>`;
+                    }
+                    return html;
+                  })()}
+                </div>
               </div>`;
             })()}
 
