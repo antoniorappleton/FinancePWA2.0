@@ -860,6 +860,7 @@ const OPT_SETORES = [
   "ETF Finance",
   "ETF Energia",
   "ETF Materiais",
+  "ETF Múltiplos Setores",
   "Alimentação",
   "Automóvel",
   "Bens Consumidor",
