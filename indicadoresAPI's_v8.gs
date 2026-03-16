@@ -5,30 +5,30 @@
  * =============================================================================
  *
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║              ORDEM DE EXECUÇÃO (PRIMEIRA CONFIGURAÇÃO)          ║
+ * ║              ORDEM DE EXECUÇÃO (PRIMEIRA CONFIGURAÇÃO)           ║
  * ╠══════════════════════════════════════════════════════════════════╣
- * ║  PASSO 1 — (indicadoresAPI's_v8.gs)                            ║
- * ║    ► Executar: setupAPIKeys()                                   ║
- * ║      Guarda a chave FMP nas PropertiesService do projeto.       ║
+ * ║  PASSO 1 — (indicadoresAPI's_v8.gs)                              ║
+ * ║    ► Executar: setupAPIKeys()                                    ║
+ * ║      Guarda a chave FMP nas PropertiesService do projeto.        ║
  * ║                                                                  ║
- * ║  PASSO 2 — (indicadoresAPI's_v8.gs)                            ║
- * ║    ► Executar: ENG_setupTriggers()                              ║
- * ║      Cria um gatilho automático de 6/6h para ir buscar          ║
- * ║      indicadores fundamentais (PE, ROIC, EPS, SMAs…) à FMP.   ║
+ * ║  PASSO 2 — (indicadoresAPI's_v8.gs)                              ║
+ * ║    ► Executar: ENG_setupTriggers()                               ║
+ * ║      Cria um gatilho automático de 6/6h para ir buscar           ║
+ * ║      indicadores fundamentais (PE, ROIC, EPS, SMAs…) à FMP.      ║
  * ║                                                                  ║
- * ║  PASSO 3 — (Upload_Firestore_Robust.gs)                        ║
- * ║    ► Executar: UP_setupTriggers()                               ║
- * ║      Cria um gatilho automático de 10/10min para sincronizar    ║
- * ║      a sheet "Firebase" para a base de dados Firestore.         ║
+ * ║  PASSO 3 — (Upload_Firestore_Robust.gs)                          ║
+ * ║    ► Executar: UP_setupTriggers()                                ║ 
+ * ║      Cria um gatilho automático de 10/10min para sincronizar     ║ 
+ * ║      a sheet "Firebase" para a base de dados Firestore.          ║
  * ║                                                                  ║
- * ║  PASSO 4 — Autorizar o script (feito automaticamente)          ║
- * ║      Após executar qualquer função pela 1ª vez, o Google        ║
- * ║      pede autorização. Clica em "Rever autorizações" e aceita.  ║
+ * ║  PASSO 4 — Autorizar o script (feito automaticamente)            ║
+ * ║      Após executar qualquer função pela 1ª vez, o Google         ║ 
+ * ║      pede autorização. Clica em "Rever autorizações" e aceita.   ║
  * ║                                                                  ║
- * ║  ORDEM DO FLUXO AUTOMÁTICO (após configuração):                 ║
- * ║    [1] FMP busca indicadores → escreve na sheet "Firebase"      ║
- * ║    [2] Upload_Firestore envia a sheet atualizada ao Firestore   ║
- * ║    [3] A PWA lê do Firestore e mostra dados atualizados         ║
+ * ║  ORDEM DO FLUXO AUTOMÁTICO (após configuração):                  ║
+ * ║    [1] FMP busca indicadores → escreve na sheet "Firebase"       ║
+ * ║    [2] Upload_Firestore envia a sheet atualizada ao Firestore    ║
+ * ║    [3] A PWA lê do Firestore e mostra dados atualizados          ║
  * ╚══════════════════════════════════════════════════════════════════╝
  *
  * Correções V8.7:
@@ -162,7 +162,7 @@ function fetchFromFMP_DeepScan(sheet, row, ticker) {
 
     // ── 1. PROFILE (primeiro para detectar ETF) ──────────────────────────────
     const resP = UrlFetchApp.fetch(
-      `https://financialmodelingprep.com/stable/profile/${ticker}?${apikey}`,
+      `https://financialmodelingprep.com/stable/profile?symbol=${ticker}&${apikey}`,
       { muteHttpExceptions: true }
     );
     if (resP.getResponseCode() === 200) {
@@ -185,7 +185,7 @@ function fetchFromFMP_DeepScan(sheet, row, ticker) {
 
     // ── 2. KEY METRICS TTM ───────────────────────────────────────────────────
     const resM = UrlFetchApp.fetch(
-      `https://financialmodelingprep.com/stable/key-metrics-ttm/${ticker}?${apikey}`,
+      `https://financialmodelingprep.com/stable/key-metrics-ttm?symbol=${ticker}&${apikey}`,
       { muteHttpExceptions: true }
     );
     if (resM.getResponseCode() === 200) {
@@ -193,8 +193,8 @@ function fetchFromFMP_DeepScan(sheet, row, ticker) {
       if (dataM) {
         if (dataM.peRatioTTM) sheet.getRange(row, ENG_COL.PE + 1).setValue(dataM.peRatioTTM);
         // ROIC apenas para ações (não ETFs)
-        if (!isEtf && dataM.roicTTM) {
-          sheet.getRange(row, ENG_COL.ROIC + 1).setValue(dataM.roicTTM * 100);
+        if (!isEtf && dataM.returnOnInvestedCapitalTTM) {
+          sheet.getRange(row, ENG_COL.ROIC + 1).setValue(dataM.returnOnInvestedCapitalTTM * 100);
         }
         const ev   = dataM.enterpriseValueTTM || dataM.enterpriseValue;
         const mc   = dataM.marketCapTTM || dataM.marketCap;
@@ -214,7 +214,7 @@ function fetchFromFMP_DeepScan(sheet, row, ticker) {
     if (!isEtf) {
       // Financial Growth → EPS YoY
       const resG = UrlFetchApp.fetch(
-        `https://financialmodelingprep.com/stable/financial-growth/${ticker}?limit=1&${apikey}`,
+        `https://financialmodelingprep.com/stable/financial-growth?symbol=${ticker}&period=annual&${apikey}`,
         { muteHttpExceptions: true }
       );
       if (resG.getResponseCode() === 200) {
@@ -227,13 +227,13 @@ function fetchFromFMP_DeepScan(sheet, row, ticker) {
 
       // Analyst Estimates → EPS Next Year
       const resE = UrlFetchApp.fetch(
-        `https://financialmodelingprep.com/api/v3/analyst-estimates/${ticker}?limit=1&${apikey}`,
+        `https://financialmodelingprep.com/stable/analyst-estimates?symbol=${ticker}&period=annual&${apikey}`,
         { muteHttpExceptions: true }
       );
       if (resE.getResponseCode() === 200) {
         const dataE = JSON.parse(resE.getContentText())[0];
-        if (dataE && dataE.estimatedEpsAvg) {
-          sheet.getRange(row, ENG_COL.EPS_NEXT + 1).setValue(dataE.estimatedEpsAvg);
+        if (dataE && dataE.epsAvg) {
+          sheet.getRange(row, ENG_COL.EPS_NEXT + 1).setValue(dataE.epsAvg);
           hasData = true;
         }
       }
@@ -241,13 +241,13 @@ function fetchFromFMP_DeepScan(sheet, row, ticker) {
 
     // ── 5. HISTORICAL (SMAs) — válido para ações e ETFs ─────────────────────
     const resH = UrlFetchApp.fetch(
-      `https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?timeseries=200&${apikey}`,
+      `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${ticker}&${apikey}`,
       { muteHttpExceptions: true }
     );
     if (resH.getResponseCode() === 200) {
-      const dataH = JSON.parse(resH.getContentText());
-      if (dataH.historical && dataH.historical.length >= 50) {
-        const hist = dataH.historical.map(d => d.close);
+      const histData = JSON.parse(resH.getContentText());
+      if (Array.isArray(histData) && histData.length >= 50) {
+        const hist = histData.map(d => d.close);
         const sma50 = hist.slice(0, 50).reduce((a, b) => a + b, 0) / 50;
         sheet.getRange(row, ENG_COL.SMA50 + 1).setValue(sma50);
         if (hist.length >= 200) {
