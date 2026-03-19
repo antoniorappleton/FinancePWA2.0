@@ -589,6 +589,9 @@ async function carregarTop10Crescimento(periodo = "1m") {
           mercado: c.raw.mercado,
           periodo: c.raw.periodicidade,
           divMedio: c.raw.dividendoMedio24m,
+          epsNextY: c.raw.epsNextY || c.raw.eps_next_year || 0,
+          netDebt: c.raw.dividaLiquida || c.raw.netDebt || 0,
+          ebitda: c.raw.ebitda || 0,
         },
       });
     });

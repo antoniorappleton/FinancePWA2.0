@@ -336,6 +336,8 @@ export class Treemap {
                 <span>Preço: <b>${eur(m.valorStock)}</b></span>
                 <span>Growth: <b style="color:${item.growth >= 0 ? "#22c55e" : "#ef4444"}">${(item.growth * 100 || 0).toFixed(2)}%</b></span>
                 <span>Yield: <b>${(item.yield || 0).toFixed(2)}%</b></span>
+                <span>EPS Next Y: <b>${m.epsNextY ? (Number(m.epsNextY) > 1 ? m.epsNextY.toFixed(2) : (m.epsNextY * 100).toFixed(2) + "%") : "—"}</b></span>
+                <span>Dívida/EBITDA: <b>${m.ebitda > 0 ? (m.netDebt / m.ebitda).toFixed(1) + "x" : "—"}</b></span>
             </div>
         `;
     tip.style.display = "block";

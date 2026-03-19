@@ -141,13 +141,36 @@ export function scoreROIC(roic) {
   return clamp(v / 20, 0, 1);
 }
 
-export function scoreEPS(epsYoY) {
+export function scoreEPS(epsYoY, epsNextY = null) {
   const v = Number(epsYoY);
-  if (!Number.isFinite(v)) return 0;
+  if (!Number.isFinite(v)) {
+    // Se não há YoY, mas há NextY, tentamos usar o NextY como base
+    if (epsNextY !== null && Number.isFinite(epsNextY)) {
+      const nY = Math.abs(epsNextY) > 1 ? epsNextY / 100 : epsNextY;
+      return clamp(0.2 + (nY / 0.4) * 0.8, 0, 1);
+    }
+    return 0;
+  }
+  
   // Aceita fração ou percentagem
   const frac = Math.abs(v) > 1 ? v / 100 : v;
-  // 0% growth -> 0.2 score; 40% growth -> 1.0 score
-  return clamp(0.2 + (frac / 0.4) * 0.8, 0, 1);
+  
+  // Base: 0% growth -> 0.2 score; 40% growth -> 1.0 score
+  let score = clamp(0.2 + (frac / 0.4) * 0.8, 0, 1);
+
+  // NOVO: Refinamento com EPS Next Year (Estimativa de Analistas)
+  if (epsNextY !== null && Number.isFinite(epsNextY)) {
+    const nextFrac = Math.abs(epsNextY) > 1 ? epsNextY / 100 : epsNextY;
+    // Se o crescimento futuro for positivo e superior ao presente, damos um bónus moderado (max +0.15)
+    // Se o crescimento futuro for negativo, penalizamos (max -0.3)
+    if (nextFrac > frac && nextFrac > 0) {
+      score = clamp(score + 0.15, 0, 1);
+    } else if (nextFrac < 0) {
+      score = clamp(score - 0.3, 0, 1);
+    }
+  }
+
+  return score;
 }
 
 /** Proxy muito simples de volatilidade [0..1] se não houver `row.volatility`. */
@@ -168,8 +191,11 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const rAnnual = annualizeRate(acao, periodoSel);
   const p99 = 0.8; // Normalization factor
   const R_Price = clamp(rAnnual / p99, 0, 1);
+  
   const epsYoY = Number(acao.epsYoY || acao.eps_yoy || acao.EPS_YoY || 0);
-  const R_Eps = scoreEPS(epsYoY);
+  const epsNextY = Number(acao.epsNextY || acao.eps_next_y || acao.epsNextYear || 0);
+  
+  const R_Eps = scoreEPS(epsYoY, epsNextY);
   // Pilar R: 40% Preço, 60% Lucros (EPS)
   const R = R_Price * 0.4 + R_Eps * 0.6;
 
@@ -227,6 +253,20 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
     0,
     1,
   );
+
+  // NOVO: Ajuste de Solvência (Dívida Líquida / EBITDA)
+  // Empresas com muita dívida são mais arriscadas
+  const eb = Number(acao.ebitda || acao.Ebitda || 0);
+  const nd = Number(acao.dividaLiquida || acao.divida_liquida || acao.netDebt || 0);
+  if (eb > 0 && nd > 0) {
+    const debtEbitda = nd / eb;
+    if (debtEbitda > 4) {
+      // Penalização progressiva de até 30% do score se a dívida for enorme (>10x EBITDA)
+      const penalty = clamp((debtEbitda - 4) / 6, 0, 0.3);
+      score *= (1 - penalty);
+    }
+  }
+
   score *= riskAdj;
 
   return {
