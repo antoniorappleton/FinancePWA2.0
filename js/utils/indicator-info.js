@@ -149,5 +149,26 @@ export const INDICATOR_INFO = {
     vantagem: "Beta < 1 significa menos volátil; Beta > 1 significa mais oscilação que a média.",
     ancoras: { lo: 0.8, hi: 1.5 },
     invertido: true
+  },
+  high_52w_dist: {
+    nome: "Distância Topo 52s",
+    desc: "Percentagem de queda desde o ponto mais alto do último ano.",
+    vantagem: "Estar perto do topo (<5%) indica forte tendência de alta (momentum).",
+    ancoras: { lo: -0.3, hi: -0.05 },
+    invertido: false
+  },
+  div_grow_5y: {
+    nome: "Cresc. Dividendo (5a)",
+    desc: "Taxa anual média de crescimento dos dividendos nos últimos 5 anos.",
+    vantagem: "Crescimento sustentável (>10%) indica um negócio sólido e gerador de caixa.",
+    ancoras: { lo: 0, hi: 0.15 },
+    invertido: false
+  },
+  eps_grow_5y: {
+    nome: "Cresc. Lucro (5a)",
+    desc: "Taxa anual média de crescimento do Lucro por Ação (EPS) nos últimos 5 anos.",
+    vantagem: "Valida se a empresa está a expandir os seus lucros de forma consistente a longo prazo.",
+    ancoras: { lo: 0, hi: 0.2 },
+    invertido: false
   }
 };

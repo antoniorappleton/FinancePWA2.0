@@ -109,6 +109,60 @@ const UP_FIELD_MAP = {
   "ebitda": "ebitda",
   "ev/ebitda": "evEbitda",
   "ev ebitda": "evEbitda",
+  "high_52w": "52w_high",
+  "52w high": "52w_high",
+  "low_52w": "52w_low",
+  "52w low": "52w_low",
+  "atr 14": "atr_14",
+  "avg volume": "avg_volume",
+  "beta": "beta",
+  "book sh": "book_sh",
+  "cash sh": "cash_sh",
+  "current ratio": "current_ratio",
+  "debt eq": "debt_eq",
+  "dividend est": "dividend_est",
+  "dividend ex date": "dividend_ex_date",
+  "dividend gr 3 5y": "dividend_gr_3_5y",
+  "dividend ttm": "dividend_ttm",
+  "earnings": "earnings",
+  "enterprise value": "enterprise_value",
+  "eps next q": "eps_next_q",
+  "eps next 5y": "eps_next_5y",
+  "eps past 3 5y": "eps_past_3_5y",
+  "eps q q": "eps_q_q",
+  "eps sales surpr": "eps_sales_surpr",
+  "eps this y": "eps_this_y",
+  "eps ttm": "eps_ttm",
+  "eps y y ttm": "eps_y_y_ttm",
+  "ev sales": "ev_sales",
+  "forward p e": "forward_p_e",
+  "gross margin": "gross_margin",
+  "income": "income",
+  "insider own": "insider_own",
+  "inst own": "inst_own",
+  "lt debt eq": "lt_debt_eq",
+  "oper margin": "oper_margin",
+  "p b": "p_b",
+  "p c": "p_c",
+  "p s": "p_s",
+  "p fcf": "p_fcf",
+  "payout": "payout",
+  "profit margin": "profit_margin",
+  "quick ratio": "quick_ratio",
+  "roa": "roa",
+  "roe": "roe",
+  "roi": "roi",
+  "rsi 14": "rsi_14",
+  "sales q q": "sales_q_q",
+  "sales y y ttm": "sales_y_y_ttm",
+  "short float": "short_float",
+  "short interest": "short_interest",
+  "short ratio": "short_ratio",
+  "shs float": "shs_float",
+  "shs outstand": "shs_outstand",
+  "target price": "target_price",
+  "volatility": "volatility",
+  "rel volume": "rel_volume",
 
   // extras
   "ultima atu": "ultimaAtu",
@@ -260,6 +314,9 @@ function UP_enviarParaFirebase_Logic() {
         if (UP_ADD_UPDATED_AT) {
           fields[UP_UPDATED_AT_FIELD] = { timestampValue: new Date().toISOString() };
         }
+
+        // NOVO: Processamento de campos complexos (52w, Growth, etc)
+        UP_processComplexFields_(fields);
 
         writes.push({
           update: { name: docName, fields },
@@ -524,3 +581,77 @@ function UP_deleteStaleTickers_(sh, lastRow, iTicker, auth, startMs) {
 
   Logger.log(`🧹 Delete stale tickers: apagados ${deleted} docs (máx/run=${UP_DELETE_MAX_PER_RUN}).`);
 }
+
+/**
+ * Processa campos de string complexos (ex: "288.62 -14.26%") e gera campos numéricos atómicos no Firestore.
+ * Ajuda o frontend a fazer cálculos sem ter de fazer parsing de strings.
+ */
+function UP_processComplexFields_(fields) {
+  const getS = (k) => fields[k] && fields[k].stringValue ? fields[k].stringValue : null;
+  const setD = (k, v) => { if (v !== null) fields[k] = { doubleValue: v }; };
+
+  // 1. 52w High / Low
+  // Format: "288.62 -14.26%"
+  const high52 = getS("52w_high");
+  if (high52) {
+    const parts = high52.split(/\s+/);
+    if (parts.length >= 2) {
+      setD("high_52w_price", UP_parsePtNumber_(parts[0]));
+      setD("high_52w_dist", UP_parsePercent_(parts[1]));
+    }
+  }
+
+  const low52 = getS("52w_low");
+  if (low52) {
+    const parts = low52.split(/\s+/);
+    if (parts.length >= 2) {
+      setD("low_52w_price", UP_parsePtNumber_(parts[0]));
+      setD("low_52w_dist", UP_parsePercent_(parts[1]));
+    }
+  }
+
+  // 2. Dividend Growth 3/5y
+  // Format: "4.26% 4.98%"
+  const divGr = getS("dividend_gr_3_5y");
+  if (divGr) {
+    const parts = divGr.split(/\s+/);
+    if (parts.length >= 2) {
+      setD("div_grow_3y", UP_parsePercent_(parts[0]));
+      setD("div_grow_5y", UP_parsePercent_(parts[1]));
+    }
+  }
+
+  // 3. EPS Growth Past 3/5y
+  // Format: "6.89% 17.91%"
+  const epsGr = getS("eps_past_3_5y");
+  if (epsGr) {
+    const parts = epsGr.split(/\s+/);
+    if (parts.length >= 2) {
+      setD("eps_grow_3y", UP_parsePercent_(parts[0]));
+      setD("eps_grow_5y", UP_parsePercent_(parts[1]));
+    }
+  }
+
+  // 4. Volatility
+  // Format: "1.94% 2.09%"
+  const vol = getS("volatility");
+  if (vol) {
+    const parts = vol.split(/\s+/);
+    if (parts.length >= 2) {
+      setD("vol_week", UP_parsePercent_(parts[0]));
+      setD("vol_month", UP_parsePercent_(parts[1]));
+    }
+  }
+
+  // 5. Dividend Estimate
+  // Format: "1.07 (0.43%)"
+  const divEst = getS("dividend_est");
+  if (divEst) {
+    const m = divEst.match(/^([\d.,]+)\s*\(([\d.,]+)%\)$/);
+    if (m) {
+      setD("div_est_value", UP_parsePtNumber_(m[1]));
+      setD("div_est_yield", UP_parsePtNumber_(m[2]) / 100);
+    }
+  }
+}
+

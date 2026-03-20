@@ -215,17 +215,33 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const V_FCF = scoreGeneric(pfcf, INDICATOR_INFO.p_fcf);
   const V = V_PE * 0.5 + V_PEG * 0.3 + V_FCF * 0.2;
 
+  // Tendência
   const p = Number(acao.valorStock || acao.price || 0);
   const s50 = Number(acao.sma50 || 0);
   const s200 = Number(acao.sma200 || 0);
   const rsi = Number(acao.rsi_14 || 50);
 
-  const T = scoreTrend(p, s50, s200, rsi);
+  let T = scoreTrend(p, s50, s200, rsi);
+  
+  // Ajuste de tendência: Proximidade do Topo 52 semanas
+  const h52dist = Number(acao.high_52w_dist || 0);
+  if (h52dist > -0.05) {
+    // Se estiver a < 5% do topo, confirmamos força técnica (bonus ligeiro)
+    T = clamp(T + 0.1, 0, 1);
+  } else if (h52dist < -0.30) {
+    // Se caiu > 30% do topo, penalizamos a tendência (quebra de estrutura)
+    T = clamp(T - 0.2, 0, 1);
+  }
 
   // Dividendos
   let rawYield = Number(acao.yield || acao.dividendValue || 0);
   let yPct = Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1 ? rawYield * 100 : rawYield;
-  const D = scoreDividendYield(yPct);
+  let D = scoreDividendYield(yPct);
+  
+  // Ajuste de Qualidade do Dividendo: Crescimento em 5 anos
+  const dg5 = Number(acao.div_grow_5y || 0);
+  if (dg5 > 0.10) D = clamp(D + 0.15, 0, 1); // Crescimento > 10%/ano é excelente
+  else if (dg5 < 0) D = clamp(D - 0.2, 0, 1); // Corte de dividendos é mau sinal
 
   // Eficiência / Lucratividade
   const eve = Number(acao.ev_ebitda || acao.evEbitda || 0);
@@ -237,7 +253,13 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const E_ROIC = scoreROIC(roic);
   const E_ROE = scoreGeneric(roe, INDICATOR_INFO.roe);
   const E_OM = scoreGeneric(om, INDICATOR_INFO.oper_margin);
-  const E = (E_EV * 0.3 + E_ROIC * 0.3 + E_ROE * 0.2 + E_OM * 0.2);
+  
+  let E = (E_EV * 0.3 + E_ROIC * 0.3 + E_ROE * 0.2 + E_OM * 0.2);
+  
+  // Ajuste de Qualidade: Consistência do EPS
+  const eg5 = Number(acao.eps_grow_5y || 0);
+  if (eg5 > 0.15) E = clamp(E + 0.1, 0, 1);
+  else if (eg5 < 0) E = clamp(E - 0.15, 0, 1);
 
   // Solvência
   const cr = Number(acao.current_ratio || 0);

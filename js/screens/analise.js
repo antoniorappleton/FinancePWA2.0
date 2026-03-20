@@ -35,6 +35,7 @@ import {
   anualPreferido,
 } from "../utils/scoring.js";
 import { INDICATOR_INFO } from "../utils/indicator-info.js";
+import { repairFirestoreData } from "../utils/maintenance.js";
 
 /* =========================================================
 Carregamento “on-demand” de libs (Chart.js, html2canvas, jsPDF)
@@ -684,6 +685,14 @@ function fetchAcoes() {
         oper_margin: Number(d.oper_margin || 0),
         profit_margin: Number(d.profit_margin || 0),
         sales_yoy: Number(d.sales_y_y_ttm || 0),
+
+        // Novos campos numéricos (processados pelo upload_to_firestore)
+        high_52w_dist: Number(d.high_52w_dist || 0),
+        low_52w_dist: Number(d.low_52w_dist || 0),
+        div_grow_5y: Number(d.div_grow_5y || 0),
+        eps_grow_5y: Number(d.eps_grow_5y || 0),
+        vol_week: Number(d.vol_week || 0),
+        vol_month: Number(d.vol_month || 0),
       });
     });
     ALL_ROWS = rows;
@@ -2212,6 +2221,27 @@ export async function initScreen() {
   if (!db) {
     console.error("Firebase DB não inicializado!");
     return;
+  }
+
+  // Botão de reparação de dados (manutenção)
+  const btnRepair = document.getElementById("btnRepairData");
+  if (btnRepair) {
+    btnRepair.addEventListener("click", async () => {
+      if (!confirm("Deseja reparar os dados antigos no Firestore? Isso converterá strings complexas em números. Pode demorar alguns segundos.")) return;
+      btnRepair.disabled = true;
+      btnRepair.innerText = "Reparando...";
+      try {
+        await repairFirestoreData();
+        alert("Dados reparados com sucesso! A tabela será atualizada.");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao reparar dados. Verifique a consola.");
+      } finally {
+        btnRepair.disabled = false;
+        btnRepair.innerText = "Reparar Base de Dados";
+      }
+    });
   }
 
   fetchAcoes();
