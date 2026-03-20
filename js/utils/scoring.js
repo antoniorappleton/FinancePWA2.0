@@ -193,6 +193,15 @@ export function scoreSolvency(currentRatio, debtEq, netDebtEbitda) {
   return (sCR * 0.3 + sDE * 0.3 + sND * 0.4);
 }
 
+/** Estima volatilidade proxy a partir da variação semanal/mensal quando o campo direto não existe. */
+function proxyVol(acao) {
+  const w = Math.abs(asRate(acao.g1w || acao.priceChange_1w || 0));
+  const m = Math.abs(asRate(acao.g1m || acao.priceChange_1m || 0));
+  if (w > 0) return clamp(w * Math.sqrt(52), 0, 1);
+  if (m > 0) return clamp(m * Math.sqrt(12), 0, 1);
+  return 0.2; // Fallback neutro
+}
+
 export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const rAnnual = annualizeRate(acao, periodoSel);
   const p99 = 0.8;
