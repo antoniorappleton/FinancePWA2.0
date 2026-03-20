@@ -34,6 +34,7 @@ import {
   annualizeRate,
   anualPreferido,
 } from "../utils/scoring.js";
+import { INDICATOR_INFO } from "../utils/indicator-info.js";
 
 /* =========================================================
 Carregamento “on-demand” de libs (Chart.js, html2canvas, jsPDF)
@@ -208,6 +209,16 @@ const SORT_ACCESSORS = {
   divPer: (r) => (Number.isFinite(r.divPer) ? r.divPer : -Infinity),
   divAnual: (r) => (Number.isFinite(r.divAnual) ? r.divAnual : -Infinity),
   pe: (r) => (Number.isFinite(r.pe) ? r.pe : Infinity),
+  pe_f: (r) => (Number.isFinite(r.forward_p_e) ? r.forward_p_e : Infinity),
+  peg: (r) => (Number.isFinite(r.peg) ? r.peg : Infinity),
+  roic: (r) => (Number.isFinite(r.roic) ? r.roic : -Infinity),
+  roe: (r) => (Number.isFinite(r.roe) ? r.roe : -Infinity),
+  eps_yoy: (r) => (Number.isFinite(r.eps_yoy) ? r.eps_yoy : -Infinity),
+  eps_next_y: (r) => (Number.isFinite(r.eps_next_y) ? r.eps_next_y : -Infinity),
+  sales_yoy: (r) => (Number.isFinite(r.sales_yoy) ? r.sales_yoy : -Infinity),
+  current_ratio: (r) => (Number.isFinite(r.current_ratio) ? r.current_ratio : -Infinity),
+  debt_eq: (r) => (Number.isFinite(r.debt_eq) ? r.debt_eq : Infinity),
+  rsi: (r) => (Number.isFinite(r.rsi_14) ? r.rsi_14 : Infinity),
   delta50: (r) => (Number.isFinite(r.delta50) ? r.delta50 : -Infinity),
   delta200: (r) => (Number.isFinite(r.delta200) ? r.delta200 : -Infinity),
   g1w: (r) => (Number.isFinite(r.g1w) ? r.g1w : -Infinity),
@@ -216,9 +227,6 @@ const SORT_ACCESSORS = {
   periodicidade: (r) => r.periodicidade || "",
   mes: (r) => r.mes || "",
   observacao: (r) => r.observacao || "",
-  evebitda: (r) => (Number.isFinite(r.evEbitda) ? r.evEbitda : Infinity),
-  roic: (r) => (Number.isFinite(r.roic) ? r.roic : -Infinity),
-  eps_yoy: (r) => (Number.isFinite(r.eps_yoy) ? r.eps_yoy : -Infinity),
 };
 function sortRows(rows) {
   if (!sortKey) return rows;
@@ -504,6 +512,20 @@ function renderTable(rows) {
       const y24 = Number.isFinite(r.yield24) ? r.yield24 : null;
       const divPerTxt = r.divPer > 0 ? fmtEUR(r.divPer) : "—";
       const divAnualTxt = r.divAnual > 0 ? fmtEUR(r.divAnual) : "—";
+      
+      const badgeGeneric = (v, anchors, invert = false) => {
+        if (!Number.isFinite(v) || v === 0) return `<span class="badge muted">—</span>`;
+        if (invert) {
+           if (v <= anchors.lo) return `<span class="badge ok">${v.toFixed(2)}</span>`;
+           if (v >= anchors.hi) return `<span class="badge danger">${v.toFixed(2)}</span>`;
+           return `<span class="badge warn">${v.toFixed(2)}</span>`;
+        } else {
+           if (v >= anchors.hi) return `<span class="badge ok">${v.toFixed(2)}</span>`;
+           if (v <= anchors.lo) return `<span class="badge danger">${v.toFixed(2)}</span>`;
+           return `<span class="badge warn">${v.toFixed(2)}</span>`;
+        }
+      };
+
       return `
       <tr>
         <td class="sticky-col"><input type="checkbox" class="anlRowSel" data-ticker="${
@@ -519,8 +541,17 @@ function renderTable(rows) {
         <td>${divPerTxt}</td>
         <td>${divAnualTxt}</td>
         <td>${badgePE(r.pe)}</td>
-        <td><span class="badge ${r.roic > 15 ? "ok" : "muted"}">${r.roic ? r.roic.toFixed(1) + "%" : "—"}</span></td>
+        <td>${badgeGeneric(r.forward_p_e, { lo: 10, hi: 25 }, true)}</td>
+        <td>${badgeGeneric(r.peg, { lo: 0.8, hi: 1.5 }, true)}</td>
+        <td><span class="badge ${r.roic > 12 ? "ok" : "muted"}">${r.roic ? r.roic.toFixed(1) + "%" : "—"}</span></td>
+        <td><span class="badge ${r.roe > 15 ? "ok" : "muted"}">${r.roe ? r.roe.toFixed(1) + "%" : "—"}</span></td>
         <td>${pct(r.eps_yoy)}</td>
+        <td>${pct(r.eps_next_y)}</td>
+        <td>${pct(r.sales_yoy)}</td>
+        <td>${badgeGeneric(r.current_ratio, { lo: 1.0, hi: 2.0 })}</td>
+        <td>${badgeGeneric(r.debt_eq, { lo: 0.5, hi: 2.0 }, true)}</td>
+        <td><span class="badge ${r.rsi_14 < 35 ? "ok" : r.rsi_14 > 70 ? "danger" : "muted"}">${r.rsi_14 ? r.rsi_14.toFixed(0) : "—"}</span></td>
+
         <td>${pct(r.delta50)}</td>
         <td>${pct(r.delta200)}</td>
         <td>${pct(r.g1w)}</td>
@@ -640,6 +671,19 @@ function fetchAcoes() {
             ? (p - s) / s
             : null;
         })(),
+
+        // Novos Indicadores
+        peg: Number(d.peg || 0),
+        roe: Number(d.roe || 0),
+        p_fcf: Number(d.p_fcf || 0),
+        current_ratio: Number(d.current_ratio || 0),
+        debt_eq: Number(d.debt_eq || 0),
+        rsi_14: Number(d.rsi_14 || 0),
+        forward_p_e: Number(d.forward_p_e || 0),
+        gross_margin: Number(d.gross_margin || 0),
+        oper_margin: Number(d.oper_margin || 0),
+        profit_margin: Number(d.profit_margin || 0),
+        sales_yoy: Number(d.sales_y_y_ttm || 0),
       });
     });
     ALL_ROWS = rows;

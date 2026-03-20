@@ -1,5 +1,7 @@
 // js/utils/scoring.js
 
+import { INDICATOR_INFO } from './indicator-info.js';
+
 const SETTINGS_STORAGE_KEY = "app.settings";
 
 export function getUserWeights() {
@@ -16,7 +18,7 @@ export function getUserWeights() {
 export const SCORING_CFG = {
   MAX_ANNUAL_RETURN: 0.8,
   MIN_ANNUAL_RETURN: -0.8,
-  WEIGHTS: { R: 0.1, V: 0.2, T: 0.25, D: 0.2, E: 0.2, Rsk: 0.05 },
+  WEIGHTS: { R: 0.1, V: 0.2, T: 0.2, D: 0.15, E: 0.2, S: 0.1, Rsk: 0.05 }, // Added 'S' for Solvency
   BLEND_WEIGHTS: {
     "1s": { w: 0.75, m: 0.15, y: 0.1 },
     "1m": { w: 0.1, m: 0.75, y: 0.15 },
@@ -45,6 +47,28 @@ function asRate(x) {
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
+}
+
+/** 
+ * Score genérico baseado em âncoras (lo, hi).
+ * Se invertido=true, valores baixos ganham mais score.
+ */
+function scoreGeneric(val, config) {
+  const v = Number(val);
+  if (!Number.isFinite(v)) return 0.5; // Neutral
+  const { lo, hi, invertido } = config;
+  
+  if (invertido) {
+    if (v <= lo) return 1.0;
+    if (v >= hi) return 0.1;
+    const t = (v - lo) / (hi - lo);
+    return clamp(0.1 + 0.9 * (1 - Math.pow(t, 0.8)), 0.1, 1);
+  } else {
+    if (v >= hi) return 1.0;
+    if (v <= lo) return 0.1;
+    const t = (v - lo) / (hi - lo);
+    return clamp(0.1 + 0.9 * Math.pow(t, 0.8), 0.1, 1);
+  }
 }
 
 export function annualizeRate(row, periodoSel) {
@@ -87,45 +111,41 @@ export function annualizeRate(row, periodoSel) {
 }
 
 export function scorePE(pe) {
-  const v = Number(pe);
-  if (!Number.isFinite(v) || v <= 0) return 0.5; // Neutral default
-  const lo = 10,
-    hi = 30;
-  if (v <= lo * 0.6) return 1.0;
-  if (v >= hi * 2) return 0.1;
-  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
-  const curve = 1 - Math.pow(t, 0.8);
-  return clamp(0.1 + 0.9 * curve, 0, 1);
+  return scoreGeneric(pe, INDICATOR_INFO.p_e.ancoras.lo ? INDICATOR_INFO.p_e : { ancoras: { lo: 10, hi: 30 }, invertido: true });
 }
 
-export function scoreTrend(preco, sma50, sma200) {
+export function scoreTrend(preco, sma50, sma200, rsi = 50) {
   let t = 0;
   const p = Number(preco),
     s50 = Number(sma50),
-    s200 = Number(sma200);
+    s200 = Number(sma200),
+    r14 = Number(rsi);
+    
   if (Number.isFinite(p) && Number.isFinite(s50) && p > s50) t += 0.2;
   if (Number.isFinite(p) && Number.isFinite(s200) && p > s200) t += 0.3;
   if (Number.isFinite(s50) && Number.isFinite(s200) && s50 > s200) t += 0.1;
+  
   if (Number.isFinite(p) && Number.isFinite(s50) && s50 > 0) {
     const dist = clamp((p - s50) / s50, -0.2, 0.2);
-    t += dist * 0.5;
+    t += dist * 0.4;
   }
+  
+  // RSI Adjustment: Penalize extreme overbought (>75), reward oversold (<35)
+  if (Number.isFinite(r14)) {
+    if (r14 < 35) t += 0.2; // Opportunity
+    if (r14 > 75) t -= 0.3; // Risky momentum
+  }
+
   return clamp(t, 0, 1);
 }
 
 export function scoreEVEBITDA(evebitda, setor) {
   const v = Number(evebitda);
-  if (!Number.isFinite(v) || v <= 0) return 0.5; // Neutral default
+  if (!Number.isFinite(v) || v <= 0) return 0.5;
   const A =
     SCORING_CFG.EVEBITDA_ANCHORS[String(setor || "—")] ||
     SCORING_CFG.EVEBITDA_ANCHORS.default;
-  const lo = Math.max(1, Number(A.lo) || 6);
-  const hi = Math.max(lo + 1, Number(A.hi) || 20);
-  if (v <= lo * 0.6) return 1.0;
-  if (v >= hi * 2) return 0.1;
-  const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
-  const curve = 1 - Math.pow(t, 0.75);
-  return clamp(0.1 + 0.9 * curve, 0, 1);
+  return scoreGeneric(v, { ancoras: A, invertido: true });
 }
 
 export function scoreDividendYield(yPct) {
@@ -135,137 +155,108 @@ export function scoreDividendYield(yPct) {
 }
 
 export function scoreROIC(roic) {
-  const v = Number(roic);
-  if (!Number.isFinite(v)) return 0;
-  // 0% -> score 0; 20% -> score 1
-  return clamp(v / 20, 0, 1);
+  return scoreGeneric(roic, INDICATOR_INFO.roic);
 }
 
-export function scoreEPS(epsYoY, epsNextY = null) {
+export function scoreEPS(epsYoY, epsNextY = null, eps5y = null) {
   const v = Number(epsYoY);
-  if (!Number.isFinite(v)) {
-    // Se não há YoY, mas há NextY, tentamos usar o NextY como base
-    if (epsNextY !== null && Number.isFinite(epsNextY)) {
-      const nY = Math.abs(epsNextY) > 1 ? epsNextY / 100 : epsNextY;
-      return clamp(0.2 + (nY / 0.4) * 0.8, 0, 1);
-    }
-    return 0;
+  let baseScore = 0.2;
+  
+  if (Number.isFinite(v)) {
+    const frac = Math.abs(v) > 1 ? v / 100 : v;
+    baseScore = clamp(0.2 + (frac / 0.4) * 0.8, 0, 1);
   }
-  
-  // Aceita fração ou percentagem
-  const frac = Math.abs(v) > 1 ? v / 100 : v;
-  
-  // Base: 0% growth -> 0.2 score; 40% growth -> 1.0 score
-  let score = clamp(0.2 + (frac / 0.4) * 0.8, 0, 1);
 
-  // NOVO: Refinamento com EPS Next Year (Estimativa de Analistas)
+  let bonus = 0;
   if (epsNextY !== null && Number.isFinite(epsNextY)) {
     const nextFrac = Math.abs(epsNextY) > 1 ? epsNextY / 100 : epsNextY;
-    // Se o crescimento futuro for positivo e superior ao presente, damos um bónus moderado (max +0.15)
-    // Se o crescimento futuro for negativo, penalizamos (max -0.3)
-    if (nextFrac > frac && nextFrac > 0) {
-      score = clamp(score + 0.15, 0, 1);
-    } else if (nextFrac < 0) {
-      score = clamp(score - 0.3, 0, 1);
-    }
+    bonus += nextFrac > 0 ? clamp(nextFrac * 0.5, -0.3, 0.2) : -0.3;
+  }
+  
+  if (eps5y !== null && Number.isFinite(eps5y)) {
+    const fiveFrac = Math.abs(eps5y) > 1 ? eps5y / 100 : eps5y;
+    bonus += clamp(fiveFrac * 0.3, -0.1, 0.15);
   }
 
-  return score;
+  return clamp(baseScore + bonus, 0, 1);
 }
 
-/** Proxy muito simples de volatilidade [0..1] se não houver `row.volatility`. */
-export function proxyVol(row) {
-  const w = Math.min(
-    1,
-    Math.abs(asRate(row.taxaCrescimento_1semana || row.g1w)) * 10,
-  );
-  const m = Math.min(
-    1,
-    Math.abs(asRate(row.taxaCrescimento_1mes || row.g1m)) * 3,
-  );
-  const y = Math.min(1, Math.abs(asRate(row.taxaCrescimento_1ano || row.g1y)));
-  return Math.max(0, Math.min(1, (w + m + y) / 3));
+export function scoreSolvency(currentRatio, debtEq, netDebtEbitda) {
+  const sCR = scoreGeneric(currentRatio, INDICATOR_INFO.current_ratio);
+  const sDE = scoreGeneric(debtEq, INDICATOR_INFO.debt_eq);
+  
+  let sND = 1.0;
+  if (Number.isFinite(netDebtEbitda)) {
+    if (netDebtEbitda > 4) sND = clamp(1 - (netDebtEbitda - 4) / 6, 0.1, 1);
+  }
+  
+  return (sCR * 0.3 + sDE * 0.3 + sND * 0.4);
 }
 
 export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const rAnnual = annualizeRate(acao, periodoSel);
-  const p99 = 0.8; // Normalization factor
+  const p99 = 0.8;
   const R_Price = clamp(rAnnual / p99, 0, 1);
   
-  const epsYoY = Number(acao.epsYoY || acao.eps_yoy || acao.EPS_YoY || 0);
-  const epsNextY = Number(acao.epsNextY || acao.eps_next_y || acao.epsNextYear || 0);
+  const epsYoY = Number(acao.epsYoY || acao.eps_yoy || 0);
+  const epsNextY = Number(acao.eps_next_y || acao.epsNextY || 0);
+  const eps5y = Number(acao.eps_next_5y || 0);
   
-  const R_Eps = scoreEPS(epsYoY, epsNextY);
-  // Pilar R: 40% Preço, 60% Lucros (EPS)
+  const R_Eps = scoreEPS(epsYoY, epsNextY, eps5y);
   const R = R_Price * 0.4 + R_Eps * 0.6;
 
-  const pe = Number(
-    acao["P/E ratio (Preço/Lucro)"] || acao.pe || acao.peRatio || 0,
-  );
-  let eve = Number(acao["EV/Ebitda"] || acao.evEbitda || 0);
+  // Valuation refined
+  const pe = Number(acao.pe || acao.p_e || 0);
+  const peg = Number(acao.peg || 0);
+  const pfcf = Number(acao.p_fcf || 0);
+  
+  const V_PE = scorePE(pe);
+  const V_PEG = scoreGeneric(peg, INDICATOR_INFO.peg);
+  const V_FCF = scoreGeneric(pfcf, INDICATOR_INFO.p_fcf);
+  const V = V_PE * 0.5 + V_PEG * 0.3 + V_FCF * 0.2;
 
-  // Fallback para EV / Ebitda se o rácio direto não existir
-  if (eve === 0) {
-    const ev = Number(acao.EV || acao.ev || 0);
-    const ebitda = Number(acao.Ebitda || acao.ebitda || 0);
-    if (ebitda > 0) eve = ev / ebitda;
-  }
+  const p = Number(acao.valorStock || acao.price || 0);
+  const s50 = Number(acao.sma50 || 0);
+  const s200 = Number(acao.sma200 || 0);
+  const rsi = Number(acao.rsi_14 || 50);
 
-  const p = Number(acao.valorStock || 0);
-  const s50 = Number(acao.SMA50 || acao.sma50 || 0);
-  const s200 = Number(acao.SMA200 || acao.sma200 || 0);
+  const T = scoreTrend(p, s50, s200, rsi);
 
-  // Calculate yield
-  let rawYield = Number(acao["Dividend Yield"] || acao.yield || 0);
-  // Se for uma fração muito pequena (ex: 0.042), converte para percentagem (4.22)
-  let yPct =
-    Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1
-      ? rawYield * 100
-      : rawYield;
-
-  if (yPct === 0 && p > 0) {
-    const div = Number(
-      acao.divMedio24m || acao.dividendoMedio24m || acao.dividendo || 0,
-    );
-    yPct = (div / p) * 100;
-  }
-
-  const V = scorePE(pe);
-  const T = scoreTrend(p, s50, s200);
+  // Dividendos
+  let rawYield = Number(acao.yield || acao.dividendValue || 0);
+  let yPct = Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1 ? rawYield * 100 : rawYield;
   const D = scoreDividendYield(yPct);
 
-  // Pilar E: 50% EV/Ebitda, 50% ROIC
-  const E_Ratio = scoreEVEBITDA(eve, acao.setor);
-  const roic = Number(acao.roic || acao.ROIC || 0);
-  const E_Roic = scoreROIC(roic);
-  const E = E_Ratio * 0.5 + E_Roic * 0.5;
+  // Eficiência / Lucratividade
+  const eve = Number(acao.ev_ebitda || acao.evEbitda || 0);
+  const roic = Number(acao.roic || 0);
+  const roe = Number(acao.roe || 0);
+  const om = Number(acao.oper_margin || 0);
+  
+  const E_EV = scoreEVEBITDA(eve, acao.setor);
+  const E_ROIC = scoreROIC(roic);
+  const E_ROE = scoreGeneric(roe, INDICATOR_INFO.roe);
+  const E_OM = scoreGeneric(om, INDICATOR_INFO.oper_margin);
+  const E = (E_EV * 0.3 + E_ROIC * 0.3 + E_ROE * 0.2 + E_OM * 0.2);
+
+  // Solvência
+  const cr = Number(acao.current_ratio || 0);
+  const de = Number(acao.debt_eq || 0);
+  const eb = Number(acao.ebitda || 0);
+  const nd = Number(acao.dividaLiquida || 0);
+  const nd_eb = eb > 0 ? nd / eb : null;
+  const S = scoreSolvency(cr, de, nd_eb);
 
   const W = getUserWeights() || SCORING_CFG.WEIGHTS;
 
-  // Ajuste de risco via volatilidade (ou proxy)
-  const vol = Number.isFinite(acao.volatility)
-    ? Math.max(0, Math.min(1, acao.volatility))
-    : proxyVol(acao);
-  const riskAdj = 1 / (1 + 0.75 * vol); // 0.57..1
+  const vol = Number.isFinite(acao.volatility) ? Math.max(0, Math.min(1, acao.volatility)) : proxyVol(acao);
+  const riskAdj = 1 / (1 + 0.6 * vol); // Slightly less aggressive risk damping
 
   let score = clamp(
-    W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.Rsk || 0) * 1.0,
+    W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.S || 0) * S + (W.Rsk || 0) * 1.0,
     0,
     1,
   );
-
-  // NOVO: Ajuste de Solvência (Dívida Líquida / EBITDA)
-  // Empresas com muita dívida são mais arriscadas
-  const eb = Number(acao.ebitda || acao.Ebitda || 0);
-  const nd = Number(acao.dividaLiquida || acao.divida_liquida || acao.netDebt || 0);
-  if (eb > 0 && nd > 0) {
-    const debtEbitda = nd / eb;
-    if (debtEbitda > 4) {
-      // Penalização progressiva de até 30% do score se a dívida for enorme (>10x EBITDA)
-      const penalty = clamp((debtEbitda - 4) / 6, 0, 0.3);
-      score *= (1 - penalty);
-    }
-  }
 
   score *= riskAdj;
 
@@ -274,9 +265,10 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
     rAnnual,
     vol,
     riskAdj,
-    components: { R, V, T, D, E },
+    components: { R, V, T, D, E, S },
   };
 }
+
 /** Converte dividendos para valor anual com base na periodicidade. */
 export function anualizarDividendo(dividendoPorPagamento, periodicidade) {
   const d = Number(dividendoPorPagamento || 0);

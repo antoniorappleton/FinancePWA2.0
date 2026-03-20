@@ -147,14 +147,22 @@
               <th data-sort="nome" class="sortable">Nome</th>
               <th data-sort="setor" class="sortable">Setor</th>
               <th data-sort="mercado" class="sortable">Mercado</th>
-              <th data-sort="yield" class="sortable">Yield</th>
+              <th data-sort="yield" class="sortable tt" data-tt="Dividend Yield: Rendimento anual de dividendos em relação ao preço da ação.">Yield</th>
 
-              <th class="sortable" data-sort="evebitda">EV/EBITDA</th>
-              <th data-sort="divPer" class="sortable">Dividendo/pag.</th>
-              <th data-sort="divAnual" class="sortable">Dividendo/ano</th>
-              <th data-sort="pe" class="sortable">P/E</th>
-              <th data-sort="roic" class="sortable">ROIC</th>
-              <th data-sort="eps_yoy" class="sortable">EPS YoY</th>
+              <th class="sortable tt" data-sort="evebitda" data-tt="EV/EBITDA: Valor da Empresa / Ebitda. Mede quão cara a empresa está em relação ao lucro operacional.">EV/EBITDA</th>
+              <th data-sort="divPer" class="sortable tt" data-tt="Dividendo por pagamento: Valor médio recebido em cada distribuição.">Div/pag.</th>
+              <th data-sort="divAnual" class="sortable tt" data-tt="Dividendo Anual: Projeção de dividendos totais para 12 meses.">Div/ano</th>
+              <th data-sort="pe" class="sortable tt" data-tt="P/E Ratio: Preço / Lucro. Indica quanto se paga por cada euro de lucro.">P/E</th>
+              <th data-sort="pe_f" class="sortable tt" data-tt="Forward P/E: P/E baseado nas estimativas de lucro futuro.">P/E Fwd</th>
+              <th data-sort="peg" class="sortable tt" data-tt="PEG Ratio: P/E dividido pelo crescimento. Abaixo de 1.0 é excelente.">PEG</th>
+              <th data-sort="roic" class="sortable tt" data-tt="ROIC: Retorno sobre o Capital Investido. Mede a qualidade do negócio.">ROIC</th>
+              <th data-sort="roe" class="sortable tt" data-tt="ROE: Retorno sobre Capital Próprio. Eficiência com dinheiro dos acionistas.">ROE</th>
+              <th data-sort="eps_yoy" class="sortable tt" data-tt="EPS YoY: Crescimento do lucro por ação face ao ano passado.">EPS YoY</th>
+              <th data-sort="eps_next_y" class="sortable tt" data-tt="EPS Next Y: Crescimento do lucro esperado para o próximo ano.">EPS Fut</th>
+              <th data-sort="sales_yoy" class="sortable tt" data-tt="Sales YoY: Crescimento das vendas. Valida se o lucro vem de expansão real.">Vendas YoY</th>
+              <th data-sort="current_ratio" class="sortable tt" data-tt="Current Ratio: Ativos/Passivos. Capacidade de pagar dívidas curto prazo (>1.5 é bom).">Liquidez</th>
+              <th data-sort="debt_eq" class="sortable tt" data-tt="Debt/Equity: Rácio de dívida sobre capital próprio. Abaixo de 1.0 é saudável.">Dívida/CP</th>
+              <th data-sort="rsi" class="sortable tt" data-tt="RSI (14d): Índice de Força Relativa. <30 Oversold, >70 Overbought.">RSI</th>
               <th data-sort="delta50" class="sortable">Δ50d%</th>
               <th data-sort="delta200" class="sortable">Δ200d%</th>
               <th data-sort="g1w" class="sortable">1S</th>
@@ -339,29 +347,39 @@
           <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">
             1. Atribuição de Pontuação (Score)
           </h4>
-          <p>Cada ação recebe uma pontuação de 0 a 1 com base em 5 pilares:</p>
+          <p>Cada ação recebe uma pontuação de 0 a 1 com base em 6 pilares:</p>
           <ul style="margin-left: 20px; margin-top: 5px">
             <li>
-              <strong>Valorização (ROI):</strong> Projeção de crescimento com
-              base no histórico recente.
+              <strong>Crescimento (R):</strong> Lucros (EPS) atuais, futuros e crescimento de vendas.
             </li>
             <li>
-              <strong>Dividendos:</strong> O <em>Yield</em> atual da ação
-              (capado a 8% para evitar riscos excessivos).
+              <strong>Valuation (V):</strong> P/E, Forward P/E, PEG e Preço/Cash Flow.
             </li>
             <li>
-              <strong>Valuation (P/E):</strong> Beneficia ações que estão
-              "baratas" em relação ao seu lucro.
+              <strong>Dividendos (D):</strong> Rendimento (Yield) e consistência histórica.
             </li>
             <li>
-              <strong>Tendência:</strong> Avalia se o preço está acima das
-              médias móveis (50 e 200 dias).
+              <strong>Eficiência (E):</strong> Rentabilidade (ROE, ROIC) e Margens Operacionais.
             </li>
             <li>
-              <strong>EV/EBITDA:</strong> Um indicador robusto de valor
-              operacional por setor.
+              <strong>Segurança (S):</strong> Saúde financeira (Dívida/Equity, Current Ratio).
+            </li>
+            <li>
+              <strong>Tendência (T):</strong> Médias móveis (50/200d) e momentum (RSI).
             </li>
           </ul>
+        </div>
+        
+        <div class="algo-step" style="margin-top: 15px; background: var(--muted-bg); padding: 10px; border-radius: 8px;">
+          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">Glossário Rápido</h4>
+          <div style="font-size: 0.85rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div><strong>P/E:</strong> Preço/Lucro. < 15 é barato.</div>
+            <div><strong>PEG:</strong> P/E / Crescimento. < 1.0 é ótimo.</div>
+            <div><strong>ROIC:</strong> Retorno Capital. > 12% é alta qualidade.</div>
+            <div><strong>ROE:</strong> Retorno Capital Próprio. > 15% é bom.</div>
+            <div><strong>Dívida/CP:</strong> < 1.0 é conservador.</div>
+            <div><strong>Liquidez:</strong> > 1.25 indica folga de caixa.</div>
+          </div>
         </div>
 
         <div class="algo-step" style="margin-top: 15px">
