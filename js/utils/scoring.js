@@ -71,6 +71,12 @@ function scoreGeneric(val, config) {
   }
 }
 
+/** Converte uma entrada do INDICATOR_INFO no formato plano que scoreGeneric espera. */
+function infoToConfig(info) {
+  if (!info || !info.ancoras) return { lo: 0, hi: 1, invertido: false };
+  return { lo: info.ancoras.lo, hi: info.ancoras.hi, invertido: !!info.invertido };
+}
+
 export function annualizeRate(row, periodoSel) {
   const w = asRate(
     row.priceChange_1w || row.taxaCrescimento_1semana || row.g1w,
@@ -111,7 +117,9 @@ export function annualizeRate(row, periodoSel) {
 }
 
 export function scorePE(pe) {
-  return scoreGeneric(pe, INDICATOR_INFO.p_e.ancoras.lo ? INDICATOR_INFO.p_e : { ancoras: { lo: 10, hi: 30 }, invertido: true });
+  const info = INDICATOR_INFO.p_e;
+  if (info && info.ancoras) return scoreGeneric(pe, { lo: info.ancoras.lo, hi: info.ancoras.hi, invertido: info.invertido });
+  return scoreGeneric(pe, { lo: 10, hi: 30, invertido: true });
 }
 
 export function scoreTrend(preco, sma50, sma200, rsi = 50) {
@@ -145,7 +153,7 @@ export function scoreEVEBITDA(evebitda, setor) {
   const A =
     SCORING_CFG.EVEBITDA_ANCHORS[String(setor || "—")] ||
     SCORING_CFG.EVEBITDA_ANCHORS.default;
-  return scoreGeneric(v, { ancoras: A, invertido: true });
+  return scoreGeneric(v, { lo: A.lo, hi: A.hi, invertido: true });
 }
 
 export function scoreDividendYield(yPct) {
@@ -155,7 +163,8 @@ export function scoreDividendYield(yPct) {
 }
 
 export function scoreROIC(roic) {
-  return scoreGeneric(roic, INDICATOR_INFO.roic);
+  const info = INDICATOR_INFO.roic;
+  return scoreGeneric(roic, { lo: info.ancoras.lo, hi: info.ancoras.hi, invertido: info.invertido });
 }
 
 export function scoreEPS(epsYoY, epsNextY = null, eps5y = null) {
@@ -182,8 +191,8 @@ export function scoreEPS(epsYoY, epsNextY = null, eps5y = null) {
 }
 
 export function scoreSolvency(currentRatio, debtEq, netDebtEbitda) {
-  const sCR = scoreGeneric(currentRatio, INDICATOR_INFO.current_ratio);
-  const sDE = scoreGeneric(debtEq, INDICATOR_INFO.debt_eq);
+  const sCR = scoreGeneric(currentRatio, infoToConfig(INDICATOR_INFO.current_ratio));
+  const sDE = scoreGeneric(debtEq, infoToConfig(INDICATOR_INFO.debt_eq));
   
   let sND = 1.0;
   if (Number.isFinite(netDebtEbitda)) {
@@ -220,8 +229,8 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const pfcf = Number(acao.p_fcf || 0);
   
   const V_PE = scorePE(pe);
-  const V_PEG = scoreGeneric(peg, INDICATOR_INFO.peg);
-  const V_FCF = scoreGeneric(pfcf, INDICATOR_INFO.p_fcf);
+  const V_PEG = scoreGeneric(peg, infoToConfig(INDICATOR_INFO.peg));
+  const V_FCF = scoreGeneric(pfcf, infoToConfig(INDICATOR_INFO.p_fcf));
   const V = V_PE * 0.5 + V_PEG * 0.3 + V_FCF * 0.2;
 
   // Tendência
@@ -260,8 +269,8 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   
   const E_EV = scoreEVEBITDA(eve, acao.setor);
   const E_ROIC = scoreROIC(roic);
-  const E_ROE = scoreGeneric(roe, INDICATOR_INFO.roe);
-  const E_OM = scoreGeneric(om, INDICATOR_INFO.oper_margin);
+  const E_ROE = scoreGeneric(roe, infoToConfig(INDICATOR_INFO.roe));
+  const E_OM = scoreGeneric(om, infoToConfig(INDICATOR_INFO.oper_margin));
   
   let E = (E_EV * 0.3 + E_ROIC * 0.3 + E_ROE * 0.2 + E_OM * 0.2);
   
@@ -270,9 +279,10 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   if (eg5 > 0.15) E = clamp(E + 0.1, 0, 1);
   else if (eg5 < 0) E = clamp(E - 0.15, 0, 1);
 
-  // Solvência
   const cr = Number(acao.current_ratio || 0);
   const de = Number(acao.debt_eq || 0);
+  
+  // scoreSolvency uses INDICATOR_INFO internally via infoToConfig
   const eb = Number(acao.ebitda || 0);
   const nd = Number(acao.dividaLiquida || 0);
   const nd_eb = eb > 0 ? nd / eb : null;
