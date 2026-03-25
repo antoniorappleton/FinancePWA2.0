@@ -1,10 +1,17 @@
 <!-- screens/analise.html -->
 <div class="page" data-screen-title="Análises">
-  <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center">
+  <div
+    class="dashboard-header"
+    style="display: flex; justify-content: space-between; align-items: center"
+  >
     <div>
       <p class="subtitle">Visão das Ações em Base Dados</p>
     </div>
-    <button id="anlAlgoHelp" class="icon-btn" title="Ver como funciona o algoritmo" style="
+    <button
+      id="anlAlgoHelp"
+      class="icon-btn"
+      title="Ver como funciona o algoritmo"
+      style="
         background: var(--muted);
         padding: 8px;
         border-radius: 50%;
@@ -15,9 +22,18 @@
         justify-content: center;
         color: var(--primary, #4f46e5);
         border: 1px solid var(--border);
-      ">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
+      "
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -79,6 +95,37 @@
     </div>
   </div>
 
+  <!-- NEW: PORTFOLIO CARDS CONTAINER (top 12 tickers w/ drop prices) -->
+  <div
+    class="portfolio-cards-container"
+    style="margin-top: 12px; margin-bottom: 12px"
+  >
+    <div
+      class="cards-header"
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--primary, #4f46e5);
+      "
+    >
+      <div>
+        <h3 style="margin: 0; color: var(--primary)">🏆 Top Portfolio Picks</h3>
+        <p class="muted" style="margin: 0; font-size: 0.9rem">
+          Top 12 tickers by score | RSI buy signals & reinforcement levels
+        </p>
+      </div>
+      <span id="cardsCount" class="muted" style="font-size: 0.85rem"
+        >0 cards</span
+      >
+    </div>
+    <div id="portfolioCardsGrid" class="portfolio-cards-grid">
+      <!-- Cards dynamically populated by JS -->
+    </div>
+  </div>
+
   <!-- CALENDÁRIO DE DIVIDENDOS -->
   <div class="card" style="margin-top: 12px">
     <div class="card-content" style="display: block">
@@ -97,22 +144,36 @@
       </div>
 
       <div class="legend" style="margin-top: 6px">
-        <span style="font-size: 0.85rem; margin-right: 8px">Intensidade do dividendo:</span>
+        <span style="font-size: 0.85rem; margin-right: 8px"
+          >Intensidade do dividendo:</span
+        >
         <div class="legend-item">
-          <div class="legend-box level-1" style="
+          <div
+            class="legend-box level-1"
+            style="
               background: rgba(16, 185, 129, 0.1);
               border: 1px solid var(--border);
-            "></div>
+            "
+          ></div>
           Baixa
         </div>
         <div class="legend-item">
-          <div class="legend-box level-2" style="background: rgba(16, 185, 129, 0.3)"></div>
+          <div
+            class="legend-box level-2"
+            style="background: rgba(16, 185, 129, 0.3)"
+          ></div>
         </div>
         <div class="legend-item">
-          <div class="legend-box level-3" style="background: rgba(16, 185, 129, 0.55)"></div>
+          <div
+            class="legend-box level-3"
+            style="background: rgba(16, 185, 129, 0.55)"
+          ></div>
         </div>
         <div class="legend-item">
-          <div class="legend-box level-4" style="background: rgba(16, 185, 129, 0.8)"></div>
+          <div
+            class="legend-box level-4"
+            style="background: rgba(16, 185, 129, 0.8)"
+          ></div>
           Alta
         </div>
       </div>
@@ -122,17 +183,53 @@
   <!-- TABELA -->
   <div class="card" style="margin-top: 12px">
     <div class="card-content" style="display: block">
+      <!-- Drop Prices Header - Improved Design -->
+      <div
+        class="drop-prices-header"
+        style="
+          background: var(--card);
+          border-bottom: 2px solid var(--primary, #4f46e5);
+          padding: 12px 16px;
+          margin: -12px -16px 12px -16px;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        "
+      >
+        <div
+          style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap"
+        >
+          <h4 style="margin: 0; color: var(--primary)">📉 Níveis de Reforço</h4>
+          <div style="font-size: 0.9rem">
+            <span
+              >Preço atual | <strong>–3.5%</strong> (Reforço 1) |
+              <strong>–5.0%</strong> (Reforço 2)</span
+            >
+            <span style="margin-left: 16px; font-weight: 500"
+              >🟢 Buy Zone se RSI < 40</span
+            >
+          </div>
+        </div>
+      </div>
       <!-- Seleção + Simulador -->
-      <div class="analysis-toolbar" style="padding: 0.6rem 1rem; border: 0; background: transparent">
-        <div style="
+      <div
+        class="analysis-toolbar"
+        style="padding: 0.6rem 1rem; border: 0; background: transparent"
+      >
+        <div
+          style="
             display: flex;
             gap: 0.5rem;
             align-items: center;
             flex-wrap: wrap;
-          ">
+          "
+        >
           <button class="btn outline" id="anlSimular">Usar no simulador</button>
           <button class="btn ghost" id="anlClearSel">Limpar seleção</button>
-          <span class="muted">Selecionados: <strong id="anlSelCount">0</strong></span>
+          <span class="muted"
+            >Selecionados: <strong id="anlSelCount">0</strong></span
+          >
         </div>
       </div>
 
@@ -141,28 +238,150 @@
           <thead>
             <tr>
               <th class="sticky-col" style="width: 44px">
-                <input type="checkbox" id="anlSelectAll" title="Selecionar todos os filtrados" />
+                <input
+                  type="checkbox"
+                  id="anlSelectAll"
+                  title="Selecionar todos os filtrados"
+                />
               </th>
               <th data-sort="ticker" class="sortable sticky-col">Ticker</th>
               <th data-sort="nome" class="sortable">Nome</th>
               <th data-sort="setor" class="sortable">Setor</th>
               <th data-sort="mercado" class="sortable">Mercado</th>
-              <th data-sort="yield" class="sortable tt" data-tt="Dividend Yield: Rendimento anual de dividendos em relação ao preço da ação.">Yield</th>
+              <th
+                data-sort="yield"
+                class="sortable tt"
+                data-tt="Dividend Yield: Rendimento anual de dividendos em relação ao preço da ação."
+              >
+                Yield
+              </th>
 
-              <th class="sortable tt" data-sort="evebitda" data-tt="EV/EBITDA: Valor da Empresa / Ebitda. Mede quão cara a empresa está em relação ao lucro operacional.">EV/EBITDA</th>
-              <th data-sort="divPer" class="sortable tt" data-tt="Dividendo por pagamento: Valor médio recebido em cada distribuição.">Div/pag.</th>
-              <th data-sort="divAnual" class="sortable tt" data-tt="Dividendo Anual: Projeção de dividendos totais para 12 meses.">Div/ano</th>
-              <th data-sort="pe" class="sortable tt" data-tt="P/E Ratio: Preço / Lucro. Indica quanto se paga por cada euro de lucro.">P/E</th>
-              <th data-sort="pe_f" class="sortable tt" data-tt="Forward P/E: P/E baseado nas estimativas de lucro futuro.">P/E Fwd</th>
-              <th data-sort="peg" class="sortable tt" data-tt="PEG Ratio: P/E dividido pelo crescimento. Abaixo de 1.0 é excelente.">PEG</th>
-              <th data-sort="roic" class="sortable tt" data-tt="ROIC: Retorno sobre o Capital Investido. Mede a qualidade do negócio.">ROIC</th>
-              <th data-sort="roe" class="sortable tt" data-tt="ROE: Retorno sobre Capital Próprio. Eficiência com dinheiro dos acionistas.">ROE</th>
-              <th data-sort="eps_yoy" class="sortable tt" data-tt="EPS YoY: Crescimento do lucro por ação face ao ano passado.">EPS YoY</th>
-              <th data-sort="eps_next_y" class="sortable tt" data-tt="EPS Next Y: Crescimento do lucro esperado para o próximo ano.">EPS Fut</th>
-              <th data-sort="sales_yoy" class="sortable tt" data-tt="Sales YoY: Crescimento das vendas. Valida se o lucro vem de expansão real.">Vendas YoY</th>
-              <th data-sort="current_ratio" class="sortable tt" data-tt="Current Ratio: Ativos/Passivos. Capacidade de pagar dívidas curto prazo (>1.5 é bom).">Liquidez</th>
-              <th data-sort="debt_eq" class="sortable tt" data-tt="Debt/Equity: Rácio de dívida sobre capital próprio. Abaixo de 1.0 é saudável.">Dívida/CP</th>
-              <th data-sort="rsi" class="sortable tt" data-tt="RSI (14d): Índice de Força Relativa. <30 Oversold, >70 Overbought.">RSI</th>
+              <th
+                class="sortable tt"
+                data-sort="evebitda"
+                data-tt="EV/EBITDA: Valor da Empresa / Ebitda. Mede quão cara a empresa está em relação ao lucro operacional."
+              >
+                EV/EBITDA
+              </th>
+              <th
+                data-sort="divPer"
+                class="sortable tt"
+                data-tt="Dividendo por pagamento: Valor médio recebido em cada distribuição."
+              >
+                Div/pag.
+              </th>
+              <th
+                data-sort="divAnual"
+                class="sortable tt"
+                data-tt="Dividendo Anual: Projeção de dividendos totais para 12 meses."
+              >
+                Div/ano
+              </th>
+              <th
+                data-sort="pe"
+                class="sortable tt"
+                data-tt="P/E Ratio: Preço / Lucro. Indica quanto se paga por cada euro de lucro."
+              >
+                P/E
+              </th>
+              <th
+                data-sort="pe_f"
+                class="sortable tt"
+                data-tt="Forward P/E: P/E baseado nas estimativas de lucro futuro."
+              >
+                P/E Fwd
+              </th>
+              <th
+                data-sort="peg"
+                class="sortable tt"
+                data-tt="PEG Ratio: P/E dividido pelo crescimento. Abaixo de 1.0 é excelente."
+              >
+                PEG
+              </th>
+              <th
+                data-sort="roic"
+                class="sortable tt"
+                data-tt="ROIC: Retorno sobre o Capital Investido. Mede a qualidade do negócio."
+              >
+                ROIC
+              </th>
+              <th
+                data-sort="roe"
+                class="sortable tt"
+                data-tt="ROE: Retorno sobre Capital Próprio. Eficiência com dinheiro dos acionistas."
+              >
+                ROE
+              </th>
+              <th
+                data-sort="eps_yoy"
+                class="sortable tt"
+                data-tt="EPS YoY: Crescimento do lucro por ação face ao ano passado."
+              >
+                EPS YoY
+              </th>
+              <th
+                data-sort="eps_next_y"
+                class="sortable tt"
+                data-tt="EPS Next Y: Crescimento do lucro esperado para o próximo ano."
+              >
+                EPS Fut
+              </th>
+              <th
+                data-sort="sales_yoy"
+                class="sortable tt"
+                data-tt="Sales YoY: Crescimento das vendas. Valida se o lucro vem de expansão real."
+              >
+                Vendas YoY
+              </th>
+              <th
+                data-sort="current_ratio"
+                class="sortable tt"
+                data-tt="Current Ratio: Ativos/Passivos. Capacidade de pagar dívidas curto prazo (>1.5 é bom)."
+              >
+                Liquidez
+              </th>
+              <th
+                data-sort="debt_eq"
+                class="sortable tt"
+                data-tt="Debt/Equity: Rácio de dívida sobre capital próprio. Abaixo de 1.0 é saudável."
+              >
+                Dívida/CP
+              </th>
+              <th
+                data-sort="rsi"
+                class="sortable tt"
+                data-tt="RSI (14d): Índice de Força Relativa. <30 Oversold, >70 Overbought."
+              >
+                RSI
+              </th>
+              <th
+                data-sort="preco"
+                class="sortable sticky-price tt"
+                data-tt="Preço atual da ação (€)"
+              >
+                Preço
+              </th>
+              <th
+                data-sort="minus35"
+                class="sortable sticky-price tt"
+                data-tt="Preço se cair 3.5% — nível 1 reforço (€)"
+              >
+                –3.5%
+              </th>
+              <th
+                data-sort="minus5"
+                class="sortable sticky-price tt"
+                data-tt="Preço se cair 5% — nível 2 reforço (€)"
+              >
+                –5.0%
+              </th>
+              <th
+                data-sort="buyZone"
+                class="sortable sticky-price tt"
+                data-tt="Zona de compra: Verde se RSI<40 (oversold)"
+              >
+                Buy?
+              </th>
               <th data-sort="delta50" class="sortable">Δ50d%</th>
               <th data-sort="delta200" class="sortable">Δ200d%</th>
               <th data-sort="g1w" class="sortable">1S</th>
@@ -194,7 +413,13 @@
       <div class="form-grid">
         <label>
           Investimento total (€)
-          <input id="anlSimInvest" type="number" min="1" step="0.01" placeholder="Ex.: 1000" />
+          <input
+            id="anlSimInvest"
+            type="number"
+            min="1"
+            step="0.01"
+            placeholder="Ex.: 1000"
+          />
         </label>
         <label>
           Horizonte (anos)
@@ -241,7 +466,13 @@
 </div>
 
 <!-- PREVIEW DO RELATÓRIO -->
-<div id="anlReportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="repTitle">
+<div
+  id="anlReportModal"
+  class="modal hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="repTitle"
+>
   <div class="modal-content" style="max-width: 1100px">
     <div class="modal-header">
       <h3 id="repTitle">Relatório Financeiro — Pré-visualização</h3>
@@ -350,33 +581,60 @@
           <p>Cada ação recebe uma pontuação de 0 a 1 com base em 6 pilares:</p>
           <ul style="margin-left: 20px; margin-top: 5px">
             <li>
-              <strong>Crescimento (R):</strong> Lucros (EPS) atuais, futuros e crescimento de vendas.
+              <strong>Crescimento (R):</strong> Lucros (EPS) atuais, futuros e
+              crescimento de vendas.
             </li>
             <li>
-              <strong>Valuation (V):</strong> P/E, Forward P/E, PEG e Preço/Cash Flow.
+              <strong>Valuation (V):</strong> P/E, Forward P/E, PEG e Preço/Cash
+              Flow.
             </li>
             <li>
-              <strong>Dividendos (D):</strong> Rendimento (Yield) e consistência histórica.
+              <strong>Dividendos (D):</strong> Rendimento (Yield) e consistência
+              histórica.
             </li>
             <li>
-              <strong>Eficiência (E):</strong> Rentabilidade (ROE, ROIC) e Margens Operacionais.
+              <strong>Eficiência (E):</strong> Rentabilidade (ROE, ROIC) e
+              Margens Operacionais.
             </li>
             <li>
-              <strong>Segurança (S):</strong> Saúde financeira (Dívida/Equity, Current Ratio).
+              <strong>Segurança (S):</strong> Saúde financeira (Dívida/Equity,
+              Current Ratio).
             </li>
             <li>
-              <strong>Tendência (T):</strong> Médias móveis (50/200d) e momentum (RSI).
+              <strong>Tendência (T):</strong> Médias móveis (50/200d) e momentum
+              (RSI).
             </li>
           </ul>
         </div>
-        
-        <div class="algo-step" style="margin-top: 15px; background: var(--muted-bg); padding: 10px; border-radius: 8px;">
-          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">Glossário Rápido</h4>
-          <div style="font-size: 0.85rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+
+        <div
+          class="algo-step"
+          style="
+            margin-top: 15px;
+            background: var(--muted-bg);
+            padding: 10px;
+            border-radius: 8px;
+          "
+        >
+          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">
+            Glossário Rápido
+          </h4>
+          <div
+            style="
+              font-size: 0.85rem;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px;
+            "
+          >
             <div><strong>P/E:</strong> Preço/Lucro. < 15 é barato.</div>
             <div><strong>PEG:</strong> P/E / Crescimento. < 1.0 é ótimo.</div>
-            <div><strong>ROIC:</strong> Retorno Capital. > 12% é alta qualidade.</div>
-            <div><strong>ROE:</strong> Retorno Capital Próprio. > 15% é bom.</div>
+            <div>
+              <strong>ROIC:</strong> Retorno Capital. > 12% é alta qualidade.
+            </div>
+            <div>
+              <strong>ROE:</strong> Retorno Capital Próprio. > 15% é bom.
+            </div>
             <div><strong>Dívida/CP:</strong> < 1.0 é conservador.</div>
             <div><strong>Liquidez:</strong> > 1.25 indica folga de caixa.</div>
           </div>
@@ -392,10 +650,28 @@
           </p>
         </div>
 
-        <div class="algo-step" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
-          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">Manutenção</h4>
-          <p style="font-size: 0.85rem; margin-bottom: 10px;">Caso existam dados antigos no formato de texto (ex: 52w High), use o botão abaixo para os converter em números atómicos.</p>
-          <button id="btnRepairData" class="btn-primary" style="font-size: 0.8rem; padding: 5px 12px;">Reparar Base de Dados</button>
+        <div
+          class="algo-step"
+          style="
+            margin-top: 15px;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+          "
+        >
+          <h4 style="color: var(--primary, #4f46e5); margin-bottom: 5px">
+            Manutenção
+          </h4>
+          <p style="font-size: 0.85rem; margin-bottom: 10px">
+            Caso existam dados antigos no formato de texto (ex: 52w High), use o
+            botão abaixo para os converter em números atómicos.
+          </p>
+          <button
+            id="btnRepairData"
+            class="btn-primary"
+            style="font-size: 0.8rem; padding: 5px 12px"
+          >
+            Reparar Base de Dados
+          </button>
         </div>
 
         <div class="algo-step" style="margin-top: 15px">
@@ -419,7 +695,10 @@
           </ul>
         </div>
       </div>
-      <div class="actions-row" style="margin-top: 20px; display: flex; justify-content: flex-end">
+      <div
+        class="actions-row"
+        style="margin-top: 20px; display: flex; justify-content: flex-end"
+      >
         <button class="btn" id="anlAlgoOk">Entendi</button>
       </div>
     </div>
@@ -598,11 +877,12 @@
     max-height: 62vh;
   }
 
-  #anlTable thead th {
+#anlTable thead th {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 30;
     background: var(--card, #fff);
+    backdrop-filter: blur(10px);
   }
 
   #anlTable thead th.sortable {
@@ -808,22 +1088,175 @@
     max-height: 300px;
   }
 
+  /* Drop Prices Design */
+.drop-prices-header {
+    border-radius: 8px 8px 0 0;
+    z-index: 25;
+  }
+  [data-theme="dark"] .drop-prices-header {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+  .sticky-price {
+    background: var(--muted-bg) !important;
+    font-weight: 600;
+    font-family: monospace;
+    min-width: 85px;
+    text-align: right;
+  }
+  [data-theme="dark"] .sticky-price {
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+.analysis-table .sticky-price {
+    position: sticky;
+    right: 0;
+    border-left: 2px solid var(--border);
+    z-index: 35;
+  }
+  .buyzone-green {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    font-weight: bold;
+  }
+  .buyzone-yellow {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+  }
+  .buyzone-red {
+    background: #fecaca !important;
+    color: #991b1b !important;
+  }
+
+  }
+
+  /* ========================================
+     NEW: PORTFOLIO CARDS - Responsive Grid
+  ======================================== */
+  .portfolio-cards-container {
+    --card-gap: 12px;
+  }
+
+  .portfolio-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--card-gap);
+    padding: 0;
+  }
+
+  @media (max-width: 768px) {
+    .portfolio-cards-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      --card-gap: 8px;
+    }
+  }
+
   @media (max-width: 480px) {
-    .dividend-heatmap .months {
-      grid-template-columns: repeat(12, minmax(84px, 1fr));
+    .portfolio-cards-grid {
+      grid-template-columns: 1fr;
+      --card-gap: 12px;
     }
+  }
 
-    .dividend-heatmap .row .months {
-      grid-template-columns: repeat(12, minmax(84px, 1fr));
-    }
+  .portfolio-card {
+    background: var(--card, #fff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
 
-    .pie-wrap {
-      max-width: 360px;
-    }
+  .portfolio-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    border-color: var(--primary, #4f46e5);
+  }
 
-    .pie-wrap canvas {
-      max-height: 260px;
-    }
+  [data-theme="dark"] .portfolio-card {
+    background: #1a1a1a;
+    border-color: rgba(255,255,255,0.1);
+  }
+
+  [data-theme="dark"] .portfolio-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  }
+
+  .card-ticker {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary, #4f46e5);
+    margin: 0 0 4px 0;
+  }
+
+  .card-name {
+    font-size: 0.95rem;
+    color: var(--muted-foreground, #6b7280);
+    margin: 0 0 12px 0;
+    font-weight: 500;
+  }
+
+  .card-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    margin-bottom: 12px;
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+
+  .metric-label {
+    color: var(--muted-foreground, #6b7280);
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-weight: 600;
+    font-family: monospace;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  .drop-levels {
+    background: linear-gradient(135deg, var(--muted, #f8fafc), var(--card, #fff));
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 8px;
+  }
+
+  [data-theme="dark"] .drop-levels {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), #1a1a1a);
+  }
+
+  .buy-badge {
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+
+  .buy-badge.buy-green { background: #dcfce7; color: #166534; }
+  .buy-badge.buy-yellow { background: #fef3c7; color: #92400e; }
+  .buy-badge.buy-red { background: #fecaca; color: #991b1b; }
+
+  .cards-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted-foreground, #6b7280);
+  }
+
+  .cards-empty svg {
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+    margin-bottom: 12px;
   }
 </style>
 

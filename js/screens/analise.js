@@ -206,6 +206,10 @@ const SORT_ACCESSORS = {
   setor: (r) => r.setor || "",
   mercado: (r) => r.mercado || "",
   yield: (r) => (Number.isFinite(r.yield) ? r.yield : -Infinity),
+  preco: (r) => r.precoAtual || 0,
+  minus35: (r) => r.minus35pct || 0,
+  minus5: (r) => r.minus5pct || 0,
+  buyZone: (r) => (Number.isFinite(r.rsi_14) ? r.rsi_14 : 100),
   yield24: (r) => (Number.isFinite(r.yield24) ? r.yield24 : -Infinity),
   divPer: (r) => (Number.isFinite(r.divPer) ? r.divPer : -Infinity),
   divAnual: (r) => (Number.isFinite(r.divAnual) ? r.divAnual : -Infinity),
@@ -217,9 +221,14 @@ const SORT_ACCESSORS = {
   eps_yoy: (r) => (Number.isFinite(r.eps_yoy) ? r.eps_yoy : -Infinity),
   eps_next_y: (r) => (Number.isFinite(r.eps_next_y) ? r.eps_next_y : -Infinity),
   sales_yoy: (r) => (Number.isFinite(r.sales_yoy) ? r.sales_yoy : -Infinity),
-  current_ratio: (r) => (Number.isFinite(r.current_ratio) ? r.current_ratio : -Infinity),
+  current_ratio: (r) =>
+    Number.isFinite(r.current_ratio) ? r.current_ratio : -Infinity,
   debt_eq: (r) => (Number.isFinite(r.debt_eq) ? r.debt_eq : Infinity),
   rsi: (r) => (Number.isFinite(r.rsi_14) ? r.rsi_14 : Infinity),
+  preco: (r) => r.precoAtual || 0,
+  minus35: (r) => r.minus35pct || 0,
+  minus5: (r) => r.minus5pct || 0,
+  buyZone: (r) => (Number.isFinite(r.rsi_14) ? -r.rsi_14 : Infinity), // RSI baixo = buy alto
   delta50: (r) => (Number.isFinite(r.delta50) ? r.delta50 : -Infinity),
   delta200: (r) => (Number.isFinite(r.delta200) ? r.delta200 : -Infinity),
   g1w: (r) => (Number.isFinite(r.g1w) ? r.g1w : -Infinity),
@@ -450,7 +459,139 @@ function renderHeatmap(rows) {
 /* =========================================================
    Tabela principal
    ========================================================= */
+function renderPortfolioCards(rows) {
+  const grid = document.getElementById('portfolioCardsGrid');
+  const countEl = document.getElementById('cardsCount');
+  if (!grid || !countEl) return;
+
+  // Top 12 by portfolioScore
+  const top12 = [...rows]
+    .filter(r => r.portfolioScore > 0)
+    .sort((a, b) => b.portfolioScore - a.portfolioScore)
+    .slice(0, 12);
+
+  if (!top12.length) {
+    grid.innerHTML = `
+      <div class="cards-empty">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <p>No portfolio picks available (apply filters or check data).</p>
+      </div>`;
+    countEl.textContent = '0 cards';
+    return;
+  }
+
+  // QDVF Example (hardcoded - insert as first if exists, else top)
+  const qdvfExample = {
+    ticker: 'QDVF',
+    nome: 'Invesco Quantitative Energy ETF',
+    setor: 'Energy',
+    precoAtual: 10.92,
+    rsi_14: 28,
+    yield: 4.2,
+    divAnual: 0.46,
+    portfolioScore: 0.85, // high score
+    avgPrice: 11.09, // example avg buy price
+    qty: 20, // example position size
+  };
+
+  const displayRows = top12.some(r => r.ticker === 'QDVF') 
+    ? top12 
+    : [qdvfExample, ...top12.slice(0, 10)];
+
+  countEl.textContent = `${displayRows.length} cards`;
+
+  grid.innerHTML = displayRows.map(r => renderSingleCard(r)).join('');
+
+  // Add click handlers
+  grid.querySelectorAll('.portfolio-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const ticker = card.dataset.ticker;
+      document.getElementById('anlSearch').value = ticker;
+      applyFilters();
+    });
+  });
+}
+
+function renderSingleCard(r) {
+  const { ticker, nome, setor, precoAtual, rsi_14, yield: yld, divAnual, portfolioScore, avgPrice = null, qty = null } = r;
+  
+  // Drop levels
+  const p35 = precoAtual * 0.965;
+  const p5 = precoAtual * 0.95;
+  
+  // Recovery Simulator (user example style)
+  let recoveryHTML = '';
+  if (avgPrice && qty) {
+    const totalInvested = qty * avgPrice;
+    const currentValue = qty * precoAtual;
+    const loss = totalInvested - currentValue;
+    const lossPct = ((loss / totalInvested) * 100).toFixed(1);
+    const breakeven = avgPrice; // simple breakeven
+    const tp1pct = 5; // +5% TP1
+    const tp1 = avgPrice * 1.05;
+    const tp2pct = 12; // +12% TP2
+    const tp2 = avgPrice * 1.12;
+    const recoveryProb = rsi_14 < 40 ? '🟢 85%' : rsi_14 < 60 ? '🟡 65%' : '🔴 45%';
+    
+    recoveryHTML = `
+      <div class="recovery-sim">
+        <div class="sim-header"><strong>💰 Recovery Simulator</strong></div>
+        <div style="font-size:0.8rem; line-height:1.3;">
+          <div>Posição: <strong>${qty} @ €${avgPrice.toFixed(2)}</strong></div>
+          <div>Loss: <span class="down">€${loss.toFixed(2)} (${lossPct}%)</span></div>
+          <div>Breakeven: <strong>€${breakeven.toFixed(2)}</strong></div>
+          <div>TP1 (+5%): €${tp1.toFixed(2)}</div>
+          <div>TP2 (+12%): €${tp2.toFixed(2)}</div>
+          <div>Prob Recuperação: <strong>${recoveryProb}</strong></div>
+        </div>
+      </div>`;
+  }
+
+  // RSI Buy Badge
+  const rsiBadgeClass = rsi_14 < 40 ? 'buy-green' : rsi_14 < 50 ? 'buy-yellow' : 'buy-red';
+  const rsiBadgeText = rsi_14 < 40 ? '🟢 BUY RSI' : rsi_14 < 50 ? '🟡 WAIT' : '🔴 HOLD';
+
+  return `
+    <div class="portfolio-card" data-ticker="${ticker}">
+      <div class="card-ticker">${ticker}</div>
+      <div class="card-name">${nome || ''} <span class="muted">(${setor})</span></div>
+      
+      <div class="card-metrics">
+        <div class="metric-row">
+          <span class="metric-label">Preço:</span>
+          <span class="metric-value">${fmtEUR(precoAtual)}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Score:</span>
+          <span class="metric-value">${(portfolioScore * 100).toFixed(0)}%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Yield:</span>
+          <span class="metric-value">${yld ? yld.toFixed(1) + '%' : '—'}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">RSI:</span>
+          <span class="metric-value buy-badge ${rsiBadgeClass}">${rsiBadgeText}</span>
+        </div>
+      </div>
+      
+      <div class="drop-levels">
+        <div style="font-weight:600; margin-bottom:4px;">📉 Reforço Levels</div>
+        <div style="display:flex; gap:12px; font-size:0.85rem;">
+          <span>• –3.5%: ${fmtEUR(p35)}</span>
+          <span>• –5.0%: ${fmtEUR(p5)}</span>
+        </div>
+      </div>
+      
+      ${recoveryHTML}
+    </div>`;
+}
+
 function renderTable(rows) {
+    renderPortfolioCards(rows); // 🔥 Portfolio cards: top 12 by score w/ QDVF example
+  
   const tb = document.getElementById("anlTableBody");
   if (!tb) return;
 
@@ -513,17 +654,22 @@ function renderTable(rows) {
       const y24 = Number.isFinite(r.yield24) ? r.yield24 : null;
       const divPerTxt = r.divPer > 0 ? fmtEUR(r.divPer) : "—";
       const divAnualTxt = r.divAnual > 0 ? fmtEUR(r.divAnual) : "—";
-      
+
       const badgeGeneric = (v, anchors, invert = false) => {
-        if (!Number.isFinite(v) || v === 0) return `<span class="badge muted">—</span>`;
+        if (!Number.isFinite(v) || v === 0)
+          return `<span class="badge muted">—</span>`;
         if (invert) {
-           if (v <= anchors.lo) return `<span class="badge ok">${v.toFixed(2)}</span>`;
-           if (v >= anchors.hi) return `<span class="badge danger">${v.toFixed(2)}</span>`;
-           return `<span class="badge warn">${v.toFixed(2)}</span>`;
+          if (v <= anchors.lo)
+            return `<span class="badge ok">${v.toFixed(2)}</span>`;
+          if (v >= anchors.hi)
+            return `<span class="badge danger">${v.toFixed(2)}</span>`;
+          return `<span class="badge warn">${v.toFixed(2)}</span>`;
         } else {
-           if (v >= anchors.hi) return `<span class="badge ok">${v.toFixed(2)}</span>`;
-           if (v <= anchors.lo) return `<span class="badge danger">${v.toFixed(2)}</span>`;
-           return `<span class="badge warn">${v.toFixed(2)}</span>`;
+          if (v >= anchors.hi)
+            return `<span class="badge ok">${v.toFixed(2)}</span>`;
+          if (v <= anchors.lo)
+            return `<span class="badge danger">${v.toFixed(2)}</span>`;
+          return `<span class="badge warn">${v.toFixed(2)}</span>`;
         }
       };
 
@@ -552,6 +698,12 @@ function renderTable(rows) {
         <td>${badgeGeneric(r.current_ratio, { lo: 1.0, hi: 2.0 })}</td>
         <td>${badgeGeneric(r.debt_eq, { lo: 0.5, hi: 2.0 }, true)}</td>
         <td><span class="badge ${r.rsi_14 < 35 ? "ok" : r.rsi_14 > 70 ? "danger" : "muted"}">${r.rsi_14 ? r.rsi_14.toFixed(0) : "—"}</span></td>
+        <td class="sticky-price"><strong>${r.precoAtual ? fmtEUR(r.precoAtual) : "—"}</strong></td>
+        <td class="sticky-price badge down">${r.minus35pct ? fmtEUR(r.minus35pct) : "—"}</td>
+        <td class="sticky-price badge down">${r.minus5pct ? fmtEUR(r.minus5pct) : "—"}</td>
+        <td class="sticky-price ${r.rsi_14 < 40 ? "buyzone-green" : r.rsi_14 < 50 ? "buyzone-yellow" : "buyzone-red"}">
+          ${r.rsi_14 < 40 ? "🟢 BUY" : r.rsi_14 < 50 ? "🟡 WAIT" : "🔴 HOLD"}
+        </td>
 
         <td>${pct(r.delta50)}</td>
         <td>${pct(r.delta200)}</td>
@@ -563,7 +715,7 @@ function renderTable(rows) {
         <td>${r.observacao || "—"}</td>
       </tr>`;
     })
-    .join("");
+    .join(""); 
 
   // listeners dos checkboxes de seleção
   tb.querySelectorAll(".anlRowSel").forEach((ch) => {
@@ -607,6 +759,10 @@ function fetchAcoes() {
       let y24Final =
         Math.abs(rY24) > 0 && Math.abs(rY24) < 1 ? rY24 * 100 : rY24;
 
+      // PORTFOLIO CARDS - Add score for sorting
+      const scoreResult = calculateLucroMaximoScore(d, '1m');
+      const score = scoreResult.score || 0;
+
       rows.push({
         ticker,
         nome: d.nome || "",
@@ -614,6 +770,7 @@ function fetchAcoes() {
         mercado: canon(d.mercado || ""),
         valorStock: valor,
         dividendo: toNum(d.dividendo),
+        // External Links - NEW
         dividendoMedio24m: toNum(d.divMedio24m || d.dividendoMedio24m),
         periodicidade: d.periodicidade || "",
         mes: d.mes || "",
@@ -622,6 +779,7 @@ function fetchAcoes() {
         divPer: perPayment(d),
         divAnual: annual,
         yield: Number.isFinite(yFinal) ? yFinal : null,
+        portfolioScore: score,
 
         g1w:
           Number(d.priceChange_1w || d.taxaCrescimento_1semana || d.g1w) || 0,
@@ -645,6 +803,13 @@ function fetchAcoes() {
           })(),
 
         yield24: y24Final || null,
+
+        // Drop Price Levels - ENHANCED (tooltip-ready)
+        precoAtual: valor,
+        minus35pct: valor > 0 ? valor * 0.965 : 0,
+        minus5pct: valor > 0 ? valor * 0.95 : 0,
+
+
         pe:
           Number(d.pe) ||
           Number(d.peRatio) ||
@@ -685,6 +850,11 @@ function fetchAcoes() {
         oper_margin: Number(d.oper_margin || 0),
         profit_margin: Number(d.profit_margin || 0),
         sales_yoy: Number(d.sales_y_y_ttm || 0),
+
+        // Drop Price Levels - NEW
+        precoAtual: valor,
+        minus35pct: valor > 0 ? (valor * 0.965).toFixed(2) : 0,
+        minus5pct: valor > 0 ? (valor * 0.95).toFixed(2) : 0,
 
         // Novos campos numéricos (processados pelo upload_to_firestore)
         high_52w_dist: Number(d.high_52w_dist || 0),
@@ -2227,7 +2397,12 @@ export async function initScreen() {
   const btnRepair = document.getElementById("btnRepairData");
   if (btnRepair) {
     btnRepair.addEventListener("click", async () => {
-      if (!confirm("Deseja reparar os dados antigos no Firestore? Isso converterá strings complexas em números. Pode demorar alguns segundos.")) return;
+      if (
+        !confirm(
+          "Deseja reparar os dados antigos no Firestore? Isso converterá strings complexas em números. Pode demorar alguns segundos.",
+        )
+      )
+        return;
       btnRepair.disabled = true;
       btnRepair.innerText = "Reparando...";
       try {
