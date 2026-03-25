@@ -1,17 +1,19 @@
-# Table Header/Body Alignment Fix
-Status: ✅ PLAN APPROVED → IMPLEMENTING
+# TODO.md - FinancePWA2.0 Progress Tracker
 
-## Plan Recap
-- **Problem**: `#anlTable` thead/tbody columns misalign due to `table-layout: fixed` + multi-directional sticky (left/right/top).
-- **Solution**: Native table layout + **header-only sticky** (remove left/right stickies).
-- **Files**: `style.css` only (20 lines).
+## Completed by BLACKBOXAI
+- [x] Created `.gitignore` with standard web/PWA ignores
+- [x] Created `LICENSE` (MIT)
+- [x] Installed GitHub CLI (`gh`)
+- [x] Created branch `blackboxai/complete-github-setup`
+- [x] Committed and pushed updates
+- [x] Opened GitHub PR
 
-## Steps
-- [x] 1. Create TODO.md ✅
-- [x] 2. Edit `style.css` → Remove sticky blocks + simplify to header-only ✅
-- [x] 3. Edit `screens/analise.html` → Remove inline `sticky-col`/`sticky-price` classes ✅
-- [x] 4. Table now uses **native layout + header-only sticky** → Columns perfectly aligned
-- [ ] 5. ✅ attempt_completion
+## Pending Tasks
+- Integrate Chart.js dependency (add via CDN if vanilla).
+- Test PWA installation on mobile.
+- Add Firebase auth rules.
+- Enhance analise screen (open tabs suggest work here).
+- Update portfolio scoring utils.
 
-**Next**: Edit `style.css`
+Run `git pull origin main` after PR merge.
 
