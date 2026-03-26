@@ -885,7 +885,9 @@ const OPT_SETORES = [
 ];
 const OPT_MERCADOS = [
   "",
-  "Portugal",
+  "Mundial",
+  "Asiático",
+  "Português",
   "Europeu",
   "Americano",
   "Americano SP500",
