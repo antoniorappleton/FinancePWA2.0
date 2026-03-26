@@ -1,64 +1,74 @@
-const CACHE_NAME = "finance-app-cache-v3";
+const CACHE_NAME = "finance-pwa-v4";
+
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/style.css",
-  "/js/main.js",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png"
+  "./",
+  "./index.html",
+  "./style.css",
+  "./manifest.json",
+  "./js/main.js",
+  "./js/firebase-config.js",
+  "./js/screens/auth.js",
+  "./js/screens/dashboard.js",
+  "./js/screens/atividade.js",
+  "./js/screens/analise.js",
+  "./js/screens/settings.js",
+  "./js/screens/simulador.js",
+  "./js/utils/indicator-info.js",
+  "./js/utils/scoring.js",
+  "./screens/auth.html",
+  "./screens/dashboard.html",
+  "./screens/atividade.html",
+  "./screens/analise.html",
+  "./screens/settings.html",
+  "./screens/simulador.html",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
-// Instala e guarda ficheiros no cache
-self.addEventListener("install", event => {
+// Instalação do Service Worker
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("[SW] Caching assets...");
       return cache.addAll(ASSETS);
     })
   );
+  self.skipWaiting(); // Força a nova versão a tornar-se ativa imediatamente
 });
 
-// Ativa e limpa caches antigos
-self.addEventListener("activate", event => {
+// Ativação e limpeza de caches antigos
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      );
     })
   );
+  self.clients.claim(); // Garante que o SW controla todas as abas abertas imediatamente
 });
 
-// Responde com cache ou vai buscar à rede
-//self.addEventListener("fetch", event => {
-  //event.respondWith(
-    //caches.match(event.request).then(response => {
-     // return response || fetch(event.request);
-    //})
- // );
-//});
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    (async () => {
-      const cache = await caches.open("app-cache-v2");
-      const urls = [
-        "/",
-        "/index.html",
-        "/style.css",
-        "/js/main.js",
-        "/screens/atividade.html",
-        "/screens/dashboard.html", // etc...
-        // evita listar módulos dinâmicos se não tiveres a certeza
-      ];
-      await Promise.all(
-        urls.map(async (url) => {
-          try {
-            const resp = await fetch(url, { cache: "no-cache" });
-            if (!resp.ok) throw new Error(`${url} -> ${resp.status}`);
-            await cache.put(url, resp);
-          } catch (e) {
-            console.warn("[SW] skip cache:", e.message);
-          }
+// Estratégia: Network-First para HTML/JS (garante atualizações), Cache-First para imagens/CSS
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  
+  // Para ficheiros de navegação ou lógica, preferimos rede para apanhar atualizações
+  if (event.request.mode === "navigate" || url.pathname.endsWith(".js") || url.pathname.endsWith(".html")) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return response;
         })
-      );
-    })()
-  );
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    // Para outros (CSS, imagens), Cache-First
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      })
+    );
+  }
 });

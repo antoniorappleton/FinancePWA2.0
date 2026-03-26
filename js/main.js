@@ -42,9 +42,28 @@ export function navigateTo(screen) {
 // Disponibilizar globalmente para onclick="navigateTo('...')"
 window.navigateTo = navigateTo;
 
-// Arranque na auth
+// Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
   navigateTo("auth");
+
+  // Registo do Service Worker para PWA
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then((reg) => {
+        console.log("[PWA] Service Worker Registado.");
+        reg.onupdatefound = () => {
+          const installingWorker = reg.installing;
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === "installed") {
+              if (navigator.serviceWorker.controller) {
+                console.log("[PWA] Nova versão disponível. Por favor, reinicia a app.");
+              }
+            }
+          };
+        };
+      })
+      .catch((err) => console.error("[PWA] Falha no registo do SW:", err));
+  }
 });
 
 // --- Header title helper (global) ---

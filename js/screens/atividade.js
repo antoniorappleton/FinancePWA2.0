@@ -1063,15 +1063,27 @@ async function processAndRender(snap, aSnap) {
       const pLoss = posValNow - g.investido;
       const pLossPct = g.investido > 0 ? (pLoss / g.investido) * 100 : 0;
       const s200 = g._sma200;
-      const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
+      const isCrypto = (g.mercado === "Criptomoedas" || g.setor === "Criptomoedas");
+      
+      // Validação de sanidade para SMA (evita dados lixo tipo 0.01 vs preço 70)
+      const isSmaValid = s200 && precoAtual > 0 && (s200 > (precoAtual * 0.01) && s200 < (precoAtual * 100));
+      const isBelowSMA200 = isSmaValid && precoAtual < s200;
+      
       const lucroAtual = g.lucroAtual || 0;
-      const isBull = precoAtual && s200 && precoAtual > s200 && Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
+      const isBull = isSmaValid && precoAtual > s200 && Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
 
       let estadoOp = "ESPERAR";
-      if (pLossPct < -4 && isBelowSMA200) estadoOp = "REFORÇAR";
-      else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
-      else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
-      else if (pLossPct > 25) estadoOp = "VENDER";
+      // Regra para Crypto: mais tolerância na SMA (pode ignorar se SMA for lixo) e threshold de queda maior (-7%)
+      if (isCrypto) {
+        if (pLossPct < -7) estadoOp = "REFORÇAR";
+        else if (pLossPct > 15) estadoOp = "REDUZIR";
+      } else {
+        // Regra para Ações/ETFs: -4% e abaixo da SMA200 (se válida)
+        if (pLossPct < -4 && (!isSmaValid || isBelowSMA200)) estadoOp = "REFORÇAR";
+        else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
+        else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
+        else if (pLossPct > 25) estadoOp = "VENDER";
+      }
 
       g._estadoOp = estadoOp;
       g._pLossPct = pLossPct;
@@ -1151,8 +1163,17 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
   const estimativa = tp2 && precoAtual ? estimateTime(precoAtual, tp2, taxa, periodLabel) : "—";
 
   const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-  const d50Txt = isFiniteNum(g._sma50) && isFiniteNum(precoAtual) ? (((precoAtual - g._sma50) / g._sma50) * 100).toFixed(1) + "%" : "—";
-  const d200Txt = isFiniteNum(s200) && isFiniteNum(precoAtual) ? (((precoAtual - s200) / s200) * 100).toFixed(1) + "%" : "—";
+  
+  // Formatação de Deltas com proteção contra dados lixo (> 1000%)
+  const formatSmaDelta = (sma, cur) => {
+    if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
+    const d = ((cur - sma) / sma) * 100;
+    if (Math.abs(d) > 1000) return "—"; // Sanity check
+    return `${d.toFixed(1)}%`;
+  };
+
+  const d50Txt = formatSmaDelta(g._sma50, precoAtual);
+  const d200Txt = formatSmaDelta(s200, precoAtual);
 
   let stateColor = "var(--muted-foreground)";
   if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
@@ -1188,8 +1209,25 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
           <div><label class="muted" style="font-size: 0.7rem; display: block;">Lucro</label><strong class="${lucroAtual >= 0 ? "up" : "down"}">${fmtEUR.format(lucroAtual)}</strong></div>
         </div>
 
+        <div style="margin-bottom: 20px;">
+          <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-bullseye"></i> 🎯 Meta do Ativo: <span style="color: var(--foreground);">${fmtEUR.format(g.objetivo || 0)} de Lucro</span>
+          </div>
+          <div style="background: rgba(var(--primary-rgb, 79, 70, 229), 0.05); padding: 12px; border-radius: 10px; border: 1px dashed var(--primary); display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+              <label class="muted" style="font-size: 0.75rem; display: block; margin-bottom: 2px;">Preço Alvo p/ Objetivo (TP)</label>
+              <strong style="font-size: 1.15rem; color: var(--success-color, #22c55e);">${fmtEUR.format(tp2)}</strong>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge ${lucroAtual >= (g.objetivo || 0) ? "premium" : "outline"}" style="font-size: 0.7rem; font-weight: 800;">
+                ${lucroAtual >= (g.objetivo || 0) ? "META ATINGIDA ✅" : "EM PROGRESSO"}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div style="margin-bottom: 16px;">
-          <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--primary);">📝 Plano de Trade</div>
+          <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--primary);">📝 Plano de Trade (Zonas)</div>
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
             <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
               <label class="muted" style="font-size: 0.7rem; display: block;">Compra Base</label>
