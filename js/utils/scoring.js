@@ -16,13 +16,13 @@ export function getUserWeights() {
 }
 
 export const SCORING_CFG = {
-  MAX_ANNUAL_RETURN: 0.8,
-  MIN_ANNUAL_RETURN: -0.8,
-  WEIGHTS: { R: 0.1, V: 0.2, T: 0.2, D: 0.15, E: 0.2, S: 0.1, Rsk: 0.05 }, // Added 'S' for Solvency
+  MAX_ANNUAL_RETURN: 0.45, // Cap mais realista para retorno anual (45%)
+  MIN_ANNUAL_RETURN: -0.6, // -60%
+  WEIGHTS: { R: 0.1, V: 0.25, T: 0.15, D: 0.15, E: 0.25, S: 0.1 }, 
   BLEND_WEIGHTS: {
     "1s": { w: 0.75, m: 0.15, y: 0.1 },
     "1m": { w: 0.1, m: 0.75, y: 0.15 },
-    "1ano": { w: 0.1, m: 0.15, y: 0.75 },
+    "1a": { w: 0.1, m: 0.15, y: 0.75 }, // unificado com a chave de periodo
   },
   REALISM_CAP: { enabled: false, trigger: 0.9, cap: 0.95 },
   EVEBITDA_ANCHORS: {

@@ -374,19 +374,25 @@ function calcularMetricasBase_TOP(
   const precoAtual = toNum(acao.valorStock);
   if (!(precoAtual > 0)) return null;
 
+  // Frequência do período (semanas=52, meses=12, anos=1)
+  const freq = periodo === "1s" ? 52 : periodo === "1m" ? 12 : 1;
+  const h = Math.max(1, Number(horizonte || 1));
+  const timeFactor = h / freq;
+
   const anualDiv = toNum(acao.divAnual ?? anualPreferido(acao));
   const rAnnual = annualizeRate(acao, periodo);
-  const h = Math.max(1, Number(horizonte || 1));
 
-  const valorizacao = precoAtual * (Math.pow(1 + rAnnual, h) - 1);
-  const dividendos = incluirDiv ? anualDiv * h : 0;
+  // Math.pow(1 + rAnnual, h/f) - 1 dá o crescimento REAL no horizonte h
+  const taxaNoPeriodo = Math.pow(1 + rAnnual, timeFactor) - 1;
+  const valorizacao = precoAtual * taxaNoPeriodo;
+  const dividendos = incluirDiv ? anualDiv * timeFactor : 0;
   const lucroUnidade = dividendos + valorizacao;
   const retornoPorEuro = precoAtual > 0 ? lucroUnidade / precoAtual : 0;
 
   return {
     preco: precoAtual,
     dividendoAnual: anualDiv,
-    taxaPct: rAnnual * 100,
+    taxaPct: taxaNoPeriodo * 100, // Mostra a taxa para o HORIZONTE h selecionado
     totalDividendos: dividendos,
     valorizacao,
     lucroUnidade,
