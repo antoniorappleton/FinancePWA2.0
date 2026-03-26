@@ -1,4 +1,4 @@
-const CACHE_NAME = "appfinance-cache-v1";
+const CACHE_NAME = "appfinance-cache-v2";
 const ASSETS = [
   "/",
   "/index.html",
@@ -38,7 +38,7 @@ self.addEventListener("activate", event => {
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
-      const cache = await caches.open("app-cache-v1");
+      const cache = await caches.open("app-cache-v2");
       const urls = [
         "/",
         "/index.html",

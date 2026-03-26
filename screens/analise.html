@@ -355,7 +355,16 @@
                 RSI
               </th>
 
-              <!-- Sticky price block -->
+              <th data-sort="delta50" class="sortable">Δ50d%</th>
+              <th data-sort="delta200" class="sortable">Δ200d%</th>
+              <th data-sort="g1w" class="sortable">1S</th>
+              <th data-sort="g1m" class="sortable">1M</th>
+              <th data-sort="g1y" class="sortable">1A</th>
+              <th data-sort="periodicidade" class="sortable">Periodicidade</th>
+              <th data-sort="mes" class="sortable">Mês típico</th>
+              <th data-sort="observacao" class="sortable">Notas</th>
+
+              <!-- Sticky price block moved to the end -->
               <th
                 data-sort="preco"
                 class="sortable tt sticky-price sticky-price-1"
@@ -384,15 +393,6 @@
               >
                 Buy?
               </th>
-
-              <th data-sort="delta50" class="sortable">Δ50d%</th>
-              <th data-sort="delta200" class="sortable">Δ200d%</th>
-              <th data-sort="g1w" class="sortable">1S</th>
-              <th data-sort="g1m" class="sortable">1M</th>
-              <th data-sort="g1y" class="sortable">1A</th>
-              <th data-sort="periodicidade" class="sortable">Periodicidade</th>
-              <th data-sort="mes" class="sortable">Mês típico</th>
-              <th data-sort="observacao" class="sortable">Notas</th>
             </tr>
           </thead>
           <tbody id="anlTableBody"></tbody>
@@ -892,9 +892,7 @@
 }
 
 #anlTable thead th {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  position: static;
   background: var(--card, #fff);
   backdrop-filter: blur(10px);
   font-weight: 600;
@@ -937,38 +935,26 @@
   opacity: 0.7;
 }
 
-/* Sticky columns on the right for price reinforcement */
+/* Price columns no longer sticky */
 .sticky-price {
-  position: sticky;
-  background: var(--muted-bg, #f9fafb) !important;
+  background: var(--card, #fff) !important;
   font-weight: 600;
   font-family: monospace;
   text-align: right;
   min-width: 90px;
   max-width: 90px;
   width: 90px;
-  z-index: 35;
-  border-left: 2px solid var(--border);
-}
-
-.sticky-price-1 {
-  right: 270px;
-}
-
-.sticky-price-2 {
-  right: 180px;
-}
-
-.sticky-price-3 {
-  right: 90px;
-}
-
-.sticky-price-4 {
-  right: 0;
+  border-left: 1px solid var(--border);
 }
 
 [data-theme="dark"] .sticky-price {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: #1a1a1a !important;
+}
+
+/* Explicitly disable sticky-col for this table */
+#anlTable .sticky-col {
+  position: static !important;
+  border-right: 1px solid var(--border) !important;
 }
 
 .badge {

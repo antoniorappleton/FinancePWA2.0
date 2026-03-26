@@ -698,30 +698,6 @@ function renderTable(rows) {
         <td>${badgeGeneric(r.current_ratio, { lo: 1.0, hi: 2.0 })}</td>
         <td>${badgeGeneric(r.debt_eq, { lo: 0.5, hi: 2.0 }, true)}</td>
         <td><span class="badge ${r.rsi_14 < 35 ? "ok" : r.rsi_14 > 70 ? "danger" : "muted"}">${r.rsi_14 ? r.rsi_14.toFixed(0) : "—"}</span></td>
-<td class="sticky-price sticky-price-1">
-  <strong>${r.precoAtual ? fmtEUR(r.precoAtual) : "—"}</strong>
-</td>
-
-<td class="sticky-price sticky-price-2">
-  <span class="badge down">
-    ${r.minus35pct ? fmtEUR(r.minus35pct) : "—"}
-  </span>
-</td>
-
-<td class="sticky-price sticky-price-3">
-  <span class="badge down">
-    ${r.minus5pct ? fmtEUR(r.minus5pct) : "—"}
-  </span>
-</td>
-
-<td class="sticky-price sticky-price-4">
-  <span class="buy-badge ${
-    r.rsi_14 < 40 ? "buy-green" : r.rsi_14 < 50 ? "buy-yellow" : "buy-red"
-  }">
-    ${r.rsi_14 < 40 ? "BUY" : r.rsi_14 < 50 ? "WAIT" : "HOLD"}
-  </span>
-</td>
-
         <td>${pct(r.delta50)}</td>
         <td>${pct(r.delta200)}</td>
         <td>${pct(r.g1w)}</td>
@@ -730,6 +706,27 @@ function renderTable(rows) {
         <td>${r.periodicidade || "—"}</td>
         <td>${r.mes || "—"}</td>
         <td>${r.observacao || "—"}</td>
+
+        <td class="sticky-price sticky-price-1">
+          <strong>${r.precoAtual ? fmtEUR(r.precoAtual) : "—"}</strong>
+        </td>
+        <td class="sticky-price sticky-price-2">
+          <span class="badge down">
+            ${r.minus35pct ? fmtEUR(r.minus35pct) : "—"}
+          </span>
+        </td>
+        <td class="sticky-price sticky-price-3">
+          <span class="badge down">
+            ${r.minus5pct ? fmtEUR(r.minus5pct) : "—"}
+          </span>
+        </td>
+        <td class="sticky-price sticky-price-4">
+          <span class="buy-badge ${
+            r.rsi_14 < 40 ? "buy-green" : r.rsi_14 < 50 ? "buy-yellow" : "buy-red"
+          }">
+            ${r.rsi_14 < 40 ? "BUY" : r.rsi_14 < 50 ? "WAIT" : "HOLD"}
+          </span>
+        </td>
       </tr>`;
     })
     .join(""); 
