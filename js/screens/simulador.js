@@ -322,6 +322,7 @@ function renderResultado(destEl, resultado, opts) {
       <td>${l.quantidade.toFixed(opts.acoesCompletas ? 0 : 4)}</td>
       <td>${euro(l.investido)}</td>
       <td>${euro(l.lucro)}</td>
+      <td><strong>${(l.score * 100).toFixed(0)}%</strong></td>
       <td>${(l.taxaPct || 0).toFixed(2)}%</td>
       <td>${euro(l.dividendoAnual || 0)}/ano</td>
     </tr>
@@ -340,6 +341,7 @@ function renderResultado(destEl, resultado, opts) {
               <th>Qtd</th>
               <th>Investido</th>
               <th>Lucro Estim.</th>
+              <th>Score</th>
               <th>Tx ${opts.periodoSel}</th>
               <th>Dividendo</th>
             </tr>
@@ -363,7 +365,7 @@ function renderResultado(destEl, resultado, opts) {
   `;
 }
 
-import { annualizeRate, anualPreferido } from "../utils/scoring.js";
+import { annualizeRate, anualPreferido, calculateLucroMaximoScore } from "../utils/scoring.js";
 
 function calcularMetricasBase_TOP(
   acao,
@@ -404,27 +406,16 @@ function prepararCandidatos_TOP(
         horizonte,
         incluirDiv,
       });
-      return metrics ? { ...a, metrics } : null;
+      if (!metrics || !(metrics.lucroUnidade > 0)) return null;
+
+      // Usamos o motor de pontuação avançado
+      const scoreData = calculateLucroMaximoScore(a, periodo);
+      const score = scoreData.score;
+
+      return { ...a, metrics, score, scoreData };
     })
     .filter(Boolean)
-    .filter((c) => c.metrics.lucroUnidade > 0);
-
-  if (!cands.length) return [];
-
-  const rets = cands
-    .map((c) => c.metrics.retornoPorEuro)
-    .filter((x) => x > 0 && isFinite(x));
-  const p99 = Math.max(
-    rets.sort((x, y) => x - y)[Math.floor((rets.length - 1) * 0.99)] || 1,
-    1e-9,
-  );
-
-  cands = cands
-    .map((c) => {
-      const R = clamp2(c.metrics.retornoPorEuro / p99, 0, 1);
-      const score = modoEstrito ? R : R; // (se no futuro quiseres outro score, muda aqui)
-      return { ...c, score, __R: R };
-    })
+    // Garantimos que o score seja positivo e haja retorno esperado
     .filter((c) => c.score > 0);
 
   return cands;
@@ -439,6 +430,7 @@ function makeLinha_TOP(c, qtd) {
     quantidade: qtd,
     investido,
     lucro: qtd * c.metrics.lucroUnidade,
+    score: c.score,
     taxaPct: c.metrics.taxaPct,
     dividendoAnual: c.metrics.dividendoAnual,
     divAnualAlloc: qtd * c.metrics.dividendoAnual,
@@ -598,18 +590,16 @@ async function fetchAcoesBase() {
     const d = doc.data();
     if (!d || !d.ticker) return;
     out.push({
+      ...d, // Spread all fields (pe, evebitda, sma, etc) for the scoring engine
       nome: d.nome || d.ticker,
       ticker: String(d.ticker).toUpperCase(),
       valorStock: Number(d.valorStock || 0),
-      // dividendos: podes ter anual direto (dividendoMedio24m) ou por pagamento+periodicidade
       dividendoMedio24m: Number(d.dividendoMedio24m || 0),
       dividendo: Number(d.dividendo || 0),
       periodicidade: d.periodicidade || "Anual",
-      // crescimento → nomes esperados pelo motor local
-      g1w: Number(d.taxaCrescimento_1semana || 0),
-      g1m: Number(d.taxaCrescimento_1mes || 0),
-      g1y: Number(d.taxaCrescimento_1ano || 0),
-      raw: d,
+      g1w: Number(d.taxaCrescimento_1semana || d.priceChange_1w || 0),
+      g1m: Number(d.taxaCrescimento_1mes || d.priceChange_1m || 0),
+      g1y: Number(d.taxaCrescimento_1ano || d.priceChange_1y || 0),
     });
   });
   return out;
