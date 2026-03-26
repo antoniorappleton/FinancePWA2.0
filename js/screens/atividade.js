@@ -409,11 +409,18 @@ function renderDividendoCalendario12m(arr) {
   });
 }
 
+// (NOVO) estado global para evitar duplicar listeners
+let byTickerGlobal = new Map();
+let _eventsWired = false;
+
 // ===============================
 // Quick Actions (comprar/vender/editar + collapse)
 // ===============================
 function wireQuickActions(gruposArr) {
-  const byTicker = new Map(gruposArr.map((g) => [g.ticker, g]));
+  byTickerGlobal = new Map(gruposArr.map((g) => [g.ticker, g]));
+  if (_eventsWired) return;
+  _eventsWired = true;
+
   const $ = (s) => document.querySelector(s);
 
   const modal = $("#pfAddModal");
@@ -430,7 +437,6 @@ function wireQuickActions(gruposArr) {
   let currentPosQty = 0;
 
   // (NOVO) hidden onde vamos guardar a posição atual
-  // (nota: vais adicionar este hidden no HTML a seguir — depois fazemos isso)
   const fPosAtual = document.getElementById("pfPosicaoAtual");
   const fTicker = $("#pfTicker");
   const fNome = $("#pfNome");
@@ -441,8 +447,8 @@ function wireQuickActions(gruposArr) {
   const fObj = $("#pfObjetivo");
   const fLink = $("#pfLink");
 
-  function open(kind, ticker) {
-    const g = byTicker.get(ticker);
+  function openActionModal(kind, ticker) {
+    const g = byTickerGlobal.get(ticker);
     if (!g) return;
 
     // posição atual em carteira
@@ -491,8 +497,8 @@ function wireQuickActions(gruposArr) {
   document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
     const buy = e.target.closest?.("[data-buy]");
     const sell = e.target.closest?.("[data-sell]");
-    if (buy) open("compra", buy.getAttribute("data-buy"));
-    if (sell) open("venda", sell.getAttribute("data-sell"));
+    if (buy) openActionModal("compra", buy.getAttribute("data-buy"));
+    if (sell) openActionModal("venda", sell.getAttribute("data-sell"));
   });
 
   // Collapse per card
@@ -774,6 +780,7 @@ export async function initScreen() {
   const cont = document.getElementById("listaAtividades");
   if (!cont) return;
 
+  _eventsWired = false; // reset para garantir que os listeners se ligam ao novo DOM
   cont.innerHTML = "A carregar…";
 
   // Registrar ajuda
