@@ -892,7 +892,9 @@
 }
 
 #anlTable thead th {
-  position: static;
+  position: sticky;
+  top: 0;
+  z-index: 40;
   background: var(--card, #fff);
   backdrop-filter: blur(10px);
   font-weight: 600;
@@ -935,7 +937,7 @@
   opacity: 0.7;
 }
 
-/* Price columns no longer sticky */
+/* Price columns no longer sticky, but styled */
 .sticky-price {
   background: var(--card, #fff) !important;
   font-weight: 600;
@@ -951,10 +953,29 @@
   background: #1a1a1a !important;
 }
 
-/* Explicitly disable sticky-col for this table */
+/* Fix Ticker and Checkbox on the left */
 #anlTable .sticky-col {
-  position: static !important;
+  position: sticky !important;
+  left: 0;
+  z-index: 10;
+  background: var(--card, #fff) !important;
   border-right: 1px solid var(--border) !important;
+}
+
+/* Ensure the second sticky column (Ticker) has the correct offset */
+#anlTable th:nth-child(2).sticky-col,
+#anlTable td:nth-child(2).sticky-col {
+  left: 44px;
+  z-index: 11;
+}
+
+/* Ensure header cells for sticky columns are over body cells */
+#anlTable thead th.sticky-col {
+  z-index: 45;
+}
+
+[data-theme="dark"] #anlTable .sticky-col {
+  background: #111 !important;
 }
 
 .badge {
