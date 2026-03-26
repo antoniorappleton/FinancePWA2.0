@@ -439,6 +439,7 @@ function wireQuickActions(gruposArr) {
   const fQtd = $("#pfQuantidade");
   const fPreco = $("#pfPreco");
   const fObj = $("#pfObjetivo");
+  const fLink = $("#pfLink");
 
   function open(kind, ticker) {
     const g = byTicker.get(ticker);
@@ -462,6 +463,7 @@ function wireQuickActions(gruposArr) {
     if (fQtd) fQtd.value = "";
     if (fPreco) fPreco.value = "";
     if (fObj) fObj.value = g.objetivo || "";
+    if (fLink) fLink.value = g.link || "";
     if (vendaTot) vendaTot.checked = false;
     if (vendaTotWrap)
       vendaTotWrap.style.display = kind === "venda" ? "block" : "none";
@@ -537,6 +539,7 @@ function wireQuickActions(gruposArr) {
         if (fQtd) fQtd.value = Number(d.quantidade || 0);
         if (fPreco) fPreco.value = Number(d.precoCompra || 0);
         if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
+        if (fLink) fLink.value = d.linkExterno || "";
 
         if (labelP) labelP.textContent = "Preço (€)";
         if (vendaTotWrap) vendaTotWrap.style.display = "none";
@@ -605,6 +608,7 @@ function wireQuickActions(gruposArr) {
     const qtd = toNumStrict(fQtd?.value);
     const preco = toNumStrict(fPreco?.value);
     const obj = toNumStrict(fObj?.value);
+    const lnk = fLink?.value?.trim() || "";
     const vendaTotal = !!vendaTot?.checked;
     const docId = (document.getElementById("pfDocId")?.value || "").trim();
 
@@ -625,15 +629,18 @@ function wireQuickActions(gruposArr) {
           quantidade: Number.isFinite(qtd) ? qtd : 0,
           precoCompra: Number.isFinite(preco) ? preco : 0,
           objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
+          linkExterno: lnk,
         });
 
-        // 2. (NOVO) Se o objetivo mudou, propagar para TODOS os registos deste ticker
-        if (Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) {
+        // 2. (NOVO) Se o objetivo ou link mudou, propagar para TODOS os registos deste ticker
+        if ((Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) || lnk !== originalData.linkExterno) {
           const q = query(collection(db, "ativos"), where("ticker", "==", ticker));
           const snapAll = await getDocs(q);
-          const updates = snapAll.docs.map(d => updateDoc(d.ref, { objetivoFinanceiro: obj }));
+          const updates = snapAll.docs.map(d => updateDoc(d.ref, { 
+            objetivoFinanceiro: obj,
+            linkExterno: lnk
+          }));
           await Promise.all(updates);
-          console.log(`[atividade] Objetivo atualizado para ${snapAll.size} registos de ${ticker}`);
         }
       } else {
         let qtdEfetiva = qtd;
@@ -681,9 +688,22 @@ function wireQuickActions(gruposArr) {
           quantidade,
           precoCompra: preco,
           objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
+          linkExterno: lnk,
           dataCompra: serverTimestamp(),
         };
         await addDoc(collection(db, "ativos"), payload);
+
+        // (OPCIONAL) Propagar objetivo/link para todos os outros registos deste ticker
+        // Isto garante que se mudas o link numa nova compra, ele reflete-se no plano de trade global
+        if (obj > 0 || lnk) {
+          const q = query(collection(db, "ativos"), where("ticker", "==", ticker));
+          const snapAll = await getDocs(q);
+          const upds = snapAll.docs.map(d => updateDoc(d.ref, { 
+             objetivoFinanceiro: obj > 0 ? obj : (d.data().objetivoFinanceiro || 0),
+             linkExterno: lnk || (d.data().linkExterno || "")
+          }));
+          await Promise.all(upds);
+        }
       }
 
       closeModal();
@@ -839,6 +859,7 @@ async function processAndRender(snap, aSnap) {
         investido: 0,
         realizado: 0,
         objetivo: 0,
+        link: "",
         anyObjSet: false,
         lastDate: null,
         lastDocId: null,
@@ -865,7 +886,10 @@ async function processAndRender(snap, aSnap) {
       const obj = toNumStrict(d.objetivoFinanceiro);
       if (!g.anyObjSet && Number.isFinite(obj) && obj > 0) {
         g.objetivo = obj;
+        if (d.linkExterno) g.link = d.linkExterno;
         g.anyObjSet = true;
+      } else if (d.linkExterno && !g.link) {
+        g.link = d.linkExterno;
       }
 
       if (!g.lastDate || (dt && dt > g.lastDate)) {
@@ -1321,6 +1345,14 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
           <button class="btn premium" data-buy="${g.ticker}" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}
           </button>
+          
+          <button class="btn ghost ${g.link ? "" : "muted"}" 
+                  onclick="${g.link ? `window.open('${g.link}', '_blank')` : `document.querySelector('[data-edit="${g.lastDocId}"]').click()`}" 
+                  style="flex: 0 0 40px; margin-top: 0; padding: 0;" 
+                  title="${g.link ? 'Abrir link' : 'Adicionar link'}">
+            <i class="fas fa-link"></i>
+          </button>
+
           <button class="btn outline" data-sell="${g.ticker}" style="flex: 1; margin-top: 0;">Vender</button>
           <button class="btn ghost" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" style="flex: 0 0 40px; margin-top: 0; padding: 0;">
             <i class="fas fa-edit"></i>
