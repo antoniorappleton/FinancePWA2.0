@@ -610,7 +610,14 @@ function wireQuickActions(gruposArr) {
 
     try {
       if (tipo === "edicao" && docId) {
-        await updateDoc(doc(db, "ativos", docId), {
+        // Obter o documento original antes de editar
+        const docRef = doc(db, "ativos", docId);
+        const snap = await getDoc(docRef);
+        const originalData = snap.exists() ? snap.data() : {};
+        const oldTicker = (originalData.ticker || "").toUpperCase();
+
+        // 1. Atualizar o registo atual
+        await updateDoc(docRef, {
           nome,
           ticker,
           setor,
@@ -619,6 +626,15 @@ function wireQuickActions(gruposArr) {
           precoCompra: Number.isFinite(preco) ? preco : 0,
           objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
         });
+
+        // 2. (NOVO) Se o objetivo mudou, propagar para TODOS os registos deste ticker
+        if (Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) {
+          const q = query(collection(db, "ativos"), where("ticker", "==", ticker));
+          const snapAll = await getDocs(q);
+          const updates = snapAll.docs.map(d => updateDoc(d.ref, { objetivoFinanceiro: obj }));
+          await Promise.all(updates);
+          console.log(`[atividade] Objetivo atualizado para ${snapAll.size} registos de ${ticker}`);
+        }
       } else {
         let qtdEfetiva = qtd;
 
@@ -1114,9 +1130,6 @@ function tp2NecessarioCalc(g) {
 }
 
 function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
-  // Transferring the template logic here for final clean rendering
-  // (Assuming the logic above is already solid, I'll re-paste the refined template)
-  
   // METRICS & BADGES
   const precoAtual = g.precoAtual;
   const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
