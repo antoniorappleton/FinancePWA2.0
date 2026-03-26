@@ -727,13 +727,13 @@ function showPortfolioHelp(force = false) {
   modal.classList.remove("hidden");
 }
 
-// --- Variáveis de cache para evitar leituras redundantes ---
-let _lastAtivosSnap = null;
-let _lastAcoesSnap = null;
-
 // ===============================
 // INIT (screen)
 // ===============================
+let _lastAtivosSnap = null;
+let _lastAcoesSnap = null;
+let fltState = { estado: "", mercado: "", setor: "", sort: "queda" };
+
 export async function initScreen() {
   const cont = document.getElementById("listaAtividades");
   if (!cont) return;
@@ -745,6 +745,24 @@ export async function initScreen() {
   showPortfolioHelp();
 
   await ensureChartJS();
+
+  // Wire filters
+  const fEstado = document.getElementById("fltEstado");
+  const fMercado = document.getElementById("fltMercado");
+  const fSetor = document.getElementById("fltSetor");
+  const fSort = document.getElementById("fltSort");
+
+  [fEstado, fMercado, fSetor, fSort].forEach(el => {
+    el?.addEventListener("change", () => {
+      fltState = {
+        estado: fEstado.value,
+        mercado: fMercado.value,
+        setor: fSetor.value,
+        sort: fSort.value
+      };
+      handleUpdate();
+    });
+  });
 
   const handleUpdate = async () => {
     if (!_lastAtivosSnap || !_lastAcoesSnap) return;
@@ -1021,267 +1039,242 @@ async function processAndRender(snap, aSnap) {
     renderTimeline(timelinePoints);
     renderDividendoCalendario12m(eurosMes);
 
-    // 4) Render lista
-    const htmlList = gruposArr
-      .filter((g) => Number.isFinite(g.qtd) && g.qtd > 0)
-      .map((g) => {
-        const info = infoMap.get(g.ticker) || {};
-        const precoAtual = g.precoAtual;
-        const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
-        const lucroAtual = g.lucroAtual || 0;
-        const objetivo = g.objetivo > 0 ? g.objetivo : 0;
-        let pctText = "—";
-        let barHTML = "";
-        if (objetivo > 0) {
-          const progresso = (lucroAtual / objetivo) * 100;
-          const clamped = Math.max(-100, Math.min(100, progresso));
-          const sideWidthPct = (Math.abs(clamped) / 2).toFixed(1);
-          const positive = clamped >= 0;
-          pctText = `${clamped.toFixed(0)}%`;
-          barHTML = `
-            <div class="progress-dual">
-              <div class="track">
-                <div class="fill ${positive ? "positive" : "negative"}" style="width:${sideWidthPct}%"></div>
-                <div class="zero"></div>
-              </div>
-            </div>`;
-        }
+    // 3.1) Pré-cálculo de métricas operacionais para filtros/ordenação
+    gruposArr.forEach(g => {
+      const precoAtual = g.precoAtual || 0;
+      const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
+      const posValNow = g.qtd * precoAtual;
+      const pLoss = posValNow - g.investido;
+      const pLossPct = g.investido > 0 ? (pLoss / g.investido) * 100 : 0;
+      const s200 = g._sma200;
+      const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
+      const lucroAtual = g.lucroAtual || 0;
+      const isBull = precoAtual && s200 && precoAtual > s200 && Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
 
-        const tp2Necessario =
-          objetivo > 0 && g.qtd !== 0
-            ? precoMedio + objetivo / (g.qtd || 1)
-            : null;
-        const { taxa, periodLabel } = pickBestRate(info);
-        const estimativa =
-          tp2Necessario && precoAtual
-            ? estimateTime(precoAtual, tp2Necessario, taxa, periodLabel)
-            : "—";
-        const dataTxt = g.lastDate
-          ? new Intl.DateTimeFormat("pt-PT", {
-              year: "numeric",
-              month: "short",
-              day: "2-digit",
-            }).format(g.lastDate)
-          : "sem data";
+      let estadoOp = "ESPERAR";
+      if (pLossPct < -4 && isBelowSMA200) estadoOp = "REFORÇAR";
+      else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
+      else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
+      else if (pLossPct > 25) estadoOp = "VENDER";
 
-        const yCur = g._yCur,
-          y24 = g._y24m,
-          pe = g._pe,
-          s50 = g._sma50,
-          s200 = g._sma200;
-        const yPct = isFiniteNum(yCur) ? (yCur * 100).toFixed(2) + "%" : "—";
-        const y24Pct = isFiniteNum(y24) ? (y24 * 100).toFixed(2) + "%" : "—";
-        const yBadge =
-          isFiniteNum(yCur) && isFiniteNum(y24)
-            ? yCur > y24
-              ? "↑ acima da média"
-              : "↓ abaixo da média"
-            : "";
-        const peBadge = isFiniteNum(pe)
-          ? pe < 15
-            ? "Barato"
-            : pe <= 25
-              ? "Justo"
-              : "Caro"
-          : "—";
-        const d50 =
-          isFiniteNum(s50) && isFiniteNum(precoAtual)
-            ? ((precoAtual - s50) / s50) * 100
-            : null;
-        const d200 =
-          isFiniteNum(s200) && isFiniteNum(precoAtual)
-            ? ((precoAtual - s200) / s200) * 100
-            : null;
-        const d50Txt = d50 === null ? "—" : `${d50.toFixed(1)}%`;
-        const d200Txt = d200 === null ? "—" : `${d200.toFixed(1)}%`;
+      g._estadoOp = estadoOp;
+      g._pLossPct = pLossPct;
+      g._distBE = Math.abs(pLossPct);
+      const tp2 = tp2NecessarioCalc(g) || precoMedio * 1.15;
+      g._distTP = precoAtual && tp2 ? Math.abs((tp2 / precoAtual - 1) * 100) : 999;
+    });
 
-        // Percentagem para atingir o TP2
-        const pctToTP2 =
-          isFiniteNum(precoAtual) &&
-          isFiniteNum(tp2Necessario) &&
-          precoAtual > 0
-            ? (tp2Necessario / precoAtual - 1) * 100
-            : null;
-        const pctToTP2Txt =
-          pctToTP2 !== null
-            ? `(${pctToTP2 >= 0 ? "+" : ""}${pctToTP2.toFixed(1)}%)`
-            : "";
+    // 4) FILTRAGEM E ORDENAÇÃO
+    let filtered = gruposArr.filter(g => Number.isFinite(g.qtd) && g.qtd > 0);
+    
+    // Popular dropdowns de Mercado e Setor (apenas se vazios)
+    const fMercado = document.getElementById("fltMercado");
+    const fSetor = document.getElementById("fltSetor");
+    if (fMercado && (!fMercado.options.length || fMercado.options.length <= 1)) {
+      const markets = [...new Set(gruposArr.map(g => g.mercado).filter(Boolean))].sort();
+      markets.forEach(m => fMercado.add(new Option(m, m)));
+      const sectors = [...new Set(gruposArr.map(g => g.setor).filter(Boolean))].sort();
+      sectors.forEach(s => fSetor.add(new Option(s, s)));
+    }
 
-        const stopLight =
-          isFiniteNum(precoAtual) &&
-          isFiniteNum(s200) &&
-          precoAtual < s200 &&
-          Number(info.taxaCrescimento_1mes || 0) < 0
-            ? "🔴"
-            : (isFiniteNum(precoAtual) &&
-                  isFiniteNum(s200) &&
-                  precoAtual < s200) ||
-                Number(info.taxaCrescimento_1mes || 0) < 0
-              ? "🟡"
-              : isFiniteNum(precoAtual) &&
-                  isFiniteNum(s200) &&
-                  precoAtual > s200 &&
-                  Number(info.taxaCrescimento_1mes || 0) > 0
-                ? "🟢"
-                : "⚪️";
+    // Aplicar Filtros
+    if (fltState.mercado) filtered = filtered.filter(g => g.mercado === fltState.mercado);
+    if (fltState.setor) filtered = filtered.filter(g => g.setor === fltState.setor);
+    if (fltState.estado) filtered = filtered.filter(g => g._estadoOp === fltState.estado);
 
-        const divUnit = g._divUnit;
-        const divAnualEst = g._divAnual;
-        const periodicidade = info.periodicidade || "n/A";
-        const mesPagamento = info.mes || "n/A";
+    // Aplicar Ordenação
+    filtered.sort((a, b) => {
+      if (fltState.sort === "queda") return a._pLossPct - b._pLossPct; 
+      if (fltState.sort === "lucro") return a.lucroAtual - b.lucroAtual;
+      if (fltState.sort === "yield") return (b._yCur || 0) - (a._yCur || 0);
+      if (fltState.sort === "be_dist") return b._distBE - a._distBE;
+      if (fltState.sort === "tp_dist") return a._distTP - b._distTP;
+      return a.ticker.localeCompare(b.ticker);
+    });
 
-        return `
-        <div class="activity-item collapsed">
-          <div class="activity-header" data-toggle-card>
-            <div class="left">
-              <span class="status-dot">${stopLight}</span>
-              <div class="title-group">
-                <strong>${g.nome}</strong> <span class="muted">(${g.ticker})</span>
-                <div class="meta">${g.setor} • ${g.mercado} • Posição aberta</div>
-              </div>
-            </div>
-            <div class="right">
-              <div class="price-val">€${(precoAtual || 0).toFixed(2)}</div>
-              <div class="${lucroAtual >= 0 ? "up" : "down"}">
-                ${lucroAtual >= 0 ? "▲" : "▼"} €${Math.abs(lucroAtual).toFixed(2)}
-              </div>
-            </div>
-          </div>
-          <div class="activity-details">
-            <div style="font-size:0.85rem; margin-bottom:12px;" class="muted">Última compra: ${dataTxt}</div>
-            <div class="details-grid">
-               <div class="info-block">
-                 <label>Posição</label>
-                 <div>Qtd: ${g.qtd.toFixed(0)} · Preço médio: €${precoMedio.toFixed(2)} · Preço atual: €${(precoAtual || 0).toFixed(2)}</div>
-               </div>
-               <div class="info-block" style="grid-column: span 2;">
-                 <label>Investimento & Lucro</label>
-                 <div>Investido: €${g.investido.toFixed(2)} · Lucro atual: <span class="${lucroAtual >= 0 ? "up" : "down"}">€${lucroAtual.toFixed(2)}</span></div>
-               </div>
-            </div>
+    const finalHtml = filtered.map(g => {
+       const info = infoMap.get(g.ticker) || {};
+       return renderAssetCard(g, info, fmtEUR, tp2NecessarioCalc(g));
+    }).join("");
 
-            ${(() => {
-              if (!(lucroAtual < 0 && precoAtual > 0)) return "";
-
-              const precoReentrada =
-                precoAtual / (1 + Math.abs(lucroAtual) / (g.qtd * precoAtual));
-              const dropNeeded = (1 - precoReentrada / precoAtual) * 100;
-
-              // Lógica de Probabilidade
-              let prob = "Média";
-              let color = "#EAB308"; // Amarelo
-
-              const isBear = stopLight === "🔴";
-              const isBull = stopLight === "🟢";
-              const isAboveSMA50 = d50 !== null && d50 > 0;
-
-              if (dropNeeded < 4 && (isBear || isAboveSMA50)) {
-                prob = "Alta";
-                color = "#22C55E"; // Verde
-              } else if (dropNeeded > 8 || isBull) {
-                prob = "Baixa";
-                color = "#EF4444"; // Vermelho
-              }
-
-              return `
-              <div class="recovery-box" style="margin-top:15px; background:rgba(239, 68, 68, 0.05); border:1px solid rgba(239, 68, 68, 0.2); padding:12px; border-radius:8px; font-size:0.85rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <div style="font-weight:bold; color:var(--danger-color, #ef4444);">
-                    <i class="fas fa-redo-alt"></i> Simulador de Recuperação
-                  </div>
-                  <div style="background:${color}22; color:${color}; padding:2px 8px; border-radius:12px; font-weight:bold; font-size:0.75rem; border:1px solid ${color}44;">
-                    Probabilidade: ${prob}
-                  </div>
-                </div>
-                <div class="muted" style="line-height:1.4;">
-                  Se vender agora para reentrar mais baixo, precisará de comprar a 
-                  <strong style="color:var(--text-color);">€${precoReentrada.toFixed(2)}</strong> 
-                  (<span class="down">-${dropNeeded.toFixed(1)}%</span>) 
-                  para recuperar o prejuízo de <strong>€${Math.abs(lucroAtual).toFixed(2)}</strong> quando o preço regressar aos <strong>€${precoAtual.toFixed(2)}</strong> atuais.
-                </div>
-                <!-- Novo: Investimento para Breakeven -->
-                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed rgba(239, 68, 68, 0.2);">
-                  <div style="font-weight:bold; margin-bottom:4px; color:var(--text-color);">Reforço para Breakeven:</div>
-                  ${(() => {
-                    const Io = g.investido;
-                    const Qo = g.qtd;
-                    const Pa = precoAtual;
-
-                    const calcInv = (targetPct) => {
-                      const Pb = Pa * (1 + targetPct / 100);
-                      // In = (Io - Pb * Qo) / (Pb/Pa - 1)
-                      const In = (Io - Pb * Qo) / (Pb / Pa - 1);
-                      return In > 0 ? In : 0;
-                    };
-
-                    const inv2 = calcInv(2);
-                    const inv5 = calcInv(5);
-
-                    let html = "";
-                    if (inv2 > 0) {
-                      html += `<div>• Investir <strong>€${inv2.toFixed(2)}</strong> para breakeven se o preço recuperar <strong>2%</strong> (até €${(Pa * 1.02).toFixed(2)})</div>`;
-                    }
-                    if (inv5 > 0 && inv5 < inv2) {
-                      html += `<div>• Investir <strong>€${inv5.toFixed(2)}</strong> para breakeven se o preço recuperar <strong>5%</strong> (até €${(Pa * 1.05).toFixed(2)})</div>`;
-                    }
-
-                    if (!html) {
-                      return `<div class="muted">A posição já está muito próxima do breakeven com a recuperação atual.</div>`;
-                    }
-                    return html;
-                  })()}
-                </div>
-              </div>`;
-            })()}
-
-            <div class="objective-box" style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px;">
-              <div class="obj-header">
-                <label>Objetivo (lucro): €${objetivo > 0 ? objetivo.toFixed(2) : "0,00"}</label>
-                <span class="pct">${pctText}</span>
-              </div>
-              ${barHTML}
-              <p class="muted" style="font-size:0.8rem; margin-top:5px;">
-                TP2 necessário: <strong>€${tp2Necessario ? tp2Necessario.toFixed(2) : "—"}</strong> ${pctToTP2Txt} · Estimativa: <strong>${estimativa}</strong>
-              </p>
-            </div>
-
-            <div class="metrics-box" style="margin-top:15px; background:var(--glass-bg); padding:10px; border-radius:8px; font-size:0.85rem;">
-               <div style="margin-bottom:8px;">
-                 ${stopLight} 
-                 ${g.setor.includes("ETF") && yPct === "—" ? "" : `Yield: <strong>${yPct}</strong> <small class="muted">(${yBadge || "—"})</small> • `}
-                 ${g.setor.includes("ETF") && y24Pct === "—" ? "" : `Yield 24m: <strong>${y24Pct}</strong> • `}
-                 ${g.setor.includes("ETF") && !isFiniteNum(pe) ? "" : `P/E: <strong>${isFiniteNum(pe) ? pe.toFixed(1) : "—"}</strong> <small class="muted">(${peBadge})</small> • `}
-                 Δ50d: <strong>${d50Txt}</strong> • 
-                 Δ200d: <strong>${d200Txt}</strong>
-               </div>
-               ${
-                 g.setor.includes("ETF") && divAnualEst === 0
-                   ? ""
-                   : `
-               <div class="muted">
-                 ${periodicidade} • paga em <strong>${mesPagamento}</strong> • 
-                 Div. unit.: <strong>€${divUnit.toFixed(2)}</strong> • 
-                 Div. anual est.: <strong>€${divAnualEst.toFixed(2)}</strong>
-               </div>
-               `
-               }
-            </div>
-
-            <div class="actions" style="margin-top:15px;">
-              <button class="btn ok sm" data-buy="${g.ticker}"><i class="fas fa-plus"></i> Comprar</button>
-              <button class="btn danger sm" data-sell="${g.ticker}"><i class="fas fa-minus"></i> Vender</button>
-              <button class="btn outline sm" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}"><i class="fas fa-edit"></i> Editar Último</button>
-            </div>
-          </div>
-        </div>`;
-      })
-      .join("");
-
-    cont.innerHTML = htmlList;
+    cont.innerHTML = finalHtml || `<div class="muted" style="text-align:center; padding: 40px;">Nenhum ativo corresponde aos filtros selecionados.</div>`;
+    
     wireQuickActions(gruposArr);
     wirePortfolioHelpModal();
   } catch (e) {
     console.error("Erro ao processar atividade:", e);
     cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
   }
+}
+
+function tp2NecessarioCalc(g) {
+  const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
+  const objetivo = g.objetivo > 0 ? g.objetivo : 0;
+  return objetivo > 0 && g.qtd !== 0 ? precoMedio + objetivo / (g.qtd || 1) : null;
+}
+
+function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
+  // Transferring the template logic here for final clean rendering
+  // (Assuming the logic above is already solid, I'll re-paste the refined template)
+  
+  // METRICS & BADGES
+  const precoAtual = g.precoAtual;
+  const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
+  const lucroAtual = g.lucroAtual || 0;
+  const pLossPct = g._pLossPct;
+  const estadoOp = g._estadoOp;
+  const tp2 = tp2Necessario || precoMedio * 1.15;
+  const s200 = g._sma200;
+  
+  const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
+  const r1Pct = isBelowSMA200 ? 5.0 : 2.5;
+  const r2Pct = isBelowSMA200 ? 8.5 : 4.5;
+  const r1Preco = (precoAtual || 0) * (1 - r1Pct/100);
+  const r2Preco = (precoAtual || 0) * (1 - r2Pct/100);
+  const tp1 = precoMedio * 1.05;
+  const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.90;
+  
+  const { taxa, periodLabel } = pickBestRate(info);
+  const estimativa = tp2 && precoAtual ? estimateTime(precoAtual, tp2, taxa, periodLabel) : "—";
+
+  const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
+  const d50Txt = isFiniteNum(g._sma50) && isFiniteNum(precoAtual) ? (((precoAtual - g._sma50) / g._sma50) * 100).toFixed(1) + "%" : "—";
+  const d200Txt = isFiniteNum(s200) && isFiniteNum(precoAtual) ? (((precoAtual - s200) / s200) * 100).toFixed(1) + "%" : "—";
+
+  let stateColor = "var(--muted-foreground)";
+  if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
+  if (estadoOp === "COMPRAR") stateColor = "#22c55e";
+  if (estadoOp === "REDUZIR") stateColor = "#eab308";
+  if (estadoOp === "VENDER") stateColor = "#ef4444";
+
+  return `
+    <div class="activity-item collapsed">
+      <div class="activity-header" data-toggle-card style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="background: ${stateColor}15; color: ${stateColor}; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; border: 1px solid ${stateColor}30;">
+            ${estadoOp}
+          </div>
+          <div>
+            <strong style="font-size: 1.1rem;">${g.ticker}</strong>
+            <div class="muted" style="font-size: 0.8rem;">${g.nome}</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-weight: 700; font-size: 1.1rem;">${fmtEUR.format(precoAtual || 0)}</div>
+          <div class="${lucroAtual >= 0 ? "up" : "down"}" style="font-size: 0.85rem; font-weight: 600;">
+            ${lucroAtual >= 0 ? "+" : ""}${fmtEUR.format(lucroAtual)} (${pLossPct.toFixed(1)}%)
+          </div>
+        </div>
+      </div>
+
+      <div class="activity-details" style="padding: 0 16px 16px 16px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; padding: 10px; background: var(--muted); border-radius: 8px; text-align: center;">
+          <div><label class="muted" style="font-size: 0.7rem; display: block;">Qtd</label><strong>${g.qtd.toFixed(1)}</strong></div>
+          <div><label class="muted" style="font-size: 0.7rem; display: block;">Médio</label><strong>${fmtEUR.format(precoMedio)}</strong></div>
+          <div><label class="muted" style="font-size: 0.7rem; display: block;">Investido</label><strong>${fmtEUR.format(g.investido)}</strong></div>
+          <div><label class="muted" style="font-size: 0.7rem; display: block;">Lucro</label><strong class="${lucroAtual >= 0 ? "up" : "down"}">${fmtEUR.format(lucroAtual)}</strong></div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--primary);">📝 Plano de Trade</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+              <label class="muted" style="font-size: 0.7rem; display: block;">Compra Base</label>
+              <strong style="font-size: 0.9rem;">${fmtEUR.format(precoMedio)}</strong>
+            </div>
+            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.05);">
+              <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 1 (-${r1Pct}%)</label>
+              <strong style="font-size: 0.9rem;">${fmtEUR.format(r1Preco)}</strong>
+            </div>
+            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.1);">
+              <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 2 (-${r2Pct}%)</label>
+              <strong style="font-size: 0.9rem;">${fmtEUR.format(r2Preco)}</strong>
+            </div>
+            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.05);">
+              <label class="muted" style="font-size: 0.7rem; display: block;">TP1 (+5%)</label>
+              <strong style="font-size: 0.9rem;">${fmtEUR.format(tp1)}</strong>
+            </div>
+            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.1);">
+              <label class="muted" style="font-size: 0.7rem; display: block;">TP2</label>
+              <strong style="font-size: 0.9rem;">${fmtEUR.format(tp2)}</strong>
+            </div>
+            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(239, 68, 68, 0.05);">
+              <label class="muted" style="font-size: 0.7rem; display: block;">Stop Técnico</label>
+              <strong style="font-size: 0.9rem;">${fmtEUR.format(stopTec)}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted-foreground); margin-bottom: 4px;">
+            <span>${fmtEUR.format(stopTec)} (STOP)</span>
+            <span>${fmtEUR.format(precoAtual || 0)} (PREÇO)</span>
+            <span>${fmtEUR.format(tp2)} (ALVO)</span>
+          </div>
+          <div style="height: 6px; background: #eee; border-radius: 10px; position: relative; overflow: hidden; display: flex;">
+            <div style="flex: 1; background: #ef4444; opacity: 0.5;"></div>
+            <div style="flex: 2; background: #eab308; opacity: 0.5;"></div>
+            <div style="flex: 3; background: #3b82f6; opacity: 0.5;"></div>
+            <div style="flex: 2; background: #22c55e; opacity: 0.5;"></div>
+          </div>
+        </div>
+
+        <div style="background: rgba(79, 70, 229, 0.03); border: 1px solid rgba(79, 70, 229, 0.1); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+           <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--primary);">🔄 Cenários de Reforço (Breakeven)</div>
+           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+             ${(() => {
+                const Io = g.investido;
+                const Qo = g.qtd;
+                const Pa = precoAtual || 0;
+                const genScenario = (label, invest, color) => {
+                  const newQtd = Qo + (invest / Pa);
+                  const newTotalInv = Io + invest;
+                  const newPM = newTotalInv / newQtd;
+                  const recNeeded = Pa > 0 ? ((newPM / Pa) - 1) * 100 : 0;
+                  return `
+                    <div style="text-align: center; padding: 8px; background: #fff; border-radius: 6px; border-bottom: 3px solid ${color};">
+                      <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">${label}</div>
+                      <div style="font-size: 0.85rem; margin: 4px 0;">+${fmtEUR.format(invest)}</div>
+                      <div style="font-size: 0.65rem; color: var(--muted-foreground);">Novo PM: ${fmtEUR.format(newPM)}</div>
+                      <div style="font-size: 0.75rem; font-weight: 700; color: ${color};">+${recNeeded.toFixed(1)}%</div>
+                    </div>`;
+                };
+                return genScenario("Leve", 250, "#eab308") + genScenario("Médio", 500, "#3b82f6") + genScenario("Forte", 1000, "#22c55e");
+             })()}
+           </div>
+        </div>
+
+        <!-- LEITURA TÉCNICA -->
+        <div style="display: grid; grid-template-columns: 2fr 1.5fr; gap: 12px; font-size: 0.8rem; margin-bottom: 16px;">
+          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
+            <div style="margin-bottom: 4px;">Yield: <strong>${yPct}</strong></div>
+            <div>P/E: <strong>${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</strong></div>
+            <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border);">
+              Rácio R/R: <strong>
+                ${(() => {
+                  const risk = (precoAtual || 0) - stopTec;
+                  const reward = tp2 - (precoAtual || 0);
+                  if (risk > 0 && reward > 0) return `1:${(reward / risk).toFixed(1)}`;
+                  return "—";
+                })()}
+              </strong>
+            </div>
+          </div>
+          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
+            <div style="margin-bottom: 4px;">ΔSMA50: <strong>${d50Txt}</strong></div>
+            <div>ΔSMA200: <strong>${d200Txt}</strong></div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn premium" data-buy="${g.ticker}" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}
+          </button>
+          <button class="btn outline" data-sell="${g.ticker}" style="flex: 1; margin-top: 0;">Vender</button>
+          <button class="btn ghost" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" style="flex: 0 0 40px; margin-top: 0; padding: 0;">
+            <i class="fas fa-edit"></i>
+          </button>
+        </div>
+      </div>
+    </div>`;
 }

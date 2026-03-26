@@ -102,6 +102,46 @@
     </div>
   </div>
 
+  <!-- 🔎 FILTROS OPERACIONAIS -->
+  <div class="card analysis-toolbar" style="margin-top: 12px; margin-bottom: 12px; padding: 12px;">
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <div class="filter-group">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Estado</label>
+        <select id="fltEstado" style="padding: 6px 10px; min-width: 120px;">
+          <option value="">Todos</option>
+          <option value="REFORÇAR">REFORÇAR</option>
+          <option value="COMPRAR">COMPRAR</option>
+          <option value="ESPERAR">ESPERAR</option>
+          <option value="REDUZIR">REDUZIR</option>
+          <option value="VENDER">VENDER</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Mercado</label>
+        <select id="fltMercado" style="padding: 6px 10px; min-width: 120px;">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Setor</label>
+        <select id="fltSetor" style="padding: 6px 10px; min-width: 120px;">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Ordenar por</label>
+        <select id="fltSort" style="padding: 6px 10px; min-width: 160px;">
+          <option value="ticker">Ticker (A-Z)</option>
+          <option value="queda" selected>Maior queda % (Drawdown)</option>
+          <option value="lucro">P/L € (Menores primeiro)</option>
+          <option value="yield">Maior Yield</option>
+          <option value="be_dist">Mais longe do Break-even</option>
+          <option value="tp_dist">Mais próximo do Alvo (TP)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
   <!-- 🔎 LISTA -->
   <div id="listaAtividades"></div>
 </div>
