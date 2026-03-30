@@ -487,7 +487,184 @@ function wireQuickActions(gruposArr) {
     if (vendaTot) vendaTot.checked = false;
     if (vendaTotWrap) vendaTotWrap.style.display = "none";
   }
-  close?.addEventListener("click", closeModal);
+  // --- Modal de Detalhes (Estratégico) ---
+  const detModal = $("#activityDetailModal");
+  const detClose = $("#activityDetailClose");
+
+  function openDetailModal(ticker) {
+    const g = byTickerGlobal.get(ticker);
+    if (!g) return;
+
+    const info = _lastAcoesSnap
+      ? Array.from(_lastAcoesSnap.docs)
+          .find((d) => d.data().ticker === ticker)
+          ?.data() || {}
+      : {};
+
+    const fmtEUR = new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    });
+    const tp2 = tp2NecessarioCalc(g) || g.custoMedio * 1.15;
+    const precoAtual = g.precoAtual || 0;
+    const precoMedio = g.custoMedio || 0;
+    const lucroAtual = g.lucroAtual || 0;
+    const pLossPct = g._pLossPct;
+    const estadoOp = g._estadoOp;
+    const s200 = g._sma200;
+
+    // Badge de estado
+    const detBadge = document.getElementById("detEstadoBadge");
+
+    // Cores refinadas para melhor contraste em modos claros e escuros
+    // (Verdes mais vivos, vermelhos mais profundos)
+    let stateColor = "var(--muted-foreground)";
+    if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
+    if (estadoOp === "COMPRAR") stateColor = "#22c55e";
+    if (estadoOp === "REDUZIR") stateColor = "#f59e0b"; // Amber 500 (melhor que eab308 no escuro)
+    if (estadoOp === "VENDER") stateColor = "#ef4444";
+
+    if (detBadge) {
+      detBadge.textContent = estadoOp;
+      detBadge.style.background = `${stateColor}18`; // Ligeiramente mais opacidade (18%)
+      detBadge.style.color = stateColor;
+      detBadge.style.borderColor = `${stateColor}35`;
+    }
+
+    $("#detTickerTitle").textContent = `${g.ticker} — ${g.nome}`;
+    $("#detQtd").textContent = g.qtd.toFixed(1);
+    $("#detMedio").textContent = fmtEUR.format(precoMedio);
+    $("#detInvestido").textContent = fmtEUR.format(g.investido);
+    const elLucro = $("#detLucro");
+    elLucro.textContent = fmtEUR.format(lucroAtual);
+    elLucro.className = lucroAtual >= 0 ? "up" : "down";
+
+    $("#detMetaValor").textContent =
+      `${fmtEUR.format(g.objetivo || 0)} de Lucro`;
+    $("#detPrecoAlvo").textContent = fmtEUR.format(tp2);
+
+    const metaStatus = $("#detMetaStatus");
+    metaStatus.innerHTML = `<span class="badge ${lucroAtual >= (g.objetivo || 0) ? "premium" : "outline"}" style="font-size: 0.7rem; font-weight: 800;">
+      ${lucroAtual >= (g.objetivo || 0) ? "META ATINGIDA ✅" : "EM PROGRESSO"}
+    </span>`;
+
+    // Plano de Trade
+    const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
+    const r1Pct = isBelowSMA200 ? 5.0 : 2.5;
+    const r2Pct = isBelowSMA200 ? 8.5 : 4.5;
+    const r1Preco = precoAtual * (1 - r1Pct / 100);
+    const r2Preco = precoAtual * (1 - r2Pct / 100);
+    const tp1 = precoMedio * 1.05;
+    const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
+
+    $("#detTradePlan").innerHTML = `
+      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+        <label class="muted" style="font-size: 0.7rem; display: block;">Compra Base</label>
+        <strong style="font-size: 0.9rem;">${fmtEUR.format(precoMedio)}</strong>
+      </div>
+      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.05);">
+        <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 1 (-${r1Pct}%)</label>
+        <strong style="font-size: 0.9rem;">${fmtEUR.format(r1Preco)}</strong>
+      </div>
+      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.1);">
+        <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 2 (-${r2Pct}%)</label>
+        <strong style="font-size: 0.9rem;">${fmtEUR.format(r2Preco)}</strong>
+      </div>
+      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.05);">
+        <label class="muted" style="font-size: 0.7rem; display: block;">TP1 (+5%)</label>
+        <strong style="font-size: 0.9rem;">${fmtEUR.format(tp1)}</strong>
+      </div>
+      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.1);">
+        <label class="muted" style="font-size: 0.7rem; display: block;">TP2</label>
+        <strong style="font-size: 0.9rem;">${fmtEUR.format(tp2)}</strong>
+      </div>
+      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(239, 68, 68, 0.05);">
+        <label class="muted" style="font-size: 0.7rem; display: block;">Stop Técnico</label>
+        <strong style="font-size: 0.9rem;">${fmtEUR.format(stopTec)}</strong>
+      </div>
+    `;
+
+    $("#detBarStop").textContent = `${fmtEUR.format(stopTec)} (STOP)`;
+    $("#detBarPreco").textContent = `${fmtEUR.format(precoAtual)} (PREÇO)`;
+    $("#detBarAlvo").textContent = `${fmtEUR.format(tp2)} (ALVO)`;
+
+    // Cenários
+    const Io = g.investido;
+    const Qo = g.qtd;
+    const Pa = precoAtual;
+    const genScenario = (label, invest, color) => {
+      const nQ = Qo + invest / Pa;
+      const nT = Io + invest;
+      const nPM = nT / nQ;
+      const rec = Pa > 0 ? (nPM / Pa - 1) * 100 : 0;
+      return `
+        <div style="text-align: center; padding: 8px; background: #ffffff; border-radius: 6px; border-bottom: 3px solid ${color}; border: 1px solid rgba(0,0,0,0.08);">
+          <div style="font-size: 0.6rem; font-weight: 700; text-transform: uppercase; color: #64748b;">${label}</div>
+          <div style="font-size: 0.82rem; margin: 4px 0; color: #111;">+${fmtEUR.format(invest)}</div>
+          <div style="font-size: 0.6rem; color: #94a3b8;">Novo PM: ${fmtEUR.format(nPM)}</div>
+          <div style="font-size: 0.75rem; font-weight: 700; color: ${color};">+${rec.toFixed(1)}%</div>
+        </div>`;
+    };
+    $("#detCenarios").innerHTML =
+      genScenario("Leve", 250, "#eab308") +
+      genScenario("Médio", 500, "#3b82f6") +
+      genScenario("Forte", 1000, "#22c55e");
+
+    const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
+    const formatSmaDelta = (sma, cur) => {
+      if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
+      const d = ((cur - sma) / sma) * 100;
+      return `${d.toFixed(1)}%`;
+    };
+
+    $("#detYield").textContent = yPct;
+    $("#detPE").textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
+
+    const risk = precoAtual - stopTec;
+    const reward = tp2 - precoAtual;
+    $("#detRR").textContent =
+      risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
+
+    $("#detSMA50").textContent = formatSmaDelta(g._sma50, precoAtual);
+    $("#detSMA200").textContent = formatSmaDelta(s200, precoAtual);
+
+    // Botões de ação no modal
+    const bBuy = $("#detBtnBuy");
+    const bSell = $("#detBtnSell");
+    const bEdit = $("#detBtnEdit");
+    const bLink = $("#detBtnLink");
+
+    bBuy.onclick = () => {
+      detModal.classList.add("hidden");
+      openActionModal("compra", g.ticker);
+    };
+    bSell.onclick = () => {
+      detModal.classList.add("hidden");
+      openActionModal("venda", g.ticker);
+    };
+    bEdit.onclick = () => {
+      detModal.classList.add("hidden");
+      // Simular click no botão de edit original para não duplicar lógica complexa
+      document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
+    };
+    bLink.onclick = () => {
+      if (g.link) window.open(g.link, "_blank");
+      else {
+        detModal.classList.add("hidden");
+        document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
+      }
+    };
+    bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
+    bBuy.textContent = estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar";
+
+    detModal.classList.remove("hidden");
+  }
+
+  detClose?.addEventListener("click", () => detModal.classList.add("hidden"));
+  detModal?.addEventListener("click", (e) => {
+    if (e.target.id === "activityDetailModal") detModal.classList.add("hidden");
+  });
+
   cancel?.addEventListener("click", closeModal);
   modal?.addEventListener("click", (e) => {
     if (e.target.id === "pfAddModal") closeModal();
@@ -501,13 +678,16 @@ function wireQuickActions(gruposArr) {
     if (sell) openActionModal("venda", sell.getAttribute("data-sell"));
   });
 
-  // Collapse per card
+  // Collapse per card (MODIFICADO para abrir o Modal de Detalhes)
   document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
     const t = e.target.closest?.("[data-toggle-card]");
     if (!t) return;
-    const card = t.closest(".activity-item");
-    if (!card) return;
-    card.classList.toggle("collapsed");
+
+    // Em vez de toggle class "collapsed", abrimos o modal
+    const ticker = t.getAttribute("data-ticker");
+    if (ticker) {
+      openDetailModal(ticker);
+    }
   });
 
   // Edit button
@@ -639,13 +819,21 @@ function wireQuickActions(gruposArr) {
         });
 
         // 2. (NOVO) Se o objetivo ou link mudou, propagar para TODOS os registos deste ticker
-        if ((Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) || lnk !== originalData.linkExterno) {
-          const q = query(collection(db, "ativos"), where("ticker", "==", ticker));
+        if (
+          (Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) ||
+          lnk !== originalData.linkExterno
+        ) {
+          const q = query(
+            collection(db, "ativos"),
+            where("ticker", "==", ticker),
+          );
           const snapAll = await getDocs(q);
-          const updates = snapAll.docs.map(d => updateDoc(d.ref, { 
-            objetivoFinanceiro: obj,
-            linkExterno: lnk
-          }));
+          const updates = snapAll.docs.map((d) =>
+            updateDoc(d.ref, {
+              objetivoFinanceiro: obj,
+              linkExterno: lnk,
+            }),
+          );
           await Promise.all(updates);
         }
       } else {
@@ -702,12 +890,18 @@ function wireQuickActions(gruposArr) {
         // (OPCIONAL) Propagar objetivo/link para todos os outros registos deste ticker
         // Isto garante que se mudas o link numa nova compra, ele reflete-se no plano de trade global
         if (obj > 0 || lnk) {
-          const q = query(collection(db, "ativos"), where("ticker", "==", ticker));
+          const q = query(
+            collection(db, "ativos"),
+            where("ticker", "==", ticker),
+          );
           const snapAll = await getDocs(q);
-          const upds = snapAll.docs.map(d => updateDoc(d.ref, { 
-             objetivoFinanceiro: obj > 0 ? obj : (d.data().objetivoFinanceiro || 0),
-             linkExterno: lnk || (d.data().linkExterno || "")
-          }));
+          const upds = snapAll.docs.map((d) =>
+            updateDoc(d.ref, {
+              objetivoFinanceiro:
+                obj > 0 ? obj : d.data().objetivoFinanceiro || 0,
+              linkExterno: lnk || d.data().linkExterno || "",
+            }),
+          );
           await Promise.all(upds);
         }
       }
@@ -795,13 +989,13 @@ export async function initScreen() {
   const fSetor = document.getElementById("fltSetor");
   const fSort = document.getElementById("fltSort");
 
-  [fEstado, fMercado, fSetor, fSort].forEach(el => {
+  [fEstado, fMercado, fSetor, fSort].forEach((el) => {
     el?.addEventListener("change", () => {
       fltState = {
         estado: fEstado.value,
         mercado: fMercado.value,
         setor: fSetor.value,
-        sort: fSort.value
+        sort: fSort.value,
       };
       handleUpdate();
     });
@@ -1087,21 +1281,29 @@ async function processAndRender(snap, aSnap) {
     renderDividendoCalendario12m(eurosMes);
 
     // 3.1) Pré-cálculo de métricas operacionais para filtros/ordenação
-    gruposArr.forEach(g => {
+    gruposArr.forEach((g) => {
       const precoAtual = g.precoAtual || 0;
       const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
       const posValNow = g.qtd * precoAtual;
       const pLoss = posValNow - g.investido;
       const pLossPct = g.investido > 0 ? (pLoss / g.investido) * 100 : 0;
       const s200 = g._sma200;
-      const isCrypto = (g.mercado === "Criptomoedas" || g.setor === "Criptomoedas");
-      
+      const isCrypto =
+        g.mercado === "Criptomoedas" || g.setor === "Criptomoedas";
+
       // Validação de sanidade para SMA (evita dados lixo tipo 0.01 vs preço 70)
-      const isSmaValid = s200 && precoAtual > 0 && (s200 > (precoAtual * 0.01) && s200 < (precoAtual * 100));
+      const isSmaValid =
+        s200 &&
+        precoAtual > 0 &&
+        s200 > precoAtual * 0.01 &&
+        s200 < precoAtual * 100;
       const isBelowSMA200 = isSmaValid && precoAtual < s200;
-      
+
       const lucroAtual = g.lucroAtual || 0;
-      const isBull = isSmaValid && precoAtual > s200 && Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
+      const isBull =
+        isSmaValid &&
+        precoAtual > s200 &&
+        Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
 
       let estadoOp = "ESPERAR";
       // Regra para Crypto: mais tolerância na SMA (pode ignorar se SMA for lixo) e threshold de queda maior (-7%)
@@ -1110,7 +1312,8 @@ async function processAndRender(snap, aSnap) {
         else if (pLossPct > 15) estadoOp = "REDUZIR";
       } else {
         // Regra para Ações/ETFs: -4% e abaixo da SMA200 (se válida)
-        if (pLossPct < -4 && (!isSmaValid || isBelowSMA200)) estadoOp = "REFORÇAR";
+        if (pLossPct < -4 && (!isSmaValid || isBelowSMA200))
+          estadoOp = "REFORÇAR";
         else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
         else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
         else if (pLossPct > 25) estadoOp = "VENDER";
@@ -1120,30 +1323,41 @@ async function processAndRender(snap, aSnap) {
       g._pLossPct = pLossPct;
       g._distBE = Math.abs(pLossPct);
       const tp2 = tp2NecessarioCalc(g) || precoMedio * 1.15;
-      g._distTP = precoAtual && tp2 ? Math.abs((tp2 / precoAtual - 1) * 100) : 999;
+      g._distTP =
+        precoAtual && tp2 ? Math.abs((tp2 / precoAtual - 1) * 100) : 999;
     });
 
     // 4) FILTRAGEM E ORDENAÇÃO
-    let filtered = gruposArr.filter(g => Number.isFinite(g.qtd) && g.qtd > 0);
-    
+    let filtered = gruposArr.filter((g) => Number.isFinite(g.qtd) && g.qtd > 0);
+
     // Popular dropdowns de Mercado e Setor (apenas se vazios)
     const fMercado = document.getElementById("fltMercado");
     const fSetor = document.getElementById("fltSetor");
-    if (fMercado && (!fMercado.options.length || fMercado.options.length <= 1)) {
-      const markets = [...new Set(gruposArr.map(g => g.mercado).filter(Boolean))].sort();
-      markets.forEach(m => fMercado.add(new Option(m, m)));
-      const sectors = [...new Set(gruposArr.map(g => g.setor).filter(Boolean))].sort();
-      sectors.forEach(s => fSetor.add(new Option(s, s)));
+    if (
+      fMercado &&
+      (!fMercado.options.length || fMercado.options.length <= 1)
+    ) {
+      const markets = [
+        ...new Set(gruposArr.map((g) => g.mercado).filter(Boolean)),
+      ].sort();
+      markets.forEach((m) => fMercado.add(new Option(m, m)));
+      const sectors = [
+        ...new Set(gruposArr.map((g) => g.setor).filter(Boolean)),
+      ].sort();
+      sectors.forEach((s) => fSetor.add(new Option(s, s)));
     }
 
     // Aplicar Filtros
-    if (fltState.mercado) filtered = filtered.filter(g => g.mercado === fltState.mercado);
-    if (fltState.setor) filtered = filtered.filter(g => g.setor === fltState.setor);
-    if (fltState.estado) filtered = filtered.filter(g => g._estadoOp === fltState.estado);
+    if (fltState.mercado)
+      filtered = filtered.filter((g) => g.mercado === fltState.mercado);
+    if (fltState.setor)
+      filtered = filtered.filter((g) => g.setor === fltState.setor);
+    if (fltState.estado)
+      filtered = filtered.filter((g) => g._estadoOp === fltState.estado);
 
     // Aplicar Ordenação
     filtered.sort((a, b) => {
-      if (fltState.sort === "queda") return a._pLossPct - b._pLossPct; 
+      if (fltState.sort === "queda") return a._pLossPct - b._pLossPct;
       if (fltState.sort === "lucro") return a.lucroAtual - b.lucroAtual;
       if (fltState.sort === "yield") return (b._yCur || 0) - (a._yCur || 0);
       if (fltState.sort === "be_dist") return b._distBE - a._distBE;
@@ -1151,13 +1365,17 @@ async function processAndRender(snap, aSnap) {
       return a.ticker.localeCompare(b.ticker);
     });
 
-    const finalHtml = filtered.map(g => {
-       const info = infoMap.get(g.ticker) || {};
-       return renderAssetCard(g, info, fmtEUR, tp2NecessarioCalc(g));
-    }).join("");
+    const finalHtml = filtered
+      .map((g) => {
+        const info = infoMap.get(g.ticker) || {};
+        return renderAssetCard(g, info, fmtEUR, tp2NecessarioCalc(g));
+      })
+      .join("");
 
-    cont.innerHTML = finalHtml || `<div class="muted" style="text-align:center; padding: 40px;">Nenhum ativo corresponde aos filtros selecionados.</div>`;
-    
+    cont.innerHTML =
+      finalHtml ||
+      `<div class="muted" style="text-align:center; padding: 40px;">Nenhum ativo corresponde aos filtros selecionados.</div>`;
+
     wireQuickActions(gruposArr);
     wirePortfolioHelpModal();
   } catch (e) {
@@ -1169,7 +1387,9 @@ async function processAndRender(snap, aSnap) {
 function tp2NecessarioCalc(g) {
   const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
   const objetivo = g.objetivo > 0 ? g.objetivo : 0;
-  return objetivo > 0 && g.qtd !== 0 ? precoMedio + objetivo / (g.qtd || 1) : null;
+  return objetivo > 0 && g.qtd !== 0
+    ? precoMedio + objetivo / (g.qtd || 1)
+    : null;
 }
 
 function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
@@ -1181,20 +1401,21 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
   const estadoOp = g._estadoOp;
   const tp2 = tp2Necessario || precoMedio * 1.15;
   const s200 = g._sma200;
-  
+
   const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
   const r1Pct = isBelowSMA200 ? 5.0 : 2.5;
   const r2Pct = isBelowSMA200 ? 8.5 : 4.5;
-  const r1Preco = (precoAtual || 0) * (1 - r1Pct/100);
-  const r2Preco = (precoAtual || 0) * (1 - r2Pct/100);
+  const r1Preco = (precoAtual || 0) * (1 - r1Pct / 100);
+  const r2Preco = (precoAtual || 0) * (1 - r2Pct / 100);
   const tp1 = precoMedio * 1.05;
-  const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.90;
-  
+  const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
+
   const { taxa, periodLabel } = pickBestRate(info);
-  const estimativa = tp2 && precoAtual ? estimateTime(precoAtual, tp2, taxa, periodLabel) : "—";
+  const estimativa =
+    tp2 && precoAtual ? estimateTime(precoAtual, tp2, taxa, periodLabel) : "—";
 
   const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-  
+
   // Formatação de Deltas com proteção contra dados lixo (> 1000%)
   const formatSmaDelta = (sma, cur) => {
     if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
@@ -1209,13 +1430,13 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
   let stateColor = "var(--muted-foreground)";
   if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
   if (estadoOp === "COMPRAR") stateColor = "#22c55e";
-  if (estadoOp === "REDUZIR") stateColor = "#eab308";
+  if (estadoOp === "REDUZIR") stateColor = "#f59e0b";
   if (estadoOp === "VENDER") stateColor = "#ef4444";
 
   return `
-    <div class="activity-item collapsed">
-      <div class="activity-header" data-toggle-card style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
+    <div class="activity-item no-expand">
+      <div class="activity-header" data-toggle-card data-ticker="${g.ticker}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 12px; pointer-events: none;">
           <div style="background: ${stateColor}15; color: ${stateColor}; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; border: 1px solid ${stateColor}30;">
             ${estadoOp}
           </div>
@@ -1224,147 +1445,15 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
             <div class="muted" style="font-size: 0.8rem;">${g.nome}</div>
           </div>
         </div>
-        <div style="text-align: right;">
+        <div style="text-align: right; pointer-events: none;">
           <div style="font-weight: 700; font-size: 1.1rem;">${fmtEUR.format(precoAtual || 0)}</div>
           <div class="${lucroAtual >= 0 ? "up" : "down"}" style="font-size: 0.85rem; font-weight: 600;">
             ${lucroAtual >= 0 ? "+" : ""}${fmtEUR.format(lucroAtual)} (${pLossPct.toFixed(1)}%)
           </div>
         </div>
       </div>
-
-      <div class="activity-details" style="padding: 0 16px 16px 16px;">
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; padding: 10px; background: var(--muted); border-radius: 8px; text-align: center;">
-          <div><label class="muted" style="font-size: 0.7rem; display: block;">Qtd</label><strong>${g.qtd.toFixed(1)}</strong></div>
-          <div><label class="muted" style="font-size: 0.7rem; display: block;">Médio</label><strong>${fmtEUR.format(precoMedio)}</strong></div>
-          <div><label class="muted" style="font-size: 0.7rem; display: block;">Investido</label><strong>${fmtEUR.format(g.investido)}</strong></div>
-          <div><label class="muted" style="font-size: 0.7rem; display: block;">Lucro</label><strong class="${lucroAtual >= 0 ? "up" : "down"}">${fmtEUR.format(lucroAtual)}</strong></div>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-bullseye"></i> 🎯 Meta do Ativo: <span style="color: var(--foreground);">${fmtEUR.format(g.objetivo || 0)} de Lucro</span>
-          </div>
-          <div style="background: rgba(var(--primary-rgb, 79, 70, 229), 0.05); padding: 12px; border-radius: 10px; border: 1px dashed var(--primary); display: flex; justify-content: space-between; align-items: center;">
-            <div style="flex: 1;">
-              <label class="muted" style="font-size: 0.75rem; display: block; margin-bottom: 2px;">Preço Alvo p/ Objetivo (TP)</label>
-              <strong style="font-size: 1.15rem; color: var(--success-color, #22c55e);">${fmtEUR.format(tp2)}</strong>
-            </div>
-            <div style="text-align: right;">
-              <span class="badge ${lucroAtual >= (g.objetivo || 0) ? "premium" : "outline"}" style="font-size: 0.7rem; font-weight: 800;">
-                ${lucroAtual >= (g.objetivo || 0) ? "META ATINGIDA ✅" : "EM PROGRESSO"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-bottom: 16px;">
-          <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--primary);">📝 Plano de Trade (Zonas)</div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-              <label class="muted" style="font-size: 0.7rem; display: block;">Compra Base</label>
-              <strong style="font-size: 0.9rem;">${fmtEUR.format(precoMedio)}</strong>
-            </div>
-            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.05);">
-              <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 1 (-${r1Pct}%)</label>
-              <strong style="font-size: 0.9rem;">${fmtEUR.format(r1Preco)}</strong>
-            </div>
-            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.1);">
-              <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 2 (-${r2Pct}%)</label>
-              <strong style="font-size: 0.9rem;">${fmtEUR.format(r2Preco)}</strong>
-            </div>
-            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.05);">
-              <label class="muted" style="font-size: 0.7rem; display: block;">TP1 (+5%)</label>
-              <strong style="font-size: 0.9rem;">${fmtEUR.format(tp1)}</strong>
-            </div>
-            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.1);">
-              <label class="muted" style="font-size: 0.7rem; display: block;">TP2</label>
-              <strong style="font-size: 0.9rem;">${fmtEUR.format(tp2)}</strong>
-            </div>
-            <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(239, 68, 68, 0.05);">
-              <label class="muted" style="font-size: 0.7rem; display: block;">Stop Técnico</label>
-              <strong style="font-size: 0.9rem;">${fmtEUR.format(stopTec)}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted-foreground); margin-bottom: 4px;">
-            <span>${fmtEUR.format(stopTec)} (STOP)</span>
-            <span>${fmtEUR.format(precoAtual || 0)} (PREÇO)</span>
-            <span>${fmtEUR.format(tp2)} (ALVO)</span>
-          </div>
-          <div style="height: 6px; background: #eee; border-radius: 10px; position: relative; overflow: hidden; display: flex;">
-            <div style="flex: 1; background: #ef4444; opacity: 0.5;"></div>
-            <div style="flex: 2; background: #eab308; opacity: 0.5;"></div>
-            <div style="flex: 3; background: #3b82f6; opacity: 0.5;"></div>
-            <div style="flex: 2; background: #22c55e; opacity: 0.5;"></div>
-          </div>
-        </div>
-
-        <div style="background: rgba(79, 70, 229, 0.03); border: 1px solid rgba(79, 70, 229, 0.1); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
-           <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; color: var(--primary);">🔄 Cenários de Reforço (Breakeven)</div>
-           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-             ${(() => {
-                const Io = g.investido;
-                const Qo = g.qtd;
-                const Pa = precoAtual || 0;
-                const genScenario = (label, invest, color) => {
-                  const newQtd = Qo + (invest / Pa);
-                  const newTotalInv = Io + invest;
-                  const newPM = newTotalInv / newQtd;
-                  const recNeeded = Pa > 0 ? ((newPM / Pa) - 1) * 100 : 0;
-                  return `
-                    <div style="text-align: center; padding: 8px; background: #fff; border-radius: 6px; border-bottom: 3px solid ${color};">
-                      <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">${label}</div>
-                      <div style="font-size: 0.85rem; margin: 4px 0;">+${fmtEUR.format(invest)}</div>
-                      <div style="font-size: 0.65rem; color: var(--muted-foreground);">Novo PM: ${fmtEUR.format(newPM)}</div>
-                      <div style="font-size: 0.75rem; font-weight: 700; color: ${color};">+${recNeeded.toFixed(1)}%</div>
-                    </div>`;
-                };
-                return genScenario("Leve", 250, "#eab308") + genScenario("Médio", 500, "#3b82f6") + genScenario("Forte", 1000, "#22c55e");
-             })()}
-           </div>
-        </div>
-
-        <!-- LEITURA TÉCNICA -->
-        <div style="display: grid; grid-template-columns: 2fr 1.5fr; gap: 12px; font-size: 0.8rem; margin-bottom: 16px;">
-          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
-            <div style="margin-bottom: 4px;">Yield: <strong>${yPct}</strong></div>
-            <div>P/E: <strong>${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</strong></div>
-            <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border);">
-              Rácio R/R: <strong>
-                ${(() => {
-                  const risk = (precoAtual || 0) - stopTec;
-                  const reward = tp2 - (precoAtual || 0);
-                  if (risk > 0 && reward > 0) return `1:${(reward / risk).toFixed(1)}`;
-                  return "—";
-                })()}
-              </strong>
-            </div>
-          </div>
-          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
-            <div style="margin-bottom: 4px;">ΔSMA50: <strong>${d50Txt}</strong></div>
-            <div>ΔSMA200: <strong>${d200Txt}</strong></div>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 8px;">
-          <button class="btn premium" data-buy="${g.ticker}" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}
-          </button>
-          
-          <button class="btn ghost ${g.link ? "" : "muted"}" 
-                  onclick="${g.link ? `window.open('${g.link}', '_blank')` : `document.querySelector('[data-edit="${g.lastDocId}"]').click()`}" 
-                  style="flex: 0 0 40px; margin-top: 0; padding: 0;" 
-                  title="${g.link ? 'Abrir link' : 'Adicionar link'}">
-            <i class="fas fa-link"></i>
-          </button>
-
-          <button class="btn outline" data-sell="${g.ticker}" style="flex: 1; margin-top: 0;">Vender</button>
-          <button class="btn ghost" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" style="flex: 0 0 40px; margin-top: 0; padding: 0;">
-            <i class="fas fa-edit"></i>
-          </button>
-        </div>
-      </div>
+      
+      <!-- Detalhes inline removidos (agora abrem via modal no header acima) -->
+      <div class="activity-details" style="display:none"></div>
     </div>`;
 }

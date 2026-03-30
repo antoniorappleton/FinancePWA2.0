@@ -1,10 +1,28 @@
 <div class="page" data-screen-title="Portfólio">
-  <div class="dashboard-header" style="display:flex; justify-content:space-between; align-items:center;">
+  <div
+    class="dashboard-header"
+    style="display: flex; justify-content: space-between; align-items: center"
+  >
     <div>
       <p class="subtitle">Todos os ativos em carteira</p>
     </div>
-    <button id="btnPrtHelp" class="icon-btn" title="Ajuda"
-      style="background:var(--glass-bg); padding:8px; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:var(--text-color); border:1px solid var(--border);">
+    <button
+      id="btnPrtHelp"
+      class="icon-btn"
+      title="Ajuda"
+      style="
+        background: var(--glass-bg);
+        padding: 8px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-color);
+        border: 1px solid var(--border);
+      "
+    >
       <i class="fas fa-question-circle"></i>
     </button>
   </div>
@@ -103,11 +121,16 @@
   </div>
 
   <!-- 🔎 FILTROS OPERACIONAIS -->
-  <div class="card analysis-toolbar" style="margin-top: 12px; margin-bottom: 12px; padding: 12px;">
-    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+  <div
+    class="card analysis-toolbar"
+    style="margin-top: 12px; margin-bottom: 12px; padding: 12px"
+  >
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Estado</label>
-        <select id="fltEstado" style="padding: 6px 10px; min-width: 120px;">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
+          >Estado</label
+        >
+        <select id="fltEstado" style="padding: 6px 10px; min-width: 120px">
           <option value="">Todos</option>
           <option value="REFORÇAR">REFORÇAR</option>
           <option value="COMPRAR">COMPRAR</option>
@@ -117,20 +140,26 @@
         </select>
       </div>
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Mercado</label>
-        <select id="fltMercado" style="padding: 6px 10px; min-width: 120px;">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
+          >Mercado</label
+        >
+        <select id="fltMercado" style="padding: 6px 10px; min-width: 120px">
           <option value="">Todos</option>
         </select>
       </div>
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Setor</label>
-        <select id="fltSetor" style="padding: 6px 10px; min-width: 120px;">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
+          >Setor</label
+        >
+        <select id="fltSetor" style="padding: 6px 10px; min-width: 120px">
           <option value="">Todos</option>
         </select>
       </div>
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground);">Ordenar por</label>
-        <select id="fltSort" style="padding: 6px 10px; min-width: 160px;">
+        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
+          >Ordenar por</label
+        >
+        <select id="fltSort" style="padding: 6px 10px; min-width: 160px">
           <option value="ticker">Ticker (A-Z)</option>
           <option value="queda" selected>Maior queda % (Drawdown)</option>
           <option value="lucro">P/L € (Menores primeiro)</option>
@@ -161,7 +190,7 @@
   }
 
   .modal.hidden {
-    display: none
+    display: none;
   }
 
   .modal {
@@ -170,12 +199,301 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, .4);
-    z-index: 9999
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 9999;
   }
 </style>
 
-<!-- ======== Modal rápido para Comprar/Vender e Editar ======== -->
+<!-- ======== Modal de Detalhes do Ativo (Estratégico) ======== -->
+<div id="activityDetailModal" class="modal hidden">
+  <div class="modal-dialog activity-detail-dialog">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div
+          id="detEstadoBadge"
+          style="
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.75rem;
+            border: 1px solid;
+          "
+        ></div>
+        <h3 id="detTickerTitle" style="margin: 0"></h3>
+      </div>
+      <button id="activityDetailClose" class="icon-btn" title="Fechar">
+        ✖
+      </button>
+    </div>
+
+    <div class="modal-body help-body" style="padding: 16px">
+      <!-- KPI Grid -->
+      <div
+        id="detKpiGrid"
+        style="
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          margin-bottom: 20px;
+          padding: 12px;
+          background: #f1f5f9;
+          border-radius: 10px;
+          text-align: center;
+        "
+      >
+        <div>
+          <label class="muted" style="font-size: 0.7rem; display: block"
+            >Qtd</label
+          ><strong id="detQtd">0</strong>
+        </div>
+        <div>
+          <label class="muted" style="font-size: 0.7rem; display: block"
+            >Médio</label
+          ><strong id="detMedio">0</strong>
+        </div>
+        <div>
+          <label class="muted" style="font-size: 0.7rem; display: block"
+            >Investido</label
+          ><strong id="detInvestido">0</strong>
+        </div>
+        <div>
+          <label class="muted" style="font-size: 0.7rem; display: block"
+            >Lucro</label
+          ><strong id="detLucro">0</strong>
+        </div>
+      </div>
+
+      <!-- Meta Section -->
+      <div style="margin-bottom: 20px">
+        <div
+          style="
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          "
+        >
+          <i class="fas fa-bullseye"></i> 🎯 Meta do Ativo:
+          <span id="detMetaValor" style="color: var(--foreground)"></span>
+        </div>
+        <div
+          style="
+            background: rgba(79, 70, 229, 0.05);
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px dashed var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <div style="flex: 1">
+            <label
+              class="muted"
+              style="font-size: 0.75rem; display: block; margin-bottom: 2px"
+              >Preço Alvo p/ Objetivo (TP)</label
+            >
+            <strong
+              id="detPrecoAlvo"
+              style="font-size: 1.2rem; color: #22c55e"
+            ></strong>
+          </div>
+          <div id="detMetaStatus" style="text-align: right"></div>
+        </div>
+      </div>
+
+      <!-- Trade Plan -->
+      <div style="margin-bottom: 20px">
+        <div
+          style="
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+          "
+        >
+          📝 Plano de Trade (Zonas)
+        </div>
+        <div
+          id="detTradePlan"
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+          "
+        ></div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div style="margin-bottom: 24px">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--muted-foreground);
+            margin-bottom: 6px;
+          "
+        >
+          <span id="detBarStop"></span>
+          <span id="detBarPreco"></span>
+          <span id="detBarAlvo"></span>
+        </div>
+        <div
+          style="
+            height: 8px;
+            background: var(--muted);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+          "
+        >
+          <div style="flex: 1; background: #ef4444; opacity: 0.5"></div>
+          <div style="flex: 2; background: #eab308; opacity: 0.5"></div>
+          <div style="flex: 3; background: #3b82f6; opacity: 0.5"></div>
+          <div style="flex: 2; background: #22c55e; opacity: 0.5"></div>
+        </div>
+      </div>
+
+      <!-- Scenarios -->
+      <div
+        style="
+          background: rgba(79, 70, 229, 0.03);
+          border: 1px solid rgba(79, 70, 229, 0.1);
+          border-radius: 12px;
+          padding: 14px;
+          margin-bottom: 20px;
+        "
+      >
+        <div
+          style="
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            color: var(--primary);
+          "
+        >
+          🔄 Cenários de Reforço (Breakeven)
+        </div>
+        <div
+          id="detCenarios"
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+          "
+        ></div>
+      </div>
+
+      <!-- Technical Data -->
+      <div
+        style="
+          display: grid;
+          grid-template-columns: 2fr 1.5fr;
+          gap: 12px;
+          font-size: 0.85rem;
+        "
+      >
+        <div
+          class="card"
+          style="
+            padding: 12px;
+            box-shadow: none;
+            border: 1px solid var(--border);
+          "
+        >
+          <div style="margin-bottom: 6px">
+            Yield: <strong id="detYield"></strong>
+          </div>
+          <div style="margin-bottom: 6px">
+            P/E: <strong id="detPE"></strong>
+          </div>
+          <div style="padding-top: 6px; border-top: 1px dashed var(--border)">
+            Rácio R/R: <strong id="detRR"></strong>
+          </div>
+        </div>
+        <div
+          class="card"
+          style="
+            padding: 12px;
+            box-shadow: none;
+            border: 1px solid var(--border);
+          "
+        >
+          <div style="margin-bottom: 6px">
+            ΔSMA50: <strong id="detSMA50"></strong>
+          </div>
+          <div>ΔSMA200: <strong id="detSMA200"></strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal-footer"
+      style="
+        padding: 16px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 10px;
+      "
+    >
+      <button
+        id="detBtnBuy"
+        class="btn premium"
+        style="
+          flex: 2;
+          margin-top: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        "
+      >
+        <i class="fas fa-plus-circle"></i> Comprar
+      </button>
+      <button
+        id="detBtnLink"
+        class="btn ghost"
+        style="
+          flex: 0 0 44px;
+          margin-top: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "
+      >
+        <i class="fas fa-link"></i>
+      </button>
+      <button
+        id="detBtnSell"
+        class="btn outline"
+        style="flex: 1; margin-top: 0"
+      >
+        Vender
+      </button>
+      <button
+        id="detBtnEdit"
+        class="btn ghost"
+        style="
+          flex: 0 0 44px;
+          margin-top: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "
+      >
+        <i class="fas fa-edit"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal QUICK BUY/SELL (mantém o teu modal existente) -->
+
 <div id="pfAddModal" class="modal hidden">
   <div class="modal-dialog">
     <div class="modal-header">
@@ -211,9 +529,9 @@
         <label>Link Externo (URL)</label>
         <input id="pfLink" type="url" placeholder="https://..." />
 
-        <div id="pfVendaTotalWrap" style="display:none; margin-top:8px">
+        <div id="pfVendaTotalWrap" style="display: none; margin-top: 8px">
           <input type="hidden" id="pfPosicaoAtual" value="0" />
-          <label style="display:flex; gap:.5rem; align-items:center">
+          <label style="display: flex; gap: 0.5rem; align-items: center">
             <input id="pfVendaTotal" type="checkbox" />
             Vender posição (fechar posição)
           </label>
@@ -221,7 +539,9 @@
       </div>
       <div class="modal-actions">
         <button type="button" id="pfAddCancel" class="btn">Cancelar</button>
-        <button type="submit" id="pfAddSave" class="btn primary">Guardar</button>
+        <button type="submit" id="pfAddSave" class="btn primary">
+          Guardar
+        </button>
       </div>
     </form>
   </div>
@@ -240,35 +560,72 @@
 
     <!-- corpo rolável -->
     <div class="help-body">
-      <div class="page" style="padding:14px">
-        <div class="muted" style="display:grid; gap:.6rem; line-height:1.4">
-          <div><strong>Valor Total Investido</strong> — soma de todo o capital investido nas posições ativas.</div>
-          <div><strong>Rendimento anual esperado</strong> — estimativa: Σ(qtd × dividendo × pagamentos/ano) por ativo,
-            de acordo com a periodicidade.</div>
-          <div><strong>Retorno global (P/L%)</strong> — (Avaliação atual − Investido) / Investido.</div>
-          <div><strong>Exposição acima da SMA200</strong> — percentagem do portefólio (ponderada pelo investidor) com
-            preço acima da média móvel 200.</div>
+      <div class="page" style="padding: 14px">
+        <div class="muted" style="display: grid; gap: 0.6rem; line-height: 1.4">
+          <div>
+            <strong>Valor Total Investido</strong> — soma de todo o capital
+            investido nas posições ativas.
+          </div>
+          <div>
+            <strong>Rendimento anual esperado</strong> — estimativa: Σ(qtd ×
+            dividendo × pagamentos/ano) por ativo, de acordo com a
+            periodicidade.
+          </div>
+          <div>
+            <strong>Retorno global (P/L%)</strong> — (Avaliação atual −
+            Investido) / Investido.
+          </div>
+          <div>
+            <strong>Exposição acima da SMA200</strong> — percentagem do
+            portefólio (ponderada pelo investidor) com preço acima da média
+            móvel 200.
+          </div>
 
-          <hr>
+          <hr />
 
-          <div><strong>Distribuição por Setores / Mercado</strong> — donuts com o peso investido por categoria.</div>
-          <div><strong>Top 5 por Investido</strong> — barras com as maiores posições (investido e lucro atual).</div>
-          <div><strong>Top 5 por Yield</strong> — barras horizontais ordenadas por dividend yield atual.</div>
-          <div><strong>Evolução</strong> — linha “Investido acumulado” vs “Avaliação atual”.</div>
-          <div><strong>Calendário de Dividendos (12m)</strong> — soma estimada de € por mês, com base no mês típico e
-            periodicidade.</div>
+          <div>
+            <strong>Distribuição por Setores / Mercado</strong> — donuts com o
+            peso investido por categoria.
+          </div>
+          <div>
+            <strong>Top 5 por Investido</strong> — barras com as maiores
+            posições (investido e lucro atual).
+          </div>
+          <div>
+            <strong>Top 5 por Yield</strong> — barras horizontais ordenadas por
+            dividend yield atual.
+          </div>
+          <div>
+            <strong>Evolução</strong> — linha “Investido acumulado” vs
+            “Avaliação atual”.
+          </div>
+          <div>
+            <strong>Calendário de Dividendos (12m)</strong> — soma estimada de €
+            por mês, com base no mês típico e periodicidade.
+          </div>
 
-          <hr>
+          <hr />
 
-          <div><strong>Badges por ativo</strong>:
-            <ul style="margin:.3rem 0 0 1.1rem">
-              <li><em>Yield</em> (dividendo/valorStock) e <em>Yield 24m</em> (média 24m) → indica se está ↑ acima ou ↓
-                abaixo da média.</li>
-              <li><em>P/E</em> (faixas: &lt;15 barato, 15–25 justo, &gt;25 caro).</li>
+          <div>
+            <strong>Badges por ativo</strong>:
+            <ul style="margin: 0.3rem 0 0 1.1rem">
+              <li>
+                <em>Yield</em> (dividendo/valorStock) e
+                <em>Yield 24m</em> (média 24m) → indica se está ↑ acima ou ↓
+                abaixo da média.
+              </li>
+              <li>
+                <em>P/E</em> (faixas: &lt;15 barato, 15–25 justo, &gt;25 caro).
+              </li>
               <li><em>Δ50d / Δ200d</em> — variação vs. SMA 50/200.</li>
-              <li><em>Semáforo</em> — tendência rápida (🟢/🟡/🔴) com base em SMA200 e crescimento de 1 mês.</li>
-              <li><em>TP2 &amp; ETA</em> — preço alvo e estimativa de tempo para lá chegar (usando a melhor taxa
-                disponível).</li>
+              <li>
+                <em>Semáforo</em> — tendência rápida (🟢/🟡/🔴) com base em
+                SMA200 e crescimento de 1 mês.
+              </li>
+              <li>
+                <em>TP2 &amp; ETA</em> — preço alvo e estimativa de tempo para
+                lá chegar (usando a melhor taxa disponível).
+              </li>
             </ul>
           </div>
         </div>
@@ -276,9 +633,15 @@
     </div>
 
     <!-- ações fixas em baixo -->
-    <div class="actions-row help-actions" style="justify-content:space-between">
-      <label class="muted" style="display:flex; align-items:center; gap:.5rem">
-        <input type="checkbox" id="prtHelpDontShow">
+    <div
+      class="actions-row help-actions"
+      style="justify-content: space-between"
+    >
+      <label
+        class="muted"
+        style="display: flex; align-items: center; gap: 0.5rem"
+      >
+        <input type="checkbox" id="prtHelpDontShow" />
         Não mostrar novamente neste dispositivo
       </label>
 

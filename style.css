@@ -1095,22 +1095,25 @@ body.auth-screen .form-grid {
    ========================================================= */
 
 [data-theme="dark"] {
-  /* Paleta base */
+  /* Paleta base refinada para contraste */
   --background: #0b0e13;
-  --foreground: #e8edf3;
+  --foreground: #eef2f7;
+  /* Ligeiramente mais brilhante que e8edf3 */
 
-  --card: #111418;
-  --card-foreground: #e8edf3;
+  --card: #14181e;
+  /* Um pouco mais claro que 111418 para separar do fundo */
+  --card-foreground: #eef2f7;
 
-  --muted: #171b21;
-  --muted-foreground: #9aa7b5;
+  --muted: #1c222b;
+  /* Mais visível sobre o card/fundo */
+  --muted-foreground: #aab9c9;
+  /* Melhorado de 9aa7b5 para contraste AA */
 
-  --border: #242c36;
+  --border: #2d3846;
+  /* Um pouco mais claro para ser visível sem ser agressivo */
 
-  --primary: #e8edf3;
-  /* texto claro */
+  --primary: #ffffff;
   --primary-foreground: #0b0e13;
-  /* para CTAs sólidos */
 }
 
 /* Header escuro + texto/ícones brancos */
@@ -1143,10 +1146,39 @@ body.auth-screen .form-grid {
   color: #fff;
 }
 
-/* Listas/modais que já estavam escuros continuam coerentes */
+/* Modais devem ter sempre fundo claro e texto escuro para legibilidade máxima */
+.modal-dialog {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.modal-header h1,
+.modal-header h2,
+.modal-header h3 {
+  color: #111111 !important;
+}
+
+.modal-body {
+  color: #222222 !important;
+}
+
 [data-theme="dark"] .modal-dialog {
-  background: #111418;
-  color: #e8edf3;
+  /* No dark mode, mantemos o fundo branco como pedido */
+  background: #ffffff !important;
+  color: #111111 !important;
+  /* Sobrepomos variáveis internas para que elementos dentro do modal (como borders) usem cores escuras */
+  --primary: #4f46e5;
+  --border: rgba(0, 0, 0, 0.1);
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --foreground: #111111;
+  --card: #ffffff;
 }
 
 [data-theme="dark"] .modal-header {
@@ -1234,8 +1266,8 @@ body.auth-screen .form-grid {
 
 /* “Ações Rápidas” – botões largos como no teu exemplo */
 [data-theme="dark"] .btn.full {
-  color: #fff;
-  border-color: rgba(255, 255, 255, .45);
+  color: var(--foreground);
+  border-color: rgba(255, 255, 255, .55);
 }
 
 /* Botão "Registar Compra" no modo escuro */
@@ -1351,7 +1383,41 @@ body.auth-screen .form-grid {
   flex-direction: column;
 }
 
-/* header fixo no topo do diálogo ao rolar */
+/* === Modal de Detalhes do Ativo === */
+#activityDetailModal .activity-detail-dialog {
+  width: min(650px, 94vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#activityDetailModal .modal-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#activityDetailModal .modal-footer {
+  background: #f8fafc;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] #activityDetailModal .modal-footer {
+  background: #f8fafc;
+}
+
+/* Ajuste faturas do dashboard para não mostrar detalhes fixos se quisermos */
+.activity-item.no-expand .activity-details {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  #activityDetailModal .activity-detail-dialog {
+    width: 96vw;
+    max-height: 92vh;
+  }
+}
+
 #prtHelpModal .modal-header {
   position: sticky;
   top: 0;
@@ -2014,6 +2080,7 @@ body.auth-screen .form-grid {
     grid-template-columns: 1fr
   }
 }
+
 .buy-badge {
   display: inline-block;
   padding: 4px 10px;
