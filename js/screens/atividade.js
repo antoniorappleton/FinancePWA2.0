@@ -1442,101 +1442,106 @@ function tp2NecessarioCalc(g) {
 
 function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
   // METRICS & BADGES
-  const precoAtual = g.precoAtual;
+  const precoAtual = g.precoAtual || 0;
   const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
   const lucroAtual = g.lucroAtual || 0;
-  const pLossPct = g._pLossPct;
-  const estadoOp = g._estadoOp;
+  const pLossPct = g._pLossPct || 0;
+  const estadoOp = g._estadoOp || "ESPERAR";
   const tp2 = tp2Necessario || precoMedio * 1.15;
   const s200 = g._sma200;
 
   const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
-  const r1Pct = isBelowSMA200 ? 5.0 : 2.5;
-  const r2Pct = isBelowSMA200 ? 8.5 : 4.5;
-  const r1Preco = (precoAtual || 0) * (1 - r1Pct / 100);
-  const r2Preco = (precoAtual || 0) * (1 - r2Pct / 100);
-  const tp1 = precoMedio * 1.05;
   const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
 
-  const { taxa, periodLabel } = pickBestRate(info);
-  const estimativa =
-    tp2 && precoAtual ? estimateTime(precoAtual, tp2, taxa, periodLabel) : "—";
-
   const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-
-  // Formatação de Deltas com proteção contra dados lixo (> 1000%)
+  
   const formatSmaDelta = (sma, cur) => {
     if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
     const d = ((cur - sma) / sma) * 100;
-    if (Math.abs(d) > 1000) return "—"; // Sanity check
+    if (Math.abs(d) > 1000) return "—";
     return `${d.toFixed(1)}%`;
   };
 
   const d50Txt = formatSmaDelta(g._sma50, precoAtual);
   const d200Txt = formatSmaDelta(s200, precoAtual);
 
-  let stateColor = "var(--muted-foreground)";
+  let stateColor = "#64748b"; // Muted
   if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
   if (estadoOp === "COMPRAR") stateColor = "#22c55e";
   if (estadoOp === "REDUZIR") stateColor = "#f59e0b";
   if (estadoOp === "VENDER") stateColor = "#ef4444";
 
   return `
-    <div class="activity-item no-expand">
-      <div class="activity-header" data-toggle-card data-ticker="${g.ticker}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; width: 100%;">
-        <div style="display: flex; align-items: center; gap: 12px; pointer-events: none;">
-          <div style="background: ${stateColor}15; color: ${stateColor}; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; border: 1px solid ${stateColor}30;">
+    <div class="asset-card">
+      <!-- HEADER: Ticker e Preço -->
+      <div class="asset-header" data-toggle-card data-ticker="${g.ticker}">
+        <div class="asset-info-main">
+          <div class="asset-status-badge" style="background: ${stateColor}15; color: ${stateColor}; border: 1px solid ${stateColor}30;">
             ${estadoOp}
           </div>
-          <div>
-            <strong style="font-size: 1.1rem;">${g.ticker}</strong>
-            <div class="muted" style="font-size: 0.8rem;">${g.nome}</div>
+          <div class="asset-ticker-box">
+            <span class="asset-ticker-symbol">${g.ticker}</span>
+            <span class="asset-name" title="${g.nome}">${g.nome}</span>
           </div>
         </div>
-        <div style="text-align: right; pointer-events: none;">
-          <div style="font-weight: 700; font-size: 1.1rem;">${fmtEUR.format(precoAtual || 0)}</div>
-          <div class="${lucroAtual >= 0 ? "up" : "down"}" style="font-size: 0.85rem; font-weight: 600;">
+        
+        <div class="asset-price-box">
+          <div class="asset-price">${fmtEUR.format(precoAtual)}</div>
+          <div class="asset-change ${lucroAtual >= 0 ? "up" : "down"}">
             ${lucroAtual >= 0 ? "+" : ""}${fmtEUR.format(lucroAtual)} (${pLossPct.toFixed(1)}%)
           </div>
         </div>
       </div>
-          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
-            <div style="margin-bottom: 4px;">Yield: <strong>${yPct}</strong></div>
-            <div>P/E: <strong>${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</strong></div>
-            <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border);">
-              Rácio R/R: <strong>
-                ${(() => {
-                  const risk = (precoAtual || 0) - stopTec;
-                  const reward = tp2 - (precoAtual || 0);
-                  if (risk > 0 && reward > 0) return `1:${(reward / risk).toFixed(1)}`;
-                  return "—";
-                })()}
-              </strong>
-            </div>
-          </div>
-          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
-            <div style="margin-bottom: 4px;">ΔSMA50: <strong>${d50Txt}</strong></div>
-            <div>ΔSMA200: <strong>${d200Txt}</strong></div>
-          </div>
-        </div>
 
-        <div style="display: flex; gap: 8px;">
-          <button class="btn premium" data-buy="${g.ticker}" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}
-          </button>
-          
-          <button class="btn ghost ${g.link ? "" : "muted"}" 
-                  onclick="${g.link ? `window.open('${g.link}', '_blank')` : `document.querySelector('[data-edit="${g.lastDocId}"]').click()`}" 
-                  style="flex: 0 0 40px; margin-top: 0; padding: 0;" 
-                  title="${g.link ? 'Abrir link' : 'Adicionar link'}">
-            <i class="fas fa-link"></i>
-          </button>
-
-          <button class="btn outline" data-sell="${g.ticker}" style="flex: 1; margin-top: 0;">Vender</button>
-          <button class="btn ghost" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" style="flex: 0 0 40px; margin-top: 0; padding: 0;">
-            <i class="fas fa-edit"></i>
-          </button>
+      <!-- METRICS GRID: Melhor visibilidade em Mobile -->
+      <div class="asset-metrics-grid">
+        <div class="metric-item">
+          <span class="metric-label">Yield</span>
+          <span class="metric-value">${yPct}</span>
         </div>
+        <div class="metric-item">
+          <span class="metric-label">P/E Ratio</span>
+          <span class="metric-value">${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Rácio R/R</span>
+          <span class="metric-value">
+            ${(() => {
+              const risk = precoAtual - stopTec;
+              const reward = tp2 - precoAtual;
+              return risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
+            })()}
+          </span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Δ SMA50</span>
+          <span class="metric-value">${d50Txt}</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Δ SMA200</span>
+          <span class="metric-value">${d200Txt}</span>
+        </div>
+      </div>
+
+      <!-- ACTIONS: Compactos em Mobile, Alinhados no PC -->
+      <div class="asset-actions">
+        <button class="btn premium btn-primary" data-buy="${g.ticker}">
+          <i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}
+        </button>
+        
+        <button class="btn outline btn-secondary" data-sell="${g.ticker}">
+          Vender
+        </button>
+
+        <button class="btn ghost btn-icon" 
+                onclick="${g.link ? `window.open('${g.link}', '_blank')` : `document.querySelector('[data-edit=\\'${g.lastDocId}\\']').click()`}" 
+                title="${g.link ? 'Abrir link externo' : 'Adicionar link'}">
+          <i class="fas ${g.link ? "fa-link" : "fa-plus"}"></i>
+        </button>
+
+        <button class="btn ghost btn-icon" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" title="Editar movimento">
+          <i class="fas fa-edit"></i>
+        </button>
       </div>
     </div>`;
 }

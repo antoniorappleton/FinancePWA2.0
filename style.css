@@ -2104,3 +2104,196 @@ body.auth-screen .form-grid {
   background: #fee2e2;
   color: #991b1b;
 }
+
+/* =========================================================
+   ASSET CARDS (Portfolio Screen)
+   ========================================================= */
+.asset-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme="dark"] .asset-card {
+  background: #14181e;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.asset-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.asset-header {
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: rgba(var(--primary), 0.02);
+  user-select: none;
+}
+
+.asset-info-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.asset-ticker-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.asset-ticker-symbol {
+  font-size: 1.25rem;
+  font-weight: 850;
+  letter-spacing: -0.8px;
+  color: var(--foreground);
+}
+
+.asset-name {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.asset-status-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.asset-price-box {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.asset-price {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.asset-change {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.asset-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  padding: 16px 20px;
+  background: rgba(var(--muted), 0.15);
+  border-top: 1px dashed var(--border);
+  border-bottom: 1px dashed var(--border);
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.metric-value {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.asset-actions {
+  padding: 14px 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  background: rgba(var(--muted), 0.05);
+}
+
+.asset-actions .btn {
+  margin-top: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
+/* Limit buttons on PC */
+.asset-actions .btn-primary {
+  flex: 0 1 180px;
+}
+.asset-actions .btn-secondary {
+  flex: 0 1 120px;
+}
+.asset-actions .btn-icon {
+  flex: 0 0 40px;
+  padding: 0;
+}
+
+@media (max-width: 600px) {
+  .asset-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 14px 16px;
+  }
+  
+  .asset-header {
+    padding: 16px;
+  }
+  
+  .asset-ticker-symbol {
+    font-size: 1.15rem;
+  }
+  
+  .asset-name {
+    max-width: 120px;
+  }
+  
+  .asset-actions {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+  
+  .asset-actions .btn {
+    flex: 1 1 calc(50% - 5px);
+    max-width: none;
+    font-size: 0.8rem;
+  }
+  
+  .asset-actions .btn-icon {
+    flex: 1 1 calc(25% - 10px);
+  }
+}
