@@ -705,6 +705,7 @@ function wireQuickActions(gruposArr) {
 
           const fmt = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
           $("#detCrisisPrice").textContent = fmt.format(cPrice);
+          $("#detCrisisCost").textContent = fmt.format(iO);
           $("#detCrisisNewPM").textContent = fmt.format(nPM);
           detCriRes.style.display = "block";
         });
@@ -1283,6 +1284,7 @@ async function processAndRender(snap, aSnap) {
     const elRA = document.getElementById("prtRendimentoAnual");
     const elRP = document.getElementById("prtRetorno");
     const elEX = document.getElementById("prtExpSMA200");
+    const elWC = document.getElementById("prtWarChest");
 
     if (elTI) elTI.textContent = fmtEUR.format(totalInvestido);
     if (elLT) elLT.textContent = fmtEUR.format(lucroAberto);
@@ -1292,6 +1294,7 @@ async function processAndRender(snap, aSnap) {
       elRP.textContent =
         totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
     if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
+    if (elWC) elWC.textContent = fmtEUR.format(totalInvestido);
 
     // 2.3) Timeline
     movimentosAsc.sort((a, b) => a.date - b.date);

@@ -79,6 +79,17 @@
         <div class="icon-box"><i class="fas fa-trending-up"></i></div>
       </div>
     </div>
+
+    <div class="card info" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.03);">
+      <div class="card-content">
+        <div>
+          <p class="label">War Chest p/ Pânico (-13%)</p>
+          <p class="value" id="prtWarChest">€0,00</p>
+          <p class="subvalue muted">Liquidez p/ reforçar ativos</p>
+        </div>
+        <div class="icon-box" style="color: #ef4444; background: rgba(239, 68, 68, 0.08);"><i class="fas fa-shield-alt"></i></div>
+      </div>
+    </div>
   </div>
 
   <!-- 📈 GRÁFICOS (linha 1: Setores + Mercado) -->
@@ -422,7 +433,11 @@
                 <strong id="detCrisisPrice" style="color: #ef4444; font-size: 1.1rem;">—</strong>
              </div>
              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
-                <span style="font-size: 0.75rem; color: var(--muted-foreground);">Novo PM (se dobrar posição):</span>
+                <span style="font-size: 0.75rem; color: var(--muted-foreground);">Capital p/ Reforçar:</span>
+                <strong id="detCrisisCost" style="font-size: 0.95rem; color: var(--foreground);">—</strong>
+             </div>
+             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
+                <span style="font-size: 0.75rem; color: var(--muted-foreground);">Novo PM (se dobrar valor):</span>
                 <strong id="detCrisisNewPM" style="font-size: 0.95rem; color: #22c55e;">—</strong>
              </div>
              <div style="font-size: 0.65rem; color: var(--muted-foreground); margin-top: 6px; font-style: italic; text-align: center;">
