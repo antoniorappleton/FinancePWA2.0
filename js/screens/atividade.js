@@ -64,13 +64,19 @@ const PALETTE = [
 ];
 
 const CRISES_HISTORY = [
-  { id: "dotcom", name: "Bolha Dot-com (2000)", drop: 50 },
-  { id: "subprime", name: "Crise Financeira (2008)", drop: 56 },
-  { id: "covid", name: "Crash COVID (2020)", drop: 34 },
-  { id: "energy70", name: "Crise Energética (1973)", drop: 48 },
-  { id: "bear2022", name: "Bear Market (2022)", drop: 27 },
-  { id: "ww2", name: "Segunda Guerra Mundial", drop: 25 },
-  { id: "black_swan", name: "Cisne Negro (Stress)", drop: 40 }
+  { id: "tension_lim", name: "📉 Tensão Limitada (-3% a -8%)", drop: 5.5 },
+  { id: "geo_mod", name: "📉 Crise Geopolítica Moderada (-8% a -15%)", drop: 11.5 },
+  { id: "energy_shock", name: "⚡ Choque Energético (-10% a -20%)", drop: 15 },
+  { id: "energy_severe", name: "🔥 Choque Energético Severo (-15% a -25%)", drop: 20 },
+  { id: "likely_now", name: "⚠️ Cenário Provável Atual (-8% a -18%)", drop: 13 },
+  { id: "global_recession", name: "💀 Crise Económica Global (-25% a -40%)", drop: 32.5 },
+  
+  { id: "gulf_war", name: "⚔️ Guerra do Golfo (1990) [-19%]", drop: 19 },
+  { id: "yom_kippur", name: "⚔️ Guerra Yom Kippur (1973) [-17%]", drop: 17 },
+  { id: "rus_ukraine", name: "⚔️ Invasão da Ucrânia (2022) [-24%]", drop: 24 },
+  { id: "covid_crash", name: "🦠 Crash COVID-19 (2020) [-34%]", drop: 34 },
+  { id: "dotcom", name: "📉 Bolha Dot-com (2000) [-50%]", drop: 50 },
+  { id: "subprime", name: "📉 Crise Financeira (2008) [-56%]", drop: 56 }
 ];
 
 // ===============================
@@ -671,8 +677,8 @@ function wireQuickActions(gruposArr) {
     const detCriSel = $("#detCrisisSelector");
     const detCriRes = $("#detCrisisResult");
     if (detCriSel) {
-      detCriSel.innerHTML = '<option value="0">Selecionar cenário de crise...</option>' + 
-        CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name} (-${c.drop}%)</option>`).join("");
+      detCriSel.innerHTML = '<option value="0">Simular cenário de queda...</option>' + 
+        CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name}</option>`).join("");
       detCriSel.value = "0";
       if (detCriRes) detCriRes.style.display = "none";
 
