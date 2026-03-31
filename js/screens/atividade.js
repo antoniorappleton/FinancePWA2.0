@@ -63,6 +63,16 @@ const PALETTE = [
   "#14B8A6",
 ];
 
+const CRISES_HISTORY = [
+  { id: "dotcom", name: "Bolha Dot-com (2000)", drop: 50 },
+  { id: "subprime", name: "Crise Financeira (2008)", drop: 56 },
+  { id: "covid", name: "Crash COVID (2020)", drop: 34 },
+  { id: "energy70", name: "Crise Energética (1973)", drop: 48 },
+  { id: "bear2022", name: "Bear Market (2022)", drop: 27 },
+  { id: "ww2", name: "Segunda Guerra Mundial", drop: 25 },
+  { id: "black_swan", name: "Cisne Negro (Stress)", drop: 40 }
+];
+
 // ===============================
 // Helpers
 // ===============================
@@ -657,6 +667,45 @@ function wireQuickActions(gruposArr) {
     bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
     bBuy.textContent = estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar";
 
+    // --- (NOVO) Lógica de Crises no Modal ---
+    const detCriSel = $("#detCrisisSelector");
+    const detCriRes = $("#detCrisisResult");
+    if (detCriSel) {
+      detCriSel.innerHTML = '<option value="0">Selecionar cenário de crise...</option>' + 
+        CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name} (-${c.drop}%)</option>`).join("");
+      detCriSel.value = "0";
+      if (detCriRes) detCriRes.style.display = "none";
+
+      // Adicionar listener específico para o selector do modal (apenas uma vez)
+      if (!detCriSel.__wired) {
+        detCriSel.__wired = true;
+        detCriSel.addEventListener("change", () => {
+          const dropPct = Number(detCriSel.value);
+          if (dropPct <= 0) {
+            detCriRes.style.display = "none";
+            return;
+          }
+          // Precisamos do ticker atual... podemos pegar do detCriSel.dataset se setarmos abaixo
+          const tk = detCriSel.dataset.ticker;
+          const group = byTickerGlobal.get(tk);
+          if (!group) return;
+
+          const pCur = group.precoAtual || 0;
+          const cPrice = pCur * (1 - dropPct / 100);
+          const iO = group.investido || 0;
+          const qO = group.qtd || 0;
+          const nQ = qO + (iO / (cPrice || 1));
+          const nPM = (iO * 2) / nQ;
+
+          const fmt = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+          $("#detCrisisPrice").textContent = fmt.format(cPrice);
+          $("#detCrisisNewPM").textContent = fmt.format(nPM);
+          detCriRes.style.display = "block";
+        });
+      }
+      detCriSel.dataset.ticker = g.ticker;
+    }
+
     detModal.classList.remove("hidden");
   }
 
@@ -683,7 +732,6 @@ function wireQuickActions(gruposArr) {
     const t = e.target.closest?.("[data-toggle-card]");
     if (!t) return;
 
-    // Em vez de toggle class "collapsed", abrimos o modal
     const ticker = t.getAttribute("data-ticker");
     if (ticker) {
       openDetailModal(ticker);
@@ -1452,8 +1500,43 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
           </div>
         </div>
       </div>
-      
-      <!-- Detalhes inline removidos (agora abrem via modal no header acima) -->
-      <div class="activity-details" style="display:none"></div>
+          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
+            <div style="margin-bottom: 4px;">Yield: <strong>${yPct}</strong></div>
+            <div>P/E: <strong>${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</strong></div>
+            <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border);">
+              Rácio R/R: <strong>
+                ${(() => {
+                  const risk = (precoAtual || 0) - stopTec;
+                  const reward = tp2 - (precoAtual || 0);
+                  if (risk > 0 && reward > 0) return `1:${(reward / risk).toFixed(1)}`;
+                  return "—";
+                })()}
+              </strong>
+            </div>
+          </div>
+          <div class="card" style="padding: 10px; box-shadow: none; border: 1px solid var(--border);">
+            <div style="margin-bottom: 4px;">ΔSMA50: <strong>${d50Txt}</strong></div>
+            <div>ΔSMA200: <strong>${d200Txt}</strong></div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn premium" data-buy="${g.ticker}" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}
+          </button>
+          
+          <button class="btn ghost ${g.link ? "" : "muted"}" 
+                  onclick="${g.link ? `window.open('${g.link}', '_blank')` : `document.querySelector('[data-edit="${g.lastDocId}"]').click()`}" 
+                  style="flex: 0 0 40px; margin-top: 0; padding: 0;" 
+                  title="${g.link ? 'Abrir link' : 'Adicionar link'}">
+            <i class="fas fa-link"></i>
+          </button>
+
+          <button class="btn outline" data-sell="${g.ticker}" style="flex: 1; margin-top: 0;">Vender</button>
+          <button class="btn ghost" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" style="flex: 0 0 40px; margin-top: 0; padding: 0;">
+            <i class="fas fa-edit"></i>
+          </button>
+        </div>
+      </div>
     </div>`;
 }
