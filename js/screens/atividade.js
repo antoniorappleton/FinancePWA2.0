@@ -80,6 +80,43 @@ const CRISES_HISTORY = [
 ];
 
 // ===============================
+// Estratégia de Portfolio (Core/Satellite)
+// ===============================
+const STRATEGY_CFG = {
+  CORE: {
+    targetTotal: 0.65,
+    items: [
+      { id: "STOXX", label: "STOXX Europe 600", target: 0.35, keywords: ["STOXX", "600"] },
+      { id: "JAPAN", label: "MSCI Japan", target: 0.20, keywords: ["JAPAN", "JAPÃO"] },
+      { id: "FINANCIALS", label: "MSCI World Financials", target: 0.10, keywords: ["FINANCIALS", "FINANCEIRAS"] },
+    ]
+  },
+  SATELLITE: {
+    targetTotal: 0.35,
+    items: [
+      { id: "URANIUM", label: "Uranium", target: 0.10, keywords: ["URANIUM", "URÂNIO"] },
+      { id: "TECH", label: "Info Tech", target: 0.10, keywords: ["TECH", "TECNOLOGIA", "IT"] },
+      { id: "RARE", label: "Rare Earth", target: 0.05, keywords: ["RARE", "TERRAS RARAS"] },
+      { id: "CLEAN", label: "Clean Energy", target: 0.05, keywords: ["CLEAN", "LIMPA"] },
+      { id: "OIL", label: "Oil & Gas", target: 0.05, keywords: ["OIL", "GAS", "PETRÓLEO"] },
+    ]
+  }
+};
+
+function getStrategicInfo(ticker, nome) {
+  const t = (ticker || "").toUpperCase();
+  const n = (nome || "").toUpperCase();
+  for (const cat in STRATEGY_CFG) {
+    for (const item of STRATEGY_CFG[cat].items) {
+      if (item.keywords.some(k => t.includes(k) || n.includes(k))) {
+        return { category: cat, ...item };
+      }
+    }
+  }
+  return null;
+}
+
+// ===============================
 // Helpers
 // ===============================
 function toNumStrict(v) {
@@ -564,6 +601,51 @@ function wireQuickActions(gruposArr) {
       ${lucroAtual >= (g.objetivo || 0) ? "META ATINGIDA ✅" : "EM PROGRESSO"}
     </span>`;
 
+    // --- (NOVO) Conselho Estratégico (CORE/SATELLITE) ---
+    const sInfo = g._strategy;
+    let strategyHtml = "";
+    if (sInfo) {
+      const currentW = (g._currentWeight || 0) * 100;
+      const targetW = sInfo.target * 100;
+      const deviation = targetW - currentW;
+      const canReinforce = g._shouldReinforceStrategic;
+
+      strategyHtml = `
+        <div style="margin-bottom: 20px; padding: 14px; background: rgba(79, 70, 229, 0.04); border-radius: 12px; border: 1px solid rgba(79, 70, 229, 0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-weight: 800; font-size: 0.75rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-chess-knight"></i> Estratégia ${sInfo.category}
+            </div>
+            <div style="font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; border: 1px solid; ${canReinforce ? 'color: #ef4444; border-color: #ef444440; background: #ef444410;' : 'color: var(--muted-foreground); border-color: var(--border);'}">
+              ${canReinforce ? 'REFORÇO PRIORITÁRIO' : 'OBSERVAR'}
+            </div>
+          </div>
+          <div style="display: flex; gap: 20px; margin-bottom: 10px;">
+            <div style="flex: 1;">
+              <div style="font-size: 0.6rem; color: var(--muted-foreground); text-transform: uppercase;">Alocação</div>
+              <div style="font-size: 1.1rem; font-weight: 800;">${currentW.toFixed(1)}%</div>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 0.6rem; color: var(--muted-foreground); text-transform: uppercase;">Alvo</div>
+              <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">${targetW.toFixed(1)}%</div>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 0.6rem; color: var(--muted-foreground); text-transform: uppercase;">Desvio</div>
+              <div style="font-size: 1.1rem; font-weight: 800; color: ${deviation > 5 ? '#ef4444' : 'inherit'}">${deviation.toFixed(1)}%</div>
+            </div>
+          </div>
+          <div style="padding: 10px; background: #fff; border-radius: 8px; border: 1px dashed var(--border); font-size: 0.8rem; line-height: 1.4;">
+            ${canReinforce 
+              ? `<strong>Plano:</strong> O ativo está abaixo do alvo (>5%). <strong>Reforçar ${fmtEUR.format(g._strategicNeed)}</strong> para equilibrar.` 
+              : deviation > 0 
+                ? `<strong>Plano:</strong> Aguardar rebalanceamento trimestral. Desvio atual (${deviation.toFixed(1)}%) é inferior a 5% ou prioridade é CORE.` 
+                : `<strong>Plano:</strong> Exposição acima do alvo estratégico. Não realizar novos reforços.`
+            }
+          </div>
+        </div>
+      `;
+    }
+
     // Plano de Trade
     const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
     const r1Pct = isBelowSMA200 ? 5.0 : 2.5;
@@ -574,6 +656,8 @@ function wireQuickActions(gruposArr) {
     const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
 
     $("#detTradePlan").innerHTML = `
+      ${strategyHtml}
+      <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; grid-column: span 3;">📝 Plano de Trade (Zonas)</div>
       <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
         <label class="muted" style="font-size: 0.7rem; display: block;">Compra Base</label>
         <strong style="font-size: 0.9rem;">${fmtEUR.format(precoMedio)}</strong>
@@ -1286,6 +1370,52 @@ async function processAndRender(snap, aSnap) {
     const elEX = document.getElementById("prtExpSMA200");
     const elWC = document.getElementById("prtWarChest");
 
+    // --- (NOVO) Cálculo Estratégico do War Chest (CORE/SATELLITE) ---
+    let totalWarChest = 0;
+    let satWeightTotal = 0;
+
+    // Primeiro pass: calcular exposição de Satélites
+    for (const g of abertos) {
+      const sInfo = getStrategicInfo(g.ticker, g.nome);
+      g._strategy = sInfo; // Cache da info estratégica
+      if (sInfo && sInfo.category === "SATELLITE") {
+        satWeightTotal += (g.investido / totalInvestido);
+      }
+    }
+
+    const canReinforceSatellite = satWeightTotal < 0.35;
+
+    // Segundo pass: calcular necessidade de capital por ativo
+    for (const g of abertos) {
+      const sInfo = g._strategy;
+      if (!sInfo) continue;
+
+      const currentWeight = g.investido / totalInvestido;
+      const deviation = sInfo.target - currentWeight;
+      
+      // Regra 3 e 5: Desvio > 5% e prioridade Core
+      const isUnderweight = deviation > 0.05;
+      let shouldReinforce = false;
+      
+      if (isUnderweight) {
+        if (sInfo.category === "CORE") {
+          shouldReinforce = true;
+        } else if (sInfo.category === "SATELLITE" && canReinforceSatellite) {
+          shouldReinforce = true;
+        }
+      }
+
+      if (shouldReinforce) {
+        const amtNeeded = (totalInvestido * sInfo.target) - g.investido;
+        totalWarChest += Math.max(0, amtNeeded);
+      }
+
+      // Guardar métricas para os cards/modal
+      g._shouldReinforceStrategic = shouldReinforce;
+      g._strategicNeed = Math.max(0, (totalInvestido * sInfo.target) - g.investido);
+      g._currentWeight = currentWeight;
+    }
+
     if (elTI) elTI.textContent = fmtEUR.format(totalInvestido);
     if (elLT) elLT.textContent = fmtEUR.format(lucroAberto);
     if (elLA) elLA.textContent = `Acumulado: ${fmtEUR.format(lucroTotal)}`;
@@ -1294,7 +1424,7 @@ async function processAndRender(snap, aSnap) {
       elRP.textContent =
         totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
     if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
-    if (elWC) elWC.textContent = fmtEUR.format(totalInvestido);
+    if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
 
     // 2.3) Timeline
     movimentosAsc.sort((a, b) => a.date - b.date);
@@ -1363,17 +1493,33 @@ async function processAndRender(snap, aSnap) {
         Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
 
       let estadoOp = "ESPERAR";
-      // Regra para Crypto: mais tolerância na SMA (pode ignorar se SMA for lixo) e threshold de queda maior (-7%)
-      if (isCrypto) {
-        if (pLossPct < -7) estadoOp = "REFORÇAR";
-        else if (pLossPct > 15) estadoOp = "REDUZIR";
-      } else {
-        // Regra para Ações/ETFs: -4% e abaixo da SMA200 (se válida)
-        if (pLossPct < -4 && (!isSmaValid || isBelowSMA200))
+      const sInfo = g._strategy;
+
+      // --- LÓGICA ESTRATÉGICA ---
+      if (sInfo) {
+        if (g._shouldReinforceStrategic) {
           estadoOp = "REFORÇAR";
-        else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
-        else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
-        else if (pLossPct > 25) estadoOp = "VENDER";
+        } else if ((sInfo.target - g._currentWeight) > 0) {
+          // Abaixo do alvo, mas desvio < 5% ou impedido por regra de prioridade
+          estadoOp = "MONITORIZAR";
+        } else if (g._currentWeight > sInfo.target * 1.5) {
+          // Muito acima do alvo (Regra 1: "não vende a não ser que ultrapasse 2x", mas vamos avisar aos 1.5x)
+          estadoOp = "REDUZIR";
+        } else {
+          estadoOp = "MANTER";
+        }
+      } else {
+        // --- LÓGICA TÉCNICA ORIGINAL (para ativos fora da estratégia principal) ---
+        if (isCrypto) {
+          if (pLossPct < -7) estadoOp = "REFORÇAR";
+          else if (pLossPct > 15) estadoOp = "REDUZIR";
+        } else {
+          if (pLossPct < -4 && (!isSmaValid || isBelowSMA200))
+            estadoOp = "REFORÇAR";
+          else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
+          else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
+          else if (pLossPct > 25) estadoOp = "VENDER";
+        }
       }
 
       g._estadoOp = estadoOp;
@@ -1474,11 +1620,18 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
   const d50Txt = formatSmaDelta(g._sma50, precoAtual);
   const d200Txt = formatSmaDelta(s200, precoAtual);
 
+  // ESTRATÉGIA INFO
+  const sInfo = g._strategy;
+  const currentW = (g._currentWeight || 0) * 100;
+  const targetW = sInfo ? sInfo.target * 100 : 0;
+  const weightColor = currentW < targetW ? "var(--primary)" : "var(--success)";
+
   let stateColor = "#64748b"; // Muted
   if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
   if (estadoOp === "COMPRAR") stateColor = "#22c55e";
   if (estadoOp === "REDUZIR") stateColor = "#f59e0b";
   if (estadoOp === "VENDER") stateColor = "#ef4444";
+  if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
 
   return `
     <div class="asset-card">
@@ -1502,7 +1655,25 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
         </div>
       </div>
 
-      <!-- METRICS GRID: Melhor visibilidade em Mobile -->
+      <!-- ALOCAÇÃO ESTRATÉGICA -->
+      ${sInfo ? `
+      <div style="margin: 0 16px 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
+          <span style="color: var(--muted-foreground)">Alocação: <strong>${currentW.toFixed(1)}%</strong></span>
+          <span style="color: var(--muted-foreground)">Alvo: <strong>${targetW.toFixed(1)}%</strong></span>
+        </div>
+        <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: flex;">
+          <div style="width: ${Math.min(100, (currentW / targetW) * 100)}%; background: ${weightColor};"></div>
+        </div>
+        ${g._shouldReinforceStrategic ? `
+          <div style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+            <i class="fas fa-arrow-up"></i> Reforçar €${formatNum(g._strategicNeed)} p/ atingir o alvo
+          </div>
+        ` : ""}
+      </div>
+      ` : ""}
+
+      <!-- METRICS GRID -->
       <div class="asset-metrics-grid">
         <div class="metric-item">
           <span class="metric-label">Yield</span>
