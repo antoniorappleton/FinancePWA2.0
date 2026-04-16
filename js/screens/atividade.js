@@ -727,11 +727,20 @@ function wireQuickActions(gruposArr) {
         const currentW = (g._currentWeight || 0) * 100;
         const targetW = sInfo.target * 100;
         const deviation = targetW - currentW;
-        const canR = g._shouldReinforceStrategic;
+        let dicaStr = "Aguardar";
+        let dicaColor = "var(--muted-foreground)";
+        if (canR) {
+          dicaStr = "REFORÇAR";
+          dicaColor = "#ef4444";
+        } else if (g._estadoOp === "REDUZIR" || (currentW > targetW * 1.5)) {
+          dicaStr = "REDUZIR";
+          dicaColor = "#f59e0b";
+        }
+
         $("#detDynStrategyCurrentInfo").innerHTML = `
         <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
-           <div>Alocação Atual: <strong style="${deviation > 5 ? 'color:#ef4444' : ''}">${currentW.toFixed(1)}%</strong></div>
-           <div>Dica: <strong>${canR ? '<span style="color:#ef4444">REFORÇAR</span>' : 'Aguardar'}</strong></div>
+           <div>Alocação Atual: <strong style="${Math.abs(deviation) > 5 ? 'color:#ef4444' : ''}">${currentW.toFixed(1)}%</strong></div>
+           <div>Dica: <strong><span style="color:${dicaColor}">${dicaStr}</span></strong></div>
         </div>
       `;
       }
@@ -1172,7 +1181,7 @@ function wireQuickActions(gruposArr) {
   let _lastStrategySnap = null;
   window._dynamicStrategyGlobals = { CORE: 0.65, SATELLITE: 0.35 };
   window._dynamicStrategyTickers = {};
-  let fltState = { estado: "", mercado: "", setor: "", sort: "queda" };
+  let fltState = { estado: "", mercado: "", setor: "", sort: "queda", estrategia: "" };
 
   export async function initScreen() {
     const cont = document.getElementById("listaAtividades");
@@ -1192,14 +1201,16 @@ function wireQuickActions(gruposArr) {
     const fMercado = document.getElementById("fltMercado");
     const fSetor = document.getElementById("fltSetor");
     const fSort = document.getElementById("fltSort");
+    const fEstrategia = document.getElementById("fltEstrategia");
 
-    [fEstado, fMercado, fSetor, fSort].forEach((el) => {
+    [fEstado, fMercado, fSetor, fSort, fEstrategia].forEach((el) => {
       el?.addEventListener("change", () => {
         fltState = {
-          estado: fEstado.value,
-          mercado: fMercado.value,
-          setor: fSetor.value,
-          sort: fSort.value,
+          estado: fEstado?.value || "",
+          mercado: fMercado?.value || "",
+          setor: fSetor?.value || "",
+          sort: fSort?.value || "queda",
+          estrategia: fEstrategia?.value || "",
         };
         handleUpdate();
       });
@@ -1505,6 +1516,7 @@ function wireQuickActions(gruposArr) {
         g._shouldReinforceStrategic = shouldReinforce;
         g._strategicNeed = Math.max(0, (totalInvestido * sInfo.target) - g.investido);
         g._currentWeight = currentWeight;
+        g._strategicExcess = Math.max(0, g.investido - (totalInvestido * sInfo.target));
       }
 
       if (elTI) elTI.textContent = fmtEUR.format(totalInvestido);
@@ -1648,6 +1660,12 @@ function wireQuickActions(gruposArr) {
         filtered = filtered.filter((g) => g.setor === fltState.setor);
       if (fltState.estado)
         filtered = filtered.filter((g) => g._estadoOp === fltState.estado);
+      if (fltState.estrategia) {
+        filtered = filtered.filter((g) => {
+          const cat = g._strategy ? g._strategy.category : "NONE";
+          return cat === fltState.estrategia;
+        });
+      }
 
       // Aplicar Ordenação
       filtered.sort((a, b) => {
@@ -1762,6 +1780,11 @@ function wireQuickActions(gruposArr) {
         ${g._shouldReinforceStrategic ? `
           <div style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
             <i class="fas fa-arrow-up"></i> Reforçar €${formatNum(g._strategicNeed)} p/ atingir o alvo
+          </div>
+        ` : ""}
+        ${estadoOp === "REDUZIR" && (g._strategicExcess || 0) > 0 ? `
+          <div style="font-size: 0.65rem; color: #f59e0b; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+            <i class="fas fa-arrow-down"></i> Reduzir €${formatNum(g._strategicExcess)} (${formatNum(g._strategicExcess / (precoAtual || 1))} unid.) p/ atingir o alvo
           </div>
         ` : ""}
       </div>
