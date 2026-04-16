@@ -14,9 +14,11 @@ import {
   addDoc,
   serverTimestamp,
   doc,
+  setDoc,
   updateDoc,
   getDoc,
   getDocs,
+  deleteField,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ===============================
@@ -572,8 +574,8 @@ function wireQuickActions(gruposArr) {
     else if (upsideP > 3) { esforcoStr = "Plausível"; esforcoColor = "#3b82f6"; }
     
     if (upsideP <= 0 && g.qtd > 0) {
-       esforcoStr = "Atingido";
-       esforcoColor = "#22c55e";
+      esforcoStr = "Atingido";
+      esforcoColor = "#22c55e";
     }
 
     // --- 1. HEADER SIMPLES E FORTE ---
@@ -595,7 +597,7 @@ function wireQuickActions(gruposArr) {
     $("#detPrecoAtualHeader").textContent = fmtEUR.format(precoAtual);
     const percL = g.investido > 0 ? (lucroAtual / g.investido) * 100 : 0;
     const elLucroHeader = $("#detLucroAtualHeader");
-    elLucroHeader.textContent = `${fmtEUR.format(lucroAtual)} (${percL>0?"+":""}${percL.toFixed(2)}%)`;
+    elLucroHeader.textContent = `${fmtEUR.format(lucroAtual)} (${percL > 0 ? "+" : ""}${percL.toFixed(2)}%)`;
     elLucroHeader.className = lucroAtual >= 0 ? "up" : "down";
     $("#detQtdHeader").textContent = g.qtd.toFixed(4).replace(/\.?0+$/, '');
     $("#detPMHeader").textContent = fmtEUR.format(precoMedio);
@@ -603,10 +605,10 @@ function wireQuickActions(gruposArr) {
     // --- 2. BLOCO: OBJETIVO E VIABILIDADE ---
     const bgBadge = document.getElementById("detEsforcoBadge");
     if (bgBadge) {
-        bgBadge.textContent = esforcoStr;
-        bgBadge.style.color = esforcoColor;
-        bgBadge.style.borderColor = esforcoColor;
-        bgBadge.style.backgroundColor = `${esforcoColor}15`;
+      bgBadge.textContent = esforcoStr;
+      bgBadge.style.color = esforcoColor;
+      bgBadge.style.borderColor = esforcoColor;
+      bgBadge.style.backgroundColor = `${esforcoColor}15`;
     }
 
     $("#detObjLucro").textContent = fmtEUR.format(g.objetivo || 0);
@@ -616,25 +618,25 @@ function wireQuickActions(gruposArr) {
     
     let resumo = "";
     if (upsideP > 0) {
-       resumo = `Precisa subir +${upsideP.toFixed(1)}% para cumprir o objetivo. (${esforcoStr})`;
+      resumo = `Precisa subir +${upsideP.toFixed(1)}% para cumprir o objetivo. (${esforcoStr})`;
     } else {
-       resumo = `Objetivo cumprido! Parabéns.`;
+      resumo = `Objetivo cumprido! Parabéns.`;
     }
     $("#detResumoInterpretativo").textContent = resumo;
 
     // --- 3. PLANO DE AÇÃO POR NÍVEIS ---
     const niveisArr = [
-       { d: 2, action: "Reforço Leve", color: "#3b82f6" },
-       { d: 3, action: "Reforço Leve", color: "#3b82f6" },
-       { d: 5, action: "Reforço Médio", color: "#f59e0b" },
-       { d: 8, action: "Reforço Forte", color: "#f59e0b" },
-       { d: 10, action: "Rever tese / Risco", color: "#ef4444" },
-       { d: 15, action: "Stop / Invalidar", color: "#ef4444" }
+      { d: 2, action: "Reforço Leve", color: "#3b82f6" },
+      { d: 3, action: "Reforço Leve", color: "#3b82f6" },
+      { d: 5, action: "Reforço Médio", color: "#f59e0b" },
+      { d: 8, action: "Reforço Forte", color: "#f59e0b" },
+      { d: 10, action: "Rever tese / Risco", color: "#ef4444" },
+      { d: 15, action: "Stop / Invalidar", color: "#ef4444" }
     ];
     let niveisHTML = "";
     niveisArr.forEach(n => {
-       const pr = precoAtual * (1 - n.d / 100);
-       niveisHTML += `
+      const pr = precoAtual * (1 - n.d / 100);
+      niveisHTML += `
          <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; padding: 10px 12px; font-size: 0.8rem; border-bottom: 1px solid var(--border); align-items: center;">
             <div style="font-weight: 800; color: #ef4444;">-${n.d}%</div>
             <div style="font-family: monospace; font-size: 0.85rem;">${fmtEUR.format(pr)}</div>
@@ -647,18 +649,18 @@ function wireQuickActions(gruposArr) {
     // --- 4. RECUPERAÇÃO DE PERDAS ---
     const recBloco = $("#detRecuperacaoBloco");
     if (lucroAtual < 0 && g.qtd > 0) {
-       recBloco.style.display = "block";
-       $("#detBEML").textContent = fmtEUR.format(precoMedio);
-       $("#detTPComp").textContent = fmtEUR.format(tpObjetivo);
+      recBloco.style.display = "block";
+      $("#detBEML").textContent = fmtEUR.format(precoMedio);
+      $("#detTPComp").textContent = fmtEUR.format(tpObjetivo);
        
-       const p5 = precoAtual * 0.95;
-       const p10 = precoAtual * 0.90;
-       const up5 = ((tpObjetivo / p5) - 1) * 100;
-       const up10 = ((tpObjetivo / p10) - 1) * 100;
-       $("#detRecSub5").textContent = `+${up5.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
-       $("#detRecSub10").textContent = `+${up10.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
+      const p5 = precoAtual * 0.95;
+      const p10 = precoAtual * 0.90;
+      const up5 = ((tpObjetivo / p5) - 1) * 100;
+      const up10 = ((tpObjetivo / p10) - 1) * 100;
+      $("#detRecSub5").textContent = `+${up5.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
+      $("#detRecSub10").textContent = `+${up10.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
     } else {
-       recBloco.style.display = "none";
+      recBloco.style.display = "none";
     }
 
     // --- 5. SE EU REFORÇAR AGORA ---
@@ -669,24 +671,24 @@ function wireQuickActions(gruposArr) {
     ];
     let cenHTML = "";
     refScenarios.forEach(sc => {
-       const invest = sc.val;
-       const nQ = g.qtd + (invest / (precoAtual||1));
-       const nT = g.investido + invest;
-       const nPM = nT / (nQ||1);
-       const nTP = (nT + (g.objetivo||0)) / (nQ||1);
-       const nUpside = precoAtual > 0 ? ((nTP / precoAtual) - 1) * 100 : 0;
-       const redTP = tpObjetivo - nTP;
+      const invest = sc.val;
+      const nQ = g.qtd + (invest / (precoAtual || 1));
+      const nT = g.investido + invest;
+      const nPM = nT / (nQ || 1);
+      const nTP = (nT + (g.objetivo || 0)) / (nQ || 1);
+      const nUpside = precoAtual > 0 ? ((nTP / precoAtual) - 1) * 100 : 0;
+      const redTP = tpObjetivo - nTP;
        
-       cenHTML += `
+      cenHTML += `
          <div style="background: rgba(0,0,0,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.75rem;">
            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
              <strong style="font-size: 0.85rem; color: var(--primary);">${sc.label}</strong>
              <span style="background: #22c55e15; color: #22c55e; padding: 4px 8px; border-radius: 6px; font-weight: 800;">Novo PM: ${fmtEUR.format(nPM)}</span>
            </div>
            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; border-top: 1px dashed var(--border); padding-top: 8px;">
-             <div><span style="color:var(--muted-foreground)">Tot. Qtd:</span> <br><strong style="font-size:0.85rem;">${nQ.toFixed(2)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(+${(invest/precoAtual).toFixed(2)})</span></div>
-             <div><span style="color:var(--muted-foreground)">Novo TP:</span> <br><strong style="color:#22c55e; font-size:0.85rem;">${fmtEUR.format(nTP)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(-${fmtEUR.format(redTP>0?redTP:0)})</span></div>
-             <div><span style="color:var(--muted-foreground)">Upside:</span> <br><strong style="color:#3b82f6; font-size:0.85rem;">${nUpside>0?"+":""}${nUpside.toFixed(1)}%</strong></div>
+             <div><span style="color:var(--muted-foreground)">Tot. Qtd:</span> <br><strong style="font-size:0.85rem;">${nQ.toFixed(2)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(+${(invest / precoAtual).toFixed(2)})</span></div>
+             <div><span style="color:var(--muted-foreground)">Novo TP:</span> <br><strong style="color:#22c55e; font-size:0.85rem;">${fmtEUR.format(nTP)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(-${fmtEUR.format(redTP > 0 ? redTP : 0)})</span></div>
+             <div><span style="color:var(--muted-foreground)">Upside:</span> <br><strong style="color:#3b82f6; font-size:0.85rem;">${nUpside > 0 ? "+" : ""}${nUpside.toFixed(1)}%</strong></div>
            </div>
          </div>
        `;
@@ -695,949 +697,1034 @@ function wireQuickActions(gruposArr) {
 
     // --- SECUNDÁRIAS ---
     const sInfo = g._strategy;
-    if (sInfo) {
-      const currentW = (g._currentWeight || 0) * 100;
-      const targetW = sInfo.target * 100;
-      const deviation = targetW - currentW;
-      const canReinforce = g._shouldReinforceStrategic;
-      $("#detStrategyDiv").innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-           <strong>Estratégia: ${sInfo.category}</strong>
-           <span style="color: ${canReinforce ? '#ef4444' : 'var(--muted-foreground)'}; font-weight: 700;">${canReinforce ? 'Abaixo do Alvo' : 'No Nível'}</span>
-        </div>
-        <div style="display: flex; gap: 10px;">
-           <div>Alocação: <strong>${currentW.toFixed(1)}%</strong></div>
-           <div>Alvo: <strong>${targetW.toFixed(1)}%</strong></div>
-           <div style="color: ${deviation > 5 ? '#ef4444' : 'inherit'}">Desvio: <strong>${deviation.toFixed(1)}%</strong></div>
+    $("#detStrategyDiv").innerHTML = `
+      <div style="font-weight: 700; margin-bottom: 8px;">Definir Estratégia (Ativo Atual)</div>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+         <select id="detDynStrategyCat" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 0.8rem; background: var(--background); color: var(--foreground);">
+            <option value="NONE">Automático / Nenhuma</option>
+            <option value="CORE">CORE</option>
+            <option value="SATELLITE">SATÉLITE</option>
+         </select>
+         <div style="display: flex; align-items: center; gap: 4px; flex: 1;">
+           <input type="number" id="detDynStrategyTarget" placeholder="%" step="0.1" max="100" min="0" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 0.8rem; background: var(--background); color: var(--foreground);" />
+           <span style="font-size: 0.8rem;">%</span>
+         </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; align-items: center;">
+         <div id="detDynStrategyStatus" style="color: var(--muted-foreground); display: none;">Guardado ✅</div>
+         <button id="detBtnSaveStrategy" class="btn outline small" style="padding: 4px 12px; margin-left: auto;">Guardar</button>
+      </div>
+      <div id="detDynStrategyCurrentInfo" style="margin-top: 10px; font-size: 0.75rem;"></div>
+    `;
+
+      const selCat = $("#detDynStrategyCat");
+      const iptTarget = $("#detDynStrategyTarget");
+      const btnSaveStrat = $("#detBtnSaveStrategy");
+
+      if (sInfo && (window._dynamicStrategyTickers[g.ticker] || true)) {
+        selCat.value = sInfo.category;
+        iptTarget.value = (sInfo.target * 100).toFixed(1);
+        const currentW = (g._currentWeight || 0) * 100;
+        const targetW = sInfo.target * 100;
+        const deviation = targetW - currentW;
+        const canR = g._shouldReinforceStrategic;
+        $("#detDynStrategyCurrentInfo").innerHTML = `
+        <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
+           <div>Alocação Atual: <strong style="${deviation > 5 ? 'color:#ef4444' : ''}">${currentW.toFixed(1)}%</strong></div>
+           <div>Dica: <strong>${canR ? '<span style="color:#ef4444">REFORÇAR</span>' : 'Aguardar'}</strong></div>
         </div>
       `;
-    } else {
-      $("#detStrategyDiv").innerHTML = "";
-    }
+      }
 
-    const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-    const formatSmaDelta = (sma, cur) => {
-      if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
-      const d = ((cur - sma) / sma) * 100;
-      return `${d>0?"+":""}${d.toFixed(1)}%`;
-    };
-    $("#detYield").textContent = yPct;
-    $("#detPE").textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
+      selCat.onchange = () => {
+        if (selCat.value === "NONE") iptTarget.value = "";
+        else {
+          const isCore = selCat.value === "CORE";
+          const catTotal = isCore ? (window._dynamicStrategyGlobals?.CORE || 0.65) * 100 : (window._dynamicStrategyGlobals?.SATELLITE || 0.35) * 100;
+          let count = Object.values(window._dynamicStrategyTickers || {}).filter(t => t && t.category === selCat.value && t !== ticker).length;
+          iptTarget.value = (catTotal / (count + 1)).toFixed(1);
+        }
+      };
 
-    const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
-    const risk = precoAtual - stopTec;
-    const reward = tpObjetivo - precoAtual;
-    $("#detRR").textContent = risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
-    $("#detSMA50").textContent = formatSmaDelta(g._sma50, precoAtual);
-    $("#detSMA200").textContent = formatSmaDelta(s200, precoAtual);
+      btnSaveStrat.onclick = async () => {
+        let cat = selCat.value;
+        let target = Number(iptTarget.value);
+        if (cat !== "NONE" && (isNaN(target) || target <= 0)) {
+          alert("Insira uma percentagem alvo válida."); return;
+        }
+        btnSaveStrat.textContent = "...";
+        try {
+          // Fall back to setDoc deep merging. If config/strategy doesn't exist, this creates it.
+          await setDoc(doc(db, "config", "strategy"), {
+            tickers: {
+              [ticker]: cat === "NONE" ? deleteField() : { category: cat, target: target }
+            }
+          }, { merge: true });
+          $("#detDynStrategyStatus").style.display = "block";
+          $("#detDynStrategyStatus").style.color = "#22c55e";
+          $("#detDynStrategyStatus").textContent = "Guardado ✅";
+        } catch (err) {
+          console.error(err);
+          $("#detDynStrategyStatus").style.display = "block";
+          $("#detDynStrategyStatus").style.color = "#ef4444";
+          // Try to show the exact error message
+          $("#detDynStrategyStatus").textContent = err.message || "Erro ao guardar!";
+        }
+        btnSaveStrat.textContent = "Guardar";
+      };
 
-    $("#detBarStop").textContent = `${fmtEUR.format(stopTec)} (STOP)`;
-    $("#detBarPreco").textContent = `${fmtEUR.format(precoAtual)} (PREÇO)`;
-    $("#detBarAlvo").textContent = `${fmtEUR.format(tpObjetivo)} (ALVO)`;
+      const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
+      const formatSmaDelta = (sma, cur) => {
+        if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
+        const d = ((cur - sma) / sma) * 100;
+        return `${d > 0 ? "+" : ""}${d.toFixed(1)}%`;
+      };
+      $("#detYield").textContent = yPct;
+      $("#detPE").textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
 
-    // --- AÇÕES BOTÕES ---
-    const detModal = $("#activityDetailModal");
-    const bBuy = $("#detBtnBuy");
-    const bSell = $("#detBtnSell");
-    const bEdit = $("#detBtnEdit");
-    const bLink = $("#detBtnLink");
+      const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
+      const risk = precoAtual - stopTec;
+      const reward = tpObjetivo - precoAtual;
+      $("#detRR").textContent = risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
+      $("#detSMA50").textContent = formatSmaDelta(g._sma50, precoAtual);
+      $("#detSMA200").textContent = formatSmaDelta(s200, precoAtual);
 
-    bBuy.onclick = () => {
-      detModal.classList.add("hidden");
-      openActionModal("compra", g.ticker);
-    };
-    bSell.onclick = () => {
-      detModal.classList.add("hidden");
-      openActionModal("venda", g.ticker);
-    };
-    bEdit.onclick = () => {
-      detModal.classList.add("hidden");
-      document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
-    };
-    bLink.onclick = () => {
-      if (g.link) window.open(g.link, "_blank");
-      else {
+      $("#detBarStop").textContent = `${fmtEUR.format(stopTec)} (STOP)`;
+      $("#detBarPreco").textContent = `${fmtEUR.format(precoAtual)} (PREÇO)`;
+      $("#detBarAlvo").textContent = `${fmtEUR.format(tpObjetivo)} (ALVO)`;
+
+      // --- AÇÕES BOTÕES ---
+      const detModal = $("#activityDetailModal");
+      const bBuy = $("#detBtnBuy");
+      const bSell = $("#detBtnSell");
+      const bEdit = $("#detBtnEdit");
+      const bLink = $("#detBtnLink");
+
+      bBuy.onclick = () => {
+        detModal.classList.add("hidden");
+        openActionModal("compra", g.ticker);
+      };
+      bSell.onclick = () => {
+        detModal.classList.add("hidden");
+        openActionModal("venda", g.ticker);
+      };
+      bEdit.onclick = () => {
         detModal.classList.add("hidden");
         document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
-      }
-    };
-    bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
-    bBuy.textContent = estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar";
-
-    // --- CRISES ---
-    const detCriSel = $("#detCrisisSelector");
-    const detCriRes = $("#detCrisisResult");
-    if (detCriSel) {
-      detCriSel.innerHTML = '<option value="0">Simular cenário de queda...</option>' + 
-        CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name}</option>`).join("");
-      detCriSel.value = "0";
-      if (detCriRes) detCriRes.style.display = "none";
-
-      if (!detCriSel.__wired) {
-        detCriSel.__wired = true;
-        detCriSel.addEventListener("change", () => {
-          const dropPct = Number(detCriSel.value);
-          if (dropPct <= 0) {
-            detCriRes.style.display = "none";
-            return;
-          }
-          const tk = detCriSel.dataset.ticker;
-          const group = byTickerGlobal.get(tk);
-          if (!group) return;
-
-          const pCur = group.precoAtual || 0;
-          const cPrice = pCur * (1 - dropPct / 100);
-          const iO = group.investido || 0;
-          const qO = group.qtd || 0;
-          const nQ = qO + (iO / (cPrice || 1));
-          const nPM = (iO * 2) / nQ;
-
-          $("#detCrisisPrice").textContent = fmtEUR.format(cPrice);
-          $("#detCrisisCost").textContent = fmtEUR.format(iO);
-          $("#detCrisisNewPM").textContent = fmtEUR.format(nPM);
-          detCriRes.style.display = "block";
-        });
-      }
-      detCriSel.dataset.ticker = g.ticker;
-    }
-
-    detModal.classList.remove("hidden");
-  }
-
-  detClose?.addEventListener("click", () => detModal.classList.add("hidden"));
-  detModal?.addEventListener("click", (e) => {
-    if (e.target.id === "activityDetailModal") detModal.classList.add("hidden");
-  });
-
-  cancel?.addEventListener("click", closeModal);
-  modal?.addEventListener("click", (e) => {
-    if (e.target.id === "pfAddModal") closeModal();
-  });
-
-  // BUY/SELL buttons
-  document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
-    const buy = e.target.closest?.("[data-buy]");
-    const sell = e.target.closest?.("[data-sell]");
-    if (buy) openActionModal("compra", buy.getAttribute("data-buy"));
-    if (sell) openActionModal("venda", sell.getAttribute("data-sell"));
-  });
-
-  // Collapse per card (MODIFICADO para abrir o Modal de Detalhes)
-  document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
-    const t = e.target.closest?.("[data-toggle-card]");
-    if (!t) return;
-
-    const ticker = t.getAttribute("data-ticker");
-    if (ticker) {
-      openDetailModal(ticker);
-    }
-  });
-
-  // Edit button
-  document
-    .getElementById("listaAtividades")
-    ?.addEventListener("click", async (e) => {
-      const btn = e.target.closest?.("[data-edit]");
-      if (!btn) return;
-      const docId = btn.getAttribute("data-edit");
-      const ticker = btn.getAttribute("data-edit-ticker") || "";
-      if (!docId) {
-        alert("Não encontrei o último movimento deste ticker.");
-        return;
-      }
-
-      try {
-        const ref = doc(db, "ativos", docId);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
-          alert("Documento não encontrado.");
-          return;
+      };
+      bLink.onclick = () => {
+        if (g.link) window.open(g.link, "_blank");
+        else {
+          detModal.classList.add("hidden");
+          document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
         }
-        const d = snap.data();
+      };
+      bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
+      bBuy.textContent = estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar";
 
-        modal?.classList.remove("hidden");
-        if (title) title.textContent = "Editar movimento";
-        if (tipoSel) tipoSel.value = "edicao";
-        const idHidden = document.getElementById("pfDocId");
-        if (idHidden) idHidden.value = docId;
+      // --- CRISES ---
+      const detCriSel = $("#detCrisisSelector");
+      const detCriRes = $("#detCrisisResult");
+      if (detCriSel) {
+        detCriSel.innerHTML = '<option value="0">Simular cenário de queda...</option>' +
+          CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name}</option>`).join("");
+        detCriSel.value = "0";
+        if (detCriRes) detCriRes.style.display = "none";
 
-        if (fTicker) fTicker.value = d.ticker || ticker || "";
-        if (fNome) fNome.value = d.nome || "";
-        if (fSetor) fSetor.value = d.setor || "";
-        if (fMerc) fMerc.value = d.mercado || "";
-        if (fQtd) fQtd.value = Number(d.quantidade || 0);
-        if (fPreco) fPreco.value = Number(d.precoCompra || 0);
-        if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
-        if (fLink) fLink.value = d.linkExterno || "";
+        if (!detCriSel.__wired) {
+          detCriSel.__wired = true;
+          detCriSel.addEventListener("change", () => {
+            const dropPct = Number(detCriSel.value);
+            if (dropPct <= 0) {
+              detCriRes.style.display = "none";
+              return;
+            }
+            const tk = detCriSel.dataset.ticker;
+            const group = byTickerGlobal.get(tk);
+            if (!group) return;
 
-        if (labelP) labelP.textContent = "Preço (€)";
-        if (vendaTotWrap) vendaTotWrap.style.display = "none";
-      } catch (err) {
-        console.error("Falha ao abrir edição:", err);
-        alert("Não foi possível abrir a edição.");
+            const pCur = group.precoAtual || 0;
+            const cPrice = pCur * (1 - dropPct / 100);
+            const iO = group.investido || 0;
+            const qO = group.qtd || 0;
+            const nQ = qO + (iO / (cPrice || 1));
+            const nPM = (iO * 2) / nQ;
+
+            $("#detCrisisPrice").textContent = fmtEUR.format(cPrice);
+            $("#detCrisisCost").textContent = fmtEUR.format(iO);
+            $("#detCrisisNewPM").textContent = fmtEUR.format(nPM);
+            detCriRes.style.display = "block";
+          });
+        }
+        detCriSel.dataset.ticker = g.ticker;
+      }
+
+      detModal.classList.remove("hidden");
+    }
+
+    detClose?.addEventListener("click", () => detModal.classList.add("hidden"));
+    detModal?.addEventListener("click", (e) => {
+      if (e.target.id === "activityDetailModal") detModal.classList.add("hidden");
+    });
+
+    cancel?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", (e) => {
+      if (e.target.id === "pfAddModal") closeModal();
+    });
+
+    // BUY/SELL buttons
+    document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
+      const buy = e.target.closest?.("[data-buy]");
+      const sell = e.target.closest?.("[data-sell]");
+      if (buy) openActionModal("compra", buy.getAttribute("data-buy"));
+      if (sell) openActionModal("venda", sell.getAttribute("data-sell"));
+    });
+
+    // Collapse per card (MODIFICADO para abrir o Modal de Detalhes)
+    document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
+      const t = e.target.closest?.("[data-toggle-card]");
+      if (!t) return;
+
+      const ticker = t.getAttribute("data-ticker");
+      if (ticker) {
+        openDetailModal(ticker);
       }
     });
 
-  // Tipo muda o label e visibilidade de venda total
-  tipoSel?.addEventListener("change", () => {
-    const isVenda = tipoSel.value === "venda";
-
-    if (labelP)
-      labelP.textContent = isVenda
-        ? "Preço de venda (€)"
-        : "Preço de compra (€)";
-
-    if (vendaTotWrap) vendaTotWrap.style.display = isVenda ? "block" : "none";
-
-    // (NOVO) se não for venda, limpar estado de "venda total"
-    if (!isVenda) {
-      if (vendaTot) vendaTot.checked = false;
-      if (fQtd) {
-        fQtd.removeAttribute("readonly");
-        // se quiseres limpar também o valor, descomenta:
-        // fQtd.value = "";
-      }
-    }
-  });
-
-  // ===============================
-  // Venda total = fechar posição (SEM apagar histórico)
-  // ===============================
-  vendaTot?.addEventListener("change", () => {
-    const checked = !!vendaTot.checked;
-    const pos = Number(fPosAtual?.value || currentPosQty || 0);
-
-    if (!fQtd) return;
-
-    if (checked) {
-      if (!(pos > 0)) {
-        alert("Não há posição para fechar (quantidade em carteira = 0).");
-        vendaTot.checked = false;
-        return;
-      }
-
-      // preenche com a posição total
-      fQtd.value = Math.abs(pos).toString();
-      fQtd.setAttribute("readonly", "readonly");
-    } else {
-      fQtd.removeAttribute("readonly");
-      fQtd.value = "";
-    }
-  });
-
-  // Submit
-  form?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const tipo = (tipoSel?.value || "compra").toLowerCase(); // compra | venda | edicao
-    const nome = fNome?.value.trim() || "";
-    const ticker = fTicker?.value.trim().toUpperCase() || "";
-    const setor = fSetor?.value.trim() || "";
-    const merc = fMerc?.value.trim() || "";
-    const qtd = toNumStrict(fQtd?.value);
-    const preco = toNumStrict(fPreco?.value);
-    const obj = toNumStrict(fObj?.value);
-    const lnk = fLink?.value?.trim() || "";
-    const vendaTotal = !!vendaTot?.checked;
-    const docId = (document.getElementById("pfDocId")?.value || "").trim();
-
-    try {
-      if (tipo === "edicao" && docId) {
-        // Obter o documento original antes de editar
-        const docRef = doc(db, "ativos", docId);
-        const snap = await getDoc(docRef);
-        const originalData = snap.exists() ? snap.data() : {};
-        const oldTicker = (originalData.ticker || "").toUpperCase();
-
-        // 1. Atualizar o registo atual
-        await updateDoc(docRef, {
-          nome,
-          ticker,
-          setor,
-          mercado: merc,
-          quantidade: Number.isFinite(qtd) ? qtd : 0,
-          precoCompra: Number.isFinite(preco) ? preco : 0,
-          objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
-          linkExterno: lnk,
-        });
-
-        // 2. (NOVO) Se o objetivo ou link mudou, propagar para TODOS os registos deste ticker
-        if (
-          (Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) ||
-          lnk !== originalData.linkExterno
-        ) {
-          const q = query(
-            collection(db, "ativos"),
-            where("ticker", "==", ticker),
-          );
-          const snapAll = await getDocs(q);
-          const updates = snapAll.docs.map((d) =>
-            updateDoc(d.ref, {
-              objetivoFinanceiro: obj,
-              linkExterno: lnk,
-            }),
-          );
-          await Promise.all(updates);
+    // Edit button
+    document
+      .getElementById("listaAtividades")
+      ?.addEventListener("click", async (e) => {
+        const btn = e.target.closest?.("[data-edit]");
+        if (!btn) return;
+        const docId = btn.getAttribute("data-edit");
+        const ticker = btn.getAttribute("data-edit-ticker") || "";
+        if (!docId) {
+          alert("Não encontrei o último movimento deste ticker.");
+          return;
         }
+
+        try {
+          const ref = doc(db, "ativos", docId);
+          const snap = await getDoc(ref);
+          if (!snap.exists()) {
+            alert("Documento não encontrado.");
+            return;
+          }
+          const d = snap.data();
+
+          modal?.classList.remove("hidden");
+          if (title) title.textContent = "Editar movimento";
+          if (tipoSel) tipoSel.value = "edicao";
+          const idHidden = document.getElementById("pfDocId");
+          if (idHidden) idHidden.value = docId;
+
+          if (fTicker) fTicker.value = d.ticker || ticker || "";
+          if (fNome) fNome.value = d.nome || "";
+          if (fSetor) fSetor.value = d.setor || "";
+          if (fMerc) fMerc.value = d.mercado || "";
+          if (fQtd) fQtd.value = Number(d.quantidade || 0);
+          if (fPreco) fPreco.value = Number(d.precoCompra || 0);
+          if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
+          if (fLink) fLink.value = d.linkExterno || "";
+
+          if (labelP) labelP.textContent = "Preço (€)";
+          if (vendaTotWrap) vendaTotWrap.style.display = "none";
+        } catch (err) {
+          console.error("Falha ao abrir edição:", err);
+          alert("Não foi possível abrir a edição.");
+        }
+      });
+
+    // Tipo muda o label e visibilidade de venda total
+    tipoSel?.addEventListener("change", () => {
+      const isVenda = tipoSel.value === "venda";
+
+      if (labelP)
+        labelP.textContent = isVenda
+          ? "Preço de venda (€)"
+          : "Preço de compra (€)";
+
+      if (vendaTotWrap) vendaTotWrap.style.display = isVenda ? "block" : "none";
+
+      // (NOVO) se não for venda, limpar estado de "venda total"
+      if (!isVenda) {
+        if (vendaTot) vendaTot.checked = false;
+        if (fQtd) {
+          fQtd.removeAttribute("readonly");
+          // se quiseres limpar também o valor, descomenta:
+          // fQtd.value = "";
+        }
+      }
+    });
+
+    // ===============================
+    // Venda total = fechar posição (SEM apagar histórico)
+    // ===============================
+    vendaTot?.addEventListener("change", () => {
+      const checked = !!vendaTot.checked;
+      const pos = Number(fPosAtual?.value || currentPosQty || 0);
+
+      if (!fQtd) return;
+
+      if (checked) {
+        if (!(pos > 0)) {
+          alert("Não há posição para fechar (quantidade em carteira = 0).");
+          vendaTot.checked = false;
+          return;
+        }
+
+        // preenche com a posição total
+        fQtd.value = Math.abs(pos).toString();
+        fQtd.setAttribute("readonly", "readonly");
       } else {
-        let qtdEfetiva = qtd;
-
-        // venda total → usar posição atual
-        if (tipo === "venda" && vendaTotal) {
-          const pos = Number(fPosAtual?.value || currentPosQty || 0);
-          qtdEfetiva = Math.abs(pos);
-
-          if (!(qtdEfetiva > 0)) {
-            alert("Não há posição para fechar (quantidade em carteira = 0).");
-            return;
-          }
-        }
-
-        // validação base
-        if (
-          !ticker ||
-          !nome ||
-          !Number.isFinite(qtdEfetiva) ||
-          !Number.isFinite(preco) ||
-          qtdEfetiva <= 0 ||
-          preco <= 0
-        ) {
-          alert("Preenche Ticker, Nome, Quantidade (>0) e Preço (>0).");
-          return;
-        }
-
-        // venda parcial não pode exceder a posição
-        if (tipo === "venda" && !vendaTotal) {
-          const pos = Number(fPosAtual?.value || currentPosQty || 0);
-          if (qtdEfetiva > pos) {
-            alert(`Não podes vender mais do que tens. Posição atual: ${pos}`);
-            return;
-          }
-        }
-        const quantidade =
-          tipo === "venda" ? -Math.abs(qtdEfetiva) : Math.abs(qtdEfetiva);
-        const payload = {
-          tipoAcao: tipo,
-          nome,
-          ticker,
-          setor,
-          mercado: merc,
-          quantidade,
-          precoCompra: preco,
-          objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
-          linkExterno: lnk,
-          dataCompra: serverTimestamp(),
-        };
-        await addDoc(collection(db, "ativos"), payload);
-
-        // (OPCIONAL) Propagar objetivo/link para todos os outros registos deste ticker
-        // Isto garante que se mudas o link numa nova compra, ele reflete-se no plano de trade global
-        if (obj > 0 || lnk) {
-          const q = query(
-            collection(db, "ativos"),
-            where("ticker", "==", ticker),
-          );
-          const snapAll = await getDocs(q);
-          const upds = snapAll.docs.map((d) =>
-            updateDoc(d.ref, {
-              objetivoFinanceiro:
-                obj > 0 ? obj : d.data().objetivoFinanceiro || 0,
-              linkExterno: lnk || d.data().linkExterno || "",
-            }),
-          );
-          await Promise.all(upds);
-        }
+        fQtd.removeAttribute("readonly");
+        fQtd.value = "";
       }
+    });
 
-      closeModal();
-      // Removido location.reload() - a atualização é agora em tempo real via onSnapshot
-    } catch (err) {
-      console.error("❌ Erro ao guardar movimento:", err);
-      alert("Não foi possível guardar. Tenta novamente.");
-    }
-  });
-}
+    // Submit
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-// ===============================
-// Ajuda (popup)
-// ===============================
-const HELP_KEY = "prt.help.dismissed";
-function wirePortfolioHelpModal() {
-  const modal = document.getElementById("prtHelpModal");
-  if (!modal || modal.__wired) return;
-  modal.__wired = true;
+      const tipo = (tipoSel?.value || "compra").toLowerCase(); // compra | venda | edicao
+      const nome = fNome?.value.trim() || "";
+      const ticker = fTicker?.value.trim().toUpperCase() || "";
+      const setor = fSetor?.value.trim() || "";
+      const merc = fMerc?.value.trim() || "";
+      const qtd = toNumStrict(fQtd?.value);
+      const preco = toNumStrict(fPreco?.value);
+      const obj = toNumStrict(fObj?.value);
+      const lnk = fLink?.value?.trim() || "";
+      const vendaTotal = !!vendaTot?.checked;
+      const docId = (document.getElementById("pfDocId")?.value || "").trim();
 
-  const closeBtn = document.getElementById("prtHelpClose");
-  const okBtn = document.getElementById("prtHelpOK");
-  const laterBtn = document.getElementById("prtHelpLater");
-  const dontShow = document.getElementById("prtHelpDontShow");
-  const helpIcon = document.getElementById("btnPrtHelp");
-
-  const close = (persist) => {
-    if (persist && dontShow?.checked) {
       try {
-        localStorage.setItem(HELP_KEY, "1");
-      } catch {}
-    }
-    modal.classList.add("hidden");
-  };
+        if (tipo === "edicao" && docId) {
+          // Obter o documento original antes de editar
+          const docRef = doc(db, "ativos", docId);
+          const snap = await getDoc(docRef);
+          const originalData = snap.exists() ? snap.data() : {};
+          const oldTicker = (originalData.ticker || "").toUpperCase();
 
-  closeBtn?.addEventListener("click", () => close(false));
-  laterBtn?.addEventListener("click", () => close(false));
-  okBtn?.addEventListener("click", () => close(true));
-  helpIcon?.addEventListener("click", () => showPortfolioHelp(true));
+          // 1. Atualizar o registo atual
+          await updateDoc(docRef, {
+            nome,
+            ticker,
+            setor,
+            mercado: merc,
+            quantidade: Number.isFinite(qtd) ? qtd : 0,
+            precoCompra: Number.isFinite(preco) ? preco : 0,
+            objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
+            linkExterno: lnk,
+          });
 
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) close(false);
-  });
-  document.addEventListener("keydown", (e) => {
-    if (!modal.classList.contains("hidden") && e.key === "Escape") close(false);
-  });
-}
+          // 2. (NOVO) Se o objetivo ou link mudou, propagar para TODOS os registos deste ticker
+          if (
+            (Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) ||
+            lnk !== originalData.linkExterno
+          ) {
+            const q = query(
+              collection(db, "ativos"),
+              where("ticker", "==", ticker),
+            );
+            const snapAll = await getDocs(q);
+            const updates = snapAll.docs.map((d) =>
+              updateDoc(d.ref, {
+                objetivoFinanceiro: obj,
+                linkExterno: lnk,
+              }),
+            );
+            await Promise.all(updates);
+          }
+        } else {
+          let qtdEfetiva = qtd;
 
-function showPortfolioHelp(force = false) {
-  const modal = document.getElementById("prtHelpModal");
-  if (!modal) return;
-  if (!force) {
-    try {
-      if (localStorage.getItem(HELP_KEY) === "1") return;
-    } catch {}
-  }
-  modal.classList.remove("hidden");
-}
+          // venda total → usar posição atual
+          if (tipo === "venda" && vendaTotal) {
+            const pos = Number(fPosAtual?.value || currentPosQty || 0);
+            qtdEfetiva = Math.abs(pos);
 
-// ===============================
-// INIT (screen)
-// ===============================
-let _lastAtivosSnap = null;
-let _lastAcoesSnap = null;
-let fltState = { estado: "", mercado: "", setor: "", sort: "queda" };
+            if (!(qtdEfetiva > 0)) {
+              alert("Não há posição para fechar (quantidade em carteira = 0).");
+              return;
+            }
+          }
 
-export async function initScreen() {
-  const cont = document.getElementById("listaAtividades");
-  if (!cont) return;
+          // validação base
+          if (
+            !ticker ||
+            !nome ||
+            !Number.isFinite(qtdEfetiva) ||
+            !Number.isFinite(preco) ||
+            qtdEfetiva <= 0 ||
+            preco <= 0
+          ) {
+            alert("Preenche Ticker, Nome, Quantidade (>0) e Preço (>0).");
+            return;
+          }
 
-  _eventsWired = false; // reset para garantir que os listeners se ligam ao novo DOM
-  cont.innerHTML = "A carregar…";
+          // venda parcial não pode exceder a posição
+          if (tipo === "venda" && !vendaTotal) {
+            const pos = Number(fPosAtual?.value || currentPosQty || 0);
+            if (qtdEfetiva > pos) {
+              alert(`Não podes vender mais do que tens. Posição atual: ${pos}`);
+              return;
+            }
+          }
+          const quantidade =
+            tipo === "venda" ? -Math.abs(qtdEfetiva) : Math.abs(qtdEfetiva);
+          const payload = {
+            tipoAcao: tipo,
+            nome,
+            ticker,
+            setor,
+            mercado: merc,
+            quantidade,
+            precoCompra: preco,
+            objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
+            linkExterno: lnk,
+            dataCompra: serverTimestamp(),
+          };
+          await addDoc(collection(db, "ativos"), payload);
 
-  // Registrar ajuda
-  wirePortfolioHelpModal();
-  showPortfolioHelp();
-
-  await ensureChartJS();
-
-  // Wire filters
-  const fEstado = document.getElementById("fltEstado");
-  const fMercado = document.getElementById("fltMercado");
-  const fSetor = document.getElementById("fltSetor");
-  const fSort = document.getElementById("fltSort");
-
-  [fEstado, fMercado, fSetor, fSort].forEach((el) => {
-    el?.addEventListener("change", () => {
-      fltState = {
-        estado: fEstado.value,
-        mercado: fMercado.value,
-        setor: fSetor.value,
-        sort: fSort.value,
-      };
-      handleUpdate();
-    });
-  });
-
-  const handleUpdate = async () => {
-    if (!_lastAtivosSnap || !_lastAcoesSnap) return;
-    await processAndRender(_lastAtivosSnap, _lastAcoesSnap);
-  };
-
-  // Listeners em tempo real
-  onSnapshot(
-    query(collection(db, "ativos"), orderBy("dataCompra", "asc")),
-    (snap) => {
-      _lastAtivosSnap = snap;
-      handleUpdate();
-    },
-  );
-
-  onSnapshot(collection(db, "acoesDividendos"), (snap) => {
-    _lastAcoesSnap = snap;
-    handleUpdate();
-  });
-}
-
-async function processAndRender(snap, aSnap) {
-  const cont = document.getElementById("listaAtividades");
-  if (!cont) return;
-
-  try {
-    const infoMap = new Map();
-    aSnap.forEach((d) => {
-      const x = d.data();
-      if (x.ticker) infoMap.set(String(x.ticker).toUpperCase(), x);
-    });
-
-    const grupos = new Map();
-    const movimentosAsc = [];
-
-    snap.forEach((docu) => {
-      const d = docu.data();
-      const dt =
-        d.dataCompra && typeof d.dataCompra.toDate === "function"
-          ? d.dataCompra.toDate()
-          : null;
-
-      const ticker = String(d.ticker || "").toUpperCase();
-      if (!ticker) return;
-
-      const qtd = toNumStrict(d.quantidade);
-      const preco = toNumStrict(d.precoCompra);
-      const safeQtd = Number.isFinite(qtd) ? qtd : 0;
-      const safePreco = Number.isFinite(preco) ? preco : 0;
-
-      const g = grupos.get(ticker) || {
-        ticker,
-        nome: d.nome || ticker,
-        setor: d.setor || "-",
-        mercado: d.mercado || "-",
-        qtd: 0,
-        custoMedio: 0,
-        investido: 0,
-        realizado: 0,
-        objetivo: 0,
-        link: "",
-        anyObjSet: false,
-        lastDate: null,
-        lastDocId: null,
-      };
-
-      if (safeQtd > 0) {
-        const totalAntes = g.qtd * g.custoMedio;
-        const totalCompra = safeQtd * safePreco;
-        const novaQtd = g.qtd + safeQtd;
-        g.custoMedio = novaQtd > 0 ? (totalAntes + totalCompra) / novaQtd : 0;
-        g.qtd = novaQtd;
-      } else if (safeQtd < 0) {
-        const sellQtd = Math.abs(safeQtd);
-        const lucro = (safePreco - g.custoMedio) * sellQtd;
-        g.realizado += lucro;
-        g.qtd -= sellQtd;
-        if (g.qtd <= 0) {
-          g.qtd = 0;
-          g.custoMedio = 0;
+          // (OPCIONAL) Propagar objetivo/link para todos os outros registos deste ticker
+          // Isto garante que se mudas o link numa nova compra, ele reflete-se no plano de trade global
+          if (obj > 0 || lnk) {
+            const q = query(
+              collection(db, "ativos"),
+              where("ticker", "==", ticker),
+            );
+            const snapAll = await getDocs(q);
+            const upds = snapAll.docs.map((d) =>
+              updateDoc(d.ref, {
+                objetivoFinanceiro:
+                  obj > 0 ? obj : d.data().objetivoFinanceiro || 0,
+                linkExterno: lnk || d.data().linkExterno || "",
+              }),
+            );
+            await Promise.all(upds);
+          }
         }
+
+        closeModal();
+        // Removido location.reload() - a atualização é agora em tempo real via onSnapshot
+      } catch (err) {
+        console.error("❌ Erro ao guardar movimento:", err);
+        alert("Não foi possível guardar. Tenta novamente.");
       }
+    });
+  }
 
-      g.investido = g.qtd * g.custoMedio;
-      const obj = toNumStrict(d.objetivoFinanceiro);
-      if (!g.anyObjSet && Number.isFinite(obj) && obj > 0) {
-        g.objetivo = obj;
-        if (d.linkExterno) g.link = d.linkExterno;
-        g.anyObjSet = true;
-      } else if (d.linkExterno && !g.link) {
-        g.link = d.linkExterno;
+  // ===============================
+  // Ajuda (popup)
+  // ===============================
+  const HELP_KEY = "prt.help.dismissed";
+  function wirePortfolioHelpModal() {
+    const modal = document.getElementById("prtHelpModal");
+    if (!modal || modal.__wired) return;
+    modal.__wired = true;
+
+    const closeBtn = document.getElementById("prtHelpClose");
+    const okBtn = document.getElementById("prtHelpOK");
+    const laterBtn = document.getElementById("prtHelpLater");
+    const dontShow = document.getElementById("prtHelpDontShow");
+    const helpIcon = document.getElementById("btnPrtHelp");
+
+    const close = (persist) => {
+      if (persist && dontShow?.checked) {
+        try {
+          localStorage.setItem(HELP_KEY, "1");
+        } catch { }
       }
+      modal.classList.add("hidden");
+    };
 
-      if (!g.lastDate || (dt && dt > g.lastDate)) {
-        g.lastDate = dt;
-        g.lastDocId = docu.id;
-      }
+    closeBtn?.addEventListener("click", () => close(false));
+    laterBtn?.addEventListener("click", () => close(false));
+    okBtn?.addEventListener("click", () => close(true));
+    helpIcon?.addEventListener("click", () => showPortfolioHelp(true));
 
-      g.nome = d.nome || g.nome;
-      g.setor = d.setor || g.setor;
-      g.mercado = d.mercado || g.mercado;
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) close(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("hidden") && e.key === "Escape") close(false);
+    });
+  }
 
-      grupos.set(ticker, g);
-      movimentosAsc.push({
-        date: dt || new Date(0),
-        ticker,
-        qtd: safeQtd,
-        preco: safePreco,
+  function showPortfolioHelp(force = false) {
+    const modal = document.getElementById("prtHelpModal");
+    if (!modal) return;
+    if (!force) {
+      try {
+        if (localStorage.getItem(HELP_KEY) === "1") return;
+      } catch { }
+    }
+    modal.classList.remove("hidden");
+  }
+
+  // ===============================
+  // INIT (screen)
+  // ===============================
+  let _lastAtivosSnap = null;
+  let _lastAcoesSnap = null;
+  let _lastStrategySnap = null;
+  window._dynamicStrategyGlobals = { CORE: 0.65, SATELLITE: 0.35 };
+  window._dynamicStrategyTickers = {};
+  let fltState = { estado: "", mercado: "", setor: "", sort: "queda" };
+
+  export async function initScreen() {
+    const cont = document.getElementById("listaAtividades");
+    if (!cont) return;
+
+    _eventsWired = false; // reset para garantir que os listeners se ligam ao novo DOM
+    cont.innerHTML = "A carregar…";
+
+    // Registrar ajuda
+    wirePortfolioHelpModal();
+    showPortfolioHelp();
+
+    await ensureChartJS();
+
+    // Wire filters
+    const fEstado = document.getElementById("fltEstado");
+    const fMercado = document.getElementById("fltMercado");
+    const fSetor = document.getElementById("fltSetor");
+    const fSort = document.getElementById("fltSort");
+
+    [fEstado, fMercado, fSetor, fSort].forEach((el) => {
+      el?.addEventListener("change", () => {
+        fltState = {
+          estado: fEstado.value,
+          mercado: fMercado.value,
+          setor: fSetor.value,
+          sort: fSort.value,
+        };
+        handleUpdate();
       });
     });
 
-    const gruposArr = Array.from(grupos.values());
-    const fmtEUR = new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
+    const handleUpdate = async () => {
+      if (!_lastAtivosSnap || !_lastAcoesSnap) return;
+      await processAndRender(_lastAtivosSnap, _lastAcoesSnap, _lastStrategySnap);
+    };
+
+    // Listeners em tempo real
+    onSnapshot(
+      query(collection(db, "ativos"), orderBy("dataCompra", "asc")),
+      (snap) => {
+        _lastAtivosSnap = snap;
+        handleUpdate();
+      },
+    );
+
+    onSnapshot(collection(db, "acoesDividendos"), (snap) => {
+      _lastAcoesSnap = snap;
+      handleUpdate();
     });
 
-    const rowsForYield = [];
-    gruposArr.forEach((g) => {
-      const info = infoMap.get(g.ticker) || {};
-      const precoAtual = isFiniteNum(info.valorStock)
-        ? Number(info.valorStock)
-        : null;
-      const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
-      g.lucroAtual =
-        precoAtual !== null ? (precoAtual - precoMedio) * g.qtd : 0;
-      g.precoAtual = precoAtual;
+    onSnapshot(doc(db, "config", "strategy"), (snap) => {
+      _lastStrategySnap = snap;
+      handleUpdate();
+    });
+  }
 
-      // --- Normalização de dados (alinhamento com analise.js) ---
-      const dividendoUnit = isFiniteNum(info.dividendo)
-        ? Number(info.dividendo)
-        : 0;
-      const dmed24 = isFiniteNum(info.dividendoMedio24m)
-        ? Number(info.dividendoMedio24m)
-        : 0;
+  async function processAndRender(snap, aSnap, stratSnap) {
+    const cont = document.getElementById("listaAtividades");
+    if (!cont) return;
 
-      const pe =
-        Number(info.pe) ||
-        Number(info.peRatio) ||
-        Number(info["P/E ratio (Preço/Lucro)"]) ||
-        null;
-      const sma50 = Number(info.sma50) || Number(info.SMA50) || null;
-      const sma200 = Number(info.sma200) || Number(info.SMA200) || null;
-      const periodicidade = info.periodicidade || "";
-      const payN = pagamentosAno(periodicidade);
+    try {
+      let dynTickers = {};
+      let dynCoreTotal = 0.65;
+      let dynSatTotal = 0.35;
+      if (stratSnap && stratSnap.exists()) {
+        const dd = stratSnap.data();
+        dynTickers = dd.tickers || {};
+        if (typeof dd.coreWeight === "number") dynCoreTotal = dd.coreWeight / 100;
+        if (typeof dd.satelliteWeight === "number") dynSatTotal = dd.satelliteWeight / 100;
+      }
+    
+      window._dynamicStrategyGlobals = { CORE: dynCoreTotal, SATELLITE: dynSatTotal };
+      window._dynamicStrategyTickers = dynTickers;
 
-      const yCur =
-        precoAtual && dividendoUnit > 0 && periodicidade
-          ? (dividendoUnit * payN) / precoAtual
-          : precoAtual && dmed24 > 0
-            ? dmed24 / precoAtual
+      const getDynStrat = (tk, nm) => {
+        if (dynTickers && dynTickers[tk]) {
+          if (dynTickers[tk].category === "NONE" || dynTickers[tk].category === null) return null;
+          return { category: dynTickers[tk].category, target: (dynTickers[tk].target || 0) / 100 };
+        }
+        return getStrategicInfo(tk, nm);
+      };
+
+      const infoMap = new Map();
+      aSnap.forEach((d) => {
+        const x = d.data();
+        if (x.ticker) infoMap.set(String(x.ticker).toUpperCase(), x);
+      });
+
+      const grupos = new Map();
+      const movimentosAsc = [];
+
+      snap.forEach((docu) => {
+        const d = docu.data();
+        const dt =
+          d.dataCompra && typeof d.dataCompra.toDate === "function"
+            ? d.dataCompra.toDate()
             : null;
 
-      const y24m = precoAtual && dmed24 > 0 ? dmed24 / precoAtual : null;
+        const ticker = String(d.ticker || "").toUpperCase();
+        if (!ticker) return;
 
-      // Guardar métricas normalizadas no objeto do grupo
-      g._yCur = yCur;
-      g._y24m = y24m;
-      g._pe = pe;
-      g._sma50 = sma50;
-      g._sma200 = sma200;
-      g._divUnit = dividendoUnit;
-      g._divAnual = dmed24 || dividendoUnit * payN; // Usa média 24m ou projeta
+        const qtd = toNumStrict(d.quantidade);
+        const preco = toNumStrict(d.precoCompra);
+        const safeQtd = Number.isFinite(qtd) ? qtd : 0;
+        const safePreco = Number.isFinite(preco) ? preco : 0;
 
-      rowsForYield.push({
-        ticker: g.ticker,
-        active: g.qtd > 0,
-        yieldCur: yCur,
+        const g = grupos.get(ticker) || {
+          ticker,
+          nome: d.nome || ticker,
+          setor: d.setor || "-",
+          mercado: d.mercado || "-",
+          qtd: 0,
+          custoMedio: 0,
+          investido: 0,
+          realizado: 0,
+          objetivo: 0,
+          link: "",
+          anyObjSet: false,
+          lastDate: null,
+          lastDocId: null,
+        };
+
+        if (safeQtd > 0) {
+          const totalAntes = g.qtd * g.custoMedio;
+          const totalCompra = safeQtd * safePreco;
+          const novaQtd = g.qtd + safeQtd;
+          g.custoMedio = novaQtd > 0 ? (totalAntes + totalCompra) / novaQtd : 0;
+          g.qtd = novaQtd;
+        } else if (safeQtd < 0) {
+          const sellQtd = Math.abs(safeQtd);
+          const lucro = (safePreco - g.custoMedio) * sellQtd;
+          g.realizado += lucro;
+          g.qtd -= sellQtd;
+          if (g.qtd <= 0) {
+            g.qtd = 0;
+            g.custoMedio = 0;
+          }
+        }
+
+        g.investido = g.qtd * g.custoMedio;
+        const obj = toNumStrict(d.objetivoFinanceiro);
+        if (!g.anyObjSet && Number.isFinite(obj) && obj > 0) {
+          g.objetivo = obj;
+          if (d.linkExterno) g.link = d.linkExterno;
+          g.anyObjSet = true;
+        } else if (d.linkExterno && !g.link) {
+          g.link = d.linkExterno;
+        }
+
+        if (!g.lastDate || (dt && dt > g.lastDate)) {
+          g.lastDate = dt;
+          g.lastDocId = docu.id;
+        }
+
+        g.nome = d.nome || g.nome;
+        g.setor = d.setor || g.setor;
+        g.mercado = d.mercado || g.mercado;
+
+        grupos.set(ticker, g);
+        movimentosAsc.push({
+          date: dt || new Date(0),
+          ticker,
+          qtd: safeQtd,
+          preco: safePreco,
+        });
       });
-    });
 
-    // 2.1) Distribuições (apenas abertas)
-    const setoresMap = new Map(),
-      mercadosMap = new Map();
-    for (const g of gruposArr) {
-      if ((g.qtd || 0) <= 0) continue;
-      const setor = g.setor || "—";
-      setoresMap.set(setor, (setoresMap.get(setor) || 0) + (g.investido || 0));
-      const merc = g.mercado || "—";
-      mercadosMap.set(merc, (mercadosMap.get(merc) || 0) + (g.investido || 0));
-    }
+      const gruposArr = Array.from(grupos.values());
+      const fmtEUR = new Intl.NumberFormat("pt-PT", {
+        style: "currency",
+        currency: "EUR",
+      });
 
-    // 2.2) KPIs agregados
-    const abertos = gruposArr.filter((g) => g.qtd > 0);
-    const totalInvestido = abertos.reduce((a, g) => a + (g.investido || 0), 0);
+      const rowsForYield = [];
+      gruposArr.forEach((g) => {
+        const info = infoMap.get(g.ticker) || {};
+        const precoAtual = isFiniteNum(info.valorStock)
+          ? Number(info.valorStock)
+          : null;
+        const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
+        g.lucroAtual =
+          precoAtual !== null ? (precoAtual - precoMedio) * g.qtd : 0;
+        g.precoAtual = precoAtual;
 
-    // Lucro Atual (aberto)
-    const lucroAberto = abertos.reduce((a, g) => a + (g.lucroAtual || 0), 0);
-    // Lucro Total (Acumulado) = Lucro Aberto + Lucro já realizado (vendas passadas)
-    const lucroRealizado = gruposArr.reduce(
-      (a, g) => a + (g.realizado || 0),
-      0,
-    );
-    const lucroTotal = lucroAberto + lucroRealizado;
+        // --- Normalização de dados (alinhamento com analise.js) ---
+        const dividendoUnit = isFiniteNum(info.dividendo)
+          ? Number(info.dividendo)
+          : 0;
+        const dmed24 = isFiniteNum(info.dividendoMedio24m)
+          ? Number(info.dividendoMedio24m)
+          : 0;
 
-    const retornoPct = totalInvestido ? (lucroTotal / totalInvestido) * 100 : 0;
+        const pe =
+          Number(info.pe) ||
+          Number(info.peRatio) ||
+          Number(info["P/E ratio (Preço/Lucro)"]) ||
+          null;
+        const sma50 = Number(info.sma50) || Number(info.SMA50) || null;
+        const sma200 = Number(info.sma200) || Number(info.SMA200) || null;
+        const periodicidade = info.periodicidade || "";
+        const payN = pagamentosAno(periodicidade);
 
-    // Dividendos
-    let rendimentoAnual = 0;
-    const eurosMes = new Array(12).fill(0);
-    for (const g of abertos) {
-      const info = infoMap.get(g.ticker) || {};
-      const divUnit = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0;
-      const per = info.periodicidade;
-      const mesT = info.mes;
-      const payN = pagamentosAno(per);
-      rendimentoAnual += g.qtd * divUnit * payN;
-      for (const m of mesesPagos(per, mesT)) eurosMes[m] += g.qtd * divUnit;
-    }
+        const yCur =
+          precoAtual && dividendoUnit > 0 && periodicidade
+            ? (dividendoUnit * payN) / precoAtual
+            : precoAtual && dmed24 > 0
+              ? dmed24 / precoAtual
+              : null;
 
-    // Exposição acima da SMA200
-    let somaPesosAcima = 0;
-    for (const g of abertos) {
-      if (!totalInvestido) continue;
-      const w = (g.investido || 0) / totalInvestido;
-      const p = g.precoAtual,
-        s200 = g._sma200;
-      if (isFiniteNum(p) && isFiniteNum(s200) && Number(p) > Number(s200))
-        somaPesosAcima += w;
-    }
-    const expSMA200Pct = somaPesosAcima * 100;
+        const y24m = precoAtual && dmed24 > 0 ? dmed24 / precoAtual : null;
 
-    // Preencher KPIs
-    const elTI = document.getElementById("prtTotalInvestido");
-    const elLT = document.getElementById("prtLucroTotal");
-    const elLA = document.getElementById("prtLucroAcumulado");
-    const elRA = document.getElementById("prtRendimentoAnual");
-    const elRP = document.getElementById("prtRetorno");
-    const elEX = document.getElementById("prtExpSMA200");
-    const elWC = document.getElementById("prtWarChest");
+        // Guardar métricas normalizadas no objeto do grupo
+        g._yCur = yCur;
+        g._y24m = y24m;
+        g._pe = pe;
+        g._sma50 = sma50;
+        g._sma200 = sma200;
+        g._divUnit = dividendoUnit;
+        g._divAnual = dmed24 || dividendoUnit * payN; // Usa média 24m ou projeta
 
-    // --- (NOVO) Cálculo Estratégico do War Chest (CORE/SATELLITE) ---
-    let totalWarChest = 0;
-    let satWeightTotal = 0;
+        rowsForYield.push({
+          ticker: g.ticker,
+          active: g.qtd > 0,
+          yieldCur: yCur,
+        });
+      });
 
-    // Primeiro pass: calcular exposição de Satélites
-    for (const g of abertos) {
-      const sInfo = getStrategicInfo(g.ticker, g.nome);
-      g._strategy = sInfo; // Cache da info estratégica
-      if (sInfo && sInfo.category === "SATELLITE") {
-        satWeightTotal += (g.investido / totalInvestido);
+      // 2.1) Distribuições (apenas abertas)
+      const setoresMap = new Map(),
+        mercadosMap = new Map();
+      for (const g of gruposArr) {
+        if ((g.qtd || 0) <= 0) continue;
+        const setor = g.setor || "—";
+        setoresMap.set(setor, (setoresMap.get(setor) || 0) + (g.investido || 0));
+        const merc = g.mercado || "—";
+        mercadosMap.set(merc, (mercadosMap.get(merc) || 0) + (g.investido || 0));
       }
-    }
 
-    const canReinforceSatellite = satWeightTotal < 0.35;
+      // 2.2) KPIs agregados
+      const abertos = gruposArr.filter((g) => g.qtd > 0);
+      const totalInvestido = abertos.reduce((a, g) => a + (g.investido || 0), 0);
 
-    // Segundo pass: calcular necessidade de capital por ativo
-    for (const g of abertos) {
-      const sInfo = g._strategy;
-      if (!sInfo) continue;
+      // Lucro Atual (aberto)
+      const lucroAberto = abertos.reduce((a, g) => a + (g.lucroAtual || 0), 0);
+      // Lucro Total (Acumulado) = Lucro Aberto + Lucro já realizado (vendas passadas)
+      const lucroRealizado = gruposArr.reduce(
+        (a, g) => a + (g.realizado || 0),
+        0,
+      );
+      const lucroTotal = lucroAberto + lucroRealizado;
 
-      const currentWeight = g.investido / totalInvestido;
-      const deviation = sInfo.target - currentWeight;
-      
-      // Regra 3 e 5: Desvio > 5% e prioridade Core
-      const isUnderweight = deviation > 0.05;
-      let shouldReinforce = false;
-      
-      if (isUnderweight) {
-        if (sInfo.category === "CORE") {
-          shouldReinforce = true;
-        } else if (sInfo.category === "SATELLITE" && canReinforceSatellite) {
-          shouldReinforce = true;
+      const retornoPct = totalInvestido ? (lucroTotal / totalInvestido) * 100 : 0;
+
+      // Dividendos
+      let rendimentoAnual = 0;
+      const eurosMes = new Array(12).fill(0);
+      for (const g of abertos) {
+        const info = infoMap.get(g.ticker) || {};
+        const divUnit = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0;
+        const per = info.periodicidade;
+        const mesT = info.mes;
+        const payN = pagamentosAno(per);
+        rendimentoAnual += g.qtd * divUnit * payN;
+        for (const m of mesesPagos(per, mesT)) eurosMes[m] += g.qtd * divUnit;
+      }
+
+      // Exposição acima da SMA200
+      let somaPesosAcima = 0;
+      for (const g of abertos) {
+        if (!totalInvestido) continue;
+        const w = (g.investido || 0) / totalInvestido;
+        const p = g.precoAtual,
+          s200 = g._sma200;
+        if (isFiniteNum(p) && isFiniteNum(s200) && Number(p) > Number(s200))
+          somaPesosAcima += w;
+      }
+      const expSMA200Pct = somaPesosAcima * 100;
+
+      // Preencher KPIs
+      const elTI = document.getElementById("prtTotalInvestido");
+      const elLT = document.getElementById("prtLucroTotal");
+      const elLA = document.getElementById("prtLucroAcumulado");
+      const elRA = document.getElementById("prtRendimentoAnual");
+      const elRP = document.getElementById("prtRetorno");
+      const elEX = document.getElementById("prtExpSMA200");
+      const elWC = document.getElementById("prtWarChest");
+
+      // --- (NOVO) Cálculo Estratégico do War Chest (CORE/SATELLITE) ---
+      let totalWarChest = 0;
+      let satWeightTotal = 0;
+
+      // Primeiro pass: calcular exposição de Satélites
+      for (const g of abertos) {
+        const sInfo = getDynStrat(g.ticker, g.nome);
+        g._strategy = sInfo; // Cache da info estratégica
+        if (sInfo && sInfo.category === "SATELLITE") {
+          satWeightTotal += (g.investido / totalInvestido);
         }
       }
 
-      if (shouldReinforce) {
-        const amtNeeded = (totalInvestido * sInfo.target) - g.investido;
-        totalWarChest += Math.max(0, amtNeeded);
+      const canReinforceSatellite = satWeightTotal < dynSatTotal;
+
+      // Segundo pass: calcular necessidade de capital por ativo
+      for (const g of abertos) {
+        const sInfo = g._strategy;
+        if (!sInfo) continue;
+
+        const currentWeight = g.investido / totalInvestido;
+        const deviation = sInfo.target - currentWeight;
+      
+        // Regra 3 e 5: Desvio > 5% e prioridade Core
+        const isUnderweight = deviation > 0.05;
+        let shouldReinforce = false;
+      
+        if (isUnderweight) {
+          if (sInfo.category === "CORE") {
+            shouldReinforce = true;
+          } else if (sInfo.category === "SATELLITE" && canReinforceSatellite) {
+            shouldReinforce = true;
+          }
+        }
+
+        if (shouldReinforce) {
+          const amtNeeded = (totalInvestido * sInfo.target) - g.investido;
+          totalWarChest += Math.max(0, amtNeeded);
+        }
+
+        // Guardar métricas para os cards/modal
+        g._shouldReinforceStrategic = shouldReinforce;
+        g._strategicNeed = Math.max(0, (totalInvestido * sInfo.target) - g.investido);
+        g._currentWeight = currentWeight;
       }
 
-      // Guardar métricas para os cards/modal
-      g._shouldReinforceStrategic = shouldReinforce;
-      g._strategicNeed = Math.max(0, (totalInvestido * sInfo.target) - g.investido);
-      g._currentWeight = currentWeight;
-    }
+      if (elTI) elTI.textContent = fmtEUR.format(totalInvestido);
+      if (elLT) elLT.textContent = fmtEUR.format(lucroAberto);
+      if (elLA) elLA.textContent = `Acumulado: ${fmtEUR.format(lucroTotal)}`;
+      if (elRA) elRA.textContent = fmtEUR.format(rendimentoAnual);
+      if (elRP)
+        elRP.textContent =
+          totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
+      if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
+      if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
 
-    if (elTI) elTI.textContent = fmtEUR.format(totalInvestido);
-    if (elLT) elLT.textContent = fmtEUR.format(lucroAberto);
-    if (elLA) elLA.textContent = `Acumulado: ${fmtEUR.format(lucroTotal)}`;
-    if (elRA) elRA.textContent = fmtEUR.format(rendimentoAnual);
-    if (elRP)
-      elRP.textContent =
-        totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
-    if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
-    if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
-
-    // 2.3) Timeline
-    movimentosAsc.sort((a, b) => a.date - b.date);
-    const qtyNow = new Map(),
-      priceNow = new Map();
-    gruposArr.forEach((g) => {
-      if (isFiniteNum(g.precoAtual))
-        priceNow.set(g.ticker, Number(g.precoAtual));
-      qtyNow.set(g.ticker, 0);
-    });
-    let cumInvest = 0;
-    const timelinePoints = [];
-    for (const m of movimentosAsc) {
-      const deltaInvest = Number(m.qtd) * Number(m.preco);
-      cumInvest += deltaInvest;
-      qtyNow.set(m.ticker, (qtyNow.get(m.ticker) || 0) + m.qtd);
-      let valueNow = 0;
-      qtyNow.forEach((q, tk) => {
-        const p = priceNow.get(tk);
-        if (isFiniteNum(p)) valueNow += q * Number(p);
+      // 2.3) Timeline
+      movimentosAsc.sort((a, b) => a.date - b.date);
+      const qtyNow = new Map(),
+        priceNow = new Map();
+      gruposArr.forEach((g) => {
+        if (isFiniteNum(g.precoAtual))
+          priceNow.set(g.ticker, Number(g.precoAtual));
+        qtyNow.set(g.ticker, 0);
       });
-      timelinePoints.push({
-        label: isFinite(m.date?.getTime?.())
-          ? new Intl.DateTimeFormat("pt-PT", {
+      let cumInvest = 0;
+      const timelinePoints = [];
+      for (const m of movimentosAsc) {
+        const deltaInvest = Number(m.qtd) * Number(m.preco);
+        cumInvest += deltaInvest;
+        qtyNow.set(m.ticker, (qtyNow.get(m.ticker) || 0) + m.qtd);
+        let valueNow = 0;
+        qtyNow.forEach((q, tk) => {
+          const p = priceNow.get(tk);
+          if (isFiniteNum(p)) valueNow += q * Number(p);
+        });
+        timelinePoints.push({
+          label: isFinite(m.date?.getTime?.())
+            ? new Intl.DateTimeFormat("pt-PT", {
               year: "numeric",
               month: "short",
               day: "2-digit",
             }).format(m.date)
-          : "",
-        cumInvest,
-        valueNow,
-      });
-    }
-
-    // 3) Render gráficos
-    renderSetorDoughnut(setoresMap);
-    renderMercadoDoughnut(mercadosMap);
-    renderTop5Bar(gruposArr);
-    renderTop5YieldBar(rowsForYield);
-    renderTimeline(timelinePoints);
-    renderDividendoCalendario12m(eurosMes);
-
-    // 3.1) Pré-cálculo de métricas operacionais para filtros/ordenação
-    gruposArr.forEach((g) => {
-      const precoAtual = g.precoAtual || 0;
-      const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
-      const posValNow = g.qtd * precoAtual;
-      const pLoss = posValNow - g.investido;
-      const pLossPct = g.investido > 0 ? (pLoss / g.investido) * 100 : 0;
-      const s200 = g._sma200;
-      const isCrypto =
-        g.mercado === "Criptomoedas" || g.setor === "Criptomoedas";
-
-      // Validação de sanidade para SMA (evita dados lixo tipo 0.01 vs preço 70)
-      const isSmaValid =
-        s200 &&
-        precoAtual > 0 &&
-        s200 > precoAtual * 0.01 &&
-        s200 < precoAtual * 100;
-      const isBelowSMA200 = isSmaValid && precoAtual < s200;
-
-      const lucroAtual = g.lucroAtual || 0;
-      const isBull =
-        isSmaValid &&
-        precoAtual > s200 &&
-        Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
-
-      let estadoOp = "ESPERAR";
-      const sInfo = g._strategy;
-
-      // --- LÓGICA ESTRATÉGICA ---
-      if (sInfo) {
-        if (g._shouldReinforceStrategic) {
-          estadoOp = "REFORÇAR";
-        } else if ((sInfo.target - g._currentWeight) > 0) {
-          // Abaixo do alvo, mas desvio < 5% ou impedido por regra de prioridade
-          estadoOp = "MONITORIZAR";
-        } else if (g._currentWeight > sInfo.target * 1.5) {
-          // Muito acima do alvo (Regra 1: "não vende a não ser que ultrapasse 2x", mas vamos avisar aos 1.5x)
-          estadoOp = "REDUZIR";
-        } else {
-          estadoOp = "MANTER";
-        }
-      } else {
-        // --- LÓGICA TÉCNICA ORIGINAL (para ativos fora da estratégia principal) ---
-        if (isCrypto) {
-          if (pLossPct < -7) estadoOp = "REFORÇAR";
-          else if (pLossPct > 15) estadoOp = "REDUZIR";
-        } else {
-          if (pLossPct < -4 && (!isSmaValid || isBelowSMA200))
-            estadoOp = "REFORÇAR";
-          else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
-          else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
-          else if (pLossPct > 25) estadoOp = "VENDER";
-        }
+            : "",
+          cumInvest,
+          valueNow,
+        });
       }
 
-      g._estadoOp = estadoOp;
-      g._pLossPct = pLossPct;
-      g._distBE = Math.abs(pLossPct);
-      const tp2 = tp2NecessarioCalc(g) || precoMedio * 1.15;
-      g._distTP =
-        precoAtual && tp2 ? Math.abs((tp2 / precoAtual - 1) * 100) : 999;
-    });
+      // 3) Render gráficos
+      renderSetorDoughnut(setoresMap);
+      renderMercadoDoughnut(mercadosMap);
+      renderTop5Bar(gruposArr);
+      renderTop5YieldBar(rowsForYield);
+      renderTimeline(timelinePoints);
+      renderDividendoCalendario12m(eurosMes);
 
-    // 4) FILTRAGEM E ORDENAÇÃO
-    let filtered = gruposArr.filter((g) => Number.isFinite(g.qtd) && g.qtd > 0);
+      // 3.1) Pré-cálculo de métricas operacionais para filtros/ordenação
+      gruposArr.forEach((g) => {
+        const precoAtual = g.precoAtual || 0;
+        const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
+        const posValNow = g.qtd * precoAtual;
+        const pLoss = posValNow - g.investido;
+        const pLossPct = g.investido > 0 ? (pLoss / g.investido) * 100 : 0;
+        const s200 = g._sma200;
+        const isCrypto =
+          g.mercado === "Criptomoedas" || g.setor === "Criptomoedas";
 
-    // Popular dropdowns de Mercado e Setor (apenas se vazios)
-    const fMercado = document.getElementById("fltMercado");
-    const fSetor = document.getElementById("fltSetor");
-    if (
-      fMercado &&
-      (!fMercado.options.length || fMercado.options.length <= 1)
-    ) {
-      const markets = [
-        ...new Set(gruposArr.map((g) => g.mercado).filter(Boolean)),
-      ].sort();
-      markets.forEach((m) => fMercado.add(new Option(m, m)));
-      const sectors = [
-        ...new Set(gruposArr.map((g) => g.setor).filter(Boolean)),
-      ].sort();
-      sectors.forEach((s) => fSetor.add(new Option(s, s)));
+        // Validação de sanidade para SMA (evita dados lixo tipo 0.01 vs preço 70)
+        const isSmaValid =
+          s200 &&
+          precoAtual > 0 &&
+          s200 > precoAtual * 0.01 &&
+          s200 < precoAtual * 100;
+        const isBelowSMA200 = isSmaValid && precoAtual < s200;
+
+        const lucroAtual = g.lucroAtual || 0;
+        const isBull =
+          isSmaValid &&
+          precoAtual > s200 &&
+          Number(infoMap.get(g.ticker)?.taxaCrescimento_1mes || 0) > 0;
+
+        let estadoOp = "ESPERAR";
+        const sInfo = g._strategy;
+
+        // --- LÓGICA ESTRATÉGICA ---
+        if (sInfo) {
+          if (g._shouldReinforceStrategic) {
+            estadoOp = "REFORÇAR";
+          } else if ((sInfo.target - g._currentWeight) > 0) {
+            // Abaixo do alvo, mas desvio < 5% ou impedido por regra de prioridade
+            estadoOp = "MONITORIZAR";
+          } else if (g._currentWeight > sInfo.target * 1.5) {
+            // Muito acima do alvo (Regra 1: "não vende a não ser que ultrapasse 2x", mas vamos avisar aos 1.5x)
+            estadoOp = "REDUZIR";
+          } else {
+            estadoOp = "MANTER";
+          }
+        } else {
+          // --- LÓGICA TÉCNICA ORIGINAL (para ativos fora da estratégia principal) ---
+          if (isCrypto) {
+            if (pLossPct < -7) estadoOp = "REFORÇAR";
+            else if (pLossPct > 15) estadoOp = "REDUZIR";
+          } else {
+            if (pLossPct < -4 && (!isSmaValid || isBelowSMA200))
+              estadoOp = "REFORÇAR";
+            else if (isBull && pLossPct > -2) estadoOp = "COMPRAR";
+            else if (pLossPct > 10 && pLossPct <= 25) estadoOp = "REDUZIR";
+            else if (pLossPct > 25) estadoOp = "VENDER";
+          }
+        }
+
+        g._estadoOp = estadoOp;
+        g._pLossPct = pLossPct;
+        g._distBE = Math.abs(pLossPct);
+        const tp2 = tp2NecessarioCalc(g) || precoMedio * 1.15;
+        g._distTP =
+          precoAtual && tp2 ? Math.abs((tp2 / precoAtual - 1) * 100) : 999;
+      });
+
+      // 4) FILTRAGEM E ORDENAÇÃO
+      let filtered = gruposArr.filter((g) => Number.isFinite(g.qtd) && g.qtd > 0);
+
+      // Popular dropdowns de Mercado e Setor (apenas se vazios)
+      const fMercado = document.getElementById("fltMercado");
+      const fSetor = document.getElementById("fltSetor");
+      if (
+        fMercado &&
+        (!fMercado.options.length || fMercado.options.length <= 1)
+      ) {
+        const markets = [
+          ...new Set(gruposArr.map((g) => g.mercado).filter(Boolean)),
+        ].sort();
+        markets.forEach((m) => fMercado.add(new Option(m, m)));
+        const sectors = [
+          ...new Set(gruposArr.map((g) => g.setor).filter(Boolean)),
+        ].sort();
+        sectors.forEach((s) => fSetor.add(new Option(s, s)));
+      }
+
+      // Aplicar Filtros
+      if (fltState.mercado)
+        filtered = filtered.filter((g) => g.mercado === fltState.mercado);
+      if (fltState.setor)
+        filtered = filtered.filter((g) => g.setor === fltState.setor);
+      if (fltState.estado)
+        filtered = filtered.filter((g) => g._estadoOp === fltState.estado);
+
+      // Aplicar Ordenação
+      filtered.sort((a, b) => {
+        if (fltState.sort === "queda") return a._pLossPct - b._pLossPct;
+        if (fltState.sort === "lucro") return a.lucroAtual - b.lucroAtual;
+        if (fltState.sort === "yield") return (b._yCur || 0) - (a._yCur || 0);
+        if (fltState.sort === "be_dist") return b._distBE - a._distBE;
+        if (fltState.sort === "tp_dist") return a._distTP - b._distTP;
+        return a.ticker.localeCompare(b.ticker);
+      });
+
+      const finalHtml = filtered
+        .map((g) => {
+          const info = infoMap.get(g.ticker) || {};
+          return renderAssetCard(g, info, fmtEUR, tp2NecessarioCalc(g));
+        })
+        .join("");
+
+      cont.innerHTML =
+        finalHtml ||
+        `<div class="muted" style="text-align:center; padding: 40px;">Nenhum ativo corresponde aos filtros selecionados.</div>`;
+
+      wireQuickActions(gruposArr);
+      wirePortfolioHelpModal();
+    } catch (e) {
+      console.error("Erro ao processar atividade:", e);
+      cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
     }
-
-    // Aplicar Filtros
-    if (fltState.mercado)
-      filtered = filtered.filter((g) => g.mercado === fltState.mercado);
-    if (fltState.setor)
-      filtered = filtered.filter((g) => g.setor === fltState.setor);
-    if (fltState.estado)
-      filtered = filtered.filter((g) => g._estadoOp === fltState.estado);
-
-    // Aplicar Ordenação
-    filtered.sort((a, b) => {
-      if (fltState.sort === "queda") return a._pLossPct - b._pLossPct;
-      if (fltState.sort === "lucro") return a.lucroAtual - b.lucroAtual;
-      if (fltState.sort === "yield") return (b._yCur || 0) - (a._yCur || 0);
-      if (fltState.sort === "be_dist") return b._distBE - a._distBE;
-      if (fltState.sort === "tp_dist") return a._distTP - b._distTP;
-      return a.ticker.localeCompare(b.ticker);
-    });
-
-    const finalHtml = filtered
-      .map((g) => {
-        const info = infoMap.get(g.ticker) || {};
-        return renderAssetCard(g, info, fmtEUR, tp2NecessarioCalc(g));
-      })
-      .join("");
-
-    cont.innerHTML =
-      finalHtml ||
-      `<div class="muted" style="text-align:center; padding: 40px;">Nenhum ativo corresponde aos filtros selecionados.</div>`;
-
-    wireQuickActions(gruposArr);
-    wirePortfolioHelpModal();
-  } catch (e) {
-    console.error("Erro ao processar atividade:", e);
-    cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
   }
-}
 
-function tp2NecessarioCalc(g) {
-  const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
-  const objetivo = g.objetivo > 0 ? g.objetivo : 0;
-  return objetivo > 0 && g.qtd !== 0
-    ? precoMedio + objetivo / (g.qtd || 1)
-    : null;
-}
+  function tp2NecessarioCalc(g) {
+    const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
+    const objetivo = g.objetivo > 0 ? g.objetivo : 0;
+    return objetivo > 0 && g.qtd !== 0
+      ? precoMedio + objetivo / (g.qtd || 1)
+      : null;
+  }
 
-function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
-  // METRICS & BADGES
-  const precoAtual = g.precoAtual || 0;
-  const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
-  const lucroAtual = g.lucroAtual || 0;
-  const pLossPct = g._pLossPct || 0;
-  const estadoOp = g._estadoOp || "ESPERAR";
-  const tp2 = tp2Necessario || precoMedio * 1.15;
-  const s200 = g._sma200;
+  function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
+    // METRICS & BADGES
+    const precoAtual = g.precoAtual || 0;
+    const precoMedio = g.qtd !== 0 ? g.investido / (g.qtd || 1) : 0;
+    const lucroAtual = g.lucroAtual || 0;
+    const pLossPct = g._pLossPct || 0;
+    const estadoOp = g._estadoOp || "ESPERAR";
+    const tp2 = tp2Necessario || precoMedio * 1.15;
+    const s200 = g._sma200;
 
-  const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
-  const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
+    const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
+    const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
 
-  const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
+    const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
   
-  const formatSmaDelta = (sma, cur) => {
-    if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
-    const d = ((cur - sma) / sma) * 100;
-    if (Math.abs(d) > 1000) return "—";
-    return `${d.toFixed(1)}%`;
-  };
+    const formatSmaDelta = (sma, cur) => {
+      if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
+      const d = ((cur - sma) / sma) * 100;
+      if (Math.abs(d) > 1000) return "—";
+      return `${d.toFixed(1)}%`;
+    };
 
-  const d50Txt = formatSmaDelta(g._sma50, precoAtual);
-  const d200Txt = formatSmaDelta(s200, precoAtual);
+    const d50Txt = formatSmaDelta(g._sma50, precoAtual);
+    const d200Txt = formatSmaDelta(s200, precoAtual);
 
-  // ESTRATÉGIA INFO
-  const sInfo = g._strategy;
-  const currentW = (g._currentWeight || 0) * 100;
-  const targetW = sInfo ? sInfo.target * 100 : 0;
-  const weightColor = currentW < targetW ? "var(--primary)" : "var(--success)";
+    // ESTRATÉGIA INFO
+    const sInfo = g._strategy;
+    const currentW = (g._currentWeight || 0) * 100;
+    const targetW = sInfo ? sInfo.target * 100 : 0;
+    const weightColor = currentW < targetW ? "var(--primary)" : "var(--success)";
 
-  let stateColor = "#64748b"; // Muted
-  if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
-  if (estadoOp === "COMPRAR") stateColor = "#22c55e";
-  if (estadoOp === "REDUZIR") stateColor = "#f59e0b";
-  if (estadoOp === "VENDER") stateColor = "#ef4444";
-  if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
+    let stateColor = "#64748b"; // Muted
+    if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
+    if (estadoOp === "COMPRAR") stateColor = "#22c55e";
+    if (estadoOp === "REDUZIR") stateColor = "#f59e0b";
+    if (estadoOp === "VENDER") stateColor = "#ef4444";
+    if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
 
-  return `
+    return `
     <div class="asset-card">
       <!-- HEADER: Ticker e Preço -->
       <div class="asset-header" data-toggle-card data-ticker="${g.ticker}">
@@ -1647,7 +1734,10 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
           </div>
           <div class="asset-ticker-box">
             <span class="asset-ticker-symbol">${g.ticker}</span>
-            <span class="asset-name" title="${g.nome}">${g.nome}</span>
+            <span class="asset-name" title="${g.nome}">
+              ${g.nome}
+              ${sInfo ? `<span style="font-size: 0.6rem; font-weight: 700; color: var(--foreground); background: ${sInfo.category === 'CORE' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; border: 1px solid ${sInfo.category === 'CORE' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(245, 158, 11, 0.3)'}; margin-left: 6px; padding: 1px 5px; border-radius: 4px;">${sInfo.category}</span>` : ''}
+            </span>
           </div>
         </div>
         
@@ -1691,10 +1781,10 @@ function renderAssetCard(g, info, fmtEUR, tp2Necessario) {
           <span class="metric-label">Rácio R/R</span>
           <span class="metric-value">
             ${(() => {
-              const risk = precoAtual - stopTec;
-              const reward = tp2 - precoAtual;
-              return risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
-            })()}
+        const risk = precoAtual - stopTec;
+        const reward = tp2 - precoAtual;
+        return risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
+      })()}
           </span>
         </div>
         <div class="metric-item">

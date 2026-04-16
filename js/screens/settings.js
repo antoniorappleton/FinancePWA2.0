@@ -4,6 +4,8 @@
 // - Se este ficheiro está em js/screens/, usa "../auth.js" (como abaixo).
 // - Se estiver lado a lado com auth.js, usa "./auth.js".
 import { doLogout } from "./auth.js";
+import { db } from "../firebase-config.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -86,6 +88,28 @@ export function initScreen() {
   const btnSave = document.getElementById("cfgSave");
   const btnCancel = document.getElementById("cfgCancel");
   const btnLogout = document.getElementById("btnLogout");
+
+  // Estratégia
+  const elCoreW = document.getElementById("cfgCoreWeight");
+  const elSatW = document.getElementById("cfgSatelliteWeight");
+
+  if (elCoreW && elSatW) {
+    elCoreW.addEventListener("input", () => {
+       const v = Number(elCoreW.value);
+       if (v <= 100 && v >= 0) elSatW.value = 100 - v;
+    });
+    elSatW.addEventListener("input", () => {
+       const v = Number(elSatW.value);
+       if (v <= 100 && v >= 0) elCoreW.value = 100 - v;
+    });
+    getDoc(doc(db, "config", "strategy")).then(snap => {
+       if (snap.exists()) {
+          const d = snap.data();
+          if (typeof d.coreWeight === "number") elCoreW.value = d.coreWeight;
+          if (typeof d.satelliteWeight === "number") elSatW.value = d.satelliteWeight;
+       }
+    }).catch(e => console.error("Strategy load err:", e));
+  }
 
   // Botões de Perfil
   const btnProfCons = document.getElementById("btnProfCons");
@@ -271,8 +295,20 @@ export function initScreen() {
   btnProfAgre?.addEventListener("click", () => applyPreset("agressivo"));
 
   // Botões
-  btnSave.addEventListener("click", () => {
+  btnSave.addEventListener("click", async () => {
     saveSettings(state);
+
+    if (elCoreW && elSatW) {
+      try {
+        await setDoc(doc(db, "config", "strategy"), {
+          coreWeight: Number(elCoreW.value),
+          satelliteWeight: Number(elSatW.value)
+        }, { merge: true });
+      } catch (err) {
+        console.error("Strategy save error:", err);
+      }
+    }
+
     if (window.showToast) window.showToast("Configurações guardadas!");
   });
 
