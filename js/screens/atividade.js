@@ -727,6 +727,7 @@ function wireQuickActions(gruposArr) {
         const currentW = (g._currentWeight || 0) * 100;
         const targetW = sInfo.target * 100;
         const deviation = targetW - currentW;
+        const canR = g._shouldReinforceStrategic;
         let dicaStr = "Aguardar";
         let dicaColor = "var(--muted-foreground)";
         if (canR) {
