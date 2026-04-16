@@ -548,187 +548,195 @@ function wireQuickActions(gruposArr) {
     const g = byTickerGlobal.get(ticker);
     if (!g) return;
 
-    const info = _lastAcoesSnap
-      ? Array.from(_lastAcoesSnap.docs)
-          .find((d) => d.data().ticker === ticker)
-          ?.data() || {}
-      : {};
-
     const fmtEUR = new Intl.NumberFormat("pt-PT", {
       style: "currency",
       currency: "EUR",
     });
-    const tp2 = tp2NecessarioCalc(g) || g.custoMedio * 1.15;
+    
+    // Core variables
     const precoAtual = g.precoAtual || 0;
     const precoMedio = g.custoMedio || 0;
     const lucroAtual = g.lucroAtual || 0;
-    const pLossPct = g._pLossPct;
     const estadoOp = g._estadoOp;
     const s200 = g._sma200;
 
-    // Badge de estado
-    const detBadge = document.getElementById("detEstadoBadge");
+    // --- CÁLCULOS PRINCIPAIS ---
+    const tpObjetivo = g.qtd > 0 ? (g.investido + (g.objetivo || 0)) / g.qtd : 0;
+    const faltaMeta = (g.objetivo || 0) - lucroAtual;
+    const upsideP = precoAtual > 0 ? ((tpObjetivo / precoAtual) - 1) * 100 : 0;
 
-    // Cores refinadas para melhor contraste em modos claros e escuros
-    // (Verdes mais vivos, vermelhos mais profundos)
+    let esforcoStr = "Muito próximo";
+    let esforcoColor = "#22c55e";
+    if (upsideP > 12) { esforcoStr = "Agressivo"; esforcoColor = "#ef4444"; }
+    else if (upsideP > 7) { esforcoStr = "Exigente"; esforcoColor = "#f59e0b"; }
+    else if (upsideP > 3) { esforcoStr = "Plausível"; esforcoColor = "#3b82f6"; }
+    
+    if (upsideP <= 0 && g.qtd > 0) {
+       esforcoStr = "Atingido";
+       esforcoColor = "#22c55e";
+    }
+
+    // --- 1. HEADER SIMPLES E FORTE ---
     let stateColor = "var(--muted-foreground)";
     if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
     if (estadoOp === "COMPRAR") stateColor = "#22c55e";
-    if (estadoOp === "REDUZIR") stateColor = "#f59e0b"; // Amber 500 (melhor que eab308 no escuro)
+    if (estadoOp === "REDUZIR") stateColor = "#f59e0b";
     if (estadoOp === "VENDER") stateColor = "#ef4444";
 
+    const detBadge = document.getElementById("detEstadoBadge");
     if (detBadge) {
       detBadge.textContent = estadoOp;
-      detBadge.style.background = `${stateColor}18`; // Ligeiramente mais opacidade (18%)
+      detBadge.style.background = `${stateColor}18`;
       detBadge.style.color = stateColor;
       detBadge.style.borderColor = `${stateColor}35`;
     }
 
     $("#detTickerTitle").textContent = `${g.ticker} — ${g.nome}`;
-    $("#detQtd").textContent = g.qtd.toFixed(1);
-    $("#detMedio").textContent = fmtEUR.format(precoMedio);
-    $("#detInvestido").textContent = fmtEUR.format(g.investido);
-    const elLucro = $("#detLucro");
-    elLucro.textContent = fmtEUR.format(lucroAtual);
-    elLucro.className = lucroAtual >= 0 ? "up" : "down";
+    $("#detPrecoAtualHeader").textContent = fmtEUR.format(precoAtual);
+    const percL = g.investido > 0 ? (lucroAtual / g.investido) * 100 : 0;
+    const elLucroHeader = $("#detLucroAtualHeader");
+    elLucroHeader.textContent = `${fmtEUR.format(lucroAtual)} (${percL>0?"+":""}${percL.toFixed(2)}%)`;
+    elLucroHeader.className = lucroAtual >= 0 ? "up" : "down";
+    $("#detQtdHeader").textContent = g.qtd.toFixed(4).replace(/\.?0+$/, '');
+    $("#detPMHeader").textContent = fmtEUR.format(precoMedio);
 
-    $("#detMetaValor").textContent =
-      `${fmtEUR.format(g.objetivo || 0)} de Lucro`;
-    $("#detPrecoAlvo").textContent = fmtEUR.format(tp2);
+    // --- 2. BLOCO: OBJETIVO E VIABILIDADE ---
+    const bgBadge = document.getElementById("detEsforcoBadge");
+    if (bgBadge) {
+        bgBadge.textContent = esforcoStr;
+        bgBadge.style.color = esforcoColor;
+        bgBadge.style.borderColor = esforcoColor;
+        bgBadge.style.backgroundColor = `${esforcoColor}15`;
+    }
 
-    const metaStatus = $("#detMetaStatus");
-    metaStatus.innerHTML = `<span class="badge ${lucroAtual >= (g.objetivo || 0) ? "premium" : "outline"}" style="font-size: 0.7rem; font-weight: 800;">
-      ${lucroAtual >= (g.objetivo || 0) ? "META ATINGIDA ✅" : "EM PROGRESSO"}
-    </span>`;
+    $("#detObjLucro").textContent = fmtEUR.format(g.objetivo || 0);
+    $("#detFaltaMeta").textContent = faltaMeta > 0 ? fmtEUR.format(faltaMeta) : "0,00";
+    $("#detTPObj").textContent = fmtEUR.format(tpObjetivo);
+    $("#detUpside").textContent = upsideP > 0 ? `+${upsideP.toFixed(2)}%` : "0.00%";
+    
+    let resumo = "";
+    if (upsideP > 0) {
+       resumo = `Precisa subir +${upsideP.toFixed(1)}% para cumprir o objetivo. (${esforcoStr})`;
+    } else {
+       resumo = `Objetivo cumprido! Parabéns.`;
+    }
+    $("#detResumoInterpretativo").textContent = resumo;
 
-    // --- (NOVO) Conselho Estratégico (CORE/SATELLITE) ---
+    // --- 3. PLANO DE AÇÃO POR NÍVEIS ---
+    const niveisArr = [
+       { d: 2, action: "Reforço Leve", color: "#3b82f6" },
+       { d: 3, action: "Reforço Leve", color: "#3b82f6" },
+       { d: 5, action: "Reforço Médio", color: "#f59e0b" },
+       { d: 8, action: "Reforço Forte", color: "#f59e0b" },
+       { d: 10, action: "Rever tese / Risco", color: "#ef4444" },
+       { d: 15, action: "Stop / Invalidar", color: "#ef4444" }
+    ];
+    let niveisHTML = "";
+    niveisArr.forEach(n => {
+       const pr = precoAtual * (1 - n.d / 100);
+       niveisHTML += `
+         <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; padding: 10px 12px; font-size: 0.8rem; border-bottom: 1px solid var(--border); align-items: center;">
+            <div style="font-weight: 800; color: #ef4444;">-${n.d}%</div>
+            <div style="font-family: monospace; font-size: 0.85rem;">${fmtEUR.format(pr)}</div>
+            <div style="font-weight: 700; color: ${n.color}; font-size: 0.75rem; text-transform: uppercase;">${n.action}</div>
+         </div>
+       `;
+    });
+    $("#detNiveisReforco").innerHTML = niveisHTML;
+
+    // --- 4. RECUPERAÇÃO DE PERDAS ---
+    const recBloco = $("#detRecuperacaoBloco");
+    if (lucroAtual < 0 && g.qtd > 0) {
+       recBloco.style.display = "block";
+       $("#detBEML").textContent = fmtEUR.format(precoMedio);
+       $("#detTPComp").textContent = fmtEUR.format(tpObjetivo);
+       
+       const p5 = precoAtual * 0.95;
+       const p10 = precoAtual * 0.90;
+       const up5 = ((tpObjetivo / p5) - 1) * 100;
+       const up10 = ((tpObjetivo / p10) - 1) * 100;
+       $("#detRecSub5").textContent = `+${up5.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
+       $("#detRecSub10").textContent = `+${up10.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
+    } else {
+       recBloco.style.display = "none";
+    }
+
+    // --- 5. SE EU REFORÇAR AGORA ---
+    const refScenarios = [
+      { val: 250, label: "Reforço de 250 €" },
+      { val: 500, label: "Reforço de 500 €" },
+      { val: 1000, label: "Reforço de 1000 €" },
+    ];
+    let cenHTML = "";
+    refScenarios.forEach(sc => {
+       const invest = sc.val;
+       const nQ = g.qtd + (invest / (precoAtual||1));
+       const nT = g.investido + invest;
+       const nPM = nT / (nQ||1);
+       const nTP = (nT + (g.objetivo||0)) / (nQ||1);
+       const nUpside = precoAtual > 0 ? ((nTP / precoAtual) - 1) * 100 : 0;
+       const redTP = tpObjetivo - nTP;
+       
+       cenHTML += `
+         <div style="background: rgba(0,0,0,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.75rem;">
+           <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+             <strong style="font-size: 0.85rem; color: var(--primary);">${sc.label}</strong>
+             <span style="background: #22c55e15; color: #22c55e; padding: 4px 8px; border-radius: 6px; font-weight: 800;">Novo PM: ${fmtEUR.format(nPM)}</span>
+           </div>
+           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; border-top: 1px dashed var(--border); padding-top: 8px;">
+             <div><span style="color:var(--muted-foreground)">Tot. Qtd:</span> <br><strong style="font-size:0.85rem;">${nQ.toFixed(2)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(+${(invest/precoAtual).toFixed(2)})</span></div>
+             <div><span style="color:var(--muted-foreground)">Novo TP:</span> <br><strong style="color:#22c55e; font-size:0.85rem;">${fmtEUR.format(nTP)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(-${fmtEUR.format(redTP>0?redTP:0)})</span></div>
+             <div><span style="color:var(--muted-foreground)">Upside:</span> <br><strong style="color:#3b82f6; font-size:0.85rem;">${nUpside>0?"+":""}${nUpside.toFixed(1)}%</strong></div>
+           </div>
+         </div>
+       `;
+    });
+    $("#detCenariosNovos").innerHTML = cenHTML;
+
+    // --- SECUNDÁRIAS ---
     const sInfo = g._strategy;
-    let strategyHtml = "";
     if (sInfo) {
       const currentW = (g._currentWeight || 0) * 100;
       const targetW = sInfo.target * 100;
       const deviation = targetW - currentW;
       const canReinforce = g._shouldReinforceStrategic;
-
-      strategyHtml = `
-        <div style="margin-bottom: 20px; padding: 14px; background: rgba(79, 70, 229, 0.04); border-radius: 12px; border: 1px solid rgba(79, 70, 229, 0.08);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div style="font-weight: 800; font-size: 0.75rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-              <i class="fas fa-chess-knight"></i> Estratégia ${sInfo.category}
-            </div>
-            <div style="font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; border: 1px solid; ${canReinforce ? 'color: #ef4444; border-color: #ef444440; background: #ef444410;' : 'color: var(--muted-foreground); border-color: var(--border);'}">
-              ${canReinforce ? 'REFORÇO PRIORITÁRIO' : 'OBSERVAR'}
-            </div>
-          </div>
-          <div style="display: flex; gap: 20px; margin-bottom: 10px;">
-            <div style="flex: 1;">
-              <div style="font-size: 0.6rem; color: var(--muted-foreground); text-transform: uppercase;">Alocação</div>
-              <div style="font-size: 1.1rem; font-weight: 800;">${currentW.toFixed(1)}%</div>
-            </div>
-            <div style="flex: 1;">
-              <div style="font-size: 0.6rem; color: var(--muted-foreground); text-transform: uppercase;">Alvo</div>
-              <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">${targetW.toFixed(1)}%</div>
-            </div>
-            <div style="flex: 1;">
-              <div style="font-size: 0.6rem; color: var(--muted-foreground); text-transform: uppercase;">Desvio</div>
-              <div style="font-size: 1.1rem; font-weight: 800; color: ${deviation > 5 ? '#ef4444' : 'inherit'}">${deviation.toFixed(1)}%</div>
-            </div>
-          </div>
-          <div style="padding: 10px; background: #fff; border-radius: 8px; border: 1px dashed var(--border); font-size: 0.8rem; line-height: 1.4;">
-            ${canReinforce 
-              ? `<strong>Plano:</strong> O ativo está abaixo do alvo (>5%). <strong>Reforçar ${fmtEUR.format(g._strategicNeed)}</strong> para equilibrar.` 
-              : deviation > 0 
-                ? `<strong>Plano:</strong> Aguardar rebalanceamento trimestral. Desvio atual (${deviation.toFixed(1)}%) é inferior a 5% ou prioridade é CORE.` 
-                : `<strong>Plano:</strong> Exposição acima do alvo estratégico. Não realizar novos reforços.`
-            }
-          </div>
+      $("#detStrategyDiv").innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+           <strong>Estratégia: ${sInfo.category}</strong>
+           <span style="color: ${canReinforce ? '#ef4444' : 'var(--muted-foreground)'}; font-weight: 700;">${canReinforce ? 'Abaixo do Alvo' : 'No Nível'}</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+           <div>Alocação: <strong>${currentW.toFixed(1)}%</strong></div>
+           <div>Alvo: <strong>${targetW.toFixed(1)}%</strong></div>
+           <div style="color: ${deviation > 5 ? '#ef4444' : 'inherit'}">Desvio: <strong>${deviation.toFixed(1)}%</strong></div>
         </div>
       `;
+    } else {
+      $("#detStrategyDiv").innerHTML = "";
     }
-
-    // Plano de Trade
-    const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
-    const r1Pct = isBelowSMA200 ? 5.0 : 2.5;
-    const r2Pct = isBelowSMA200 ? 8.5 : 4.5;
-    const r1Preco = precoAtual * (1 - r1Pct / 100);
-    const r2Preco = precoAtual * (1 - r2Pct / 100);
-    const tp1 = precoMedio * 1.05;
-    const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
-
-    $("#detTradePlan").innerHTML = `
-      ${strategyHtml}
-      <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; grid-column: span 3;">📝 Plano de Trade (Zonas)</div>
-      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-        <label class="muted" style="font-size: 0.7rem; display: block;">Compra Base</label>
-        <strong style="font-size: 0.9rem;">${fmtEUR.format(precoMedio)}</strong>
-      </div>
-      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.05);">
-        <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 1 (-${r1Pct}%)</label>
-        <strong style="font-size: 0.9rem;">${fmtEUR.format(r1Preco)}</strong>
-      </div>
-      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(234, 179, 8, 0.1);">
-        <label class="muted" style="font-size: 0.7rem; display: block;">Reforço 2 (-${r2Pct}%)</label>
-        <strong style="font-size: 0.9rem;">${fmtEUR.format(r2Preco)}</strong>
-      </div>
-      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.05);">
-        <label class="muted" style="font-size: 0.7rem; display: block;">TP1 (+5%)</label>
-        <strong style="font-size: 0.9rem;">${fmtEUR.format(tp1)}</strong>
-      </div>
-      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(34, 197, 94, 0.1);">
-        <label class="muted" style="font-size: 0.7rem; display: block;">TP2</label>
-        <strong style="font-size: 0.9rem;">${fmtEUR.format(tp2)}</strong>
-      </div>
-      <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: rgba(239, 68, 68, 0.05);">
-        <label class="muted" style="font-size: 0.7rem; display: block;">Stop Técnico</label>
-        <strong style="font-size: 0.9rem;">${fmtEUR.format(stopTec)}</strong>
-      </div>
-    `;
-
-    $("#detBarStop").textContent = `${fmtEUR.format(stopTec)} (STOP)`;
-    $("#detBarPreco").textContent = `${fmtEUR.format(precoAtual)} (PREÇO)`;
-    $("#detBarAlvo").textContent = `${fmtEUR.format(tp2)} (ALVO)`;
-
-    // Cenários
-    const Io = g.investido;
-    const Qo = g.qtd;
-    const Pa = precoAtual;
-    const genScenario = (label, invest, color) => {
-      const nQ = Qo + invest / Pa;
-      const nT = Io + invest;
-      const nPM = nT / nQ;
-      const rec = Pa > 0 ? (nPM / Pa - 1) * 100 : 0;
-      return `
-        <div style="text-align: center; padding: 8px; background: #ffffff; border-radius: 6px; border-bottom: 3px solid ${color}; border: 1px solid rgba(0,0,0,0.08);">
-          <div style="font-size: 0.6rem; font-weight: 700; text-transform: uppercase; color: #64748b;">${label}</div>
-          <div style="font-size: 0.82rem; margin: 4px 0; color: #111;">+${fmtEUR.format(invest)}</div>
-          <div style="font-size: 0.6rem; color: #94a3b8;">Novo PM: ${fmtEUR.format(nPM)}</div>
-          <div style="font-size: 0.75rem; font-weight: 700; color: ${color};">+${rec.toFixed(1)}%</div>
-        </div>`;
-    };
-    $("#detCenarios").innerHTML =
-      genScenario("Leve", 250, "#eab308") +
-      genScenario("Médio", 500, "#3b82f6") +
-      genScenario("Forte", 1000, "#22c55e");
 
     const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
     const formatSmaDelta = (sma, cur) => {
       if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
       const d = ((cur - sma) / sma) * 100;
-      return `${d.toFixed(1)}%`;
+      return `${d>0?"+":""}${d.toFixed(1)}%`;
     };
-
     $("#detYield").textContent = yPct;
     $("#detPE").textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
 
+    const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
     const risk = precoAtual - stopTec;
-    const reward = tp2 - precoAtual;
-    $("#detRR").textContent =
-      risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
-
+    const reward = tpObjetivo - precoAtual;
+    $("#detRR").textContent = risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
     $("#detSMA50").textContent = formatSmaDelta(g._sma50, precoAtual);
     $("#detSMA200").textContent = formatSmaDelta(s200, precoAtual);
 
-    // Botões de ação no modal
+    $("#detBarStop").textContent = `${fmtEUR.format(stopTec)} (STOP)`;
+    $("#detBarPreco").textContent = `${fmtEUR.format(precoAtual)} (PREÇO)`;
+    $("#detBarAlvo").textContent = `${fmtEUR.format(tpObjetivo)} (ALVO)`;
+
+    // --- AÇÕES BOTÕES ---
+    const detModal = $("#activityDetailModal");
     const bBuy = $("#detBtnBuy");
     const bSell = $("#detBtnSell");
     const bEdit = $("#detBtnEdit");
@@ -744,7 +752,6 @@ function wireQuickActions(gruposArr) {
     };
     bEdit.onclick = () => {
       detModal.classList.add("hidden");
-      // Simular click no botão de edit original para não duplicar lógica complexa
       document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
     };
     bLink.onclick = () => {
@@ -757,7 +764,7 @@ function wireQuickActions(gruposArr) {
     bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
     bBuy.textContent = estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar";
 
-    // --- (NOVO) Lógica de Crises no Modal ---
+    // --- CRISES ---
     const detCriSel = $("#detCrisisSelector");
     const detCriRes = $("#detCrisisResult");
     if (detCriSel) {
@@ -766,7 +773,6 @@ function wireQuickActions(gruposArr) {
       detCriSel.value = "0";
       if (detCriRes) detCriRes.style.display = "none";
 
-      // Adicionar listener específico para o selector do modal (apenas uma vez)
       if (!detCriSel.__wired) {
         detCriSel.__wired = true;
         detCriSel.addEventListener("change", () => {
@@ -775,7 +781,6 @@ function wireQuickActions(gruposArr) {
             detCriRes.style.display = "none";
             return;
           }
-          // Precisamos do ticker atual... podemos pegar do detCriSel.dataset se setarmos abaixo
           const tk = detCriSel.dataset.ticker;
           const group = byTickerGlobal.get(tk);
           if (!group) return;
@@ -787,10 +792,9 @@ function wireQuickActions(gruposArr) {
           const nQ = qO + (iO / (cPrice || 1));
           const nPM = (iO * 2) / nQ;
 
-          const fmt = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
-          $("#detCrisisPrice").textContent = fmt.format(cPrice);
-          $("#detCrisisCost").textContent = fmt.format(iO);
-          $("#detCrisisNewPM").textContent = fmt.format(nPM);
+          $("#detCrisisPrice").textContent = fmtEUR.format(cPrice);
+          $("#detCrisisCost").textContent = fmtEUR.format(iO);
+          $("#detCrisisNewPM").textContent = fmtEUR.format(nPM);
           detCriRes.style.display = "block";
         });
       }
