@@ -109,6 +109,30 @@ export function initScreen() {
           if (typeof d.satelliteWeight === "number") elSatW.value = d.satelliteWeight;
        }
     }).catch(e => console.error("Strategy load err:", e));
+
+    const btnSaveStratG = document.getElementById("btnSaveStrategyG");
+    const stStatus = document.getElementById("cfgStrategyStatus");
+    if (btnSaveStratG && stStatus) {
+       btnSaveStratG.addEventListener("click", async () => {
+          btnSaveStratG.disabled = true;
+          btnSaveStratG.textContent = "...";
+          try {
+             await setDoc(doc(db, "config", "strategy"), {
+                coreWeight: Number(elCoreW.value),
+                satelliteWeight: Number(elSatW.value)
+             }, { merge: true });
+             stStatus.textContent = "Alocação atualizada! ✅";
+             stStatus.style.color = "var(--success)";
+             setTimeout(() => { stStatus.textContent = ""; }, 3000);
+          } catch(err) {
+             stStatus.textContent = err.message || "Erro";
+             stStatus.style.color = "var(--destructive)";
+             console.error(err);
+          }
+          btnSaveStratG.disabled = false;
+          btnSaveStratG.textContent = "Guardar Alocação";
+       });
+    }
   }
 
   // Botões de Perfil
