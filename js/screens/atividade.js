@@ -1,4 +1,4 @@
-// ===== Hard error guard =====
+﻿// ===== Hard error guard =====
 window.addEventListener("error", (e) =>
   console.error("ATIVIDADE HARD ERROR:", e.error || e.message),
 );
@@ -550,40 +550,56 @@ function wireQuickActions(gruposArr) {
     const g = byTickerGlobal.get(ticker);
     if (!g) return;
 
-    const fmtEUR = new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
-    });
-    
-    // Core variables
+    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+    // VARIAVEIS BASE
     const precoAtual = g.precoAtual || 0;
-    const precoMedio = g.custoMedio || 0;
+    const precoMedio = g.qtd > 0 ? (g.investido || 0) / g.qtd : 0;
     const lucroAtual = g.lucroAtual || 0;
-    const estadoOp = g._estadoOp;
-    const s200 = g._sma200;
+    const estadoOp   = g._estadoOp || "ESPERAR";
+    const s200       = g._sma200;
 
-    // --- CÁLCULOS PRINCIPAIS ---
-    const tpObjetivo = g.qtd > 0 ? (g.investido + (g.objetivo || 0)) / g.qtd : 0;
-    const faltaMeta = (g.objetivo || 0) - lucroAtual;
-    const upsideP = precoAtual > 0 ? ((tpObjetivo / precoAtual) - 1) * 100 : 0;
+    const tpObjetivo = g.qtd > 0 ? ((g.investido || 0) + (g.objetivo || 0)) / g.qtd : 0;
+    const faltaMeta  = (g.objetivo || 0) - lucroAtual;
+    const upsideP    = precoAtual > 0 ? ((tpObjetivo / precoAtual) - 1) * 100 : 0;
+    const percL      = (g.investido || 0) > 0 ? (lucroAtual / (g.investido || 0)) * 100 : 0;
 
-    let esforcoStr = "Muito próximo";
-    let esforcoColor = "#22c55e";
-    if (upsideP > 12) { esforcoStr = "Agressivo"; esforcoColor = "#ef4444"; }
-    else if (upsideP > 7) { esforcoStr = "Exigente"; esforcoColor = "#f59e0b"; }
+    const formatSmaDelta = (sma, cur) => {
+      if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
+      const d = ((cur - sma) / sma) * 100;
+      return `${d > 0 ? "+" : ""}${d.toFixed(1)}%`;
+    };
+
+    // ESFORCO / DECISAO DO SISTEMA
+    let esforcoStr = "Muito próximo", esforcoColor = "#22c55e";
+    if (upsideP > 12)     { esforcoStr = "Agressivo"; esforcoColor = "#ef4444"; }
+    else if (upsideP > 7) { esforcoStr = "Exigente";  esforcoColor = "#f59e0b"; }
     else if (upsideP > 3) { esforcoStr = "Plausível"; esforcoColor = "#3b82f6"; }
-    
-    if (upsideP <= 0 && g.qtd > 0) {
-      esforcoStr = "Atingido";
-      esforcoColor = "#22c55e";
+    if (upsideP <= 0 && g.qtd > 0) { esforcoStr = "Atingido"; esforcoColor = "#22c55e"; }
+
+    let decisaoEmoji = "🟢", decisaoTexto = "MANTER", decisaoSub = "Upside plausível — mantém posição.";
+    let decisaoBorder = "#22c55e", decisaoBg = "rgba(34,197,94,0.07)";
+    if (estadoOp === "REFORÇAR" || estadoOp === "COMPRAR") {
+      decisaoEmoji = "🔵"; decisaoTexto = "REFORÇAR"; decisaoSub = "Preço em zona de oportunidade — usar War Chest.";
+      decisaoBorder = "#3b82f6"; decisaoBg = "rgba(59,130,246,0.07)";
+    } else if (upsideP > 12) {
+      decisaoEmoji = "🔴"; decisaoTexto = "DISTRIBUIR"; decisaoSub = "Upside agressivo — vender forte, libertar War Chest.";
+      decisaoBorder = "#ef4444"; decisaoBg = "rgba(239,68,68,0.07)";
+    } else if (upsideP > 7) {
+      decisaoEmoji = "🟡"; decisaoTexto = "REDUZIR PARCIALMENTE"; decisaoSub = "Upside exigente — começar a aligeirar posição.";
+      decisaoBorder = "#f59e0b"; decisaoBg = "rgba(245,158,11,0.07)";
+    } else if (estadoOp === "REDUZIR" || estadoOp === "VENDER") {
+      decisaoEmoji = "🟡"; decisaoTexto = "REDUZIR / VENDER"; decisaoSub = "Posição acima do alvo estratégico — libertar capital.";
+      decisaoBorder = "#f59e0b"; decisaoBg = "rgba(245,158,11,0.07)";
     }
 
-    // --- 1. HEADER SIMPLES E FORTE ---
-    let stateColor = "var(--muted-foreground)";
+    // HEADER
+    let stateColor = "#64748b";
     if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
-    if (estadoOp === "COMPRAR") stateColor = "#22c55e";
-    if (estadoOp === "REDUZIR") stateColor = "#f59e0b";
-    if (estadoOp === "VENDER") stateColor = "#ef4444";
+    if (estadoOp === "COMPRAR")  stateColor = "#22c55e";
+    if (estadoOp === "REDUZIR")  stateColor = "#f59e0b";
+    if (estadoOp === "VENDER")   stateColor = "#ef4444";
+    if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
 
     const detBadge = document.getElementById("detEstadoBadge");
     if (detBadge) {
@@ -593,16 +609,24 @@ function wireQuickActions(gruposArr) {
       detBadge.style.borderColor = `${stateColor}35`;
     }
 
-    $("#detTickerTitle").textContent = `${g.ticker} — ${g.nome}`;
-    $("#detPrecoAtualHeader").textContent = fmtEUR.format(precoAtual);
-    const percL = g.investido > 0 ? (lucroAtual / g.investido) * 100 : 0;
-    const elLucroHeader = $("#detLucroAtualHeader");
+    $(`#detTickerTitle`).textContent = `${g.ticker} — ${g.nome}`;
+    $(`#detPrecoAtualHeader`).textContent = fmtEUR.format(precoAtual);
+    const elLucroHeader = $(`#detLucroAtualHeader`);
     elLucroHeader.textContent = `${fmtEUR.format(lucroAtual)} (${percL > 0 ? "+" : ""}${percL.toFixed(2)}%)`;
     elLucroHeader.className = lucroAtual >= 0 ? "up" : "down";
-    $("#detQtdHeader").textContent = g.qtd.toFixed(4).replace(/\.?0+$/, '');
-    $("#detPMHeader").textContent = fmtEUR.format(precoMedio);
+    $(`#detQtdHeader`).textContent = g.qtd.toFixed(4).replace(/\.?0+$/, "");
+    $(`#detPMHeader`).textContent = fmtEUR.format(precoMedio);
+    const capEl = $(`#detCapitalHeader`);
+    if (capEl) capEl.textContent = fmtEUR.format(g.investido || 0);
 
-    // --- 2. BLOCO: OBJETIVO E VIABILIDADE ---
+    // BLOCO 0 — DECISAO DO SISTEMA
+    const decDiv = $(`#detDecisaoSistema`);
+    if (decDiv) { decDiv.style.borderColor = decisaoBorder; decDiv.style.background = decisaoBg; }
+    const decTextoEl = $(`#detDecisaoTexto`);
+    if (decTextoEl) { decTextoEl.textContent = `${decisaoEmoji} ${decisaoTexto}`; decTextoEl.style.color = decisaoBorder; }
+    const decSubEl = $(`#detDecisaoSub`);
+    if (decSubEl) decSubEl.textContent = decisaoSub;
+
     const bgBadge = document.getElementById("detEsforcoBadge");
     if (bgBadge) {
       bgBadge.textContent = esforcoStr;
@@ -611,267 +635,263 @@ function wireQuickActions(gruposArr) {
       bgBadge.style.backgroundColor = `${esforcoColor}15`;
     }
 
-    $("#detObjLucro").textContent = fmtEUR.format(g.objetivo || 0);
-    $("#detFaltaMeta").textContent = faltaMeta > 0 ? fmtEUR.format(faltaMeta) : "0,00";
-    $("#detTPObj").textContent = fmtEUR.format(tpObjetivo);
-    $("#detUpside").textContent = upsideP > 0 ? `+${upsideP.toFixed(2)}%` : "0.00%";
-    
-    let resumo = "";
-    if (upsideP > 0) {
-      resumo = `Precisa subir +${upsideP.toFixed(1)}% para cumprir o objetivo. (${esforcoStr})`;
-    } else {
-      resumo = `Objetivo cumprido! Parabéns.`;
-    }
-    $("#detResumoInterpretativo").textContent = resumo;
+    // BLOCO 1 — QUICK KPIs
+    const kpiCap = $(`#detKpiCapital`);
+    if (kpiCap) kpiCap.textContent = fmtEUR.format(g.investido || 0);
 
-    // --- 3. PLANO DE AÇÃO POR NÍVEIS ---
+    const kpiUp = $(`#detKpiUpside`);
+    if (kpiUp) {
+      kpiUp.textContent = upsideP > 0 ? `+${upsideP.toFixed(1)}%` : (upsideP < 0 ? `${upsideP.toFixed(1)}%` : "0%");
+      kpiUp.style.color = upsideP <= 3 ? "#22c55e" : upsideP <= 7 ? "#3b82f6" : upsideP <= 12 ? "#f59e0b" : "#ef4444";
+    }
+
+    const kpiTP = $(`#detKpiTP`);
+    if (kpiTP) kpiTP.textContent = tpObjetivo > 0 ? fmtEUR.format(tpObjetivo) : "—";
+
+    const kpiSMA = $(`#detKpiSMA200`);
+    if (kpiSMA) {
+      const smaD = formatSmaDelta(s200, precoAtual);
+      kpiSMA.textContent = smaD;
+      const num = s200 && precoAtual ? ((precoAtual - s200) / s200) * 100 : 0;
+      kpiSMA.style.color = num >= 0 ? "#22c55e" : "#ef4444";
+    }
+
+    // BLOCO 2 — PLANO DE SAIDA (Multi-TP)
+    const tpLevels = [
+      { label: "TP1", pct: 5,  acao: "Reduzir leve",  posicao: "20%", color: "#22c55e" },
+      { label: "TP2", pct: 10, acao: "Reduzir médio", posicao: "30%", color: "#f59e0b" },
+      { label: "TP3", pct: 15, acao: "Reduzir forte", posicao: "50%", color: "#ef4444" },
+    ];
+    let saidaHTML = "";
+    tpLevels.forEach(tp => {
+      const pr = precoMedio * (1 + tp.pct / 100);
+      const isActive = precoAtual >= pr * 0.98;
+      saidaHTML += `<div style="display:grid;grid-template-columns:1fr 1.2fr 1.2fr 1fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;${isActive ? "background:" + tp.color + "08;" : ""}">` +
+        `<div style="font-weight:800;color:${tp.color};">${tp.label} (+${tp.pct}%)</div>` +
+        `<div style="font-family:monospace;font-size:0.82rem;">${fmtEUR.format(pr)}</div>` +
+        `<div style="font-weight:700;color:${tp.color};font-size:0.75rem;text-transform:uppercase;">${tp.acao}</div>` +
+        `<div style="text-align:right;font-weight:700;font-size:0.75rem;color:var(--muted-foreground);">${tp.posicao}</div></div>`;
+    });
+    const saidaEl = $(`#detPlanSaida`);
+    if (saidaEl) saidaEl.innerHTML = saidaHTML;
+
+    const saidaInterp = $(`#detSaidaInterpretativo`);
+    if (saidaInterp) {
+      if (esforcoStr === "Plausível")    saidaInterp.textContent = "✅ Upside plausível — não vender ainda.";
+      else if (esforcoStr === "Exigente") saidaInterp.textContent = "⚠️ Upside exigente — começar a reduzir no TP1/TP2.";
+      else if (esforcoStr === "Agressivo") saidaInterp.textContent = "🔴 Upside agressivo — distribuir posição forte no TP2/TP3.";
+      else if (esforcoStr === "Atingido") saidaInterp.textContent = "🏆 Objetivo cumprido — considera vender e reiniciar ciclo.";
+      else saidaInterp.textContent = "🟢 Perto do alvo — manter posição.";
+    }
+
+    // BLOCO 3 — PLANO DE QUEDA
     const niveisArr = [
-      { d: 2, action: "Reforço Leve", color: "#3b82f6" },
-      { d: 3, action: "Reforço Leve", color: "#3b82f6" },
-      { d: 5, action: "Reforço Médio", color: "#f59e0b" },
-      { d: 8, action: "Reforço Forte", color: "#f59e0b" },
-      { d: 10, action: "Rever tese / Risco", color: "#ef4444" },
-      { d: 15, action: "Stop / Invalidar", color: "#ef4444" }
+      { d: 2,  action: "Reforço Leve",       color: "#3b82f6" },
+      { d: 3,  action: "Reforço Leve",       color: "#3b82f6" },
+      { d: 5,  action: "Reforço Médio",      color: "#f59e0b" },
+      { d: 8,  action: "Reforço Forte",      color: "#f59e0b" },
+      { d: 10, action: "Rever Tese / Risco", color: "#ef4444" },
+      { d: 15, action: "Stop / Invalidar",   color: "#ef4444" }
     ];
     let niveisHTML = "";
     niveisArr.forEach(n => {
       const pr = precoAtual * (1 - n.d / 100);
-      niveisHTML += `
-         <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; padding: 10px 12px; font-size: 0.8rem; border-bottom: 1px solid var(--border); align-items: center;">
-            <div style="font-weight: 800; color: #ef4444;">-${n.d}%</div>
-            <div style="font-family: monospace; font-size: 0.85rem;">${fmtEUR.format(pr)}</div>
-            <div style="font-weight: 700; color: ${n.color}; font-size: 0.75rem; text-transform: uppercase;">${n.action}</div>
-         </div>
-       `;
+      niveisHTML += `<div style="display:grid;grid-template-columns:1fr 1.5fr 1.5fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;">` +
+        `<div style="font-weight:800;color:#ef4444;">-${n.d}%</div>` +
+        `<div style="font-family:monospace;font-size:0.85rem;">${fmtEUR.format(pr)}</div>` +
+        `<div style="font-weight:700;color:${n.color};font-size:0.75rem;text-transform:uppercase;">${n.action}</div></div>`;
     });
-    $("#detNiveisReforco").innerHTML = niveisHTML;
+    const niveisEl = $(`#detNiveisReforco`);
+    if (niveisEl) niveisEl.innerHTML = niveisHTML;
 
-    // --- 4. RECUPERAÇÃO DE PERDAS ---
-    const recBloco = $("#detRecuperacaoBloco");
-    if (lucroAtual < 0 && g.qtd > 0) {
-      recBloco.style.display = "block";
-      $("#detBEML").textContent = fmtEUR.format(precoMedio);
-      $("#detTPComp").textContent = fmtEUR.format(tpObjetivo);
-       
-      const p5 = precoAtual * 0.95;
-      const p10 = precoAtual * 0.90;
-      const up5 = ((tpObjetivo / p5) - 1) * 100;
-      const up10 = ((tpObjetivo / p10) - 1) * 100;
-      $("#detRecSub5").textContent = `+${up5.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
-      $("#detRecSub10").textContent = `+${up10.toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
-    } else {
-      recBloco.style.display = "none";
-    }
-
-    // --- 5. SE EU REFORÇAR AGORA ---
+    // BLOCO 4 — REFORCO INTELIGENTE
     const refScenarios = [
-      { val: 250, label: "Reforço de 250 €" },
-      { val: 500, label: "Reforço de 500 €" },
-      { val: 1000, label: "Reforço de 1000 €" },
+      { val: 250,  label: "Reforço de 250 €"   },
+      { val: 500,  label: "Reforço de 500 €"   },
+      { val: 1000, label: "Reforço de 1.000 €" },
     ];
     let cenHTML = "";
     refScenarios.forEach(sc => {
       const invest = sc.val;
-      const nQ = g.qtd + (invest / (precoAtual || 1));
-      const nT = g.investido + invest;
+      const nQ  = g.qtd + (invest / (precoAtual || 1));
+      const nT  = (g.investido || 0) + invest;
       const nPM = nT / (nQ || 1);
       const nTP = (nT + (g.objetivo || 0)) / (nQ || 1);
       const nUpside = precoAtual > 0 ? ((nTP / precoAtual) - 1) * 100 : 0;
       const redTP = tpObjetivo - nTP;
-       
-      cenHTML += `
-         <div style="background: rgba(0,0,0,0.015); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.75rem;">
-           <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
-             <strong style="font-size: 0.85rem; color: var(--primary);">${sc.label}</strong>
-             <span style="background: #22c55e15; color: #22c55e; padding: 4px 8px; border-radius: 6px; font-weight: 800;">Novo PM: ${fmtEUR.format(nPM)}</span>
-           </div>
-           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; border-top: 1px dashed var(--border); padding-top: 8px;">
-             <div><span style="color:var(--muted-foreground)">Tot. Qtd:</span> <br><strong style="font-size:0.85rem;">${nQ.toFixed(2)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(+${(invest / precoAtual).toFixed(2)})</span></div>
-             <div><span style="color:var(--muted-foreground)">Novo TP:</span> <br><strong style="color:#22c55e; font-size:0.85rem;">${fmtEUR.format(nTP)}</strong> <span style="font-size:0.6rem; color:var(--muted)">(-${fmtEUR.format(redTP > 0 ? redTP : 0)})</span></div>
-             <div><span style="color:var(--muted-foreground)">Upside:</span> <br><strong style="color:#3b82f6; font-size:0.85rem;">${nUpside > 0 ? "+" : ""}${nUpside.toFixed(1)}%</strong></div>
-           </div>
-         </div>
-       `;
+      cenHTML += `<div style="background:rgba(0,0,0,0.015);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.75rem;">` +
+        `<div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;">` +
+        `<strong style="font-size:0.85rem;color:var(--primary);">${sc.label}</strong>` +
+        `<span style="background:#22c55e15;color:#22c55e;padding:4px 8px;border-radius:6px;font-weight:800;">PM → ${fmtEUR.format(nPM)}</span></div>` +
+        `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border-top:1px dashed var(--border);padding-top:8px;">` +
+        `<div><span style="color:var(--muted-foreground)">Nova Qtd:</span><br><strong style="font-size:0.85rem;">${nQ.toFixed(2)}</strong> <span style="font-size:0.65rem;color:var(--muted-foreground)">(+${(invest/(precoAtual||1)).toFixed(2)})</span></div>` +
+        `<div><span style="color:var(--muted-foreground)">Novo TP:</span><br><strong style="color:#22c55e;font-size:0.85rem;">${fmtEUR.format(nTP)}</strong> <span style="font-size:0.65rem;color:#ef4444">(-${fmtEUR.format(redTP > 0 ? redTP : 0)})</span></div>` +
+        `<div><span style="color:var(--muted-foreground)">Upside:</span><br><strong style="color:#3b82f6;font-size:0.85rem;">${nUpside > 0 ? "+" : ""}${nUpside.toFixed(1)}%</strong></div>` +
+        `</div></div>`;
     });
-    $("#detCenariosNovos").innerHTML = cenHTML;
+    const cenEl = $(`#detCenariosNovos`);
+    if (cenEl) cenEl.innerHTML = cenHTML;
 
-    // --- SECUNDÁRIAS ---
-    const sInfo = g._strategy;
-    $("#detStrategyDiv").innerHTML = `
-      <div style="font-weight: 700; margin-bottom: 8px;">Definir Estratégia (Ativo Atual)</div>
-      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-         <select id="detDynStrategyCat" style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 0.8rem; background: var(--background); color: var(--foreground);">
-            <option value="NONE">Automático / Nenhuma</option>
-            <option value="CORE">CORE</option>
-            <option value="SATELLITE">SATÉLITE</option>
-         </select>
-         <div style="display: flex; align-items: center; gap: 4px; flex: 1;">
-           <input type="number" id="detDynStrategyTarget" placeholder="%" step="0.1" max="100" min="0" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 0.8rem; background: var(--background); color: var(--foreground);" />
-           <span style="font-size: 0.8rem;">%</span>
-         </div>
-      </div>
-      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; align-items: center;">
-         <div id="detDynStrategyStatus" style="color: var(--muted-foreground); display: none;">Guardado ✅</div>
-         <button id="detBtnSaveStrategy" class="btn outline small" style="padding: 4px 12px; margin-left: auto;">Guardar</button>
-      </div>
-      <div id="detDynStrategyCurrentInfo" style="margin-top: 10px; font-size: 0.75rem;"></div>
-    `;
+    // BLOCO 5 — WAR CHEST
+    const warChestLevels = [
+      { queda: 5,  usarPct: 20, color: "#22c55e" },
+      { queda: 10, usarPct: 30, color: "#f59e0b" },
+      { queda: 15, usarPct: 50, color: "#ef4444" },
+    ];
+    const warChestRaw = document.getElementById("prtWarChest")?.textContent || "";
+    const warChestTotal = parseFloat(warChestRaw.replace(/[^\d,.]/g, "").replace(",", ".")) || 0;
+    let wchHTML = "";
+    warChestLevels.forEach(w => {
+      const pr = precoAtual * (1 - w.queda / 100);
+      const capital = warChestTotal * (w.usarPct / 100);
+      const qtdC = capital > 0 && pr > 0 ? capital / pr : 0;
+      wchHTML += `<div style="display:grid;grid-template-columns:0.6fr 1fr 1fr 1fr;padding:10px 12px;font-size:0.78rem;border-bottom:1px solid var(--border);align-items:center;">` +
+        `<div style="font-weight:800;color:${w.color};">-${w.queda}%</div>` +
+        `<div style="font-family:monospace;">${fmtEUR.format(pr)}</div>` +
+        `<div style="color:var(--muted-foreground);">Usar <strong style="color:${w.color};">${w.usarPct}%</strong></div>` +
+        `<div style="text-align:right;">${capital > 0 ? fmtEUR.format(capital) + " <span style='font-size:0.65rem;color:var(--muted-foreground);display:block;'>(~" + qtdC.toFixed(2) + " unid.)</span>" : "<span style='color:var(--muted-foreground)'>def. War Chest</span>"}</div></div>`;
+    });
+    const wchEl = $(`#detWarChestTable`);
+    if (wchEl) wchEl.innerHTML = `<div style="display:grid;grid-template-columns:0.6fr 1fr 1fr 1fr;padding:6px 12px;font-size:0.65rem;font-weight:700;color:var(--muted-foreground);background:rgba(0,0,0,0.03);border-bottom:1px solid var(--border);"><div>Queda</div><div>Preço</div><div>Capital</div><div style="text-align:right;">Valor</div></div>` + wchHTML;
 
-      const selCat = $("#detDynStrategyCat");
-      const iptTarget = $("#detDynStrategyTarget");
-      const btnSaveStrat = $("#detBtnSaveStrategy");
-
-      if (sInfo && (window._dynamicStrategyTickers[g.ticker] || true)) {
-        selCat.value = sInfo.category;
-        iptTarget.value = (sInfo.target * 100).toFixed(1);
-        const currentW = (g._currentWeight || 0) * 100;
-        const targetW = sInfo.target * 100;
-        const deviation = targetW - currentW;
-        const canR = g._shouldReinforceStrategic;
-        let dicaStr = "Aguardar";
-        let dicaColor = "var(--muted-foreground)";
-        if (canR) {
-          dicaStr = "REFORÇAR";
-          dicaColor = "#ef4444";
-        } else if (g._estadoOp === "REDUZIR" || (currentW > targetW * 1.5)) {
-          dicaStr = "REDUZIR";
-          dicaColor = "#f59e0b";
-        }
-
-        $("#detDynStrategyCurrentInfo").innerHTML = `
-        <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.02); padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
-           <div>Alocação Atual: <strong style="${Math.abs(deviation) > 5 ? 'color:#ef4444' : ''}">${currentW.toFixed(1)}%</strong></div>
-           <div>Dica: <strong><span style="color:${dicaColor}">${dicaStr}</span></strong></div>
-        </div>
-      `;
-      }
-
-      selCat.onchange = () => {
-        if (selCat.value === "NONE") iptTarget.value = "";
-        else {
-          const isCore = selCat.value === "CORE";
-          const catTotal = isCore ? (window._dynamicStrategyGlobals?.CORE || 0.65) * 100 : (window._dynamicStrategyGlobals?.SATELLITE || 0.35) * 100;
-          let count = Object.values(window._dynamicStrategyTickers || {}).filter(t => t && t.category === selCat.value && t !== ticker).length;
-          iptTarget.value = (catTotal / (count + 1)).toFixed(1);
-        }
-      };
-
-      btnSaveStrat.onclick = async () => {
-        let cat = selCat.value;
-        let target = Number(iptTarget.value);
-        if (cat !== "NONE" && (isNaN(target) || target <= 0)) {
-          alert("Insira uma percentagem alvo válida."); return;
-        }
-        btnSaveStrat.textContent = "...";
-        try {
-          // Fall back to setDoc deep merging. If config/strategy doesn't exist, this creates it.
-          await setDoc(doc(db, "config", "strategy"), {
-            tickers: {
-              [ticker]: cat === "NONE" ? deleteField() : { category: cat, target: target }
-            }
-          }, { merge: true });
-          $("#detDynStrategyStatus").style.display = "block";
-          $("#detDynStrategyStatus").style.color = "#22c55e";
-          $("#detDynStrategyStatus").textContent = "Guardado ✅";
-        } catch (err) {
-          console.error(err);
-          $("#detDynStrategyStatus").style.display = "block";
-          $("#detDynStrategyStatus").style.color = "#ef4444";
-          // Try to show the exact error message
-          $("#detDynStrategyStatus").textContent = err.message || "Erro ao guardar!";
-        }
-        btnSaveStrat.textContent = "Guardar";
-      };
-
-      const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-      const formatSmaDelta = (sma, cur) => {
-        if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
-        const d = ((cur - sma) / sma) * 100;
-        return `${d > 0 ? "+" : ""}${d.toFixed(1)}%`;
-      };
-      $("#detYield").textContent = yPct;
-      $("#detPE").textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
-
-      const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
-      const risk = precoAtual - stopTec;
-      const reward = tpObjetivo - precoAtual;
-      $("#detRR").textContent = risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
-      $("#detSMA50").textContent = formatSmaDelta(g._sma50, precoAtual);
-      $("#detSMA200").textContent = formatSmaDelta(s200, precoAtual);
-
-      $("#detBarStop").textContent = `${fmtEUR.format(stopTec)} (STOP)`;
-      $("#detBarPreco").textContent = `${fmtEUR.format(precoAtual)} (PREÇO)`;
-      $("#detBarAlvo").textContent = `${fmtEUR.format(tpObjetivo)} (ALVO)`;
-
-      // --- AÇÕES BOTÕES ---
-      const detModal = $("#activityDetailModal");
-      const bBuy = $("#detBtnBuy");
-      const bSell = $("#detBtnSell");
-      const bEdit = $("#detBtnEdit");
-      const bLink = $("#detBtnLink");
-
-      bBuy.onclick = () => {
-        detModal.classList.add("hidden");
-        openActionModal("compra", g.ticker);
-      };
-      bSell.onclick = () => {
-        detModal.classList.add("hidden");
-        openActionModal("venda", g.ticker);
-      };
-      bEdit.onclick = () => {
-        detModal.classList.add("hidden");
-        document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
-      };
-      bLink.onclick = () => {
-        if (g.link) window.open(g.link, "_blank");
-        else {
-          detModal.classList.add("hidden");
-          document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click();
-        }
-      };
-      bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
-      bBuy.textContent = estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar";
-
-      // --- CRISES ---
-      const detCriSel = $("#detCrisisSelector");
-      const detCriRes = $("#detCrisisResult");
-      if (detCriSel) {
-        detCriSel.innerHTML = '<option value="0">Simular cenário de queda...</option>' +
-          CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name}</option>`).join("");
-        detCriSel.value = "0";
-        if (detCriRes) detCriRes.style.display = "none";
-
-        if (!detCriSel.__wired) {
-          detCriSel.__wired = true;
-          detCriSel.addEventListener("change", () => {
-            const dropPct = Number(detCriSel.value);
-            if (dropPct <= 0) {
-              detCriRes.style.display = "none";
-              return;
-            }
-            const tk = detCriSel.dataset.ticker;
-            const group = byTickerGlobal.get(tk);
-            if (!group) return;
-
-            const pCur = group.precoAtual || 0;
-            const cPrice = pCur * (1 - dropPct / 100);
-            const iO = group.investido || 0;
-            const qO = group.qtd || 0;
-            const nQ = qO + (iO / (cPrice || 1));
-            const nPM = (iO * 2) / nQ;
-
-            $("#detCrisisPrice").textContent = fmtEUR.format(cPrice);
-            $("#detCrisisCost").textContent = fmtEUR.format(iO);
-            $("#detCrisisNewPM").textContent = fmtEUR.format(nPM);
-            detCriRes.style.display = "block";
-          });
-        }
-        detCriSel.dataset.ticker = g.ticker;
-      }
-
-      detModal.classList.remove("hidden");
+    // BLOCO 6 — RECUPERACAO DE PERDAS
+    const recBloco = $(`#detRecuperacaoBloco`);
+    if (lucroAtual < 0 && g.qtd > 0) {
+      recBloco.style.display = "block";
+      $(`#detBEML`).textContent  = fmtEUR.format(precoMedio);
+      $(`#detTPComp`).textContent = fmtEUR.format(tpObjetivo);
+      const p5 = precoAtual * 0.95, p10 = precoAtual * 0.90;
+      $(`#detRecSub5`).textContent  = `+${((tpObjetivo / p5  - 1) * 100).toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
+      $(`#detRecSub10`).textContent = `+${((tpObjetivo / p10 - 1) * 100).toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
+    } else {
+      recBloco.style.display = "none";
     }
 
+    // METRICAS SECUNDARIAS
+    const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
+    $(`#detYield`).textContent  = yPct;
+    $(`#detPE`).textContent     = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
+    $(`#detSMA50`).textContent  = formatSmaDelta(g._sma50, precoAtual);
+    $(`#detSMA200`).textContent = formatSmaDelta(s200, precoAtual);
+    const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
+    const risk = precoAtual - stopTec, reward = tpObjetivo - precoAtual;
+    $(`#detRR`).textContent = risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
+    $(`#detBarStop`).textContent  = fmtEUR.format(stopTec);
+    $(`#detBarPreco`).textContent = fmtEUR.format(precoAtual);
+    $(`#detBarAlvo`).textContent  = fmtEUR.format(tpObjetivo);
+    $(`#detObjLucro`).textContent  = fmtEUR.format(g.objetivo || 0);
+    $(`#detFaltaMeta`).textContent = faltaMeta > 0 ? fmtEUR.format(faltaMeta) : "0";
+    $(`#detTPObj`).textContent     = fmtEUR.format(tpObjetivo);
+    $(`#detUpside`).textContent    = upsideP > 0 ? `+${upsideP.toFixed(2)}%` : "0%";
+    $(`#detResumoInterpretativo`).textContent = upsideP > 0 ? `Precisa subir +${upsideP.toFixed(1)}% para cumprir o objetivo. (${esforcoStr})` : "Objetivo cumprido! Parabéns.";
+
+    // ESTRATEGIA DINAMICA
+    const sInfo = g._strategy;
+    $(`#detStrategyDiv`).innerHTML = `
+      <div style="font-weight:700;margin-bottom:8px;">Definir Estratégia (Ativo Atual)</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+        <select id="detDynStrategyCat" style="flex:1;padding:6px;border-radius:4px;border:1px solid var(--border);font-size:0.8rem;background:var(--background);color:var(--foreground);">
+          <option value="NONE">Automático / Nenhuma</option><option value="CORE">CORE</option><option value="SATELLITE">SATÉLITE</option>
+        </select>
+        <div style="display:flex;align-items:center;gap:4px;flex:1;">
+          <input type="number" id="detDynStrategyTarget" placeholder="%" step="0.1" max="100" min="0" style="width:100%;padding:6px;border-radius:4px;border:1px solid var(--border);font-size:0.8rem;background:var(--background);color:var(--foreground);" />
+          <span style="font-size:0.8rem;">%</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;align-items:center;">
+        <div id="detDynStrategyStatus" style="color:var(--muted-foreground);display:none;">Guardado ✅</div>
+        <button id="detBtnSaveStrategy" class="btn outline small" style="padding:4px 12px;margin-left:auto;">Guardar</button>
+      </div>
+      <div id="detDynStrategyCurrentInfo" style="margin-top:10px;font-size:0.75rem;"></div>`;
+
+    const selCat = $(`#detDynStrategyCat`);
+    const iptTarget = $(`#detDynStrategyTarget`);
+    const btnSaveStrat = $(`#detBtnSaveStrategy`);
+
+    if (sInfo) {
+      selCat.value = sInfo.category;
+      iptTarget.value = (sInfo.target * 100).toFixed(1);
+      const currentW = (g._currentWeight || 0) * 100;
+      const targetW  = sInfo.target * 100;
+      let dicaStr = "Aguardar", dicaColor = "var(--muted-foreground)";
+      if (g._shouldReinforceStrategic) { dicaStr = "REFORÇAR"; dicaColor = "#ef4444"; }
+      else if (g._estadoOp === "REDUZIR" || currentW > targetW * 1.5) { dicaStr = "REDUZIR"; dicaColor = "#f59e0b"; }
+      $(`#detDynStrategyCurrentInfo`).innerHTML = `<div style="display:flex;justify-content:space-between;background:rgba(0,0,0,0.02);padding:8px;border-radius:6px;border:1px solid var(--border);"><div>Alocação Atual: <strong style="${Math.abs(targetW - currentW) > 5 ? "color:#ef4444" : ""}">${currentW.toFixed(1)}%</strong></div><div>Dica: <strong><span style="color:${dicaColor}">${dicaStr}</span></strong></div></div>`;
+    }
+
+    selCat.onchange = () => {
+      if (selCat.value === "NONE") iptTarget.value = "";
+      else {
+        const isCore = selCat.value === "CORE";
+        const catTotal = isCore ? (window._dynamicStrategyGlobals?.CORE || 0.65) * 100 : (window._dynamicStrategyGlobals?.SATELLITE || 0.35) * 100;
+        let count = Object.values(window._dynamicStrategyTickers || {}).filter(t => t && t.category === selCat.value && t !== ticker).length;
+        iptTarget.value = (catTotal / (count + 1)).toFixed(1);
+      }
+    };
+
+    btnSaveStrat.onclick = async () => {
+      const cat = selCat.value, target = Number(iptTarget.value);
+      if (cat !== "NONE" && (isNaN(target) || target <= 0)) { alert("Insira uma percentagem alvo válida."); return; }
+      btnSaveStrat.textContent = "...";
+      try {
+        await setDoc(doc(db, "config", "strategy"), { tickers: { [ticker]: cat === "NONE" ? deleteField() : { category: cat, target } } }, { merge: true });
+        $(`#detDynStrategyStatus`).style.display = "block";
+        $(`#detDynStrategyStatus`).style.color = "#22c55e";
+        $(`#detDynStrategyStatus`).textContent = "Guardado ✅";
+      } catch (err) {
+        console.error(err);
+        $(`#detDynStrategyStatus`).style.display = "block";
+        $(`#detDynStrategyStatus`).style.color = "#ef4444";
+        $(`#detDynStrategyStatus`).textContent = err.message || "Erro ao guardar!";
+      }
+      btnSaveStrat.textContent = "Guardar";
+    };
+
+    // CRISES
+    const detCriSel = $(`#detCrisisSelector`);
+    const detCriRes = $(`#detCrisisResult`);
+    if (detCriSel) {
+      detCriSel.innerHTML = '<option value="0">Simular cenário de queda...</option>' + CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name}</option>`).join("");
+      detCriSel.value = "0";
+      if (detCriRes) detCriRes.style.display = "none";
+      if (!detCriSel.__wired) {
+        detCriSel.__wired = true;
+        detCriSel.addEventListener("change", () => {
+          const dropPct = Number(detCriSel.value);
+          if (dropPct <= 0) { detCriRes.style.display = "none"; return; }
+          const group = byTickerGlobal.get(detCriSel.dataset.ticker);
+          if (!group) return;
+          const pCur = group.precoAtual || 0;
+          const cPrice = pCur * (1 - dropPct / 100);
+          const iO = group.investido || 0, qO = group.qtd || 0;
+          const nQ = qO + (iO / (cPrice || 1));
+          const nPM = (iO * 2) / nQ;
+          $(`#detCrisisPrice`).textContent = fmtEUR.format(cPrice);
+          $(`#detCrisisCost`).textContent  = fmtEUR.format(iO);
+          $(`#detCrisisNewPM`).textContent = fmtEUR.format(nPM);
+          detCriRes.style.display = "block";
+        });
+      }
+      detCriSel.dataset.ticker = g.ticker;
+    }
+
+    // BOTOES
+    const bBuy  = $(`#detBtnBuy`);
+    const bSell = $(`#detBtnSell`);
+    const bEdit = $(`#detBtnEdit`);
+    const bLink = $(`#detBtnLink`);
+    const detModalEl = $(`#activityDetailModal`);
+    if (bBuy)  { bBuy.onclick  = () => { detModalEl.classList.add("hidden"); openActionModal("compra", g.ticker); }; }
+    if (bSell) { bSell.onclick = () => { detModalEl.classList.add("hidden"); openActionModal("venda", g.ticker); }; }
+    if (bEdit) { bEdit.onclick = () => { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); }; }
+    if (bLink) {
+      bLink.onclick = () => { if (g.link) window.open(g.link, "_blank"); else { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); } };
+      bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
+    }
+    if (bBuy) bBuy.innerHTML = `<i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}`;
+
+    detModalEl.classList.remove("hidden");
+  }
     detClose?.addEventListener("click", () => detModal.classList.add("hidden"));
     detModal?.addEventListener("click", (e) => {
       if (e.target.id === "activityDetailModal") detModal.classList.add("hidden");
@@ -1793,6 +1813,14 @@ function wireQuickActions(gruposArr) {
 
       <!-- METRICS GRID -->
       <div class="asset-metrics-grid">
+        <div class="metric-item metric-item--highlight">
+          <span class="metric-label">Capital Investido</span>
+          <span class="metric-value">${fmtEUR.format(g.investido || 0)}</span>
+        </div>
+        <div class="metric-item metric-item--highlight">
+          <span class="metric-label">Preço Médio</span>
+          <span class="metric-value">${fmtEUR.format(precoMedio)}</span>
+        </div>
         <div class="metric-item">
           <span class="metric-label">Yield</span>
           <span class="metric-value">${yPct}</span>

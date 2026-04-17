@@ -2106,6 +2106,61 @@ body.auth-screen .form-grid {
 }
 
 /* =========================================================
+   MODAL ESTRATÉGICO — Blocos de Decisão (det-kpi, det-block)
+   ========================================================= */
+.det-kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.det-kpi-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--muted-foreground);
+}
+
+.det-kpi-value {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.det-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  border-left-width: 3px;
+}
+
+.det-block-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  color: var(--foreground);
+}
+
+.det-block--green  { border-left-color: #22c55e; background: rgba(34,197,94,0.03); }
+.det-block--red    { border-left-color: #ef4444; background: rgba(239,68,68,0.03); }
+.det-block--amber  { border-left-color: #f59e0b; background: rgba(245,158,11,0.03); }
+.det-block--danger { border-left-color: #ef4444; background: rgba(239,68,68,0.04); }
+
+[data-theme="dark"] .det-block--green  { background: rgba(34,197,94,0.06);  }
+[data-theme="dark"] .det-block--red    { background: rgba(239,68,68,0.06);  }
+[data-theme="dark"] .det-block--amber  { background: rgba(245,158,11,0.06); }
+[data-theme="dark"] .det-block--danger { background: rgba(239,68,68,0.06);  }
+
+/* =========================================================
    ASSET CARDS (Portfolio Screen)
    ========================================================= */
 .asset-card {
@@ -2227,6 +2282,28 @@ body.auth-screen .form-grid {
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--foreground);
+}
+
+/* Capital Investido / Preço Médio — destaque visual */
+.metric-item--highlight {
+  background: rgba(59, 130, 246, 0.07);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.metric-item--highlight .metric-label {
+  color: #3b82f6;
+}
+
+.metric-item--highlight .metric-value {
+  font-size: 0.97rem;
+  color: var(--foreground);
+}
+
+[data-theme="dark"] .metric-item--highlight {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
 .asset-actions {

@@ -1,4 +1,4 @@
-<div class="page" data-screen-title="Portfólio">
+﻿<div class="page" data-screen-title="Portfólio">
   <div
     class="dashboard-header"
     style="display: flex; justify-content: space-between; align-items: center"
@@ -250,55 +250,78 @@
       <div style="display: flex; justify-content: space-between; width: 100%; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 4px;">
         <div style="font-size: 0.75rem; color: var(--muted-foreground)">Qtd: <strong id="detQtdHeader">0</strong></div>
         <div style="font-size: 0.75rem; color: var(--muted-foreground)">PM: <strong id="detPMHeader">€0.00</strong></div>
+        <div style="font-size: 0.75rem; color: var(--muted-foreground)">Capital: <strong id="detCapitalHeader">€0.00</strong></div>
       </div>
     </div>
 
     <div class="modal-body help-body" style="padding: 16px; background: var(--background);">
-      <!-- 1. Bloco principal: “Objetivo e viabilidade” -->
-      <div style="background: rgba(79, 70, 229, 0.03); padding: 14px; border-radius: 12px; border: 1px solid rgba(79, 70, 229, 0.2); margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-           <div style="font-weight: 800; font-size: 0.95rem; color: var(--primary);">🎯 Objetivo e viabilidade</div>
-           <div id="detEsforcoBadge" style="font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid;"></div>
+
+      <!-- BLOCO 0 — DECISAO DO SISTEMA -->
+      <div id="detDecisaoSistema" style="margin-bottom: 16px; padding: 14px 16px; border-radius: 12px; border: 2px solid; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <div>
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.7; margin-bottom: 4px;">&#x1F4CA; Decisão do Sistema</div>
+          <div id="detDecisaoTexto" style="font-size: 1.05rem; font-weight: 800;">—</div>
+          <div id="detDecisaoSub" style="font-size: 0.75rem; margin-top: 4px; opacity: 0.8;">—</div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-           <div>
-              <div style="font-size: 0.7rem; color: var(--muted-foreground);">Objetivo de Lucro</div>
-              <strong id="detObjLucro" style="font-size: 1.1rem;">€0.00</strong>
-           </div>
-           <div>
-              <div style="font-size: 0.7rem; color: var(--muted-foreground);">Falta para Meta</div>
-              <strong id="detFaltaMeta" style="font-size: 1.1rem; color: #f59e0b;">€0.00</strong>
-           </div>
-           <div>
-              <div style="font-size: 0.7rem; color: var(--muted-foreground);">TP (Alvo Final)</div>
-              <strong id="detTPObj" style="font-size: 1.1rem; color: #22c55e;">€0.00</strong>
-           </div>
-           <div>
-              <div style="font-size: 0.7rem; color: var(--muted-foreground);">Upside Necessário</div>
-              <strong id="detUpside" style="font-size: 1.1rem; color: #3b82f6;">0.00%</strong>
-           </div>
+        <div id="detEsforcoBadge" style="font-size: 0.75rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; border: 1px solid; white-space: nowrap; flex-shrink: 0;"></div>
+      </div>
+
+      <!-- BLOCO 1 — ESTADO DO ATIVO (quick KPIs) -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
+        <div class="det-kpi">
+          <div class="det-kpi-label">Capital</div>
+          <div class="det-kpi-value" id="detKpiCapital">€0</div>
         </div>
-        <div id="detResumoInterpretativo" style="font-size: 0.8rem; font-weight: 600; color: var(--primary); text-align: center; border-top: 1px dashed rgba(79, 70, 229, 0.2); padding-top: 10px;">
+        <div class="det-kpi">
+          <div class="det-kpi-label">Upside</div>
+          <div class="det-kpi-value" id="detKpiUpside" style="color:#3b82f6;">0%</div>
+        </div>
+        <div class="det-kpi">
+          <div class="det-kpi-label">TP Alvo</div>
+          <div class="det-kpi-value" id="detKpiTP" style="color:#22c55e;">€0</div>
+        </div>
+        <div class="det-kpi">
+          <div class="det-kpi-label">&#x0394;SMA200</div>
+          <div class="det-kpi-value" id="detKpiSMA200">—</div>
         </div>
       </div>
 
-      <!-- 2. Bloco: “Plano de ação por níveis” -->
-      <div style="margin-bottom: 20px;">
-        <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 10px; color: var(--foreground);">📉 Plano de ação por níveis</div>
-        <div style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;">
-          <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; background: rgba(0,0,0,0.03); padding: 10px 12px; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); border-bottom: 1px solid var(--border);">
-             <div>Queda</div>
-             <div>Preço Alvo</div>
-             <div>Ação Sugerida</div>
-          </div>
-          <div id="detNiveisReforco"></div>
+      <!-- BLOCO 2 — PLANO DE SAIDA (Multi-TP) -->
+      <div class="det-block det-block--green" style="margin-bottom: 14px;">
+        <div class="det-block-title">&#x1F3AF; Plano de Saída</div>
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1fr; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); padding: 0 10px 6px;">
+          <div>Nível</div><div>Preço</div><div>Ação</div><div style="text-align:right;">% Posição</div>
         </div>
+        <div id="detPlanSaida" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
+        <div id="detSaidaInterpretativo" style="font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); margin-top: 8px; padding: 0 2px;"></div>
       </div>
 
-      <!-- 3. Bloco: “Recuperação de perdas” -->
-      <div id="detRecuperacaoBloco" style="display: none; background: rgba(239, 68, 68, 0.04); padding: 14px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 20px;">
-        <div style="font-weight: 800; font-size: 0.95rem; color: #ef4444; margin-bottom: 12px;"><i class="fas fa-shield-alt"></i> Recuperação de Perdas</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <!-- BLOCO 3 — PLANO DE QUEDA (Reforços) -->
+      <div class="det-block det-block--red" style="margin-bottom: 14px;">
+        <div class="det-block-title">&#x1F4C9; Plano de Queda</div>
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); padding: 0 10px 6px;">
+          <div>Queda</div><div>Preço</div><div>Ação</div>
+        </div>
+        <div id="detNiveisReforco" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
+      </div>
+
+      <!-- BLOCO 4 — REFORCO INTELIGENTE -->
+      <div class="det-block" style="margin-bottom: 14px;">
+        <div class="det-block-title">&#x1F504; Reforço Inteligente</div>
+        <div id="detCenariosNovos" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+
+      <!-- BLOCO 5 — WAR CHEST -->
+      <div class="det-block det-block--amber" style="margin-bottom: 14px;">
+        <div class="det-block-title">&#x1F4B0; War Chest — Plano de Ataque</div>
+        <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">Capital libertado pelo sistema disponível para reforçar em quedas.</div>
+        <div id="detWarChestTable" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
+      </div>
+
+      <!-- BLOCO 6 — RECUPERACAO DE PERDAS (so se prejuizo) -->
+      <div id="detRecuperacaoBloco" class="det-block det-block--danger" style="display: none; margin-bottom: 14px;">
+        <div class="det-block-title"><i class="fas fa-shield-alt"></i> Recuperação de Perdas</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
            <div>
               <div style="font-size: 0.7rem; color: var(--muted-foreground);">Break-even Atual</div>
               <strong id="detBEML" style="font-size: 1.1rem; color: var(--foreground);">€0.00</strong>
@@ -308,48 +331,26 @@
               <strong id="detTPComp" style="font-size: 1.1rem; color: #22c55e;">€0.00</strong>
            </div>
         </div>
-        <div style="margin-top: 12px; font-size: 0.75rem; border-top: 1px dashed rgba(239, 68, 68, 0.2); padding-top: 10px; line-height: 1.5;">
+        <div style="margin-top: 10px; font-size: 0.75rem; border-top: 1px dashed rgba(239, 68, 68, 0.2); padding-top: 8px; line-height: 1.6;">
            Se cair <strong>-5%</strong>: novo TP compensador <strong id="detRecSub5" style="color:#ef4444;">€0.00</strong><br>
            Se cair <strong>-10%</strong>: novo TP compensador <strong id="detRecSub10" style="color:#ef4444;">€0.00</strong>
         </div>
       </div>
 
-      <!-- 4. Bloco: “Se eu reforçar agora” -->
-      <div style="margin-bottom: 20px;">
-        <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 10px; color: var(--foreground);">🔄 Se eu reforçar agora...</div>
-        <div id="detCenariosNovos" style="display: flex; flex-direction: column; gap: 10px;"></div>
-      </div>
-
-      <!-- 5. Bloco: “Informação Secundária” -->
+      <!-- BLOCO 7 — METRICAS SECUNDARIAS (colapsavel) -->
       <details style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
-         <summary style="font-weight: 700; font-size: 0.85rem; cursor: pointer; color: var(--muted-foreground); outline: none;">Métricas Secundárias & Estratégia</summary>
+         <summary style="font-weight: 700; font-size: 0.85rem; cursor: pointer; color: var(--muted-foreground); outline: none;">Métricas Secundárias &amp; Estratégia</summary>
          <div style="margin-top: 16px;">
            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.8rem;">
               <div><span style="color:var(--muted-foreground)">Yield:</span> <strong id="detYield"></strong></div>
               <div><span style="color:var(--muted-foreground)">P/E:</span> <strong id="detPE"></strong></div>
               <div><span style="color:var(--muted-foreground)">R/R:</span> <strong id="detRR"></strong></div>
-              <div><span style="color:var(--muted-foreground)">ΔSMA50:</span> <strong id="detSMA50"></strong></div>
-              <div style="grid-column: span 2"><span style="color:var(--muted-foreground)">ΔSMA200:</span> <strong id="detSMA200"></strong></div>
+              <div><span style="color:var(--muted-foreground)">&#x0394;SMA50:</span> <strong id="detSMA50"></strong></div>
+              <div style="grid-column: span 2"><span style="color:var(--muted-foreground)">&#x0394;SMA200:</span> <strong id="detSMA200"></strong></div>
            </div>
-           
            <div id="detStrategyDiv" style="margin-top: 14px; margin-bottom: 14px;"></div>
-           
-           <div style="margin-top: 20px; margin-bottom: 10px;">
-             <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted-foreground); margin-bottom: 6px;">
-               <span id="detBarStop"></span>
-               <span id="detBarPreco"></span>
-               <span id="detBarAlvo"></span>
-             </div>
-             <div style="height: 6px; background: var(--muted); border-radius: 10px; display: flex; overflow: hidden;">
-               <div style="flex: 1; background: #ef4444; opacity: 0.5"></div>
-               <div style="flex: 2; background: #eab308; opacity: 0.5"></div>
-               <div style="flex: 3; background: #3b82f6; opacity: 0.5"></div>
-               <div style="flex: 2; background: #22c55e; opacity: 0.5"></div>
-             </div>
-           </div>
-           
            <div style="margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--border);">
-             <div style="font-size: 0.8rem; font-weight: 700; color: #ef4444; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle"></i> Stress (Histórico)</div>
+             <div style="font-size: 0.8rem; font-weight: 700; color: #ef4444; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle"></i> Stress Test (Histórico)</div>
              <select id="detCrisisSelector" class="crisis-selector" style="width: 100%; padding: 8px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border); background: var(--background); color: var(--foreground);"></select>
              <div id="detCrisisResult" style="display: none; padding: 10px; background: rgba(239, 68, 68, 0.05); border-radius: 6px; margin-top: 8px; font-size: 0.8rem; border: 1px solid rgba(239, 68, 68, 0.2);">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color:var(--muted-foreground)">Preço na Crise:</span> <strong id="detCrisisPrice" style="color:#ef4444;"></strong></div>
@@ -357,70 +358,33 @@
                 <div style="display: flex; justify-content: space-between;"><span style="color:var(--muted-foreground)">Novo PM:</span> <strong id="detCrisisNewPM" style="color:#22c55e;"></strong></div>
              </div>
            </div>
+           <!-- IDs ocultos mantidos para compatibilidade JS -->
+           <span id="detBarStop" style="display:none;"></span>
+           <span id="detBarPreco" style="display:none;"></span>
+           <span id="detBarAlvo" style="display:none;"></span>
+           <span id="detObjLucro" style="display:none;"></span>
+           <span id="detFaltaMeta" style="display:none;"></span>
+           <span id="detTPObj" style="display:none;"></span>
+           <span id="detUpside" style="display:none;"></span>
+           <span id="detResumoInterpretativo" style="display:none;"></span>
          </div>
       </details>
     </div>
 
-    <div
-      class="modal-footer"
-      style="
-        padding: 16px;
-        border-top: 1px solid var(--border);
-        display: flex;
-        gap: 10px;
-      "
-    >
-      <button
-        id="detBtnBuy"
-        class="btn premium"
-        style="
-          flex: 2;
-          margin-top: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        "
-      >
+    <div class="modal-footer" style="padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+      <button id="detBtnBuy" class="btn premium" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <i class="fas fa-plus-circle"></i> Comprar
       </button>
-      <button
-        id="detBtnLink"
-        class="btn ghost"
-        style="
-          flex: 0 0 44px;
-          margin-top: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        "
-      >
+      <button id="detBtnLink" class="btn ghost" style="flex: 0 0 44px; margin-top: 0; display: flex; align-items: center; justify-content: center;">
         <i class="fas fa-link"></i>
       </button>
-      <button
-        id="detBtnSell"
-        class="btn outline"
-        style="flex: 1; margin-top: 0"
-      >
-        Vender
-      </button>
-      <button
-        id="detBtnEdit"
-        class="btn ghost"
-        style="
-          flex: 0 0 44px;
-          margin-top: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        "
-      >
+      <button id="detBtnSell" class="btn outline" style="flex: 1; margin-top: 0">Vender</button>
+      <button id="detBtnEdit" class="btn ghost" style="flex: 0 0 44px; margin-top: 0; display: flex; align-items: center; justify-content: center;">
         <i class="fas fa-edit"></i>
       </button>
     </div>
   </div>
 </div>
-
 <!-- Modal QUICK BUY/SELL (mantém o teu modal existente) -->
 
 <div id="pfAddModal" class="modal hidden">
