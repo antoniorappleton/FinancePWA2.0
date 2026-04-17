@@ -1,30 +1,14 @@
-﻿<div class="page" data-screen-title="Portfólio">
-  <div
-    class="dashboard-header"
-    style="display: flex; justify-content: space-between; align-items: center"
-  >
+<div class="page" data-screen-title="Portfólio">
+  <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
     <div>
-      <p class="subtitle">Todos os ativos em carteira</p>
+      <p class="subtitle" style="margin:0;">Todos os ativos em carteira</p>
     </div>
-    <button
-      id="btnPrtHelp"
-      class="icon-btn"
-      title="Ajuda"
-      style="
-        background: var(--glass-bg);
-        padding: 8px;
-        border-radius: 50%;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-color);
-        border: 1px solid var(--border);
-      "
-    >
-      <i class="fas fa-question-circle"></i>
-    </button>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button id="btnOpenInvPlan" class="btn premium" style="margin-top: 0; padding: 0 14px; height: 36px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; border-radius: 20px;">
+        <i class="fas fa-magic"></i> <span>Plano IA</span>
+      </button>
+      <button id="btnPrtHelp" class="icon-btn" title="Ajuda" style="background: var(--glass-bg); padding: 8px; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--text-color); border: 1px solid var(--border);"><i class="fas fa-question-circle"></i></button>
+    </div>
   </div>
 
   <!-- 🧭 KPIs -->
@@ -195,6 +179,11 @@
 
   <!-- 🔎 LISTA -->
   <div id="listaAtividades"></div>
+
+  <!-- Botão Flutuante de Ajuda -->
+  <div id="fabHelp" class="fab-help" title="Interpretar Dados e Estratégia">
+    <i class="fas fa-question"></i>
+  </div>
 </div>
 
 <!-- ======== Estilos locais (collapse + modal simples) ======== -->
@@ -498,6 +487,29 @@
           </div>
 
           <hr />
+          
+          <div style="background: rgba(59, 130, 246, 0.05); padding: 12px; border-radius: 8px; border-left: 4px solid var(--primary); margin: 10px 0;">
+            <strong style="display: block; margin-bottom: 6px;"><i class="fas fa-bullseye"></i> Como interpretar a Estratégia (Modal)</strong>
+            <div style="display: grid; gap: 0.8rem; font-size: 0.78rem;">
+              <div>
+                <strong>🎯 Decisão do Sistema</strong> — Cruza o lucro atual com o esforço de tempo. Dá a diretriz: Comprar, Vender ou Manter.
+              </div>
+              <div>
+                <strong>📈 Plano de Saída (TPs)</strong> — Define níveis de venda (Take Profit). 
+                Mostra o preço alvo e a <strong>quantidade de ações</strong> a libertar em cada ponto (20%, 30%, 50%).
+              </div>
+              <div>
+                <strong>📉 Plano de Queda</strong> — Define níveis de reforço ou stop caso o preço caia abaixo do PM atual.
+              </div>
+              <div>
+                <strong>🔄 Reforço Inteligente</strong> — Simula o impacto de novos aportes no seu Preço Médio e PM vs SMA200.
+              </div>
+              <div>
+                <strong>💰 War Chest</strong> — Mostra quanto capital será libertado ao vender nos TPs, para reinvestir em ativos que estejam no "Plano de Queda".
+              </div>
+            </div>
+          </div>
+
 
           <div>
             <strong>Badges por ativo</strong>:
@@ -544,4 +556,93 @@
       </div>
     </div>
   </div>
+<!-- ======== Modal Planeador de Investimento (DCA Inteligente) ======== -->
+<div id="invPlanModal" class="modal hidden">
+  <div class="modal-dialog" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 style="display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-magic" style="color: #8b5cf6;"></i> Plano de Investimento IA
+      </h3>
+      <button id="invPlanClose" class="icon-btn">✖</button>
+    </div>
+    <div class="modal-body" style="padding: 20px;">
+      <div style="display: grid; gap: 16px; margin-bottom: 24px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="filter-group">
+            <label style="font-size: 0.8rem; font-weight: 700;">Montante Total (€)</label>
+            <input type="number" id="inpInvTotal" placeholder="Ex: 1000" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+          </div>
+          <div class="filter-group">
+            <label style="font-size: 0.8rem; font-weight: 700;">Duração (Meses)</label>
+            <input type="number" id="inpInvMonths" value="6" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="filter-group">
+            <label style="font-size: 0.8rem; font-weight: 700;">Frequência</label>
+            <select id="inpInvFreq" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+              <option value="4.33">Semanal</option>
+              <option value="2">Quinzenal (2x mês)</option>
+              <option value="1" selected>Mensal</option>
+              <option value="0.33">Trimestral</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label style="font-size: 0.8rem; font-weight: 700;">Estratégia</label>
+            <select id="inpInvStrat" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+              <option value="ALL">Mista (Todos)</option>
+              <option value="CORE">Apenas CORE</option>
+              <option value="SATELLITE">Apenas SATÉLITE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label style="font-size: 0.8rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
+            Selecionar Ativos
+            <span id="btnInvSelectAll" style="color: #8b5cf6; cursor: pointer; font-size: 0.65rem;">Todos / Nenhum</span>
+          </label>
+          <div id="invPlanAssetsList" style="max-height: 120px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.05);">
+            <!-- Checks dinâmicos aqui -->
+          </div>
+        </div>
+      </div>
+
+      <button id="btnCalcInvPlan" class="btn premium" style="width: 100%; font-weight: 800; padding: 12px; margin-top: 0;">
+        Gerar Plano de Investimento
+      </button>
+
+      <div id="invPlanResult" style="margin-top: 24px; display: none;">
+        <div style="padding: 12px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2); margin-bottom: 16px; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Aporte por Período:</span>
+            <strong id="resInvPerPeriod" style="color: #8b5cf6;">€0,00</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Total de Períodos:</span>
+            <strong id="resInvTotalPeriods">0</strong>
+          </div>
+        </div>
+        
+        <div style="max-height: 250px; overflow-y: auto;">
+          <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
+            <thead style="position: sticky; top: 0; background: var(--background); z-index: 1;">
+              <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground);">
+                <th style="padding: 8px 4px; text-align: left;">Ativo</th>
+                <th style="padding: 8px 4px; text-align: left;">Cat.</th>
+                <th style="padding: 8px 4px; text-align: right;">Meta%</th>
+                <th style="padding: 8px 4px; text-align: right;">Aporte/Per.</th>
+              </tr>
+            </thead>
+            <tbody id="invPlanTableBody"></tbody>
+          </table>
+        </div>
+        <p style="font-size: 0.65rem; color: var(--muted-foreground); margin-top: 12px; line-height: 1.4;">
+          * O plano prioriza ativos que estão abaixo da sua meta de alocação estratégica e considera o custo atual de mercado.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 </div>

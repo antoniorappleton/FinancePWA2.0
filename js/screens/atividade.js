@@ -81,6 +81,7 @@ const CRISES_HISTORY = [
   { id: "subprime", name: "📉 Crise Financeira (2008) [-56%]", drop: 56 }
 ];
 
+
 // ===============================
 // Estratégia de Portfolio (Core/Satellite)
 // ===============================
@@ -122,13 +123,14 @@ function getStrategicInfo(ticker, nome) {
 // Helpers
 // ===============================
 function toNumStrict(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : NaN;
+  if (typeof v === "number") return v;
+  if (!v) return 0;
+  let s = String(v).replace(/\s/g, "").replace(",", ".");
+  let n = parseFloat(s);
+  return isFinite(n) ? n : 0;
 }
 function isFiniteNum(v) {
-  if (v === null || v === undefined || v === "") return false;
-  const n = Number(v);
-  return Number.isFinite(n);
+  return typeof v === "number" && isFinite(v);
 }
 function formatNum(n) {
   return Number(n || 0).toLocaleString("pt-PT");
@@ -1160,6 +1162,7 @@ function wireQuickActions(gruposArr) {
     const laterBtn = document.getElementById("prtHelpLater");
     const dontShow = document.getElementById("prtHelpDontShow");
     const helpIcon = document.getElementById("btnPrtHelp");
+    const fabHelp = document.getElementById("fabHelp");
 
     const close = (persist) => {
       if (persist && dontShow?.checked) {
@@ -1174,6 +1177,7 @@ function wireQuickActions(gruposArr) {
     laterBtn?.addEventListener("click", () => close(false));
     okBtn?.addEventListener("click", () => close(true));
     helpIcon?.addEventListener("click", () => showPortfolioHelp(true));
+    fabHelp?.addEventListener("click", () => showPortfolioHelp(true));
 
     modal.addEventListener("click", (e) => {
       if (e.target === modal) close(false);
@@ -1200,20 +1204,25 @@ function wireQuickActions(gruposArr) {
   let _lastAtivosSnap = null;
   let _lastAcoesSnap = null;
   let _lastStrategySnap = null;
+  let _currentTotalInvested = 0;
+  let _currentGruposArr = [];
+
   window._dynamicStrategyGlobals = { CORE: 0.65, SATELLITE: 0.35 };
   window._dynamicStrategyTickers = {};
   let fltState = { estado: "", mercado: "", setor: "", sort: "queda", estrategia: "" };
 
   export async function initScreen() {
+    console.log("🏁 initScreen 'atividade' iniciada...");
     const cont = document.getElementById("listaAtividades");
     if (!cont) return;
 
     _eventsWired = false; // reset para garantir que os listeners se ligam ao novo DOM
     cont.innerHTML = "A carregar…";
 
-    // Registrar ajuda
+    // Registrar ajuda e plano
     wirePortfolioHelpModal();
     showPortfolioHelp();
+    wireInvestPlanner();
 
     await ensureChartJS();
 
@@ -1433,6 +1442,8 @@ function wireQuickActions(gruposArr) {
         });
       });
 
+
+
       // 2.1) Distribuições (apenas abertas)
       const setoresMap = new Map(),
         mercadosMap = new Map();
@@ -1447,6 +1458,8 @@ function wireQuickActions(gruposArr) {
       // 2.2) KPIs agregados
       const abertos = gruposArr.filter((g) => g.qtd > 0);
       const totalInvestido = abertos.reduce((a, g) => a + (g.investido || 0), 0);
+      _currentTotalInvested = totalInvestido;
+      _currentGruposArr = gruposArr;
 
       // Lucro Atual (aberto)
       const lucroAberto = abertos.reduce((a, g) => a + (g.lucroAtual || 0), 0);
@@ -1501,7 +1514,7 @@ function wireQuickActions(gruposArr) {
       for (const g of abertos) {
         const sInfo = getDynStrat(g.ticker, g.nome);
         g._strategy = sInfo; // Cache da info estratégica
-        if (sInfo && sInfo.category === "SATELLITE") {
+        if (sInfo && sInfo.category === "SATELLITE" && totalInvestido > 0) {
           satWeightTotal += (g.investido / totalInvestido);
         }
       }
@@ -1513,7 +1526,7 @@ function wireQuickActions(gruposArr) {
         const sInfo = g._strategy;
         if (!sInfo) continue;
 
-        const currentWeight = g.investido / totalInvestido;
+        const currentWeight = totalInvestido > 0 ? (g.investido / totalInvestido) : 0;
         const deviation = sInfo.target - currentWeight;
       
         // Regra 3 e 5: Desvio > 5% e prioridade Core
@@ -1713,7 +1726,7 @@ function wireQuickActions(gruposArr) {
       wirePortfolioHelpModal();
     } catch (e) {
       console.error("Erro ao processar atividade:", e);
-      cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
+      cont.innerHTML = `<p class="muted">Não foi possível carregar a lista. Detalhe: ${e.message}</p>`;
     }
   }
 
@@ -1874,3 +1887,152 @@ function wireQuickActions(gruposArr) {
       </div>
     </div>`;
 }
+
+  // ==========================================
+  // 🚀 Planeador de Investimento IA (DCA)
+  // ==========================================
+  function wireInvestPlanner() {
+    const modal = document.getElementById("invPlanModal");
+    const btnOpen = document.getElementById("btnOpenInvPlan");
+    const btnClose = document.getElementById("invPlanClose");
+    const btnCalc = document.getElementById("btnCalcInvPlan");
+    const assetListCont = document.getElementById("invPlanAssetsList");
+    const btnSelectAll = document.getElementById("btnInvSelectAll");
+    const inpStrat = document.getElementById("inpInvStrat");
+
+    if (!modal || modal.__wired) return;
+    modal.__wired = true;
+
+    btnOpen?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      modal.classList.remove("hidden");
+      populateAssets();
+    });
+
+    btnClose?.addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+
+    function populateAssets() {
+      if (!assetListCont) return;
+      assetListCont.innerHTML = "";
+      const targetsWithGoal = _currentGruposArr.filter(g => g._strategy && g._strategy.target > 0);
+      targetsWithGoal.forEach(g => {
+        const label = document.createElement("label");
+        label.className = "inv-asset-label";
+        label.dataset.category = g._strategy.category;
+        label.innerHTML = `<input type="checkbox" class="inv-asset-check" value="${g.ticker}" checked> <span>${g.ticker}</span>`;
+        assetListCont.appendChild(label);
+      });
+    }
+
+    btnSelectAll?.addEventListener("click", () => {
+      const checks = assetListCont.querySelectorAll(".inv-asset-check");
+      const anyUnchecked = Array.from(checks).some(c => !c.checked);
+      checks.forEach(c => { c.checked = anyUnchecked; });
+    });
+
+    inpStrat?.addEventListener("change", (e) => {
+      const val = e.target.value;
+      const checks = assetListCont.querySelectorAll(".inv-asset-check");
+      checks.forEach(c => {
+        const cat = c.closest("label").dataset.category;
+        c.checked = (val === "ALL") ? true : (cat === val);
+      });
+    });
+
+    btnCalc?.addEventListener("click", () => {
+      const tAmt = parseFloat(document.getElementById("inpInvTotal").value);
+      const mons = parseInt(document.getElementById("inpInvMonths").value);
+      const freq = parseFloat(document.getElementById("inpInvFreq").value);
+      const checks = assetListCont.querySelectorAll(".inv-asset-check:checked");
+      const tickers = Array.from(checks).map(c => c.value);
+
+      if (isNaN(tAmt) || tAmt <= 0) { alert("Insira um montante válido."); return; }
+      if (tickers.length === 0) { alert("Selecione pelo menos um ativo."); return; }
+
+      const totalP = Math.max(1, Math.round(mons * freq));
+      const perP = tAmt / totalP;
+
+      const resAmt = document.getElementById("resInvPerPeriod");
+      const resTot = document.getElementById("resInvTotalPeriods");
+      const resBox = document.getElementById("invPlanResult");
+
+      if (resAmt) resAmt.textContent = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(perP);
+      if (resTot) resTot.textContent = totalP;
+      if (resBox) resBox.style.display = "block";
+
+      renderDCAPlan(perP, tickers);
+    });
+
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("hidden") && e.key === "Escape") modal.classList.add("hidden");
+    });
+  }
+
+  function renderDCAPlan(amtPerPeriod, selectedTickers) {
+    const tbody = document.getElementById("invPlanTableBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const targets = _currentGruposArr
+      .filter(g => selectedTickers.includes(g.ticker))
+      .map(g => {
+        const s = g._strategy;
+        return { 
+          ticker: g.ticker, 
+          category: s.category,
+          targetPct: s.target,
+          currentVal: g.qtd * (g.precoAtual || 0),
+          preco: g.precoAtual || 0
+        };
+      })
+      .filter(x => x !== null);
+
+    if (targets.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='4' style='padding:20px; text-align:center; color:var(--muted-foreground);'>Nenhum ativo com meta estratégica definida em 'Definições'.</td></tr>";
+      return;
+    }
+
+    const totalValNow = _currentTotalInvested;
+    
+    // Calcular "Peso Atual"
+    let plan = targets.map(t => {
+      const currentWeight = totalValNow > 0 ? t.currentVal / totalValNow : 0;
+      const shortfall = t.targetPct - currentWeight;
+      return { ...t, currentWeight, shortfall };
+    });
+
+    // Ordenar: Primeiro CORE, depois por Shortfall (quem está mais longe da meta)
+    plan.sort((a, b) => {
+      if (a.category !== b.category) {
+        return a.category === "CORE" ? -1 : 1;
+      }
+      return b.shortfall - a.shortfall;
+    });
+
+    // Distribuir o montante do período
+    // Usamos uma lógica de reequilíbrio: priorizar quem está underweight (shortfall > 0)
+    const underweight = plan.filter(p => p.shortfall > 0);
+    const useList = underweight.length > 0 ? underweight : plan;
+    const sumTargets = useList.reduce((acc, p) => acc + p.targetPct, 0);
+
+    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+    useList.forEach(p => {
+      const weightInPlan = p.targetPct / (sumTargets || 1);
+      const allocatedAmt = amtPerPeriod * weightInPlan;
+      if (allocatedAmt < 0.01) return;
+
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid var(--border)";
+      tr.innerHTML = `
+        <td style="padding: 10px 4px;"><strong>${p.ticker}</strong></td>
+        <td style="padding: 10px 4px;"><span class="strategy-badge strategy-badge--${p.category.toLowerCase()}" style="font-size:0.6rem; padding: 2px 6px;">${p.category}</span></td>
+        <td style="padding: 10px 4px; text-align: right;">${(p.targetPct * 100).toFixed(1)}%</td>
+        <td style="padding: 10px 4px; text-align: right; font-weight: 700; color: #8b5cf6;">${fmtEUR.format(allocatedAmt)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
