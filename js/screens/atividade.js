@@ -1,4 +1,4 @@
-﻿// ===== Hard error guard =====
+// ===== Hard error guard =====
 window.addEventListener("error", (e) =>
   console.error("ATIVIDADE HARD ERROR:", e.error || e.message),
 );
@@ -1772,11 +1772,14 @@ function wireQuickActions(gruposArr) {
             ${estadoOp}
           </div>
           <div class="asset-ticker-box">
-            <span class="asset-ticker-symbol">${g.ticker}</span>
-            <span class="asset-name" title="${g.nome}">
-              ${g.nome}
-              ${sInfo ? `<span style="font-size: 0.6rem; font-weight: 700; color: var(--foreground); background: ${sInfo.category === 'CORE' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)'}; border: 1px solid ${sInfo.category === 'CORE' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(245, 158, 11, 0.3)'}; margin-left: 6px; padding: 1px 5px; border-radius: 4px;">${sInfo.category}</span>` : ''}
-            </span>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+              <span class="asset-ticker-symbol">${g.ticker}</span>
+              ${sInfo ? `<span class="strategy-badge strategy-badge--${sInfo.category.toLowerCase()}">${sInfo.category}</span>` : ''}
+            </div>
+            <span class="asset-name" title="${g.nome}">${g.nome}</span>
+
+
+
           </div>
         </div>
         
