@@ -1776,6 +1776,12 @@ function wireQuickActions(gruposArr) {
     if (estadoOp === "VENDER") stateColor = "#ef4444";
     if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
 
+    const objetivoFin = g.objetivo || 0;
+    const lucroProgress = objetivoFin > 0 ? (lucroAtual / objetivoFin) * 100 : 0;
+    const safeProgress = Math.min(100, Math.max(0, lucroProgress));
+    // Verde se atingido, azul se positivo, vermelho se negativo
+    const progressColor = lucroAtual >= objetivoFin ? "var(--success)" : (lucroAtual > 0 ? "#22c55e" : "#ef4444");
+
     return `
     <div class="asset-card">
       <!-- HEADER: Ticker e Preço -->
@@ -1803,6 +1809,21 @@ function wireQuickActions(gruposArr) {
           </div>
         </div>
       </div>
+
+      <!-- PROGRESSO DO OBJETIVO -->
+      ${objetivoFin > 0 ? `
+      <div style="margin: 0 16px 12px; padding: 10px; background: rgba(34, 197, 94, 0.03); border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.1);">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
+          <span style="color: var(--muted-foreground)">Objetivo de Lucro: <strong>${fmtEUR.format(objetivoFin)}</strong></span>
+          <span style="color: ${lucroAtual >= objetivoFin ? 'var(--success)' : (lucroAtual > 0 ? '#22c55e' : '#ef4444')}; font-weight: 800;">
+            ${lucroProgress.toFixed(1)}%
+          </span>
+        </div>
+        <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+          <div style="width: ${safeProgress}%; height: 100%; background: ${progressColor}; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+        </div>
+      </div>
+      ` : ""}
 
       <!-- ALOCAÇÃO ESTRATÉGICA -->
       ${sInfo ? `
