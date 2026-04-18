@@ -2446,4 +2446,36 @@ body.auth-screen .form-grid {
     width: 46px;
     height: 46px;
   }
-}
+}
+
+/* === Desktop Grid Adaptation (Atividades) === */
+@media (min-width: 1024px) {
+  #listaAtividades {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  #listaAtividades .asset-card {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    height: 100%;
+  }
+
+  /* Adjust header layout on desktop cards */
+  #listaAtividades .asset-header {
+    padding: 20px 24px;
+  }
+
+  /* Adjust actions on desktop cards */
+  #listaAtividades .asset-actions {
+    padding: 16px 24px;
+    background: rgba(0, 0, 0, 0.02);
+  }
+}
+
