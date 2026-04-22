@@ -566,6 +566,10 @@ function wireQuickActions(gruposArr) {
     const upsideP    = precoAtual > 0 ? ((tpObjetivo / precoAtual) - 1) * 100 : 0;
     const percL      = (g.investido || 0) > 0 ? (lucroAtual / (g.investido || 0)) * 100 : 0;
 
+    // WAR CHEST TOTAL
+    const warChestRaw = document.getElementById("prtWarChest")?.textContent || "";
+    const warChestTotal = parseFloat(warChestRaw.replace(/[^\d,.]/g, "").replace(",", ".")) || 0;
+
     const formatSmaDelta = (sma, cur) => {
       if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
       const d = ((cur - sma) / sma) * 100;
@@ -579,20 +583,76 @@ function wireQuickActions(gruposArr) {
     else if (upsideP > 3) { esforcoStr = "Plausível"; esforcoColor = "#3b82f6"; }
     if (upsideP <= 0 && g.qtd > 0) { esforcoStr = "Atingido"; esforcoColor = "#22c55e"; }
 
-    let decisaoEmoji = "🟢", decisaoTexto = "MANTER", decisaoSub = "Upside plausível — mantém posição.";
+    let decisaoEmoji = "🟢", decisaoTexto = "GUARDAR / MANTER", decisaoSub = "";
     let decisaoBorder = "#22c55e", decisaoBg = "rgba(34,197,94,0.07)";
-    if (estadoOp === "REFORÇAR" || estadoOp === "COMPRAR") {
-      decisaoEmoji = "🔵"; decisaoTexto = "REFORÇAR"; decisaoSub = "Preço em zona de oportunidade — usar War Chest.";
+
+    // Cálculo de valores para instruções
+    const capReforco = warChestTotal > 0 ? warChestTotal * 0.2 : 250; 
+    const precoReforco = precoAtual * 0.98;
+    const unitsReforco = capReforco / precoAtual;
+
+    const tp1Price = precoMedio * 1.05;
+    const unitsVenda = g.qtd * 0.2;
+    const valorVenda = unitsVenda * tp1Price;
+
+    // Progress bar logic
+    const objetivoFin = g.objetivo || 0;
+    const lucroProgress = objetivoFin > 0 ? (lucroAtual / objetivoFin) * 100 : 0;
+    const safeProgress = Math.min(100, Math.max(0, lucroProgress));
+    const isGoalMet = lucroAtual >= objetivoFin && objetivoFin > 0;
+    const progressColor = isGoalMet ? "#22c55e" : (lucroAtual > 0 ? "#3b82f6" : "#ef4444");
+
+    const progressBarHTML = objetivoFin > 0 ? `
+      <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 4px;">
+          <span style="color: var(--muted-foreground)">Progresso do Objetivo: <strong>${lucroProgress.toFixed(1)}%</strong></span>
+          <span style="color: ${progressColor}; font-weight: 800;">${isGoalMet ? "CONCLUÍDO" : ""}</span>
+        </div>
+        <div style="height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden;">
+          <div style="width: ${safeProgress}%; height: 100%; background: ${progressColor}; transition: width 0.8s ease;"></div>
+        </div>
+      </div>
+    ` : "";
+
+    if (isGoalMet) {
+      decisaoEmoji = "🏆"; decisaoTexto = "OBJETIVO ATINGIDO";
+      decisaoBorder = "#22c55e"; decisaoBg = "rgba(34,197,94,0.07)";
+      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+        <span style="color:#22c55e;">🌟 <strong>Parabéns!</strong> O lucro alvo foi atingido.</span><br>
+        <span style="opacity:0.8;">Pode considerar <strong>Vender a posição</strong> para realizar lucros ou manter para ganhos adicionais.</span>
+        ${progressBarHTML}
+      </div>`;
+    } else if (estadoOp === "REFORÇAR" || estadoOp === "COMPRAR") {
+      decisaoEmoji = "🔵"; decisaoTexto = "COMPRAR MAIS";
       decisaoBorder = "#3b82f6"; decisaoBg = "rgba(59,130,246,0.07)";
+      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+        <span style="color:#3b82f6;">✅ <strong>Comprar ${fmtEUR.format(capReforco)} (~${unitsReforco.toFixed(2)} un.)</strong> agora.</span><br>
+        <span style="opacity:0.8;">Preço atrativo para aumentar a posição.</span>
+        ${progressBarHTML}
+      </div>`;
     } else if (upsideP > 12) {
-      decisaoEmoji = "🔴"; decisaoTexto = "DISTRIBUIR"; decisaoSub = "Upside agressivo — vender forte, libertar War Chest.";
+      decisaoEmoji = "🔴"; decisaoTexto = "VENDER FORTE";
       decisaoBorder = "#ef4444"; decisaoBg = "rgba(239,68,68,0.07)";
-    } else if (upsideP > 7) {
-      decisaoEmoji = "🟡"; decisaoTexto = "REDUZIR PARCIALMENTE"; decisaoSub = "Upside exigente — começar a aligeirar posição.";
+      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+        <span style="color:#ef4444;">🚨 <strong>Venda forte:</strong> Libertar 50% (${fmtEUR.format(g.investido * 0.5)}) aos <strong>${fmtEUR.format(precoMedio * 1.15)}</strong>.</span><br>
+        <span style="opacity:0.8;">Risco de correção elevado.</span>
+        ${progressBarHTML}
+      </div>`;
+    } else if (upsideP > 7 || estadoOp === "REDUZIR" || estadoOp === "VENDER") {
+      decisaoEmoji = "🟡"; decisaoTexto = "VENDER UM POUCO";
       decisaoBorder = "#f59e0b"; decisaoBg = "rgba(245,158,11,0.07)";
-    } else if (estadoOp === "REDUZIR" || estadoOp === "VENDER") {
-      decisaoEmoji = "🟡"; decisaoTexto = "REDUZIR / VENDER"; decisaoSub = "Posição acima do alvo estratégico — libertar capital.";
-      decisaoBorder = "#f59e0b"; decisaoBg = "rgba(245,158,11,0.07)";
+      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+        <span style="color:#f59e0b;">💰 <strong>Vender ${fmtEUR.format(valorVenda)} (~${unitsVenda.toFixed(2)} un.)</strong> nos <strong>${fmtEUR.format(tp1Price)}</strong>.</span><br>
+        <span style="opacity:0.8;">Garantir lucros parciais.</span>
+        ${progressBarHTML}
+      </div>`;
+    } else {
+      // MANTER / ESPERAR
+      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+        <span>💎 <strong>Guardar e manter.</strong> Potencial de crescimento saudável.</span><br>
+        <span style="opacity:0.8;">Próxima compra recomendada aos <strong>${fmtEUR.format(precoReforco)}</strong>.</span>
+        ${progressBarHTML}
+      </div>`;
     }
 
     // HEADER
@@ -627,7 +687,7 @@ function wireQuickActions(gruposArr) {
     const decTextoEl = $(`#detDecisaoTexto`);
     if (decTextoEl) { decTextoEl.textContent = `${decisaoEmoji} ${decisaoTexto}`; decTextoEl.style.color = decisaoBorder; }
     const decSubEl = $(`#detDecisaoSub`);
-    if (decSubEl) decSubEl.textContent = decisaoSub;
+    if (decSubEl) decSubEl.innerHTML = decisaoSub;
 
     const bgBadge = document.getElementById("detEsforcoBadge");
     if (bgBadge) {
@@ -644,7 +704,7 @@ function wireQuickActions(gruposArr) {
     const kpiUp = $(`#detKpiUpside`);
     if (kpiUp) {
       kpiUp.textContent = upsideP > 0 ? `+${upsideP.toFixed(1)}%` : (upsideP < 0 ? `${upsideP.toFixed(1)}%` : "0%");
-      kpiUp.style.color = upsideP <= 3 ? "#22c55e" : upsideP <= 7 ? "#3b82f6" : upsideP <= 12 ? "#f59e0b" : "#ef4444";
+      kpiUp.style.color = "#3b82f6";
     }
 
     const kpiTP = $(`#detKpiTP`);
@@ -740,8 +800,6 @@ function wireQuickActions(gruposArr) {
       { queda: 10, usarPct: 30, color: "#f59e0b" },
       { queda: 15, usarPct: 50, color: "#ef4444" },
     ];
-    const warChestRaw = document.getElementById("prtWarChest")?.textContent || "";
-    const warChestTotal = parseFloat(warChestRaw.replace(/[^\d,.]/g, "").replace(",", ".")) || 0;
     let wchHTML = "";
     warChestLevels.forEach(w => {
       const pr = precoAtual * (1 - w.queda / 100);
@@ -769,9 +827,9 @@ function wireQuickActions(gruposArr) {
       recBloco.style.display = "none";
     }
 
-    // METRICAS SECUNDARIAS
-    const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-    $(`#detYield`).textContent  = yPct;
+    // BLOCO 7 — METRICAS SECUNDARIAS (colapsavel)
+    const yPctModal = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
+    $(`#detYield`).textContent  = yPctModal;
     $(`#detPE`).textContent     = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
     $(`#detSMA50`).textContent  = formatSmaDelta(g._sma50, precoAtual);
     $(`#detSMA200`).textContent = formatSmaDelta(s200, precoAtual);

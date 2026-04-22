@@ -248,7 +248,7 @@
       <!-- BLOCO 0 — DECISAO DO SISTEMA -->
       <div id="detDecisaoSistema" style="margin-bottom: 16px; padding: 14px 16px; border-radius: 12px; border: 2px solid; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
         <div>
-          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.7; margin-bottom: 4px;">&#x1F4CA; Decisão do Sistema</div>
+          <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.7; margin-bottom: 4px;">📊 Recomendação do Sistema</div>
           <div id="detDecisaoTexto" style="font-size: 1.05rem; font-weight: 800;">—</div>
           <div id="detDecisaoSub" style="font-size: 0.75rem; margin-top: 4px; opacity: 0.8;">—</div>
         </div>
@@ -258,26 +258,26 @@
       <!-- BLOCO 1 — ESTADO DO ATIVO (quick KPIs) -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
         <div class="det-kpi">
-          <div class="det-kpi-label">Capital</div>
+          <div class="det-kpi-label">Investido</div>
           <div class="det-kpi-value" id="detKpiCapital">€0</div>
         </div>
         <div class="det-kpi">
-          <div class="det-kpi-label">Upside</div>
+          <div class="det-kpi-label">Potencial</div>
           <div class="det-kpi-value" id="detKpiUpside" style="color:#3b82f6;">0%</div>
         </div>
         <div class="det-kpi">
-          <div class="det-kpi-label">TP Alvo</div>
+          <div class="det-kpi-label">Alvo</div>
           <div class="det-kpi-value" id="detKpiTP" style="color:#22c55e;">€0</div>
         </div>
         <div class="det-kpi">
-          <div class="det-kpi-label">&#x0394;SMA200</div>
+          <div class="det-kpi-label">Distância Média</div>
           <div class="det-kpi-value" id="detKpiSMA200">—</div>
         </div>
       </div>
 
       <!-- BLOCO 2 — PLANO DE SAIDA (Multi-TP) -->
       <div class="det-block det-block--green" style="margin-bottom: 14px;">
-        <div class="det-block-title">&#x1F3AF; Plano de Saída</div>
+        <div class="det-block-title">🎯 Estratégia de Venda (Lucro)</div>
         <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1fr; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); padding: 0 10px 6px;">
           <div>Nível</div><div>Preço</div><div>Ação</div><div style="text-align:right;">% Posição</div>
         </div>
@@ -287,7 +287,7 @@
 
       <!-- BLOCO 3 — PLANO DE QUEDA (Reforços) -->
       <div class="det-block det-block--red" style="margin-bottom: 14px;">
-        <div class="det-block-title">&#x1F4C9; Plano de Queda</div>
+        <div class="det-block-title">📉 Estratégia de Compra (Se cair)</div>
         <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); padding: 0 10px 6px;">
           <div>Queda</div><div>Preço</div><div>Ação</div>
         </div>
@@ -296,27 +296,27 @@
 
       <!-- BLOCO 4 — REFORCO INTELIGENTE -->
       <div class="det-block" style="margin-bottom: 14px;">
-        <div class="det-block-title">&#x1F504; Reforço Inteligente</div>
+        <div class="det-block-title">🔄 Simular Nova Compra</div>
         <div id="detCenariosNovos" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
 
       <!-- BLOCO 5 — WAR CHEST -->
       <div class="det-block det-block--amber" style="margin-bottom: 14px;">
-        <div class="det-block-title">&#x1F4B0; War Chest — Plano de Ataque</div>
-        <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">Capital libertado pelo sistema disponível para reforçar em quedas.</div>
+        <div class="det-block-title">💰 Reserva p/ Oportunidades (War Chest)</div>
+        <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">Dinheiro guardado para comprar ativos quando o preço estiver atrativo.</div>
         <div id="detWarChestTable" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
       </div>
 
       <!-- BLOCO 6 — RECUPERACAO DE PERDAS (so se prejuizo) -->
       <div id="detRecuperacaoBloco" class="det-block det-block--danger" style="display: none; margin-bottom: 14px;">
-        <div class="det-block-title"><i class="fas fa-shield-alt"></i> Recuperação de Perdas</div>
+        <div class="det-block-title">🛡️ Plano de Recuperação</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
            <div>
-              <div style="font-size: 0.7rem; color: var(--muted-foreground);">Break-even Atual</div>
+              <div style="font-size: 0.7rem; color: var(--muted-foreground);">Preço de Custo (PM)</div>
               <strong id="detBEML" style="font-size: 1.1rem; color: var(--foreground);">€0.00</strong>
            </div>
            <div>
-              <div style="font-size: 0.7rem; color: var(--muted-foreground);">TP p/ Compensar</div>
+              <div style="font-size: 0.7rem; color: var(--muted-foreground);">Alvo p/ Recuperar</div>
               <strong id="detTPComp" style="font-size: 1.1rem; color: #22c55e;">€0.00</strong>
            </div>
         </div>
@@ -339,12 +339,12 @@
            </div>
            <div id="detStrategyDiv" style="margin-top: 14px; margin-bottom: 14px;"></div>
            <div style="margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--border);">
-             <div style="font-size: 0.8rem; font-weight: 700; color: #ef4444; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle"></i> Stress Test (Histórico)</div>
+             <div style="font-size: 0.8rem; font-weight: 700; color: #ef4444; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle"></i> Simulação de Crises (Histórico)</div>
              <select id="detCrisisSelector" class="crisis-selector" style="width: 100%; padding: 8px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border); background: var(--background); color: var(--foreground);"></select>
              <div id="detCrisisResult" style="display: none; padding: 10px; background: rgba(239, 68, 68, 0.05); border-radius: 6px; margin-top: 8px; font-size: 0.8rem; border: 1px solid rgba(239, 68, 68, 0.2);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color:var(--muted-foreground)">Preço na Crise:</span> <strong id="detCrisisPrice" style="color:#ef4444;"></strong></div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color:var(--muted-foreground)">Custo p/ Dobrar:</span> <strong id="detCrisisCost"></strong></div>
-                <div style="display: flex; justify-content: space-between;"><span style="color:var(--muted-foreground)">Novo PM:</span> <strong id="detCrisisNewPM" style="color:#22c55e;"></strong></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color:var(--muted-foreground)">Preço se a crise repetisse:</span> <strong id="detCrisisPrice" style="color:#ef4444;"></strong></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color:var(--muted-foreground)">Custo para duplicar posição:</span> <strong id="detCrisisCost"></strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--muted-foreground)">Novo Preço Médio:</span> <strong id="detCrisisNewPM" style="color:#22c55e;"></strong></div>
              </div>
            </div>
            <!-- IDs ocultos mantidos para compatibilidade JS -->
