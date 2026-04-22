@@ -2478,4 +2478,111 @@ body.auth-screen .form-grid {
     background: rgba(0, 0, 0, 0.02);
   }
 }
+
+/* === Improved Help Modal Styles === */
+.prt-help-dialog {
+  width: min(800px, 95vw) !important;
+  max-height: 85vh !important;
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.help-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.help-section-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.help-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.help-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.help-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.help-card-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--primary);
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.help-card-description {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+
+.help-meaning {
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #22c55e;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.help-meaning::before {
+  content: "💡";
+  font-size: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 

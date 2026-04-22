@@ -441,99 +441,140 @@
     </div>
 
     <!-- corpo rolável -->
-    <div class="help-body">
-      <div class="page" style="padding: 14px">
-        <div class="muted" style="display: grid; gap: 0.6rem; line-height: 1.4">
-          <div>
-            <strong>Valor Total Investido</strong> — soma de todo o capital
-            investido nas posições ativas.
+    <div class="help-body" style="padding: 16px;">
+      <div class="help-content">
+        
+        <!-- SECÇÃO 1: KPIs DO TOPO -->
+        <div class="help-section">
+          <div class="help-section-title">
+            <i class="fas fa-chart-pie"></i> KPIs do Portfólio
           </div>
-          <div>
-            <strong>Rendimento anual esperado</strong> — estimativa: Σ(qtd ×
-            dividendo × pagamentos/ano) por ativo, de acordo com a
-            periodicidade.
-          </div>
-          <div>
-            <strong>Retorno global (P/L%)</strong> — (Avaliação atual −
-            Investido) / Investido.
-          </div>
-          <div>
-            <strong>Exposição acima da SMA200</strong> — percentagem do
-            portefólio (ponderada pelo investidor) com preço acima da média
-            móvel 200.
-          </div>
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-coins"></i></div>
+                <span>Valor Investido</span>
+              </div>
+              <div class="help-card-description">Soma de todo o capital que saiu do seu bolso para comprar as posições ativas.</div>
+              <div class="help-meaning">O seu capital "em jogo" no mercado.</div>
+            </div>
 
-          <hr />
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-wallet"></i></div>
+                <span>Rendimento Anual</span>
+              </div>
+              <div class="help-card-description">Estimativa de dividendos que irá receber nos próximos 12 meses.</div>
+              <div class="help-meaning">O seu salário passivo anual estimado.</div>
+            </div>
 
-          <div>
-            <strong>Distribuição por Setores / Mercado</strong> — donuts com o
-            peso investido por categoria.
-          </div>
-          <div>
-            <strong>Top 5 por Investido</strong> — barras com as maiores
-            posições (investido e lucro atual).
-          </div>
-          <div>
-            <strong>Top 5 por Yield</strong> — barras horizontais ordenadas por
-            dividend yield atual.
-          </div>
-          <div>
-            <strong>Evolução</strong> — linha “Investido acumulado” vs
-            “Avaliação atual”.
-          </div>
-          <div>
-            <strong>Calendário de Dividendos (12m)</strong> — soma estimada de €
-            por mês, com base no mês típico e periodicidade.
-          </div>
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-percent"></i></div>
+                <span>Retorno Global</span>
+              </div>
+              <div class="help-card-description">Relação entre o lucro atual e o total investido (P/L%).</div>
+              <div class="help-meaning">A rentabilidade real da sua carteira.</div>
+            </div>
 
-          <hr />
-          
-          <div style="background: rgba(59, 130, 246, 0.05); padding: 12px; border-radius: 8px; border-left: 4px solid var(--primary); margin: 10px 0;">
-            <strong style="display: block; margin-bottom: 6px;"><i class="fas fa-bullseye"></i> Como interpretar a Estratégia (Modal)</strong>
-            <div style="display: grid; gap: 0.8rem; font-size: 0.78rem;">
-              <div>
-                <strong>🎯 Decisão do Sistema</strong> — Cruza o lucro atual com o esforço de tempo. Dá a diretriz: Comprar, Vender ou Manter.
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-trending-up"></i></div>
+                <span>Exposição SMA200</span>
               </div>
-              <div>
-                <strong>📈 Plano de Saída (TPs)</strong> — Define níveis de venda (Take Profit). 
-                Mostra o preço alvo e a <strong>quantidade de ações</strong> a libertar em cada ponto (20%, 30%, 50%).
-              </div>
-              <div>
-                <strong>📉 Plano de Queda</strong> — Define níveis de reforço ou stop caso o preço caia abaixo do PM atual.
-              </div>
-              <div>
-                <strong>🔄 Reforço Inteligente</strong> — Simula o impacto de novos aportes no seu Preço Médio e PM vs SMA200.
-              </div>
-              <div>
-                <strong>💰 War Chest</strong> — Mostra quanto capital será libertado ao vender nos TPs, para reinvestir em ativos que estejam no "Plano de Queda".
-              </div>
+              <div class="help-card-description">% do portfólio com preço acima da média móvel de 200 dias.</div>
+              <div class="help-meaning">Indica se a maioria dos seus ativos está em tendência de alta.</div>
             </div>
           </div>
+        </div>
 
+        <!-- SECÇÃO 2: GRÁFICOS -->
+        <div class="help-section">
+          <div class="help-section-title">
+            <i class="fas fa-project-diagram"></i> Análise Visual & Gráficos
+          </div>
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-chart-donut"></i></div>
+                <span>Setores & Mercados</span>
+              </div>
+              <div class="help-card-description">Mostra a diversificação do seu capital por áreas de negócio e regiões.</div>
+              <div class="help-meaning">Ajuda a evitar ter "todos os ovos no mesmo cesto".</div>
+            </div>
 
-          <div>
-            <strong>Badges por ativo</strong>:
-            <ul style="margin: 0.3rem 0 0 1.1rem">
-              <li>
-                <em>Yield</em> (dividendo/valorStock) e
-                <em>Yield 24m</em> (média 24m) → indica se está ↑ acima ou ↓
-                abaixo da média.
-              </li>
-              <li>
-                <em>P/E</em> (faixas: &lt;15 barato, 15–25 justo, &gt;25 caro).
-              </li>
-              <li><em>Δ50d / Δ200d</em> — variação vs. SMA 50/200.</li>
-              <li>
-                <em>Semáforo</em> — tendência rápida (🟢/🟡/🔴) com base em
-                SMA200 e crescimento de 1 mês.
-              </li>
-              <li>
-                <em>TP2 &amp; ETA</em> — preço alvo e estimativa de tempo para
-                lá chegar (usando a melhor taxa disponível).
-              </li>
-            </ul>
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-history"></i></div>
+                <span>Linha de Evolução</span>
+              </div>
+              <div class="help-card-description">Compara o dinheiro investido (acumulado) com o valor de mercado atual.</div>
+              <div class="help-meaning">Veja visualmente se o mercado está a valorizar o seu capital.</div>
+            </div>
           </div>
         </div>
+
+        <!-- SECÇÃO 3: ESTRATÉGIA -->
+        <div class="help-section">
+          <div class="help-section-title">
+            <i class="fas fa-brain"></i> Estratégia Inteligente (Modal do Ativo)
+          </div>
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-bullseye"></i></div>
+                <span>Decisão do Sistema</span>
+              </div>
+              <div class="help-card-description">Algoritmo que cruza lucro, tempo e indicadores para sugerir: Comprar, Vender ou Manter.</div>
+              <div class="help-meaning">A sua bússola para decisões sem emoção.</div>
+            </div>
+
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-level-up-alt"></i></div>
+                <span>Plano de Saída (TPs)</span>
+              </div>
+              <div class="help-card-description">Níveis de Take Profit (TP1, TP2, TP3) para realizar lucros parciais.</div>
+              <div class="help-meaning">Saiba exatamente quanto vender e a que preço.</div>
+            </div>
+
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-shield-alt"></i></div>
+                <span>War Chest</span>
+              </div>
+              <div class="help-card-description">Capital libertado pelas vendas parciais que fica disponível para reinvestir.</div>
+              <div class="help-meaning">O seu fundo de ataque para comprar em saldos (quedas).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECÇÃO 4: BADGES -->
+        <div class="help-section">
+          <div class="help-section-title">
+            <i class="fas fa-tags"></i> Etiquetas & Indicadores de Ativo
+          </div>
+          <div class="help-grid">
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-hourglass-half"></i></div>
+                <span>ETA (Tempo Estimado)</span>
+              </div>
+              <div class="help-card-description">Estimativa de quanto tempo falta para o ativo atingir o seu objetivo de lucro.</div>
+              <div class="help-meaning">Dá-lhe paciência para o ciclo de crescimento.</div>
+            </div>
+
+            <div class="help-card">
+              <div class="help-card-header">
+                <div class="help-card-icon"><i class="fas fa-traffic-light"></i></div>
+                <span>Semáforo de Tendência</span>
+              </div>
+              <div class="help-card-description">Luz rápida (🟢/🟡/🔴) baseada na SMA200 e momentum de 1 mês.</div>
+              <div class="help-meaning">Verde = Alta forte; Amarelo = Alerta; Vermelho = Baixa.</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
