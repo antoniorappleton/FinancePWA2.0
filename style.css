@@ -536,14 +536,15 @@ body {
 
 .modal-dialog {
   width: min(680px, 92vw);
-  max-height: 80vh;
+  max-height: 85vh;
   overflow: hidden;
-  background: #111;
-  color: #fff;
-  border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, .4);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border);
 }
 
 .modal-header {
@@ -1436,32 +1437,74 @@ body.auth-screen .form-grid {
 
 /* barra de ações fixa no fundo do diálogo */
 #prtHelpModal .help-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  min-height: 56px;
-  padding: 10px 12px;
-  background: linear-gradient(180deg, rgba(17, 17, 17, 0) 0%, rgba(17, 17, 17, .96) 60%);
-  border-top: 1px solid rgba(255, 255, 255, .08);
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  flex-shrink: 0;
+  z-index: 10;
+  padding: 20px 24px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.05);
 }
 
-/* tema claro */
-:root:not([data-theme="dark"]) #prtHelpModal .help-actions {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(5, 5, 5, 0.96) 60%);
-  border-top: 1px solid rgba(0, 0, 0, .06);
+#prtHelpModal .help-actions .btn {
+  margin-top: 0;
+  padding: 10px 20px;
+  font-weight: 700;
 }
 
-:root:not([data-theme="dark"]) #prtHelpModal .modal-header {
-  border-bottom: 1px solid rgba(0, 0, 0, .06);
+#prtHelpModal .help-actions .help-dont-show {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  transition: color 0.2s;
+}
+
+#prtHelpModal .help-actions .help-dont-show:hover {
+  color: var(--foreground);
+}
+
+#prtHelpModal .help-actions .help-dont-show input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
 }
 
 /* mobile */
 @media (max-width: 600px) {
   #prtHelpModal .prt-help-dialog {
     width: 96vw;
-    max-height: 90vh;
+    max-height: 92vh;
+  }
+  
+  #prtHelpModal .help-actions {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 20px;
+    gap: 12px;
+  }
+  
+  #prtHelpModal .help-actions .help-dont-show {
+    justify-content: center;
+    order: 2;
+  }
+  
+  #prtHelpModal .help-actions div {
+    display: flex;
+    gap: 8px;
+    order: 1;
+  }
+  
+  #prtHelpModal .help-actions .btn {
+    flex: 1;
+    padding: 12px 10px;
+    font-size: 0.85rem;
   }
 }
 
@@ -2518,20 +2561,22 @@ body.auth-screen .form-grid {
 }
 
 .help-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--background);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: all 0.2s ease;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
 .help-card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card);
   border-color: var(--primary);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
 }
 
 .help-card-header {

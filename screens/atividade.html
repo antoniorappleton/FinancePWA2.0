@@ -579,21 +579,19 @@
     </div>
 
     <!-- ações fixas em baixo -->
-    <div
-      class="actions-row help-actions"
-      style="justify-content: space-between"
-    >
-      <label
-        class="muted"
-        style="display: flex; align-items: center; gap: 0.5rem"
-      >
+    <div class="help-actions">
+      <label class="help-dont-show">
         <input type="checkbox" id="prtHelpDontShow" />
-        Não mostrar novamente neste dispositivo
+        <span>Não mostrar novamente</span>
       </label>
 
-      <div>
-        <button class="btn outline" id="prtHelpLater">Fechar</button>
-        <button class="btn premium" id="prtHelpOK">Percebi</button>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn outline" id="prtHelpLater">
+          <i class="fas fa-times"></i> Fechar
+        </button>
+        <button class="btn premium" id="prtHelpOK">
+          <i class="fas fa-check"></i> Percebi
+        </button>
       </div>
     </div>
   </div>
