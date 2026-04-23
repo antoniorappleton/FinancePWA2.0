@@ -44,6 +44,7 @@ window.navigateTo = navigateTo;
 
 // Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 APPFinance v2.2.3");
   navigateTo("auth");
 
   // Registo do Service Worker para PWA

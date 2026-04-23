@@ -22,6 +22,14 @@ let lastAcoesSnap = null;
 let treemapInstance = null;
 let unsubAtivos = null;
 let unsubAcoes = null;
+let histFltState = { ticker: "", tipo: "", periodo: "" };
+
+function toNumStrict(v) {
+  if (typeof v === "number") return v;
+  if (!v) return 0;
+  const n = parseFloat(String(v).replace(",", "."));
+  return isNaN(n) ? 0 : n;
+}
 
 export async function initScreen() {
   console.log("✅ dashboard.js iniciado");
@@ -204,12 +212,36 @@ export async function initScreen() {
   }
 
   // Listeners em tempo real
-  unsubAtivos = onSnapshot(collection(db, "ativos"), (snap) => {
-    lastAtivosSnap = snap;
-    atualizarKPIs();
-    const contAtividade = document.getElementById("atividadeRecente");
-    if (contAtividade) carregarAtividadeRecenteSimplificada(snap);
+  unsubAtivos = onSnapshot(
+    query(collection(db, "ativos"), orderBy("dataCompra", "desc")),
+    (snap) => {
+      lastAtivosSnap = snap;
+      atualizarKPIs();
+      const contAtividade = document.getElementById("atividadeRecente");
+      if (contAtividade) carregarAtividadeRecenteSimplificada(snap);
+    },
+  );
+
+  // Wire History filters
+  const hTicker = document.getElementById("histFltTicker");
+  const hTipo = document.getElementById("histFltTipo");
+  const hPeriodo = document.getElementById("histFltPeriodo");
+
+  hTicker?.addEventListener("input", () => {
+    histFltState.ticker = hTicker.value.trim().toUpperCase();
+    handleUpdateHistory();
   });
+  [hTipo, hPeriodo].forEach((el) => {
+    el?.addEventListener("change", () => {
+      histFltState.tipo = hTipo?.value || "";
+      histFltState.periodo = hPeriodo?.value || "";
+      handleUpdateHistory();
+    });
+  });
+
+  const handleUpdateHistory = () => {
+    if (lastAtivosSnap) carregarAtividadeRecenteSimplificada(lastAtivosSnap);
+  };
 
   unsubAcoes = onSnapshot(collection(db, "acoesDividendos"), (snap) => {
     lastAcoesSnap = snap;
@@ -337,9 +369,9 @@ export async function initScreen() {
 }
 
 /* =========================
-   ATIVIDADE RECENTE (SIMPLIFICADA) + EXPAND/COLAPSE
+   ATIVIDADE RECENTE (FILTRADA) + EXPAND/COLAPSE
    ========================= */
-let atividadesCache = []; // guarda todos os docs formatados
+let atividadesCache = []; // guarda todos os objetos processados
 let atividadesExpandido = false; // estado de expansão
 
 async function carregarAtividadeRecenteSimplificada(snapAtivos) {
@@ -347,104 +379,140 @@ async function carregarAtividadeRecenteSimplificada(snapAtivos) {
   if (!cont) return;
 
   try {
-    // Se não recebermos o snap, fazemos uma leitura única (compatibilidade)
-    if (!snapAtivos) {
-      const q = query(
-        collection(db, "ativos"),
-        orderBy("dataCompra", "desc"),
-        limit(50),
-      );
-      snapAtivos = await getDocs(q);
-    }
-
     if (snapAtivos.empty) {
       cont.innerHTML = `<p class="muted">Sem atividades ainda.</p>`;
       return;
     }
 
-    const fmtEUR = new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
-    });
-    const fmtDateL = new Intl.DateTimeFormat("pt-PT", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      timeZoneName: "short",
-    });
-
-    atividadesCache = []; // reset cache
+    const movimentos = [];
+    const periodosSet = new Set();
 
     snapAtivos.forEach((doc) => {
       const d = doc.data();
-
-      const nome = d.nome || d.ticker || "Ativo";
-      const ticker = String(d.ticker || "").toUpperCase();
-      const setor = d.setor || "-";
-      const mercado = d.mercado || "-";
-      const precoCompra = Number(d.precoCompra || 0);
-      const quantidade = Number(d.quantidade || 0);
-
-      // NOVO → badge COMPRA/VENDA
-      const tipo = (d.tipoAcao || "compra").toLowerCase();
-      const badge =
-        tipo === "venda"
-          ? '<span class="tag venda">VENDA</span>'
-          : '<span class="tag compra">COMPRA</span>';
-
-      let dataTxt = "sem data";
-      if (d.dataCompra && typeof d.dataCompra.toDate === "function") {
-        dataTxt = fmtDateL.format(d.dataCompra.toDate());
+      const dt = d.dataCompra && typeof d.dataCompra.toDate === "function" ? d.dataCompra.toDate() : null;
+      
+      let periodoStr = "Sem data";
+      if (dt) {
+        const m = dt.getMonth() + 1;
+        const y = dt.getFullYear();
+        periodoStr = `${y}-${String(m).padStart(2, "0")}`;
+        periodosSet.add(periodoStr);
       }
 
-      atividadesCache.push(`
-        <div class="activity-item">
-          <div class="activity-left">
-            <span class="activity-icon">🛒</span>
-            <div>
-              <p>${badge} <strong>${nome}</strong> <span class="muted">(${ticker})</span></p>
-              <p class="muted">${setor} • ${mercado}</p>
-              <p class="muted">${quantidade} ${quantidade === 1 ? "ação" : "ações"} @ ${fmtEUR.format(precoCompra)}</p>
-              <p class="muted">Data: ${dataTxt}</p>
-            </div>
-          </div>
-        </div>
-      `);
+      movimentos.push({
+        id: doc.id,
+        ticker: String(d.ticker || "").toUpperCase(),
+        nome: d.nome || d.ticker || "Ativo",
+        tipo: (d.tipoAcao || "compra").toLowerCase(),
+        quantidade: toNumStrict(d.quantidade),
+        preco: d.precoCompra || 0,
+        data: dt,
+        periodo: periodoStr,
+      });
     });
 
-    // Render inicial: só 2
-    renderAtividades(cont, 2);
-    atividadesExpandido = false;
-
-    // Ligar o botão "Ver Toda Atividade" (sem mexer no HTML: apanha o primeiro .btn.outline.full nessa card)
-    const btnVerTodos = document.querySelector(
-      ".dashboard .card.glass .btn.outline.full",
-    );
-    if (btnVerTodos) {
-      btnVerTodos.textContent = "Ver Toda Atividade";
-      btnVerTodos.onclick = () => {
-        atividadesExpandido = !atividadesExpandido;
-        if (atividadesExpandido) {
-          renderAtividades(cont, atividadesCache.length);
-          btnVerTodos.textContent = "Mostrar menos";
-        } else {
-          renderAtividades(cont, 2);
-          btnVerTodos.textContent = "Ver Toda Atividade";
-        }
-      };
+    // Popular dropdown de períodos se estiver vazio
+    const hPeriodo = document.getElementById("histFltPeriodo");
+    if (hPeriodo && hPeriodo.options.length <= 1) {
+      const sortedPeriods = [...periodosSet].sort((a, b) => b.localeCompare(a));
+      sortedPeriods.forEach((p) => {
+        const [y, m] = p.split("-");
+        const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+        const label = `${months[parseInt(m) - 1]} ${y}`;
+        hPeriodo.add(new Option(label, p));
+      });
     }
+
+    // Aplicar Filtros
+    let filtered = movimentos;
+    if (histFltState.ticker) {
+      filtered = filtered.filter((m) => m.ticker.includes(histFltState.ticker));
+    }
+    if (histFltState.tipo) {
+      filtered = filtered.filter((m) => m.tipo === histFltState.tipo);
+    }
+    if (histFltState.periodo) {
+      filtered = filtered.filter((m) => m.periodo === histFltState.periodo);
+    }
+
+    atividadesCache = filtered;
+    
+    // Render: 2 ou tudo
+    renderAtividades(cont, atividadesExpandido ? filtered.length : 2);
+
   } catch (e) {
-    console.error("Erro ao carregar atividade:", e);
-    cont.innerHTML = `<p class="muted">Não foi possível carregar a lista.</p>`;
+    console.error("Erro ao carregar atividade recente:", e);
+    cont.innerHTML = `<p class="error">Erro ao carregar atividade.</p>`;
   }
 }
 
-function renderAtividades(container, howMany) {
-  const slice = atividadesCache.slice(0, howMany);
-  container.innerHTML = slice.join("");
+function renderAtividades(cont, limitItems) {
+  const list = atividadesCache;
+  if (list.length === 0) {
+    cont.innerHTML = `<p class="muted" style="text-align: center; padding: 12px;">Nenhum movimento encontrado.</p>`;
+    return;
+  }
+
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  const fmtDate = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  const itemsToShow = list.slice(0, limitItems);
+  const html = itemsToShow.map((m) => {
+    const isVenda = m.tipo === "venda";
+    const badgeClass = isVenda ? "tag venda" : "tag compra";
+    const icon = isVenda ? "📉" : "🛒";
+    const dateStr = m.data ? fmtDate.format(m.data) : "N/A";
+
+    return `
+      <div class="activity-item" style="border-bottom: 1px solid var(--border); padding: 10px 0; background: transparent; border-left: 0; border-right: 0; border-top: 0; border-radius: 0; margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.1rem;">${icon}</span>
+            <div>
+              <p style="margin: 0; font-size: 0.9rem; font-weight: 600;">
+                <span class="${badgeClass}" style="font-size: 0.65rem;">${m.tipo.toUpperCase()}</span> 
+                ${m.ticker}
+              </p>
+              <p class="muted" style="margin: 0; font-size: 0.7rem;">${dateStr}</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <p style="margin: 0; font-size: 0.9rem; font-weight: 700; color: ${isVenda ? "var(--error)" : "var(--success)"};">
+              ${m.quantidade > 0 ? "+" : ""}${m.quantidade.toFixed(2).replace(/\.?0+$/, "")}
+            </p>
+            <p class="muted" style="margin: 0; font-size: 0.7rem;">${fmtEUR.format(m.preco)}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  cont.innerHTML = html;
+
+  // Botão de expandir/recolher
+  if (limitItems < list.length) {
+    const btn = document.createElement("button");
+    btn.className = "btn ghost full";
+    btn.style.marginTop = "8px";
+    btn.style.fontSize = "0.8rem";
+    btn.innerHTML = `Mostrar tudo (${list.length})`;
+    btn.onclick = () => {
+      atividadesExpandido = true;
+      renderAtividades(cont, list.length);
+    };
+    cont.appendChild(btn);
+  } else if (atividadesExpandido && list.length > 2) {
+    const btn = document.createElement("button");
+    btn.className = "btn ghost full";
+    btn.style.marginTop = "8px";
+    btn.style.fontSize = "0.8rem";
+    btn.textContent = "Recolher";
+    btn.onclick = () => {
+      atividadesExpandido = false;
+      renderAtividades(cont, 2);
+    };
+    cont.appendChild(btn);
+  }
 }
 
 /* =========================

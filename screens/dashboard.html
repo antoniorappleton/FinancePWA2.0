@@ -91,11 +91,28 @@
 
   <div class="dashboard-columns">
     <div class="card glass">
-      <h3>Atividade Recente (compra/venda)</h3>
-      <div id="atividadeRecente"></div>
-      <button class="btn outline full" onclick="navigateTo('atividade')">
-        Ver Toda Atividade
-      </button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <h3 style="margin: 0;">Atividade Recente</h3>
+        
+        <!-- Filtros do Histórico -->
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="histFltTicker" placeholder="Ticker..." style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--background); width: 80px; font-size: 0.8rem;">
+          
+          <select id="histFltTipo" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--background); font-size: 0.8rem; width: auto;">
+            <option value="">Todos</option>
+            <option value="compra">Compras</option>
+            <option value="venda">Vendas</option>
+          </select>
+
+          <select id="histFltPeriodo" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--background); font-size: 0.8rem; width: auto;">
+            <option value="">Mês</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="atividadeRecente">
+        <p class="muted">A carregar atividade...</p>
+      </div>
     </div>
 
     <div class="card glass">
