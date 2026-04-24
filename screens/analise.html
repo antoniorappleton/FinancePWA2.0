@@ -937,6 +937,60 @@
   opacity: 0.7;
 }
 
+/* ===== Header Filters Row ===== */
+#anlTable thead .header-filters th {
+  padding: 4px 6px;
+  background: var(--muted-bg, #f9fafb);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 36px; /* ajusta consoante altura da linha de headers */
+  z-index: 39;
+}
+
+#anlTable thead .header-filters input,
+#anlTable thead .header-filters select {
+  width: 100%;
+  font-size: 0.72rem;
+  padding: 3px 5px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  background: var(--card, #fff);
+  color: var(--card-foreground, #111);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#anlTable thead .header-filters input:focus,
+#anlTable thead .header-filters select:focus {
+  border-color: var(--primary, #4f46e5);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+}
+
+#anlTable thead .header-filters input::placeholder {
+  color: var(--muted-foreground, #9ca3af);
+  font-size: 0.7rem;
+}
+
+#anlTable thead .header-filters select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  padding-right: 16px;
+}
+
+[data-theme="dark"] #anlTable thead .header-filters th {
+  background: #1a1a1a;
+}
+
+[data-theme="dark"] #anlTable thead .header-filters input,
+[data-theme="dark"] #anlTable thead .header-filters select {
+  background: #111;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #eee;
+}
+
 /* Price columns no longer sticky, but styled */
 .sticky-price {
   background: var(--card, #fff) !important;

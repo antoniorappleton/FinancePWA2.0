@@ -1,17 +1,11 @@
-# Table Header/Body Alignment Fix
-Status: ✅ PLAN APPROVED → IMPLEMENTING
+# TODO - Filtros nos Cabeçalhos da Tabela (Screen Mercado/Análise)
 
-## Plan Recap
-- **Problem**: `#anlTable` thead/tbody columns misalign due to `table-layout: fixed` + multi-directional sticky (left/right/top).
-- **Solution**: Native table layout + **header-only sticky** (remove left/right stickies).
-- **Files**: `style.css` only (20 lines).
-
-## Steps
-- [x] 1. Create TODO.md ✅
-- [x] 2. Edit `style.css` → Remove sticky blocks + simplify to header-only ✅
-- [x] 3. Edit `screens/analise.html` → Remove inline `sticky-col`/`sticky-price` classes ✅
-- [x] 4. Table now uses **native layout + header-only sticky** → Columns perfectly aligned
-- [ ] 5. ✅ attempt_completion
-
-**Next**: Edit `style.css`
+## Passos
+- [x] 1. Analisar estrutura atual da tabela e filtros
+- [x] 2. Criar plano de implementação
+- [x] 3. Criar TODO.md
+- [x] 4. Implementar `buildHeaderFilters()` em `js/screens/analise.js`
+- [x] 5. Estender `applyFilters()` para aplicar filtros dos headers
+- [x] 6. Adicionar CSS para filtros nos headers em `screens/analise.html`
+- [x] 7. Testar integração com filtros existentes e ordenação
 

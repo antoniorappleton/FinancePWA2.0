@@ -200,6 +200,180 @@ const updateSelCount = () => {
 
 let sortKey = null;
 let sortDir = "desc";
+
+/* =========================================================
+   Header Filters (column-level quick filters)
+   ========================================================= */
+const headerFilterState = new Map(); // key -> filter string
+
+/** Build the second header row with inline filters */
+function buildHeaderFilters() {
+  const table = document.getElementById("anlTable");
+  if (!table) return;
+  const thead = table.querySelector("thead");
+  if (!thead) return;
+
+  // Remove existing filter row if any
+  const old = thead.querySelector("tr.header-filters");
+  if (old) old.remove();
+
+  const tr = document.createElement("tr");
+  tr.className = "header-filters";
+
+  const cols = [
+    { key: null, type: null },               // checkbox
+    { key: "ticker", type: "text" },
+    { key: "nome", type: "text" },
+    { key: "setor", type: "select" },
+    { key: "mercado", type: "select" },
+    { key: "yield", type: "num", ph: ">2" },
+    { key: "evebitda", type: "num", ph: "<15" },
+    { key: "divPer", type: "num", ph: ">0.5" },
+    { key: "divAnual", type: "num", ph: ">1" },
+    { key: "pe", type: "num", ph: "<20" },
+    { key: "pe_f", type: "num", ph: "<20" },
+    { key: "peg", type: "num", ph: "<1.5" },
+    { key: "roic", type: "num", ph: ">10" },
+    { key: "roe", type: "num", ph: ">15" },
+    { key: "eps_yoy", type: "num", ph: ">0" },
+    { key: "eps_next_y", type: "num", ph: ">0" },
+    { key: "sales_yoy", type: "num", ph: ">0" },
+    { key: "current_ratio", type: "num", ph: ">1.5" },
+    { key: "debt_eq", type: "num", ph: "<1" },
+    { key: "rsi", type: "num", ph: "<40" },
+    { key: "delta50", type: "num", ph: ">0" },
+    { key: "delta200", type: "num", ph: ">0" },
+    { key: "g1w", type: "num", ph: ">0" },
+    { key: "g1m", type: "num", ph: ">0" },
+    { key: "g1y", type: "num", ph: ">0" },
+    { key: "periodicidade", type: "select" },
+    { key: "mes", type: "select" },
+    { key: "observacao", type: "text" },
+    { key: "preco", type: "num", ph: "<100" },
+    { key: "minus35", type: "num", ph: "<50" },
+    { key: "minus5", type: "num", ph: "<50" },
+    { key: "buyZone", type: "num", ph: "<40" },
+  ];
+
+  cols.forEach((c) => {
+    const th = document.createElement("th");
+    if (!c.key) {
+      tr.appendChild(th);
+      return;
+    }
+
+    if (c.type === "text") {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "Filtrar...";
+      input.dataset.filterKey = c.key;
+      input.value = headerFilterState.get(c.key) || "";
+      input.addEventListener("input", (e) => {
+        const val = e.target.value.trim();
+        if (val) headerFilterState.set(c.key, val);
+        else headerFilterState.delete(c.key);
+        applyFilters();
+      });
+      th.appendChild(input);
+    } else if (c.type === "select") {
+      const sel = document.createElement("select");
+      sel.dataset.filterKey = c.key;
+      const cur = headerFilterState.get(c.key) || "";
+      let opts = '<option value="">Todos</option>';
+      const uniq = new Set(ALL_ROWS.map((r) => r[c.key]).filter(Boolean));
+      [...uniq].sort().forEach((v) => {
+        const selected = v === cur ? ' selected' : '';
+        opts += `<option value="${v}"${selected}>${v}</option>`;
+      });
+      sel.innerHTML = opts;
+      sel.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val) headerFilterState.set(c.key, val);
+        else headerFilterState.delete(c.key);
+        applyFilters();
+      });
+      th.appendChild(sel);
+    } else if (c.type === "num") {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = c.ph || ">0";
+      input.dataset.filterKey = c.key;
+      input.value = headerFilterState.get(c.key) || "";
+      input.addEventListener("input", (e) => {
+        const val = e.target.value.trim();
+        if (val) headerFilterState.set(c.key, val);
+        else headerFilterState.delete(c.key);
+        applyFilters();
+      });
+      th.appendChild(input);
+    }
+
+    tr.appendChild(th);
+  });
+
+  thead.appendChild(tr);
+}
+
+/** Parse numeric filter expression like >10, <5, =3, 10-20 */
+function parseNumericFilter(expr) {
+  if (!expr) return null;
+  const s = expr.replace(/\s/g, "").replace(/,/g, ".");
+  // Range: 10-20 or 10:20
+  const range = s.match(/^(-?\d+\.?\d*)[-:](-?\d+\.?\d*)$/);
+  if (range) {
+    const min = Number(range[1]), max = Number(range[2]);
+    return (v) => Number.isFinite(v) && v >= min && v <= max;
+  }
+  // Operators
+  const op = s.match(/^(>=|<=|>|<|=)?(-?\d+\.?\d*)$/);
+  if (op) {
+    const operator = op[1] || "=";
+    const n = Number(op[2]);
+    switch (operator) {
+      case ">": return (v) => Number.isFinite(v) && v > n;
+      case ">=": return (v) => Number.isFinite(v) && v >= n;
+      case "<": return (v) => Number.isFinite(v) && v < n;
+      case "<=": return (v) => Number.isFinite(v) && v <= n;
+      case "=": return (v) => Number.isFinite(v) && Math.abs(v - n) < 1e-9;
+    }
+  }
+  // Fallback: simple numeric contains
+  const n2 = Number(s);
+  if (Number.isFinite(n2)) {
+    return (v) => Number.isFinite(v) && Math.abs(v - n2) < 1e-9;
+  }
+  return null;
+}
+
+/** Apply header column filters on top of existing rows */
+function applyHeaderFilters(rows) {
+  if (!headerFilterState.size) return rows;
+  return rows.filter((r) => {
+    for (const [key, expr] of headerFilterState.entries()) {
+      const accessor = SORT_ACCESSORS[key] || ((row) => row[key]);
+      const rawVal = accessor(r);
+
+      // Categorical (select)
+      if (["setor", "mercado", "periodicidade", "mes"].includes(key)) {
+        const val = String(rawVal || "").toLowerCase();
+        if (!val.includes(String(expr).toLowerCase())) return false;
+        continue;
+      }
+
+      // Text
+      if (["ticker", "nome", "observacao"].includes(key)) {
+        const val = String(rawVal || "").toLowerCase();
+        if (!val.includes(String(expr).toLowerCase())) return false;
+        continue;
+      }
+
+      // Numeric
+      const fn = parseNumericFilter(expr);
+      if (fn && !fn(rawVal)) return false;
+    }
+    return true;
+  });
+}
 const SORT_ACCESSORS = {
   ticker: (r) => r.ticker,
   nome: (r) => r.nome || "",
@@ -881,9 +1055,10 @@ function fetchAcoes() {
     });
     ALL_ROWS = rows;
 
-    // Atualizar UI automaticamente se já estivermos inicializados
+  // Atualizar UI automaticamente se já estivermos inicializados
     if (document.getElementById("anlTable")) {
       populateFilters();
+      buildHeaderFilters();
       applyFilters();
     }
   });
@@ -912,6 +1087,9 @@ function applyFilters() {
   if (setor) rows = rows.filter((r) => r.setor === setor);
   if (mercado) rows = rows.filter((r) => r.mercado === mercado);
   if (periodo) rows = rows.filter((r) => (r.periodicidade || "") === periodo);
+
+  // Apply column header filters on top of toolbar filters
+  rows = applyHeaderFilters(rows);
 
   rows = sortRows(rows);
   renderCharts(rows);
