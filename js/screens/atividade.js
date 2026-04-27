@@ -303,6 +303,124 @@ function renderMercadoDoughnut(map) {
     },
   });
 }
+function renderEstrategiaDoughnut(map) {
+  const el = document.getElementById("chartEstrategia");
+  if (!el) return;
+  if (window.__chEstrategia) window.__chEstrategia.destroy();
+  const labels = [...map.keys()],
+    data = [...map.values()];
+  if (!labels.length) {
+    el.getContext("2d").clearRect(0, 0, el.width, el.height);
+    return;
+  }
+
+  const STRATEGY_COLORS = {
+    CORE: "#3B82F6",      // Blue
+    SATELLITE: "#F59E0B", // Amber
+    "NÃO DEFINIDA": "#94A3B8" // Muted Slate
+  };
+
+  window.__chEstrategia = new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: labels.map(l => STRATEGY_COLORS[l.toUpperCase()] || PALETTE[0]),
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: { position: "bottom", labels: { color: chartColors().ticks } },
+        tooltip: {
+          backgroundColor: chartColors().tooltipBg,
+          titleColor: chartColors().tooltipFg,
+          bodyColor: chartColors().tooltipFg,
+          callbacks: {
+            label: function(context) {
+              const label = context.label || "";
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((value / total) * 100).toFixed(1) + "%";
+              const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+              return `${label}: ${fmtEUR.format(value)} (${percentage})`;
+            }
+          }
+        },
+      },
+    },
+  });
+}
+function renderAtivosDoughnut(map, tickerCatMap) {
+  const el = document.getElementById("chartAtivos");
+  if (!el) return;
+  if (window.__chAtivos) window.__chAtivos.destroy();
+  const labels = [...map.keys()],
+    data = [...map.values()];
+  if (!labels.length) {
+    el.getContext("2d").clearRect(0, 0, el.width, el.height);
+    return;
+  }
+
+  // Paletas por categoria estratégica
+  const STRATEGY_PALETTES = {
+    CORE: ["#1D4ED8", "#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#BFDBFE"],
+    SATELLITE: ["#B45309", "#D97706", "#F59E0B", "#FBBF24", "#FDE68A", "#FEF3C7"],
+    "NÃO DEFINIDA": ["#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+  };
+
+  const counters = { CORE: 0, SATELLITE: 0, "NÃO DEFINIDA": 0 };
+  const backgroundColors = labels.map(ticker => {
+    const cat = (tickerCatMap && tickerCatMap.get(ticker)) || "NÃO DEFINIDA";
+    const palette = STRATEGY_PALETTES[cat] || STRATEGY_PALETTES["NÃO DEFINIDA"];
+    const color = palette[counters[cat] % palette.length];
+    counters[cat]++;
+    return color;
+  });
+
+  window.__chAtivos = new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: backgroundColors,
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: { position: "bottom", labels: { color: chartColors().ticks } },
+        tooltip: {
+          backgroundColor: chartColors().tooltipBg,
+          titleColor: chartColors().tooltipFg,
+          bodyColor: chartColors().tooltipFg,
+          callbacks: {
+            label: function(context) {
+              const label = context.label || "";
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((value / total) * 100).toFixed(1) + "%";
+              const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+              return `${label}: ${fmtEUR.format(value)} (${percentage})`;
+            }
+          }
+        },
+      },
+    },
+  });
+}
 function renderTop5Bar(arr) {
   const el = document.getElementById("chartTop5");
   if (!el) return;
@@ -1621,6 +1739,17 @@ function wireQuickActions(gruposArr) {
       if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
       if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
 
+      // (NOVO) Cálculo da distribuição estratégica e por ativo
+      const estrategiaMap = new Map();
+      const ativosMap = new Map();
+      const tickerCatMap = new Map();
+      for (const g of abertos) {
+        const cat = g._strategy ? g._strategy.category : "NÃO DEFINIDA";
+        estrategiaMap.set(cat, (estrategiaMap.get(cat) || 0) + (g.investido || 0));
+        ativosMap.set(g.ticker, (ativosMap.get(g.ticker) || 0) + (g.investido || 0));
+        tickerCatMap.set(g.ticker, cat);
+      }
+
       // 2.3) Timeline
       movimentosAsc.sort((a, b) => a.date - b.date);
       const qtyNow = new Map(),
@@ -1655,6 +1784,8 @@ function wireQuickActions(gruposArr) {
       }
 
       // 3) Render gráficos
+      renderEstrategiaDoughnut(estrategiaMap);
+      renderAtivosDoughnut(ativosMap, tickerCatMap);
       renderSetorDoughnut(setoresMap);
       renderMercadoDoughnut(mercadosMap);
       renderTop5Bar(gruposArr);
