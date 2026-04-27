@@ -267,7 +267,8 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const roe = Number(acao.roe || 0);
   const om = Number(acao.oper_margin || 0);
   
-  const E_EV = scoreEVEBITDA(eve, acao.setor);
+  const setorNormalizado = acao.setor || acao.sector || acao.Setor || "";
+  const E_EV = scoreEVEBITDA(eve, setorNormalizado);
   const E_ROIC = scoreROIC(roic);
   const E_ROE = scoreGeneric(roe, infoToConfig(INDICATOR_INFO.roe));
   const E_OM = scoreGeneric(om, infoToConfig(INDICATOR_INFO.oper_margin));

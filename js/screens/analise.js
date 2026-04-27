@@ -133,6 +133,12 @@ const canon = (s) =>
     .replace(/\s+/g, " ")
     .trim();
 
+function cleanTicker(t) {
+  const s = String(t || "");
+  if (s.includes(":")) return s.split(":").pop().toUpperCase();
+  return s.toUpperCase();
+}
+
 /* =========================================================
    Config ajustável — pesos/limites do algoritmo (visível)
    ========================================================= */
@@ -930,8 +936,9 @@ function fetchAcoes() {
     const rows = [];
     snap.forEach((doc) => {
       const d = doc.data();
-      const ticker = String(d.ticker || "").toUpperCase();
-      if (!ticker) return;
+      const tickerRaw = String(d.ticker || "").toUpperCase();
+      if (!tickerRaw) return;
+      const ticker = cleanTicker(tickerRaw);
 
       const valor = toNum(d.valorStock);
       const annual = toNum(d.dividendoMedio24m) || anualPreferido(d);
@@ -953,9 +960,17 @@ function fetchAcoes() {
 
       rows.push({
         ticker,
-        nome: d.nome || "",
-        setor: canon(d.setor || ""),
-        mercado: canon(d.mercado || ""),
+        nome: d.nome || ticker,
+        setor: (() => {
+          const sRaw = d.setor || d.sector || d.Setor || d.Sector || d.industry || d.Industry || d.indústria || d.Indústria || d.segmento || d.segment || "";
+          let s = canon(sRaw);
+          if (!s && String(d.ticker).includes(":")) {
+            const p = String(d.ticker).split(":")[0].trim();
+            if (p.length > 2) s = canon(p);
+          }
+          return s || "—";
+        })(),
+        mercado: canon(d.mercado || d.market || d.Market || "") || "—",
         valorStock: valor,
         dividendo: toNum(d.dividendo),
         // External Links - NEW

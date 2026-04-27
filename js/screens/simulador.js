@@ -51,6 +51,20 @@ function euro(v) {
     currency: "EUR",
   }).format(v || 0);
 }
+
+function canon(s) {
+  return String(s ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanTicker(t) {
+  const s = String(t || "");
+  if (s.includes(":")) return s.split(":").pop().toUpperCase();
+  return s.toUpperCase();
+}
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
@@ -408,9 +422,17 @@ function renderSimDistCharts(resultado) {
   const ativoMap = new Map();
   
   linhas.forEach(l => {
-    const s = l.setor || "Outros";
+    const sRaw = l.setor || l.sector || l.Setor || l.Sector || l.industry || l.Industry || l.indústria || l.Indústria || l.segmento || l.segment || "";
+    let s = canon(sRaw);
+    if (!s && String(l.ticker).includes(":")) {
+      const p = String(l.ticker).split(":")[0].trim();
+      if (p.length > 2) s = canon(p);
+    }
+    if (!s) s = "Outros";
     setorMap.set(s, (setorMap.get(s) || 0) + l.investido);
-    ativoMap.set(l.ticker, l.investido);
+    
+    const tickerLimpo = cleanTicker(l.ticker);
+    ativoMap.set(tickerLimpo, (ativoMap.get(tickerLimpo) || 0) + l.investido);
   });
 
   // Render Setores
@@ -740,12 +762,20 @@ function makeLinha_TOP(c, qtd) {
   const investido = qtd * c.metrics.preco;
   return {
     nome: c.nome,
-    ticker: c.ticker,
+    ticker: cleanTicker(c.ticker),
     preco: c.metrics.preco,
     quantidade: qtd,
     investido,
     lucro: qtd * c.metrics.lucroUnidade,
-    setor: c.setor || "",
+    setor: (() => {
+      const sRaw = c.setor || c.sector || c.Setor || c.Sector || c.industry || c.Industry || c.indústria || c.Indústria || c.segmento || c.segment || "";
+      let s = canon(sRaw);
+      if (!s && String(c.ticker).includes(":")) {
+        const p = String(c.ticker).split(":")[0].trim();
+        if (p.length > 2) s = canon(p);
+      }
+      return s || "Outros";
+    })(),
     score: c.score,
     taxaPct: c.metrics.taxaPct,
     dividendoAnual: c.metrics.dividendoAnual,

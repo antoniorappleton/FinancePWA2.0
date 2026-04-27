@@ -31,6 +31,20 @@ function toNumStrict(v) {
   return isNaN(n) ? 0 : n;
 }
 
+function canon(s) {
+  return String(s ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanTicker(t) {
+  const s = String(t || "");
+  if (s.includes(":")) return s.split(":").pop().toUpperCase();
+  return s.toUpperCase();
+}
+
 export async function initScreen() {
   console.log("✅ dashboard.js iniciado");
 
@@ -552,10 +566,30 @@ async function carregarTop10Crescimento(periodo = "1m") {
             ? rawYield * 100
             : rawYield;
 
+        const tickerLimpo = cleanTicker(d.ticker);
+        
+        // Busca exaustiva por campos de setor/indústria
+        const sRaw = d.setor || d.sector || d.Setor || d.Sector || 
+                     d.industry || d.Industry || d.indústria || d.Indústria ||
+                     d.segmento || d.segment || "";
+        
+        let setorNormalizado = canon(sRaw);
+        
+        // Fallback: se o setor estiver vazio mas o ticker original tiver um prefixo (ex: "Tecnologia:AAPL"),
+        // usamos o prefixo como setor temporário.
+        if (!setorNormalizado && String(d.ticker).includes(":")) {
+          const parts = String(d.ticker).split(":");
+          if (parts.length > 1 && parts[0].length > 2) {
+            setorNormalizado = canon(parts[0]);
+          }
+        }
+        
+        if (!setorNormalizado) setorNormalizado = "Outros";
+
         allCands.push({
-          ticker: String(d.ticker).toUpperCase(),
-          nome: d.nome || d.ticker,
-          setor: String(d.setor || "Outros").trim(),
+          ticker: tickerLimpo,
+          nome: d.nome || tickerLimpo,
+          setor: setorNormalizado,
           score: result.score,
           rAnnual: result.rAnnual,
           yieldPct: yPct,

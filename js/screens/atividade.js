@@ -65,6 +65,20 @@ const PALETTE = [
   "#14B8A6",
 ];
 
+function canon(s) {
+  return String(s ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanTicker(t) {
+  const s = String(t || "");
+  if (s.includes(":")) return s.split(":").pop().toUpperCase();
+  return s.toUpperCase();
+}
+
 const CRISES_HISTORY = [
   { id: "tension_lim", name: "📉 Tensão Limitada (-3% a -8%)", drop: 5.5 },
   { id: "geo_mod", name: "📉 Crise Geopolítica Moderada (-8% a -15%)", drop: 11.5 },
@@ -1489,8 +1503,9 @@ function wireQuickActions(gruposArr) {
             ? d.dataCompra.toDate()
             : null;
 
-        const ticker = String(d.ticker || "").toUpperCase();
-        if (!ticker) return;
+        const tickerRaw = String(d.ticker || "").toUpperCase();
+        if (!tickerRaw) return;
+        const ticker = cleanTicker(tickerRaw);
 
         const qtd = toNumStrict(d.quantidade);
         const preco = toNumStrict(d.precoCompra);
@@ -1500,8 +1515,16 @@ function wireQuickActions(gruposArr) {
         const g = grupos.get(ticker) || {
           ticker,
           nome: d.nome || ticker,
-          setor: d.setor || "-",
-          mercado: d.mercado || "-",
+          setor: (() => {
+            const sRaw = d.setor || d.sector || d.Setor || d.Sector || d.industry || d.Industry || d.indústria || d.Indústria || d.segmento || d.segment || "";
+            let s = canon(sRaw);
+            if (!s && String(d.ticker).includes(":")) {
+              const p = String(d.ticker).split(":")[0].trim();
+              if (p.length > 2) s = canon(p);
+            }
+            return s || "—";
+          })(),
+          mercado: canon(d.mercado || d.market || d.Market || "") || "—",
           qtd: 0,
           custoMedio: 0,
           investido: 0,
@@ -1546,8 +1569,16 @@ function wireQuickActions(gruposArr) {
         }
 
         g.nome = d.nome || g.nome;
-        g.setor = d.setor || g.setor;
-        g.mercado = d.mercado || g.mercado;
+        g.setor = (() => {
+          const sRaw = d.setor || d.sector || d.Setor || d.Sector || d.industry || d.Industry || d.indústria || d.Indústria || d.segmento || d.segment || g.setor || "";
+          let s = canon(sRaw);
+          if ((!s || s === "—") && String(d.ticker).includes(":")) {
+            const p = String(d.ticker).split(":")[0].trim();
+            if (p.length > 2) s = canon(p);
+          }
+          return s || "—";
+        })();
+        g.mercado = canon(d.mercado || d.market || d.Market || g.mercado) || "—";
 
         grupos.set(ticker, g);
         movimentosAsc.push({
