@@ -4,6 +4,13 @@
 import {
   getDocs,
   collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+  Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from "../firebase-config.js";
 
@@ -12,6 +19,19 @@ import { db } from "../firebase-config.js";
    ========================= */
 let simulacoes = [];
 let grafico = null;
+let chSimSetores = null;
+let chSimAtivos = null;
+let _currentTop10Result = null;
+let _currentTop10Opts = null;
+let _unsubGuardadas = null;
+let _unsubPrices = null;
+let _cachedPrices = new Map();
+let _cachedAcoes = [];
+
+const PALETTE = [
+  "#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6",
+  "#06b6d4", "#f43f5e", "#84cc16", "#eab308", "#d946ef"
+];
 
 /* =========================
    HELPERS GERAIS
@@ -310,6 +330,7 @@ function renderResultado(destEl, resultado, opts) {
 
   if (!linhas || linhas.length === 0) {
     destEl.innerHTML = `<div class="card"><p class="muted">Sem ações elegíveis com retorno positivo para o período selecionado.</p></div>`;
+    document.getElementById("graficosSimulacao").style.display = "none";
     return;
   }
 
@@ -349,20 +370,308 @@ function renderResultado(destEl, resultado, opts) {
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <p style="margin-top:.6rem">
-        <strong>Total investido:</strong> ${euro(totalGasto)}
-        ${opts.acoesCompletas && restante > 0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
-        <br/>
-        <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte > 1 ? "períodos" : "período"}):</strong> ${euro(totalLucro)}
-        <span class="${totalLucro >= 0 ? "up" : "down"}" style="font-weight:bold; margin-left:8px;">
-          (${totalGasto > 0 ? ((totalLucro / totalGasto) * 100).toFixed(2) : 0}%)
-        </span>
-      </p>
-      <p class="muted" style="margin-top:.3rem">
-        ${opts.incluirDiv === false ? "Dividendo excluído do cálculo." : "Dividendo incluído no cálculo."}
-      </p>
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; margin-top:.6rem">
+        <div>
+          <p>
+            <strong>Total investido:</strong> ${euro(totalGasto)}
+            ${opts.acoesCompletas && restante > 0 ? `· <strong>Resto:</strong> ${euro(restante)}` : ``}
+            <br/>
+            <strong>Lucro total estimado (${opts.horizonte} ${opts.horizonte > 1 ? "períodos" : "período"}):</strong> ${euro(totalLucro)}
+            <span class="${totalLucro >= 0 ? "up" : "down"}" style="font-weight:bold; margin-left:8px;">
+              (${totalGasto > 0 ? ((totalLucro / totalGasto) * 100).toFixed(2) : 0}%)
+            </span>
+          </p>
+          <p class="muted" style="margin-top:.3rem">
+            ${opts.incluirDiv === false ? "Dividendo excluído do cálculo." : "Dividendo incluído no cálculo."}
+          </p>
+        </div>
+        <button class="btn premium" id="btnGuardarSimulacao">💾 Guardar Simulação</button>
+      </div>
     </div>
   `;
+
+  // Listener para o botão de guardar
+  document.getElementById("btnGuardarSimulacao")?.addEventListener("click", () => {
+    guardarSimulacaoFirestore(resultado, opts);
+  });
+
+  // Mostrar e renderizar gráficos
+  document.getElementById("graficosSimulacao").style.display = "grid";
+  renderSimDistCharts(resultado);
+}
+
+function renderSimDistCharts(resultado) {
+  const { linhas } = resultado;
+  
+  // 1. Distribuição por Setor
+  const setorMap = new Map();
+  const ativoMap = new Map();
+  
+  linhas.forEach(l => {
+    const s = l.setor || "Outros";
+    setorMap.set(s, (setorMap.get(s) || 0) + l.investido);
+    ativoMap.set(l.ticker, l.investido);
+  });
+
+  // Render Setores
+  const elSet = document.getElementById("chartSimSetores");
+  if (elSet) {
+    if (chSimSetores) chSimSetores.destroy();
+    chSimSetores = new Chart(elSet, {
+      type: "doughnut",
+      data: {
+        labels: [...setorMap.keys()],
+        datasets: [{
+          data: [...setorMap.values()],
+          backgroundColor: PALETTE,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const val = ctx.parsed || 0;
+                const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                const pct = ((val/total)*100).toFixed(1);
+                return `${ctx.label}: ${euro(val)} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Render Ativos
+  const elAti = document.getElementById("chartSimAtivos");
+  if (elAti) {
+    if (chSimAtivos) chSimAtivos.destroy();
+    chSimAtivos = new Chart(elAti, {
+      type: "doughnut",
+      data: {
+        labels: [...ativoMap.keys()],
+        datasets: [{
+          data: [...ativoMap.values()],
+          backgroundColor: PALETTE,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const val = ctx.parsed || 0;
+                const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                const pct = ((val/total)*100).toFixed(1);
+                return `${ctx.label}: ${euro(val)} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+async function guardarSimulacaoFirestore(resultado, opts) {
+  const nome = prompt("Dê um nome a esta simulação:", `Carteira ${new Date().toLocaleDateString()}`);
+  if (!nome) return;
+
+  try {
+    const payload = {
+      nome,
+      dataCriacao: Timestamp.now(),
+      investimentoInicial: resultado.totalGasto,
+      periodo: opts.periodoSel,
+      horizonte: opts.horizonte,
+      ativos: resultado.linhas.map(l => ({
+        ticker: l.ticker,
+        nome: l.nome,
+        setor: l.setor || "",
+        qtd: l.quantidade,
+        precoInicial: l.preco,
+        investido: l.investido
+      }))
+    };
+
+    await addDoc(collection(db, "simulacoesSalvas"), payload);
+    alert("Simulação guardada com sucesso! Pode consultá-la no painel 'Simulações Guardadas'.");
+  } catch (err) {
+    console.error("Erro ao guardar simulação:", err);
+    alert("Erro ao guardar simulação.");
+  }
+}
+
+async function carregarSimulacoesGuardadas() {
+  const container = document.getElementById("listaGuardadas");
+  if (!container) return;
+
+  // Evitar múltiplos listeners
+  if (_unsubGuardadas) _unsubGuardadas();
+  if (_unsubPrices) _unsubPrices();
+
+  container.innerHTML = `<div class="card"><p class="muted">A sincronizar dados de mercado...</p></div>`;
+
+  // 1. Listener para Preços e Dados de Mercado (sempre atualizado)
+  const qAcoes = query(collection(db, "acoesDividendos"));
+  _unsubPrices = onSnapshot(qAcoes, (snap) => {
+    _cachedAcoes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _cachedPrices = new Map(_cachedAcoes.map(a => [String(a.ticker).toUpperCase(), Number(a.valorStock || 0)]));
+    
+    if (!_unsubGuardadas) iniciarListenerSimulacoes();
+  });
+
+  function iniciarListenerSimulacoes() {
+    const q = query(collection(db, "simulacoesSalvas"), orderBy("dataCriacao", "desc"));
+    _unsubGuardadas = onSnapshot(q, (snap) => {
+      renderizarListaGuardadas(snap);
+    });
+  }
+
+  function renderizarListaGuardadas(snap) {
+    container.innerHTML = "";
+    if (snap.empty) {
+      container.innerHTML = `<div class="card"><p class="muted">Nenhuma simulação guardada ainda. Use o TOP 10 para criar uma!</p></div>`;
+      return;
+    }
+
+    snap.forEach(docSnap => {
+      const sim = docSnap.data();
+      const id = docSnap.id;
+      
+      let valorAtualTotal = 0;
+      let divAnualTotal = 0;
+      let somaPE = 0;
+      let countPE = 0;
+
+      sim.ativos.forEach(a => {
+        const ticker = String(a.ticker).toUpperCase();
+        const pAtual = _cachedPrices.get(ticker) || a.precoInicial;
+        const acaoFull = _cachedAcoes.find(ac => String(ac.ticker).toUpperCase() === ticker) || {};
+        
+        valorAtualTotal += a.qtd * pAtual;
+        
+        const dUnit = Number(acaoFull.dividendo || 0);
+        const per = acaoFull.periodicidade || "Anual";
+        const payN = (per === "Mensal" ? 12 : per === "Trimestral" ? 4 : per === "Semestral" ? 2 : 1);
+        divAnualTotal += a.qtd * dUnit * payN;
+
+        const pe = Number(acaoFull.pe || acaoFull.peRatio || 0);
+        if (pe > 0) {
+          somaPE += pe * (a.qtd * pAtual);
+          countPE += (a.qtd * pAtual);
+        }
+      });
+
+      const lucroAbs = valorAtualTotal - sim.investimentoInicial;
+      const lucroPct = (lucroAbs / sim.investimentoInicial) * 100;
+      const dyAtual = valorAtualTotal > 0 ? (divAnualTotal / valorAtualTotal) * 100 : 0;
+      const peMedio = countPE > 0 ? somaPE / countPE : 0;
+      const dataStr = sim.dataCriacao?.toDate().toLocaleDateString() || "—";
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.marginBottom = "1.5rem";
+      card.style.borderLeft = `4px solid ${lucroAbs >= 0 ? "#22c55e" : "#ef4444"}`;
+      
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <h4 style="margin:0; font-size:1.15rem;">${sim.nome}</h4>
+            <small class="muted">📅 Criada em ${dataStr} · Original: ${euro(sim.investimentoInicial)}</small>
+          </div>
+          <button class="btn ghost btn-delete-sim" data-id="${id}" title="Apagar" style="padding:4px; margin:0;">❌</button>
+        </div>
+        
+        <div style="margin-top:1.25rem; display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:1rem;">
+          <div class="metric-item">
+            <span class="label" style="display:block; font-size:0.7rem; text-transform:uppercase; color:#888;">Valor Atual</span>
+            <span class="value" style="font-size:1.1rem; font-weight:700;">${euro(valorAtualTotal)}</span>
+          </div>
+          <div class="metric-item">
+            <span class="label" style="display:block; font-size:0.7rem; text-transform:uppercase; color:#888;">Retorno</span>
+            <span class="value ${lucroAbs >= 0 ? "up" : "down"}" style="font-size:1.1rem; font-weight:700;">
+              ${lucroPct >= 0 ? "+" : ""}${lucroPct.toFixed(2)}%
+            </span>
+          </div>
+          <div class="metric-item">
+            <span class="label" style="display:block; font-size:0.7rem; text-transform:uppercase; color:#888;">Yield Atual</span>
+            <span class="value" style="font-size:1.1rem; font-weight:700; color:#10b981;">${dyAtual.toFixed(2)}%</span>
+          </div>
+          <div class="metric-item" style="text-align:right;">
+            <span class="label" style="display:block; font-size:0.7rem; text-transform:uppercase; color:#888;">P/E Médio</span>
+            <span class="value" style="font-size:1.1rem; font-weight:700; color:#3b82f6;">${peMedio > 0 ? peMedio.toFixed(1) : "—"}</span>
+          </div>
+        </div>
+
+        <div style="height:6px; background:#eee; border-radius:3px; margin-top:1rem; overflow:hidden;">
+          <div style="height:100%; width:${Math.min(100, Math.abs(lucroPct))}%; background:${lucroAbs >= 0 ? "#22c55e" : "#ef4444"}; transition: width 0.5s;"></div>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem;">
+           <p style="font-size:0.8rem; margin:0; font-weight:600;" class="${lucroAbs >= 0 ? "up" : "down"}">
+            ${lucroAbs >= 0 ? "Lucro" : "Prejuízo"} de ${euro(Math.abs(lucroAbs))}
+          </p>
+          <p style="font-size:0.8rem; margin:0; color:#10b981; font-weight:600;">
+            Est. ${euro(divAnualTotal)}/ano em dividendos
+          </p>
+        </div>
+
+        <details style="margin-top:1rem; border-top: 1px solid #eee; pt:0.5rem;">
+          <summary class="muted" style="cursor:pointer; font-size:.85rem; padding-top:0.5rem;">🔍 Análise detalhada dos ativos</summary>
+          <div class="tabela-scroll-wrapper" style="margin-top:.5rem;">
+            <table style="width:100%; font-size:.8rem; border-collapse:collapse;">
+              <thead>
+                <tr style="text-align:left; border-bottom:1px solid #eee;">
+                  <th style="padding:6px 0;">Ativo</th>
+                  <th>Qtd</th>
+                  <th>P. Inicial</th>
+                  <th>P. Atual</th>
+                  <th style="text-align:right;">Retorno</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sim.ativos.map(a => {
+                  const ticker = String(a.ticker).toUpperCase();
+                  const pAt = _cachedPrices.get(ticker) || a.precoInicial;
+                  const resAt = (pAt - a.precoInicial) * a.qtd;
+                  const resPct = ((pAt - a.precoInicial) / a.precoInicial) * 100;
+                  return `
+                    <tr style="border-bottom:1px dotted #f0f0f0;">
+                      <td style="padding:8px 0;"><strong>${a.ticker}</strong></td>
+                      <td>${a.qtd.toFixed(2)}</td>
+                      <td>${a.precoInicial.toFixed(2)}</td>
+                      <td>${pAt.toFixed(2)}</td>
+                      <td style="text-align:right;" class="${resAt >= 0 ? "up" : "down"}">
+                        <strong>${euro(resAt)}</strong><br/><small>${resPct >= 0 ? "+" : ""}${resPct.toFixed(1)}%</small>
+                      </td>
+                    </tr>
+                  `;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      `;
+
+      card.querySelector(".btn-delete-sim").addEventListener("click", async (e) => {
+        if (confirm("Tem a certeza que quer apagar esta simulação?")) {
+          await deleteDoc(doc(db, "simulacoesSalvas", id));
+        }
+      });
+
+      container.appendChild(card);
+    });
+  }
 }
 
 import { annualizeRate, anualPreferido, calculateLucroMaximoScore } from "../utils/scoring.js";
@@ -436,6 +745,7 @@ function makeLinha_TOP(c, qtd) {
     quantidade: qtd,
     investido,
     lucro: qtd * c.metrics.lucroUnidade,
+    setor: c.setor || "",
     score: c.score,
     taxaPct: c.metrics.taxaPct,
     dividendoAnual: c.metrics.dividendoAnual,
@@ -687,6 +997,12 @@ export function initScreen() {
     const t = document.getElementById(id);
     if (t) {
       t.classList.add("active");
+      
+      // Inicializar painel específico se necessário
+      if (id === "panel-guardadas") {
+        carregarSimulacoesGuardadas();
+      }
+
       if (window.matchMedia("(max-width: 820px)").matches) {
         t.scrollIntoView({ behavior: "smooth", block: "start" });
       }

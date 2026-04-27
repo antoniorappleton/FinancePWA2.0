@@ -21,6 +21,9 @@
       <button class="btn dark full" data-target="panel-top10">
         TOP 10 para Investir
       </button>
+      <button class="btn dark full" data-target="panel-guardadas">
+        Simulações Guardadas
+      </button>
     </aside>
 
     <!-- COLUNA DIREITA: “POPUPS” (PAINÉIS) -->
@@ -190,6 +193,28 @@
   </div>
 
   <div id="resultadoSimulacao" class="resultado-container"></div>
+
+  <!-- 📈 GRÁFICOS DA SIMULAÇÃO (TOP 10) -->
+  <div id="graficosSimulacao" class="portfolio-charts" style="display:none; margin-top: 1.5rem;">
+    <div class="card">
+      <h3>Distribuição por Setor</h3>
+      <div class="chart-wrap"><canvas id="chartSimSetores"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Distribuição por Ativo</h3>
+      <div class="chart-wrap"><canvas id="chartSimAtivos"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAINEL: SIMULAÇÕES GUARDADAS -->
+<div id="panel-guardadas" class="panel">
+  <h3>💼 Simulações Guardadas (Tracking)</h3>
+  <p class="subtitle">Acompanha a evolução das simulações guardadas como se fossem wallets reais.</p>
+  
+  <div id="listaGuardadas" class="atividade-lista" style="margin-top: 1.5rem;">
+    <!-- Renderizado via JS -->
+  </div>
 </div>
 
     </section>
