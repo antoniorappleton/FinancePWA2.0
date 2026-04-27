@@ -547,7 +547,7 @@ async function carregarSimulacoesGuardadas() {
   const qAcoes = query(collection(db, "acoesDividendos"));
   _unsubPrices = onSnapshot(qAcoes, (snap) => {
     _cachedAcoes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    _cachedPrices = new Map(_cachedAcoes.map(a => [String(a.ticker).toUpperCase(), Number(a.valorStock || 0)]));
+    _cachedPrices = new Map(_cachedAcoes.map(a => [cleanTicker(a.ticker), Number(a.valorStock || 0)]));
     
     if (!_unsubGuardadas) iniciarListenerSimulacoes();
   });
