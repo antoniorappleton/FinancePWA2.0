@@ -1,5 +1,7 @@
 // js/utils/decisionHelpers.js - Investment Decision Logic for Atividade Cards
 
+import { parseSma } from "./scoring.js";
+
 /**
  * Computes Reinforcement Score (0-100) for position.
  * @param {Object} g - Position group (qtd, custoMedio=precoMedio, investido, precoAtual from g.precoAtual)
@@ -26,7 +28,7 @@ export function computeReinforcementScore(g, info) {
 
   // 2. Tendencia (0-30)
   let tendenciaPts = 10;
-  const sma200 = Number(info.sma200) || Number(info.SMA200);
+  const sma200 = parseSma(info.sma200 || info.SMA200, precoAtual);
   if (Number.isFinite(precoAtual) && Number.isFinite(sma200) && sma200 > 0) {
     tendenciaPts = precoAtual > sma200 ? 30 : 10;
   } else {

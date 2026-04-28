@@ -33,6 +33,7 @@ import {
   calculateLucroMaximoScore,
   annualizeRate,
   anualPreferido,
+  parseSma,
 } from "../utils/scoring.js";
 import { INDICATOR_INFO } from "../utils/indicator-info.js";
 import { repairFirestoreData } from "../utils/maintenance.js";
@@ -258,7 +259,7 @@ function buildHeaderFilters() {
     { key: "preco", type: "num", ph: "<100" },
     { key: "minus35", type: "num", ph: "<50" },
     { key: "minus5", type: "num", ph: "<50" },
-    { key: "buyZone", type: "num", ph: "<40" },
+    { key: "buyZone", type: "select" },
   ];
 
   cols.forEach((c) => {
@@ -360,8 +361,8 @@ function applyHeaderFilters(rows) {
       const rawVal = accessor(r);
 
       // Categorical (select)
-      if (["setor", "mercado", "periodicidade", "mes"].includes(key)) {
-        const val = String(rawVal || "").toLowerCase();
+      if (["setor", "mercado", "periodicidade", "mes", "buyZone"].includes(key)) {
+        const val = String(r[key] || "").toLowerCase();
         if (!val.includes(String(expr).toLowerCase())) return false;
         continue;
       }
@@ -1018,14 +1019,14 @@ function fetchAcoes() {
           Number(d.peRatio) ||
           Number(d["P/E ratio (Preço/Lucro)"]) ||
           null,
-        sma50: Number(d.sma50) || Number(d.SMA50) || null,
-        sma200: Number(d.sma200) || Number(d.SMA200) || null,
+        sma50: parseSma(d.sma50 || d.SMA50, valor),
+        sma200: parseSma(d.sma200 || d.SMA200, valor),
 
         delta50: (() => {
           const raw = Number(d.delta50);
           if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
           const p = valor,
-            s = Number(d.sma50) || Number(d.SMA50);
+            s = parseSma(d.sma50 || d.SMA50, p);
           return Number.isFinite(p) && Number.isFinite(s) && s > 0
             ? (p - s) / s
             : null;
@@ -1035,7 +1036,7 @@ function fetchAcoes() {
           const raw = Number(d.delta200);
           if (Number.isFinite(raw)) return Math.abs(raw) > 1 ? raw / 100 : raw;
           const p = valor,
-            s = Number(d.sma200) || Number(d.SMA200);
+            s = parseSma(d.sma200 || d.SMA200, p);
           return Number.isFinite(p) && Number.isFinite(s) && s > 0
             ? (p - s) / s
             : null;
@@ -1048,6 +1049,11 @@ function fetchAcoes() {
         current_ratio: Number(d.current_ratio || 0),
         debt_eq: Number(d.debt_eq || 0),
         rsi_14: Number(d.rsi_14 || 0),
+        buyZone: (() => {
+          const rsi = Number(d.rsi_14 || 0);
+          if (!rsi) return "—";
+          return rsi < 40 ? "BUY" : rsi < 50 ? "WAIT" : "HOLD";
+        })(),
         forward_p_e: Number(d.forward_p_e || 0),
         gross_margin: Number(d.gross_margin || 0),
         oper_margin: Number(d.oper_margin || 0),

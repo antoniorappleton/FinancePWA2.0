@@ -15,6 +15,34 @@ export function getUserWeights() {
   }
 }
 
+/**
+ * Faz o parsing do valor da SMA (Simple Moving Average).
+ * O valor na BD pode ser um preço absoluto ou uma percentagem (ex: "-5%", "+12.5%").
+ * Se for percentagem, significa a distância do preço à SMA: Delta = (Price - SMA) / SMA.
+ * @param {string|number} smaVal 
+ * @param {number} currentPrice 
+ * @returns {number|null} O preço absoluto da SMA
+ */
+export function parseSma(smaVal, currentPrice) {
+  if (smaVal == null || smaVal === '') return null;
+  if (typeof smaVal === 'number') return smaVal;
+  
+  // Remove spaces completely just in case
+  const str = String(smaVal).replace(/\s/g, '');
+  
+  if (str.includes('%')) {
+    const pct = parseFloat(str.replace('%', '').replace(',', '.'));
+    if (isNaN(pct)) return null;
+    if (currentPrice && currentPrice > 0) {
+      return currentPrice / (1 + (pct / 100));
+    }
+    return null;
+  }
+
+  const n = parseFloat(str.replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
 export const SCORING_CFG = {
   MAX_ANNUAL_RETURN: 0.45, // Cap mais realista para retorno anual (45%)
   MIN_ANNUAL_RETURN: -0.6, // -60%
@@ -235,8 +263,8 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
 
   // Tendência
   const p = Number(acao.valorStock || acao.price || 0);
-  const s50 = Number(acao.sma50 || 0);
-  const s200 = Number(acao.sma200 || 0);
+  const s50 = parseSma(acao.sma50, p) || 0;
+  const s200 = parseSma(acao.sma200, p) || 0;
   const rsi = Number(acao.rsi_14 || 50);
 
   let T = scoreTrend(p, s50, s200, rsi);

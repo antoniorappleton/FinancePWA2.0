@@ -21,6 +21,8 @@ import {
   deleteField,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+import { parseSma } from "../utils/scoring.js";
+
 // ===============================
 // Carregar Chart.js on-demand
 // ===============================
@@ -1619,8 +1621,11 @@ function wireQuickActions(gruposArr) {
           Number(info.peRatio) ||
           Number(info["P/E ratio (Preço/Lucro)"]) ||
           null;
-        const sma50 = Number(info.sma50) || Number(info.SMA50) || null;
-        const sma200 = Number(info.sma200) || Number(info.SMA200) || null;
+        const sma50 = parseSma(info.sma50 || info.SMA50, precoAtual);
+        const sma200 = parseSma(info.sma200 || info.SMA200, precoAtual);
+        if (info.sma50 || info.SMA50) {
+            console.log(`[DEBUG SMA] ticker: ${g.ticker}, db_sma50: ${info.sma50 || info.SMA50}, precoAtual: ${precoAtual}, parsed_sma50: ${sma50}`);
+        }
         const periodicidade = info.periodicidade || "";
         const payN = pagamentosAno(periodicidade);
 
