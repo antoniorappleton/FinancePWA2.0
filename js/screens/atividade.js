@@ -710,6 +710,12 @@ function wireQuickActions(gruposArr) {
       return `${d > 0 ? "+" : ""}${d.toFixed(1)}%`;
     };
 
+    const s50 = g._sma50;
+    const isGoldenCross = s50 && s200 && s50 > s200;
+    const isDeathCross = s50 && s200 && s50 < s200;
+    const trendSignal = isGoldenCross ? "GOLDEN CROSS 🚀" : (isDeathCross ? "DEATH CROSS ⚠️" : "SEM TENDÊNCIA CLARA");
+    const trendColor = isGoldenCross ? "#22c55e" : (isDeathCross ? "#ef4444" : "var(--muted-foreground)");
+
     // ESFORCO / DECISAO DO SISTEMA
     let esforcoStr = "Muito próximo", esforcoColor = "#22c55e";
     if (upsideP > 12)     { esforcoStr = "Agressivo"; esforcoColor = "#ef4444"; }
@@ -788,6 +794,31 @@ function wireQuickActions(gruposArr) {
         ${progressBarHTML}
       </div>`;
     }
+
+    // Adicionar Secção de Análise Técnica ao decisaoSub
+    decisaoSub += `
+      <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.1); font-size: 0.72rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="color: var(--muted-foreground)">Sinal de Tendência:</span>
+          <span style="padding: 2px 8px; border-radius: 4px; background: ${trendColor}15; color: ${trendColor}; font-weight: 800; font-size: 0.65rem; border: 1px solid ${trendColor}30;">
+            ${trendSignal}
+          </span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div style="background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px; border: 1px solid var(--border);">
+            <div style="color: var(--muted-foreground); font-size: 0.6rem; text-transform: uppercase;">Média 50d (Dist.)</div>
+            <div style="font-weight: 700; color: ${precoAtual > s50 ? "#22c55e" : "#ef4444"}">${formatSmaDelta(s50, precoAtual)}</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px; border: 1px solid var(--border);">
+            <div style="color: var(--muted-foreground); font-size: 0.6rem; text-transform: uppercase;">Média 200d (Dist.)</div>
+            <div style="font-weight: 700; color: ${precoAtual > s200 ? "#22c55e" : "#ef4444"}">${formatSmaDelta(s200, precoAtual)}</div>
+          </div>
+        </div>
+        <p style="margin-top: 8px; opacity: 0.7; font-style: italic; font-size: 0.65rem; line-height: 1.3;">
+          * Se o preço estiver acima das médias e houver um Golden Cross, a confiança no reforço é máxima.
+        </p>
+      </div>
+    `;
 
     // HEADER
     let stateColor = "#64748b";

@@ -27,10 +27,19 @@ export function computeReinforcementScore(g, info) {
   }
 
   // 2. Tendencia (0-30)
-  let tendenciaPts = 10;
+  let tendenciaPts = 0;
   const sma200 = parseSma(info.sma200 || info.SMA200, precoAtual);
+  const sma50  = parseSma(info.sma50 || info.SMA50, precoAtual);
+
   if (Number.isFinite(precoAtual) && Number.isFinite(sma200) && sma200 > 0) {
-    tendenciaPts = precoAtual > sma200 ? 30 : 10;
+    if (precoAtual > sma200) tendenciaPts += 15;
+    if (Number.isFinite(sma50) && sma50 > 0) {
+      if (precoAtual > sma50) tendenciaPts += 10;
+      if (sma50 > sma200) tendenciaPts += 5; // Golden Cross bonus
+    } else {
+      // Se não houver SMA50, damos os restantes pontos baseados na SMA200 ou histórico
+      if (precoAtual > sma200) tendenciaPts += 15; 
+    }
   } else {
     const ch1y = Number(info.priceChange_1y || info.taxaCrescimento_1ano || 0);
     tendenciaPts = ch1y > 0 ? 30 : 10;
