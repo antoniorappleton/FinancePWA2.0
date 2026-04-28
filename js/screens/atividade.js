@@ -862,11 +862,14 @@ function wireQuickActions(gruposArr) {
     tpLevels.forEach(tp => {
       const pr = precoMedio * (1 + tp.pct / 100);
       const isActive = precoAtual >= pr * 0.98;
+      const units = g.qtd * (parseInt(tp.posicao) / 100);
+      const posText = `${tp.posicao} <span style="font-size:0.65rem;font-weight:500;display:block;opacity:0.8;text-transform:none;">(~${units.toFixed(2)} un.)</span>`;
+
       saidaHTML += `<div style="display:grid;grid-template-columns:1fr 1.2fr 1.2fr 1fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;${isActive ? "background:" + tp.color + "08;" : ""}">` +
         `<div style="font-weight:800;color:${tp.color};">${tp.label} (+${tp.pct}%)</div>` +
         `<div style="font-family:monospace;font-size:0.82rem;">${fmtEUR.format(pr)}</div>` +
         `<div style="font-weight:700;color:${tp.color};font-size:0.75rem;text-transform:uppercase;">${tp.acao}</div>` +
-        `<div style="text-align:right;font-weight:700;font-size:0.75rem;color:var(--muted-foreground);">${tp.posicao}</div></div>`;
+        `<div style="text-align:right;font-weight:700;font-size:0.75rem;color:var(--muted-foreground);">${posText}</div></div>`;
     });
     const saidaEl = $(`#detPlanSaida`);
     if (saidaEl) saidaEl.innerHTML = saidaHTML;
@@ -892,10 +895,16 @@ function wireQuickActions(gruposArr) {
     let niveisHTML = "";
     niveisArr.forEach(n => {
       const pr = precoAtual * (1 - n.d / 100);
+      let actionTxt = n.action;
+      if (n.action.includes("Reforço")) {
+          const defaultAmt = n.action.includes("Leve") ? 250 : n.action.includes("Médio") ? 500 : 1000;
+          const units = defaultAmt / (pr || 1);
+          actionTxt = `${n.action} <span style="display:block;font-size:0.65rem;opacity:0.8;text-transform:none;margin-top:2px;">(~${units.toFixed(2)} un. / €${defaultAmt})</span>`;
+      }
       niveisHTML += `<div style="display:grid;grid-template-columns:1fr 1.5fr 1.5fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;">` +
         `<div style="font-weight:800;color:#ef4444;">-${n.d}%</div>` +
         `<div style="font-family:monospace;font-size:0.85rem;">${fmtEUR.format(pr)}</div>` +
-        `<div style="font-weight:700;color:${n.color};font-size:0.75rem;text-transform:uppercase;">${n.action}</div></div>`;
+        `<div style="font-weight:700;color:${n.color};font-size:0.75rem;text-transform:uppercase;">${actionTxt}</div></div>`;
     });
     const niveisEl = $(`#detNiveisReforco`);
     if (niveisEl) niveisEl.innerHTML = niveisHTML;
@@ -2062,7 +2071,7 @@ function wireQuickActions(gruposArr) {
         </div>
         ${g._shouldReinforceStrategic ? `
           <div style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
-            <i class="fas fa-arrow-up"></i> Reforçar €${formatNum(g._strategicNeed)} p/ atingir o alvo
+            <i class="fas fa-arrow-up"></i> Falta alocar €${formatNum(g._strategicNeed)} (~${formatNum(g._strategicNeed / (precoAtual || 1))} unid.) p/ atingir o alvo dos ${targetW.toFixed(1)}%
           </div>
         ` : ""}
         ${estadoOp === "REDUZIR" && (g._strategicExcess || 0) > 0 ? `
