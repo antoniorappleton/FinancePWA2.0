@@ -6,6 +6,7 @@
 import { doLogout } from "./auth.js";
 import { db } from "../firebase-config.js";
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { generatePortfolioReport } from "../utils/reportGenerator.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -132,7 +133,37 @@ export function initScreen() {
           btnSaveStratG.disabled = false;
           btnSaveStratG.textContent = "Guardar Alocação";
        });
-    }
+  }
+}
+
+  // Relatório de Investimento
+  const btnGenReport = document.getElementById("btnGenerateReport");
+  const reportModal = document.getElementById("reportModal");
+  const reportClose = document.getElementById("reportModalClose");
+  const btnPrint = document.getElementById("btnReportPrint");
+
+  if (btnGenReport) {
+    btnGenReport.addEventListener("click", () => {
+      generatePortfolioReport();
+    });
+  }
+
+  if (reportClose) {
+    reportClose.addEventListener("click", () => {
+      reportModal.classList.add("hidden");
+    });
+  }
+
+  if (reportModal) {
+    reportModal.addEventListener("click", (e) => {
+      if (e.target === reportModal) reportModal.classList.add("hidden");
+    });
+  }
+
+  if (btnPrint) {
+    btnPrint.addEventListener("click", () => {
+      window.print();
+    });
   }
 
   // Botões de Perfil

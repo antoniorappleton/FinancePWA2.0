@@ -2630,4 +2630,270 @@ body.auth-screen .form-grid {
   }
 }
 
+/* ---------- Relatório de Investimento Premium ---------- */
+#reportModal .modal-body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.report-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.report-kpi {
+  background: var(--muted);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-kpi .kpi-label {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.report-kpi .kpi-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.report-chart-container {
+  height: 250px;
+  position: relative;
+}
+
+/* Stress Test styles */
+.stress-test-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--muted);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.stress-test-item:hover {
+  border-color: var(--border);
+  transform: translateX(4px);
+}
+
+.stress-test-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stress-test-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.stress-test-impact {
+  font-weight: 800;
+  color: #ef4444;
+}
+
+/* Recommendations */
+.rec-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rec-ticker {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.rec-reason {
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0,0,0,0.1);
+  border-left-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media print {
+  @page {
+    margin: 1.2cm;
+    size: auto;
+  }
+
+  /* 1. Reset de Estrutura e Scroll */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Esconder Interface da App */
+  header, footer, .footer-nav, .app-header, .modal-header, .modal-footer, #reportLoader, .icon-btn, .modal-backdrop, .sidebar {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Garantir visibilidade do Modal e Pais */
+  #screenContainer {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    visibility: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #screenContainer > *:not(#reportModal) {
+    display: none !important;
+  }
+
+  /* "Aplanar" o Modal para uma página normal */
+  #reportModal {
+    display: block !important;
+    position: static !important;
+    height: auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+    background: white !important;
+    visibility: visible !important;
+    z-index: auto !important;
+  }
+
+  .modal-dialog, .modal-content, .modal-body {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* 2. Design do Conteúdo do Relatório */
+  .report-header {
+    text-align: left !important;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+
+  .report-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .report-card {
+    background: #fafafa !important;
+    border: 1px solid #eee !important;
+    padding: 20px !important;
+    margin-bottom: 20px !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-radius: 12px !important;
+  }
+
+  /* Re-ajustar KPIs para 2 colunas */
+  .report-kpi-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 15px !important;
+  }
+
+  .report-chart-container {
+    height: 300px !important;
+    width: 100% !important;
+    break-inside: avoid !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* 3. Tipografia de Impressão */
+  h1, h2, h3, h4 {
+    color: #000 !important;
+    margin-top: 0 !important;
+    font-weight: bold !important;
+  }
+
+  p, span, strong, div, li {
+    color: #222 !important;
+    font-size: 10pt !important;
+  }
+
+  .muted {
+    color: #666 !important;
+  }
+
+  .kpi-value {
+    font-size: 14pt !important;
+    font-weight: 800 !important;
+  }
+
+  /* Progress Bars do Score */
+  div[style*="height: 6px"] {
+    border: 1px solid #ddd !important;
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+}
+
 

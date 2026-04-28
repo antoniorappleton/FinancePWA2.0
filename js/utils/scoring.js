@@ -322,11 +322,29 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const vol = Number.isFinite(acao.volatility) ? Math.max(0, Math.min(1, acao.volatility)) : proxyVol(acao);
   const riskAdj = 1 / (1 + 0.6 * vol); // Slightly less aggressive risk damping
 
-  let score = clamp(
-    W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.S || 0) * S + (W.Rsk || 0) * 1.0,
-    0,
-    1,
-  );
+  const tickerStr = String(acao.ticker || "").toUpperCase();
+  const nomeStr = String(acao.nome || "").toUpperCase();
+  const isAcc = tickerStr.includes("ACC") || nomeStr.includes("ACC") || nomeStr.includes("ACUM") || nomeStr.includes("ACCUM");
+
+  let score;
+  if (isAcc && W.D > 0) {
+    // Para ativos acumulativos, redistribuímos o peso de D pelos outros pilares
+    const totalW_NoD = (W.R || 0) + (W.V || 0) + (W.T || 0) + (W.E || 0) + (W.S || 0) + (W.Rsk || 0);
+    if (totalW_NoD > 0) {
+      const factor = 1 / totalW_NoD;
+      const baseScore = (W.R * R + W.V * V + W.T * T + W.E * E + (W.S || 0) * S + (W.Rsk || 0) * 1.0) * factor;
+      score = clamp(baseScore, 0, 1);
+      // Para o breakdown, mostramos D como neutro (igual ao score final) para não penalizar visualmente
+      D = score; 
+    } else {
+      score = 0.5;
+    }
+  } else {
+    score = clamp(
+      W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.S || 0) * S + (W.Rsk || 0) * 1.0,
+      0, 1
+    );
+  }
 
   score *= riskAdj;
 

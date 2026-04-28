@@ -495,6 +495,21 @@
       </div>
     </div>
 
+    <!-- RELATÓRIOS -->
+    <div class="card premium">
+      <div class="card-content" style="align-items: flex-start; gap: 16px">
+        <div style="flex: 1">
+          <p class="label">Relatórios Avançados</p>
+          <div class="muted" style="margin-bottom: 12px">
+            Gera uma análise profunda de toda a tua carteira com gráficos de alocação, stress tests e recomendações algorítmicas.
+          </div>
+          <button id="btnGenerateReport" class="btn premium full" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fas fa-file-invoice-dollar"></i> Gerar Relatório de Investimento
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- PRIVACIDADE -->
     <div class="card">
       <div class="card-content" style="align-items: flex-start; gap: 16px">
@@ -541,6 +556,29 @@
         <button class="btn outline" id="cfgCancel">Cancelar</button>
         <button class="btn premium" id="cfgSave">Guardar configurações</button>
         <button class="btn outline" id="btnLogout">Sair</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DO RELATÓRIO COMPLETO -->
+<div id="reportModal" class="modal hidden" style="z-index: 2001;">
+  <div class="modal-dialog" style="width: min(1000px, 96vw); max-height: 92vh;">
+    <div class="modal-header">
+      <h2 style="font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-chart-pie" style="color: var(--premium);"></i>
+        Relatório de Investimento
+      </h2>
+      <div style="display: flex; gap: 8px;">
+        <button id="btnReportPrint" class="icon-btn" title="Imprimir/PDF"><i class="fas fa-print"></i></button>
+        <button id="reportModalClose" class="icon-btn" title="Fechar"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <div class="modal-body" id="reportContent" style="padding: 24px; overflow-y: auto; background: var(--muted);">
+      <!-- O conteúdo será injetado pelo reportGenerator.js -->
+      <div id="reportLoader" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 20px;">
+         <div class="spinner"></div>
+         <p class="muted">A analisar portfólio e a processar dados de mercado...</p>
       </div>
     </div>
   </div>
