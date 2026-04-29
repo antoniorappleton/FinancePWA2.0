@@ -87,7 +87,7 @@ export function getWarChestRecommendation(portfolioState, availableCash) {
   return {
     percentage: targetReserve * 100,
     amount: recommendedReserveAmount,
-    toInvestNow: availableCash - recommendedReserveAmount
+    totalInvestable: availableCash - recommendedReserveAmount // Bolo total disponível para ser alocado via DCA ou Oportunidades
   };
 }
 

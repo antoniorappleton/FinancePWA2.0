@@ -452,21 +452,34 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
           <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; text-transform: uppercase; color: #888;">Gestão de "War Chest"</h4>
           
           <div style="margin-bottom: 16px; background: rgba(var(--primary-rgb), 0.1); border-radius: 12px; padding: 12px; border: 1px solid rgba(var(--primary-rgb), 0.2);">
-             <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">🛒 Plano de Ação Recomendado:</div>
-             <div style="font-size: 1.1rem; font-weight: 800;">
-               Investir <span style="color: var(--success)">${fmtEUR.format(recommendation.toInvestNow)}</span> agora
+             <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">🛒 Ação para este Mês (DCA):</div>
+             <div style="font-size: 1.2rem; font-weight: 800; color: var(--success);">
+               Investir ${fmtEUR.format(smartDca.adjusted)}
              </div>
-             <div style="font-size: 0.8rem; margin-top: 4px; opacity: 0.8;">
-               Reforça o teu DCA com <span style="color: var(--success)">${fmtEUR.format(smartDca.fromReserve > 0 ? smartDca.fromReserve : 0)}</span> vindo da reserva.
+             <div style="font-size: 0.75rem; margin-top: 4px; opacity: 0.8;">
+               ${smartDca.fromReserve > 0 
+                 ? `Inclui ${fmtEUR.format(smartDca.fromReserve)} extra vindo da tua reserva (Mercado em Saldos).` 
+                 : `Plano padrão de ${fmtEUR.format(smartDca.original)}.`}
              </div>
           </div>
 
           <div style="background: #111; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; border: 1px solid #333;">
             <div style="width: ${recommendation.percentage}%; height: 100%; background: ${state.color}; transition: width 1s;"></div>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 12px;">
             <span class="muted">Em Reserva: <strong>${fmtEUR.format(recommendation.amount)}</strong></span>
-            <span class="muted">Disponível p/ Investir: <strong>${fmtEUR.format(recommendation.toInvestNow)}</strong></span>
+            <span class="muted">Fundo de Investimento: <strong>${fmtEUR.format(recommendation.totalInvestable)}</strong></span>
+          </div>
+
+          <div style="border-top: 1px dashed var(--border); padding-top: 10px; font-size: 0.75rem; color: var(--muted-foreground);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span>Liquidez Total:</span>
+              <strong>${fmtEUR.format(availableCash)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Autonomia Estimada:</span>
+              <strong>${smartDca.adjusted > 0 ? (availableCash / smartDca.adjusted).toFixed(1) : 0} meses</strong>
+            </div>
           </div>
           
           <div style="margin-top: 16px; font-size: 0.8rem; padding: 10px; background: rgba(239, 68, 68, 0.05); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.1);">

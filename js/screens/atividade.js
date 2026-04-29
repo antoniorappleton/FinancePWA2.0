@@ -2335,6 +2335,8 @@ async function wireInvPlan(lastAtivosArr, acoesDataMap) {
   const btnCalc = document.getElementById("btnCalcInvPlan");
   const inpTotal = document.getElementById("inpInvTotal");
 
+  const btnSelectAll = document.getElementById("btnInvSelectAll");
+
   if (!btnOpen || !modal) return;
 
   btnOpen.addEventListener("click", async () => {
@@ -2351,7 +2353,7 @@ async function wireInvPlan(lastAtivosArr, acoesDataMap) {
         const recommendation = CapitalManager.getWarChestRecommendation(state, config.availableCash || 0);
 
         // Preencher com o valor recomendado (Smart DCA + o que estiver disponível para investir hoje)
-        const suggestedValue = smartDca.adjusted + recommendation.toInvestNow;
+        const suggestedValue = smartDca.adjusted + (recommendation.totalInvestable || 0);
         if (suggestedValue > 0) {
           inpTotal.value = suggestedValue.toFixed(0);
           
@@ -2376,6 +2378,12 @@ async function wireInvPlan(lastAtivosArr, acoesDataMap) {
     renderInvPlanAssets(lastAtivosArr);
   });
 
+  btnSelectAll?.addEventListener("click", () => {
+    const checks = document.querySelectorAll(".inv-asset-check");
+    const anyUnchecked = Array.from(checks).some(c => !c.checked);
+    checks.forEach(c => c.checked = anyUnchecked);
+  });
+
   btnClose.addEventListener("click", () => modal.classList.add("hidden"));
   btnCalc.addEventListener("click", () => {
     const total = parseFloat(inpTotal.value) || 0;
@@ -2394,9 +2402,10 @@ async function wireInvPlan(lastAtivosArr, acoesDataMap) {
 function renderInvPlanAssets(ativos) {
   const container = document.getElementById("invPlanAssetsList");
   if (!container) return;
+  // Começam desmarcados para permitir que a lógica de "Estratégia" funcione por omissão
   container.innerHTML = ativos.map(a => `
     <label style="display: flex; align-items: center; gap: 4px; background: var(--card); padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; border: 1px solid var(--border); cursor: pointer;">
-      <input type="checkbox" class="inv-asset-check" value="${a.ticker}" checked>
+      <input type="checkbox" class="inv-asset-check" value="${a.ticker}">
       <span>${a.ticker}</span>
     </label>
   `).join("");
@@ -2407,40 +2416,59 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
   const tableBody = document.getElementById("invPlanTableBody");
   if (!resultDiv || !tableBody) return;
 
-  const totalPeriods = months * freq;
-  const perPeriod = total / (totalPeriods || 1);
+  const totalPeriods = Math.max(1, Math.round(months * freq));
+  const perPeriod = total / totalPeriods;
 
   document.getElementById("resInvPerPeriod").textContent = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(perPeriod);
   document.getElementById("resInvTotalPeriods").textContent = totalPeriods.toFixed(0);
 
-  // Lógica de Alocação: Priorizar ativos com maior drawdown e melhor score
-  const filtered = ativos.filter(a => selectedTickers.includes(a.ticker));
-  if (strategy !== "ALL") {
-    // Filtrar por categoria CORE/SATELLITE se necessário
+  // 1. Definir Pool de Ativos
+  let pool = [];
+  if (selectedTickers.length > 0) {
+    // Obedecer estritamente aos selecionados manualmente
+    pool = ativos.filter(a => selectedTickers.includes(a.ticker));
+  } else {
+    // Obedecer ao filtro de categoria (CORE/SAT/ALL)
+    pool = ativos.filter(a => {
+      const cat = (a._strategy && a._strategy.category) ? a._strategy.category : "NONE";
+      if (strategy === "ALL") return true;
+      return cat === strategy;
+    });
   }
 
-  // Ordenar usando o motor de priorização do CapitalManager
-  const prioritized = CapitalManager.prioritizeReinforcements(filtered.map(f => {
-    const mkt = acoesMap.get(f.ticker) || {};
-    return {
-      ...f,
-      scoreQuality: (calculateLucroMaximoScore(mkt).score || 0.5),
-      scoreValuation: (calculateLucroMaximoScore(mkt).components?.V || 0.5),
-      desvioTarget: 1.0 // Placeholder para lógica de target se implementada
-    };
-  }));
+  if (pool.length === 0) {
+    tableBody.innerHTML = "<tr><td colspan='4' style='padding:20px; text-align:center; color:var(--muted-foreground);'>Nenhum ativo selecionado ou encontrado para esta estratégia.</td></tr>";
+    resultDiv.style.display = "block";
+    return;
+  }
 
-  tableBody.innerHTML = prioritized.slice(0, 8).map(p => {
-    const weight = 1 / prioritized.slice(0, 8).length; // Distribuição simples por agora
-    return `
-      <tr style="border-bottom: 1px solid var(--border);">
-        <td style="padding: 8px 4px;"><strong>${p.ticker}</strong></td>
-        <td style="padding: 8px 4px;"><span style="font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; background: var(--muted);">${p.category || "SAT"}</span></td>
-        <td style="padding: 8px 4px; text-align: right;">${(weight * 100).toFixed(0)}%</td>
-        <td style="padding: 8px 4px; text-align: right; font-weight: 700; color: var(--success);">${new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(perPeriod * weight)}</td>
-      </tr>
-    `;
-  }).join("");
+  // 2. Calcular Pesos Baseados nos Targets Estratégicos
+  let sumTargets = 0;
+  const itemsWithTarget = pool.map(p => {
+    // Se não tiver target definido, assume um peso mínimo para não ser ignorado
+    const target = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
+    sumTargets += target;
+    return { ...p, target };
+  });
+
+  // 3. Gerar Plano com Pesos Normalizados
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  
+  tableBody.innerHTML = itemsWithTarget
+    .sort((a, b) => b.target - a.target)
+    .map(p => {
+      const normalizedWeight = p.target / sumTargets;
+      const allocated = perPeriod * normalizedWeight;
+      
+      return `
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 4px;"><strong>${p.ticker}</strong></td>
+          <td style="padding: 10px 4px;"><span class="strategy-badge strategy-badge--${(p._strategy?.category || 'none').toLowerCase()}" style="font-size:0.6rem; padding: 2px 6px;">${p._strategy?.category || 'SAT'}</span></td>
+          <td style="padding: 10px 4px; text-align: right;">${(normalizedWeight * 100).toFixed(1)}%</td>
+          <td style="padding: 10px 4px; text-align: right; font-weight: 700; color: #8b5cf6;">${fmtEUR.format(allocated)}</td>
+        </tr>
+      `;
+    }).join("");
 
   resultDiv.style.display = "block";
 }
