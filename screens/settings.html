@@ -1,567 +1,340 @@
 <!-- screens/settings.html -->
+<style>
+  .settings-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .settings-tabs::-webkit-scrollbar { display: none; }
+  
+  .tab-btn {
+    padding: 10px 20px;
+    border-radius: 99px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .tab-btn.active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  
+  .settings-section {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .settings-section.active {
+    display: grid;
+    gap: 20px;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .settings-footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--background);
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    z-index: 100;
+    margin-top: 40px;
+  }
+
+  .kpi-card-mini {
+    background: rgba(var(--primary-rgb), 0.05);
+    border: 1px solid var(--border);
+    padding: 16px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+</style>
+
 <div class="page" data-screen-title="Configurações">
-  <div
-    class="settings"
-    style="max-width: 960px; margin: 0 auto; display: grid; gap: 16px"
-  >
-    <!-- PERFIL -->
-    <div class="card">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Perfil</p>
-          <div class="form-grid">
-            <label>
-              Nome completo
-              <input id="cfgName" type="text" placeholder="O teu nome" />
-            </label>
-
-            <label>
-              Email (Firebase)
-              <input
-                id="cfgEmail"
-                type="email"
-                placeholder="o.teu@email"
-                disabled
-              />
-            </label>
-
-            <label>
-              Telefone
-              <input id="cfgPhone" type="tel" placeholder="+351 ..." />
-            </label>
-          </div>
-          <p class="muted" style="margin-top: 6px">
-            O email vem da tua conta Firebase.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- SEGURANÇA -->
-    <div class="card">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Segurança</p>
-          <div class="form-grid">
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
-              <span>Autenticação de dois fatores</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgTwoFactor" />
-                <span class="slider"></span>
-              </label>
-            </label>
-
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
-              <span>Notificações de login</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgLoginNotifications" />
-                <span class="slider"></span>
-              </label>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Segurança: alteração de palavra-passe -->
-    <div class="form-grid" style="margin-top: 8px">
-      <label>
-        <span class="label"
-          >Palavra-passe atual <small class="muted"></small
-        ></span>
-        <input
-          type="password"
-          id="cfgCurrentPass"
-          autocomplete="current-password"
-        />
-      </label>
-      <label>
-        <span class="label">Nova palavra-passe</span>
-        <input type="password" id="cfgNewPass" autocomplete="new-password" />
-      </label>
-      <label>
-        <span class="label">Confirmar nova palavra-passe</span>
-        <input type="password" id="cfgNewPass2" autocomplete="new-password" />
-      </label>
-    </div>
-    <div class="actions-row" style="justify-content: flex-end; gap: 8px">
-      <button class="btn outline" id="cfgChangePassBtn">
-        Alterar palavra-passe
+  <div class="settings" style="max-width: 800px; margin: 0 auto;">
+    
+    <!-- TABS NAVIGATION -->
+    <div class="settings-tabs">
+      <button class="tab-btn active" data-tab="tab-estrategia">
+        <i class="fas fa-brain"></i> Estratégia
+      </button>
+      <button class="tab-btn" data-tab="tab-perfil">
+        <i class="fas fa-user"></i> Perfil & Conta
+      </button>
+      <button class="tab-btn" data-tab="tab-interface">
+        <i class="fas fa-sliders"></i> Preferências
+      </button>
+      <button class="tab-btn" data-tab="tab-relatorios">
+        <i class="fas fa-file-contract"></i> Relatórios
       </button>
     </div>
 
-    <hr
-      style="
-        border: none;
-        border-top: 1px dashed var(--border);
-        opacity: 0.6;
-        margin: 8px 0;
-      "
-    />
-
-    <!-- Segurança: e-mail de recuperação -->
-    <div class="form-grid">
-      <label>
-        <span class="label">E-mail para recuperação</span>
-        <input
-          type="email"
-          id="cfgRecoveryEmail"
-          placeholder="o.teu@email.com"
-        />
-      </label>
-    </div>
-    <div class="actions-row" style="justify-content: flex-end; gap: 8px">
-      <button class="btn outline" id="cfgSendRecovery">
-        Enviar e-mail de recuperação
-      </button>
-    </div>
-
-    <!-- NOTIFICAÇÕES -->
-    <div class="card">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Notificações</p>
-          <div class="form-grid">
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
-              <span>Email</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgEmailNotifications" />
-                <span class="slider"></span>
+    <!-- TAB: ESTRATÉGIA (PRIORIDADE #1) -->
+    <div id="tab-estrategia" class="settings-section active">
+      
+      <!-- GESTÃO DE CAPITAL -->
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label" style="display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-shield-halved" style="color: var(--primary)"></i>
+              Gestão de Capital & War Chest
+            </p>
+            <div class="muted" style="margin-bottom: 20px">
+              Define a tua liquidez disponível e o plano de investimento base.
+            </div>
+            <div class="form-grid">
+              <label>
+                Liquidez Disponível (€)
+                <input id="cfgAvailableCash" type="number" step="0.01" min="0" placeholder="Ex: 10000.00" />
               </label>
-            </label>
-
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
-              <span>Push</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgPushNotifications" />
-                <span class="slider"></span>
+              <label>
+                Investimento Mensal Base (DCA) (€)
+                <input id="cfgMonthlyBase" type="number" step="0.01" min="0" placeholder="Ex: 250.00" />
               </label>
-            </label>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
-              <span>Relatórios semanais</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgWeeklyReports" />
-                <span class="slider"></span>
+      <!-- ALOCAÇÃO ESTRUTURAL -->
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label">Alocação Estrutural (%)</p>
+            <div class="muted" style="margin-bottom: 16px">Define o equilíbrio entre ativos CORE e SATÉLITE.</div>
+            <div class="form-grid">
+              <label>
+                CORE (%)
+                <input id="cfgCoreWeight" type="number" step="1" max="100" min="0" />
               </label>
-            </label>
+              <label>
+                SATÉLITE (%)
+                <input id="cfgSatelliteWeight" type="number" step="1" max="100" min="0" />
+              </label>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+               <span id="cfgStrategyStatus" class="muted" style="font-size: 0.8rem;"></span>
+               <button id="btnSaveStrategyG" class="btn premium small">Guardar Alocação</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESOS DO ALGORITMO -->
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label">Pesos do Algoritmo (Lucro Máximo)</p>
+            <div class="profile-presets" style="display: flex; gap: 8px; margin: 16px 0">
+              <button class="btn outline small" id="btnProfCons" style="flex:1">Conservador</button>
+              <button class="btn outline small" id="btnProfMod" style="flex:1">Moderado</button>
+              <button class="btn outline small" id="btnProfAgre" style="flex:1">Agressivo</button>
+            </div>
+            
+            <div style="display: grid; gap: 16px">
+              <div class="weight-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="muted">Crescimento</span>
+                  <strong id="valR">1.0</strong>
+                </div>
+                <input id="cfgWeightR" type="range" min="0" max="10" step="0.1" style="width:100%" />
+              </div>
+              <div class="weight-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="muted">Valuation (P/E)</span>
+                  <strong id="valV">2.0</strong>
+                </div>
+                <input id="cfgWeightV" type="range" min="0" max="10" step="0.1" style="width:100%" />
+              </div>
+              <div class="weight-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="muted">Tendência (SMA)</span>
+                  <strong id="valT">2.5</strong>
+                </div>
+                <input id="cfgWeightT" type="range" min="0" max="10" step="0.1" style="width:100%" />
+              </div>
+              <div class="weight-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="muted">Dividendos</span>
+                  <strong id="valD">2.0</strong>
+                </div>
+                <input id="cfgWeightD" type="range" min="0" max="10" step="0.1" style="width:100%" />
+              </div>
+              <div class="weight-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="muted">Eficiência (ROIC/EV)</span>
+                  <strong id="valE">2.0</strong>
+                </div>
+                <input id="cfgWeightE" type="range" min="0" max="10" step="0.1" style="width:100%" />
+              </div>
+            </div>
+
+            <div style="margin-top: 24px; padding: 12px; background: var(--muted); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <strong>Total de Importância:</strong>
+              <span id="valTotalWeight" style="font-weight: 800; background: var(--primary); color: white; padding: 4px 12px; border-radius: 6px;">10.0</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- INTERFACE -->
-    <div class="card">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Interface</p>
-          <div class="form-grid">
-            <label>
-              Idioma
-              <select id="cfgLanguage">
-                <option value="pt-PT">Português (PT)</option>
-                <option value="en-US">English (US)</option>
-                <option value="es-ES">Español</option>
-              </select>
-            </label>
+    <!-- TAB: PERFIL & CONTA -->
+    <div id="tab-perfil" class="settings-section">
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label">Informações Pessoais</p>
+            <div class="form-grid">
+              <label>Nome <input id="cfgName" type="text" /></label>
+              <label>Email <input id="cfgEmail" type="email" disabled /></label>
+              <label>Telefone <input id="cfgPhone" type="tel" /></label>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <label>
-              Moeda
-              <select id="cfgCurrency">
-                <option value="EUR">Euro (€)</option>
-                <option value="USD">Dólar ($)</option>
-                <option value="BRL">Real (R$)</option>
-              </select>
-            </label>
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label">Segurança</p>
+            <div style="display: grid; gap: 12px">
+              <label style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Autenticação 2FA</span>
+                <label class="switch"><input type="checkbox" id="cfgTwoFactor" /><span class="slider"></span></label>
+              </label>
+              <label style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Notificações de Login</span>
+                <label class="switch"><input type="checkbox" id="cfgLoginNotifications" /><span class="slider"></span></label>
+              </label>
+            </div>
+            
+            <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
+              <p class="muted" style="margin-bottom: 12px">Alterar Palavra-passe</p>
+              <div class="form-grid">
+                <input type="password" id="cfgCurrentPass" placeholder="Atual" />
+                <input type="password" id="cfgNewPass" placeholder="Nova" />
+                <input type="password" id="cfgNewPass2" placeholder="Confirmar" />
+              </div>
+              <button class="btn outline small" id="cfgChangePassBtn" style="margin-top: 12px; width: 100%">Atualizar Senha</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
+    <!-- TAB: PREFERÊNCIAS -->
+    <div id="tab-interface" class="settings-section">
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label">Preferências da App</p>
+            <div class="form-grid">
+              <label>Idioma <select id="cfgLanguage"><option value="pt-PT">Português</option></select></label>
+              <label>Moeda <select id="cfgCurrency"><option value="EUR">Euro (€)</option></select></label>
+            </div>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);" />
+            <label style="display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <div><strong>Tema escuro</strong></div>
-                <div class="muted">Interface em modo escuro</div>
+                <strong>Tema Escuro</strong>
+                <div class="muted" style="font-size: 0.8rem">Interface de alto contraste</div>
               </div>
-              <label class="switch">
-                <input type="checkbox" id="cfgDarkMode" />
-                <span class="slider"></span>
+              <label class="switch"><input type="checkbox" id="cfgDarkMode" /><span class="slider"></span></label>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label">Canais de Notificação</p>
+            <div style="display: grid; gap: 16px">
+              <label style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Email</span>
+                <label class="switch"><input type="checkbox" id="cfgEmailNotifications" /><span class="slider"></span></label>
               </label>
-            </label>
+              <label style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Push Notifications</span>
+                <label class="switch"><input type="checkbox" id="cfgPushNotifications" /><span class="slider"></span></label>
+              </label>
+              <label style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Relatórios Semanais</span>
+                <label class="switch"><input type="checkbox" id="cfgWeeklyReports" /><span class="slider"></span></label>
+              </label>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ESTRATÉGIA DE PORTFÓLIO -->
-    <div class="card">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Alocação Global Estrutural (%)</p>
-          <div class="muted" style="margin-bottom: 12px">
-            Define o peso alvo total para os teus ativos principais (CORE) e de aposta (SATÉLITE).
-          </div>
-          <div class="form-grid">
-            <label>
-              CORE (%)
-              <input id="cfgCoreWeight" type="number" step="1" max="100" min="0" value="65" />
-            </label>
-            <label>
-              SATÉLITE (%)
-              <input id="cfgSatelliteWeight" type="number" step="1" max="100" min="0" value="35" />
-            </label>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
-             <span id="cfgStrategyStatus" class="muted" style="font-size: 0.8rem;"></span>
-             <button id="btnSaveStrategyG" class="btn small primary">Guardar Alocação</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ALGORITMO LUCRO MÁXIMO -->
-    <div class="card">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Pesos do Algoritmo (Lucro Máximo)</p>
-          <div class="muted" style="margin-bottom: 12px">
-            Distribui a importância (Total: 10). Ao aumentar um, os outros
-            diminuem proporcionalmente.
-          </div>
-
-          <div
-            class="profile-presets"
-            style="display: flex; gap: 8px; margin-bottom: 20px"
-          >
-            <button
-              class="btn outline small"
-              id="btnProfCons"
-              style="flex: 1; padding: 6px 4px; font-size: 0.8rem"
-            >
-              Conservador
-            </button>
-            <button
-              class="btn outline small"
-              id="btnProfMod"
-              style="flex: 1; padding: 6px 4px; font-size: 0.8rem"
-            >
-              Moderado
-            </button>
-            <button
-              class="btn outline small"
-              id="btnProfAgre"
-              style="flex: 1; padding: 6px 4px; font-size: 0.8rem"
-            >
-              Agressivo
+    <!-- TAB: RELATÓRIOS -->
+    <div id="tab-relatorios" class="settings-section">
+      <div class="card premium">
+        <div class="card-content">
+          <div style="width: 100%; text-align: center; padding: 20px 0;">
+            <i class="fas fa-file-invoice-dollar" style="font-size: 3rem; color: var(--primary); margin-bottom: 20px;"></i>
+            <h3 style="margin-bottom: 8px">Análise Profissional de Portfólio</h3>
+            <p class="muted" style="margin-bottom: 24px">Gera um documento PDF (A4) completo com stress tests e recomendações algorítmicas.</p>
+            <button id="btnGenerateReport" class="btn premium full" style="max-width: 320px; margin: 0 auto">
+              Gerar Relatório em PDF
             </button>
           </div>
-
-          <div style="display: flex; flex-direction: column; gap: 14px">
-            <div
-              class="weight-item"
-              style="display: flex; flex-direction: column; gap: 4px"
-            >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 500;
-                  font-size: 0.9rem;
-                "
-              >
-                <span>Crescimento (Preço + EPS)</span>
-                <span id="valR" style="color: var(--premium); font-weight: 700"
-                  >1.0</span
-                >
-              </div>
-              <input
-                id="cfgWeightR"
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value="1.0"
-                style="width: 100%; margin-top: 4px"
-              />
-            </div>
-
-            <div
-              class="weight-item"
-              style="display: flex; flex-direction: column; gap: 4px"
-            >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 500;
-                  font-size: 0.9rem;
-                "
-              >
-                <span>P/E Ratio (V)</span>
-                <span id="valV" style="color: var(--premium); font-weight: 700"
-                  >2.0</span
-                >
-              </div>
-              <input
-                id="cfgWeightV"
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value="2.0"
-                style="width: 100%; margin-top: 4px"
-              />
-            </div>
-
-            <div
-              class="weight-item"
-              style="display: flex; flex-direction: column; gap: 4px"
-            >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 500;
-                  font-size: 0.9rem;
-                "
-              >
-                <span>Tendência SMA (T)</span>
-                <span id="valT" style="color: var(--premium); font-weight: 700"
-                  >2.5</span
-                >
-              </div>
-              <input
-                id="cfgWeightT"
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value="2.5"
-                style="width: 100%; margin-top: 4px"
-              />
-            </div>
-
-            <div
-              class="weight-item"
-              style="display: flex; flex-direction: column; gap: 4px"
-            >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 500;
-                  font-size: 0.9rem;
-                "
-              >
-                <span>Dividend Yield (D)</span>
-                <span id="valD" style="color: var(--premium); font-weight: 700"
-                  >2.0</span
-                >
-              </div>
-              <input
-                id="cfgWeightD"
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value="2.0"
-                style="width: 100%; margin-top: 4px"
-              />
-            </div>
-
-            <div
-              class="weight-item"
-              style="display: flex; flex-direction: column; gap: 4px"
-            >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 500;
-                  font-size: 0.9rem;
-                "
-              >
-                <span>Eficiência (EV/EBITDA + ROIC)</span>
-                <span id="valE" style="color: var(--premium); font-weight: 700"
-                  >2.0</span
-                >
-              </div>
-              <input
-                id="cfgWeightE"
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value="2.0"
-                style="width: 100%; margin-top: 4px"
-              />
-            </div>
-
-            <div
-              class="weight-item"
-              style="display: flex; flex-direction: column; gap: 4px"
-            >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 500;
-                  font-size: 0.9rem;
-                "
-              >
-                <span>Risco (Rsk)</span>
-                <span
-                  id="valRsk"
-                  style="color: var(--premium); font-weight: 700"
-                  >0.5</span
-                >
-              </div>
-              <input
-                id="cfgWeightRsk"
-                type="range"
-                min="0"
-                max="10"
-                step="0.1"
-                value="0.5"
-                style="width: 100%; margin-top: 4px"
-              />
-            </div>
-          </div>
-
-          <div
-            style="
-              margin-top: 20px;
-              padding-top: 12px;
-              border-top: 1px solid var(--border);
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            "
-          >
-            <strong style="font-size: 0.9rem">Total de Importância:</strong>
-            <span
-              id="valTotalWeight"
-              style="
-                font-size: 1.1rem;
-                font-weight: 800;
-                color: var(--background);
-                background: var(--foreground);
-                padding: 4px 10px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-              "
-              >10.0</span
-            >
-          </div>
         </div>
       </div>
-    </div>
-
-    <!-- RELATÓRIOS -->
-    <div class="card premium">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Relatórios Avançados</p>
-          <div class="muted" style="margin-bottom: 12px">
-            Gera uma análise profunda de toda a tua carteira com gráficos de alocação, stress tests e recomendações algorítmicas.
-          </div>
-          <button id="btnGenerateReport" class="btn premium full" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fas fa-file-invoice-dollar"></i> Gerar Relatório de Investimento
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- PRIVACIDADE -->
-    <div class="card">
-      <div class="card-content" style="align-items: flex-start; gap: 16px">
-        <div style="flex: 1">
-          <p class="label">Privacidade</p>
-          <div class="form-grid">
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
-              <span>Partilha de dados</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgDataSharing" />
-                <span class="slider"></span>
-              </label>
+      
+      <div class="card">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label">Privacidade de Dados</p>
+            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span>Partilha de dados anónimos</span>
+              <label class="switch"><input type="checkbox" id="cfgDataSharing" /><span class="slider"></span></label>
             </label>
-
-            <label
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-              "
-            >
-              <span>Analytics (anónimo)</span>
-              <label class="switch">
-                <input type="checkbox" id="cfgAnalytics" />
-                <span class="slider"></span>
-              </label>
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Analytics</span>
+              <label class="switch"><input type="checkbox" id="cfgAnalytics" /><span class="slider"></span></label>
             </label>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- AÇÕES -->
-    <div class="card">
-      <div class="card-content" style="justify-content: flex-end; gap: 8px">
-        <button class="btn outline" id="cfgCancel">Cancelar</button>
-        <button class="btn premium" id="cfgSave">Guardar configurações</button>
-        <button class="btn outline" id="btnLogout">Sair</button>
-      </div>
+    <!-- FOOTER FIXO DE AÇÕES -->
+    <div class="settings-footer">
+      <button class="btn outline" id="btnLogout" style="margin-right: auto; color: var(--destructive)">Sair da Conta</button>
+      <button class="btn ghost" id="cfgCancel">Descartar</button>
+      <button class="btn premium" id="cfgSave" style="padding-left: 32px; padding-right: 32px;">Guardar Tudo</button>
     </div>
+
   </div>
 </div>
 
-<!-- MODAL DO RELATÓRIO COMPLETO -->
+<!-- MODAL DO RELATÓRIO (mantido igual) -->
 <div id="reportModal" class="modal hidden" style="z-index: 2001;">
   <div class="modal-dialog" style="width: min(1000px, 96vw); max-height: 92vh;">
     <div class="modal-header">
@@ -575,10 +348,9 @@
       </div>
     </div>
     <div class="modal-body" id="reportContent" style="padding: 24px; overflow-y: auto; background: var(--muted);">
-      <!-- O conteúdo será injetado pelo reportGenerator.js -->
       <div id="reportLoader" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 20px;">
          <div class="spinner"></div>
-         <p class="muted">A analisar portfólio e a processar dados de mercado...</p>
+         <p class="muted">A analisar portfólio...</p>
       </div>
     </div>
   </div>

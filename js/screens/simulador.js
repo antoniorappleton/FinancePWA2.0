@@ -368,6 +368,8 @@ function renderResultado(destEl, resultado, opts) {
   destEl.innerHTML = `
     <div class="card">
       <div class="tabela-scroll-wrapper">
+        <!-- Recomendação de Gestão de Capital -->
+        <div id="simCapitalAdvice" style="margin-bottom: 1rem;"></div>
         <table style="width:100%; border-collapse:collapse;">
           <thead>
             <tr>
@@ -408,6 +410,37 @@ function renderResultado(destEl, resultado, opts) {
   document.getElementById("btnGuardarSimulacao")?.addEventListener("click", () => {
     guardarSimulacaoFirestore(resultado, opts);
   });
+
+  // Listener para o botão de guardar
+  document.getElementById("btnGuardarSimulacao")?.addEventListener("click", () => {
+    guardarSimulacaoFirestore(resultado, opts);
+  });
+
+  // Mostrar conselho de capital
+  const adviceEl = document.getElementById("simCapitalAdvice");
+  if (adviceEl && _cachedAcoes.length > 0) {
+     // Obter estado atual da carteira (usando ativos em cache ou buscando)
+     const qAtivos = query(collection(db, "ativos"));
+     getDocs(qAtivos).then(snap => {
+       const pos = snap.docs.map(d => ({ ticker: d.data().ticker, ...d.data() }));
+       const state = CapitalManager.calculatePortfolioState(pos, _cachedAcoes);
+       const recommendation = CapitalManager.getWarChestRecommendation(state, opts.investimento);
+       
+       if (state.label === "Sobrevalorizada") {
+         adviceEl.innerHTML = `
+           <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 12px; border-radius: 8px; font-size: 0.85rem; color: #ef4444; margin-bottom: 12px;">
+             <strong>⚠️ Mercado Caro:</strong> A sua carteira está sobrevalorizada. Recomendamos investir apenas <strong>${euro(recommendation.toInvestNow)}</strong> agora e guardar <strong>${euro(recommendation.amount)}</strong> em reserva (War Chest).
+           </div>
+         `;
+       } else if (state.label === "Subvalorizada") {
+         adviceEl.innerHTML = `
+           <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; padding: 12px; border-radius: 8px; font-size: 0.85rem; color: #22c55e; margin-bottom: 12px;">
+             <strong>✅ Oportunidade:</strong> O mercado está atrativo. Considere investir o valor total ou até usar uma tranche da sua reserva.
+           </div>
+         `;
+       }
+     });
+  }
 
   // Mostrar e renderizar gráficos
   document.getElementById("graficosSimulacao").style.display = "grid";
@@ -697,6 +730,7 @@ async function carregarSimulacoesGuardadas() {
 }
 
 import { annualizeRate, anualPreferido, calculateLucroMaximoScore } from "../utils/scoring.js";
+import * as CapitalManager from "../utils/capitalManager.js";
 
 function calcularMetricasBase_TOP(
   acao,

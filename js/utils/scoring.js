@@ -348,11 +348,17 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
 
   score *= riskAdj;
 
+  // Classificação de Valorização baseada no componente V
+  let valuationLabel = "Justo";
+  if (V > 0.7) valuationLabel = "Subvalorizado";
+  else if (V < 0.3) valuationLabel = "Sobrevalorizado";
+
   return {
     score,
     rAnnual,
     vol,
     riskAdj,
+    valuationLabel,
     components: { R, V, T, D, E, S },
   };
 }

@@ -9,6 +9,7 @@ import {
   addDoc,
   serverTimestamp,
   getDocs,
+  doc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   calculateLucroMaximoScore,
@@ -16,12 +17,15 @@ import {
   SCORING_CFG,
 } from "../utils/scoring.js";
 import { Treemap } from "../components/treemap.js";
+import * as CapitalManager from "../utils/capitalManager.js";
 
 let lastAtivosSnap = null;
 let lastAcoesSnap = null;
 let treemapInstance = null;
 let unsubAtivos = null;
 let unsubAcoes = null;
+let unsubConfig = null;
+let lastConfigData = null;
 let histFltState = { ticker: "", tipo: "", periodo: "" };
 
 function toNumStrict(v) {
@@ -51,6 +55,7 @@ export async function initScreen() {
   // Limpar listeners antigos se existirem (evita leaks ao navegar entre screens)
   if (unsubAtivos) unsubAtivos();
   if (unsubAcoes) unsubAcoes();
+  if (unsubConfig) unsubConfig();
 
   // --- ELEMENTOS DA UI ---
   const valorTotalEl = document.getElementById("valorTotal");
@@ -215,6 +220,9 @@ export async function initScreen() {
       taxaSucessoAcumEl.textContent = `Total acumulado: ${taxaSucessoAcumulada.toFixed(1)}%`;
     if (valorCarteiraEl)
       valorCarteiraEl.textContent = `${fmtEUR.format(valorCarteira)} valor em carteira`;
+
+    // --- NOVA LÓGICA: Capital Manager ---
+    renderCapitalStrategy(agrupadoPorTicker, valorAtualMap);
   };
 
   // Se já tivermos dados de uma navegação anterior, mostramos logo
@@ -264,6 +272,13 @@ export async function initScreen() {
     const modal = document.getElementById("opModal");
     if (modal && !modal.classList.contains("hidden")) {
       carregarTop10Crescimento(opPeriodoAtual);
+    }
+  });
+
+  unsubConfig = onSnapshot(doc(db, "config", "strategy"), (snap) => {
+    if (snap.exists()) {
+      lastConfigData = snap.data();
+      atualizarKPIs(); // Re-calcula e renderiza a estratégia
     }
   });
 
@@ -380,6 +395,88 @@ export async function initScreen() {
     }
   });
   wireDashBuy();
+}
+
+/**
+ * Renderiza a secção de Estratégia de Capital e War Chest
+ */
+function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
+  const container = document.getElementById("capitalStrategyContainer");
+  if (!container) return;
+
+  const positions = Array.from(agrupadoPorTicker.entries()).map(([ticker, data]) => ({
+    ticker,
+    ...data
+  }));
+
+  // Converter snapshots em Map de objetos para o CapitalManager
+  const acoesDataMap = new Map();
+  lastAcoesSnap?.forEach(doc => {
+    acoesDataMap.set(String(doc.data().ticker).toUpperCase(), doc.data());
+  });
+
+  const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap);
+  
+  // Valores do utilizador vindos do Firestore
+  const availableCash = lastConfigData?.availableCash || 0;
+  const monthlyBase = lastConfigData?.monthlyBase || 0;
+
+  const recommendation = CapitalManager.getWarChestRecommendation(state, availableCash);
+  const smartDca = CapitalManager.getSmartDCA(monthlyBase, state);
+
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+  container.innerHTML = `
+    <div class="card" style="border-top: 4px solid ${state.color}; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+        <div style="flex: 1; min-width: 280px;">
+          <h3 style="margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-shield-halved" style="color: ${state.color}"></i>
+            Estado da Carteira: <span style="color: ${state.color}">${state.label}</span>
+          </h3>
+          <p class="muted" style="font-size: 0.9rem; margin-bottom: 16px;">${state.message}</p>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="report-kpi" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
+              <span class="kpi-label" style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase;">Reserva Recomendada</span>
+              <span class="kpi-value" style="font-size: 1.1rem; font-weight: 800;">${recommendation.percentage.toFixed(0)}%</span>
+            </div>
+            <div class="report-kpi" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
+              <span class="kpi-label" style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase;">DCA Inteligente</span>
+              <span class="kpi-value" style="font-size: 1.1rem; font-weight: 800;">${fmtEUR.format(smartDca.adjusted)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; min-width: 280px; border-left: 1px solid var(--border); padding-left: 20px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; text-transform: uppercase; color: #888;">Gestão de "War Chest"</h4>
+          
+          <div style="margin-bottom: 16px; background: rgba(var(--primary-rgb), 0.1); border-radius: 12px; padding: 12px; border: 1px solid rgba(var(--primary-rgb), 0.2);">
+             <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">🛒 Plano de Ação Recomendado:</div>
+             <div style="font-size: 1.1rem; font-weight: 800;">
+               Investir <span style="color: var(--success)">${fmtEUR.format(recommendation.toInvestNow)}</span> agora
+             </div>
+             <div style="font-size: 0.8rem; margin-top: 4px; opacity: 0.8;">
+               Reforça o teu DCA com <span style="color: var(--success)">${fmtEUR.format(smartDca.fromReserve > 0 ? smartDca.fromReserve : 0)}</span> vindo da reserva.
+             </div>
+          </div>
+
+          <div style="background: #111; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; border: 1px solid #333;">
+            <div style="width: ${recommendation.percentage}%; height: 100%; background: ${state.color}; transition: width 1s;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <span class="muted">Em Reserva: <strong>${fmtEUR.format(recommendation.amount)}</strong></span>
+            <span class="muted">Disponível p/ Investir: <strong>${fmtEUR.format(recommendation.toInvestNow)}</strong></span>
+          </div>
+          
+          <div style="margin-top: 16px; font-size: 0.8rem; padding: 10px; background: rgba(239, 68, 68, 0.05); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.1);">
+             <i class="fas fa-fire" style="color: #ef4444; margin-right: 6px;"></i>
+             <strong>Plano de Crise:</strong> Se o mercado cair 10%, mobiliza <strong>${fmtEUR.format(CapitalManager.getCrisisDeployment(0.1, recommendation.amount).amountToDeploy)}</strong> da reserva.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 /* =========================

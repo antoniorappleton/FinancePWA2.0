@@ -22,6 +22,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 import { parseSma } from "../utils/scoring.js";
+import * as CapitalManager from "../utils/capitalManager.js";
 
 // ===============================
 // Carregar Chart.js on-demand
@@ -1989,6 +1990,7 @@ function wireQuickActions(gruposArr) {
 
       wireQuickActions(gruposArr);
       wirePortfolioHelpModal();
+      wireInvPlan(gruposArr, infoMap);
     } catch (e) {
       console.error("Erro ao processar atividade:", e);
       cont.innerHTML = `<p class="muted">Não foi possível carregar a lista. Detalhe: ${e.message}</p>`;
@@ -2322,3 +2324,123 @@ function wireQuickActions(gruposArr) {
       tbody.appendChild(tr);
     });
   }
+
+// ===============================
+// Plano de Investimento IA - Integração com Capital Manager
+// ===============================
+async function wireInvPlan(lastAtivosArr, acoesDataMap) {
+  const btnOpen = document.getElementById("btnOpenInvPlan");
+  const modal = document.getElementById("invPlanModal");
+  const btnClose = document.getElementById("invPlanClose");
+  const btnCalc = document.getElementById("btnCalcInvPlan");
+  const inpTotal = document.getElementById("inpInvTotal");
+
+  if (!btnOpen || !modal) return;
+
+  btnOpen.addEventListener("click", async () => {
+    modal.classList.remove("hidden");
+    
+    // Carregar recomendação do CapitalManager
+    try {
+      const snapConfig = await getDoc(doc(db, "config", "strategy"));
+      if (snapConfig.exists()) {
+        const config = snapConfig.data();
+        const positions = lastAtivosArr.map(g => ({ ticker: g.ticker, ...g }));
+        const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap);
+        const smartDca = CapitalManager.getSmartDCA(config.monthlyBase || 0, state);
+        const recommendation = CapitalManager.getWarChestRecommendation(state, config.availableCash || 0);
+
+        // Preencher com o valor recomendado (Smart DCA + o que estiver disponível para investir hoje)
+        const suggestedValue = smartDca.adjusted + recommendation.toInvestNow;
+        if (suggestedValue > 0) {
+          inpTotal.value = suggestedValue.toFixed(0);
+          
+          // Adicionar uma nota visual no modal
+          const noteEl = document.createElement("div");
+          noteEl.style.fontSize = "0.75rem";
+          noteEl.style.color = "var(--success)";
+          noteEl.style.marginBottom = "10px";
+          noteEl.innerHTML = `💡 Sugestão IA: <strong>${new Intl.NumberFormat("pt-PT", {style:"currency", currency:"EUR"}).format(suggestedValue)}</strong> (DCA Ajustado + Liquidez Estratégica)`;
+          
+          const body = modal.querySelector(".modal-body");
+          const existingNote = body.querySelector(".ia-suggestion-note");
+          if (existingNote) existingNote.remove();
+          noteEl.classList.add("ia-suggestion-note");
+          body.prepend(noteEl);
+        }
+      }
+    } catch (err) {
+      console.warn("Erro ao carregar estratégia para Plano IA:", err);
+    }
+
+    renderInvPlanAssets(lastAtivosArr);
+  });
+
+  btnClose.addEventListener("click", () => modal.classList.add("hidden"));
+  btnCalc.addEventListener("click", () => {
+    const total = parseFloat(inpTotal.value) || 0;
+    const months = parseInt(document.getElementById("inpInvMonths").value) || 1;
+    const freq = parseFloat(document.getElementById("inpInvFreq").value) || 1;
+    const strat = document.getElementById("inpInvStrat").value;
+    
+    // Obter selecionados
+    const checks = document.querySelectorAll(".inv-asset-check:checked");
+    const selectedTickers = Array.from(checks).map(c => c.value);
+    
+    generateInvPlan(total, months, freq, strat, selectedTickers, lastAtivosArr, acoesDataMap);
+  });
+}
+
+function renderInvPlanAssets(ativos) {
+  const container = document.getElementById("invPlanAssetsList");
+  if (!container) return;
+  container.innerHTML = ativos.map(a => `
+    <label style="display: flex; align-items: center; gap: 4px; background: var(--card); padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; border: 1px solid var(--border); cursor: pointer;">
+      <input type="checkbox" class="inv-asset-check" value="${a.ticker}" checked>
+      <span>${a.ticker}</span>
+    </label>
+  `).join("");
+}
+
+function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos, acoesMap) {
+  const resultDiv = document.getElementById("invPlanResult");
+  const tableBody = document.getElementById("invPlanTableBody");
+  if (!resultDiv || !tableBody) return;
+
+  const totalPeriods = months * freq;
+  const perPeriod = total / (totalPeriods || 1);
+
+  document.getElementById("resInvPerPeriod").textContent = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(perPeriod);
+  document.getElementById("resInvTotalPeriods").textContent = totalPeriods.toFixed(0);
+
+  // Lógica de Alocação: Priorizar ativos com maior drawdown e melhor score
+  const filtered = ativos.filter(a => selectedTickers.includes(a.ticker));
+  if (strategy !== "ALL") {
+    // Filtrar por categoria CORE/SATELLITE se necessário
+  }
+
+  // Ordenar usando o motor de priorização do CapitalManager
+  const prioritized = CapitalManager.prioritizeReinforcements(filtered.map(f => {
+    const mkt = acoesMap.get(f.ticker) || {};
+    return {
+      ...f,
+      scoreQuality: (calculateLucroMaximoScore(mkt).score || 0.5),
+      scoreValuation: (calculateLucroMaximoScore(mkt).components?.V || 0.5),
+      desvioTarget: 1.0 // Placeholder para lógica de target se implementada
+    };
+  }));
+
+  tableBody.innerHTML = prioritized.slice(0, 8).map(p => {
+    const weight = 1 / prioritized.slice(0, 8).length; // Distribuição simples por agora
+    return `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 8px 4px;"><strong>${p.ticker}</strong></td>
+        <td style="padding: 8px 4px;"><span style="font-size: 0.65rem; padding: 2px 4px; border-radius: 4px; background: var(--muted);">${p.category || "SAT"}</span></td>
+        <td style="padding: 8px 4px; text-align: right;">${(weight * 100).toFixed(0)}%</td>
+        <td style="padding: 8px 4px; text-align: right; font-weight: 700; color: var(--success);">${new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(perPeriod * weight)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  resultDiv.style.display = "block";
+}

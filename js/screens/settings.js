@@ -90,6 +90,9 @@ export function initScreen() {
   const btnCancel = document.getElementById("cfgCancel");
   const btnLogout = document.getElementById("btnLogout");
 
+  const elAvailCash = document.getElementById("cfgAvailableCash");
+  const elMonthlyBase = document.getElementById("cfgMonthlyBase");
+
   // Estratégia
   const elCoreW = document.getElementById("cfgCoreWeight");
   const elSatW = document.getElementById("cfgSatelliteWeight");
@@ -108,6 +111,8 @@ export function initScreen() {
           const d = snap.data();
           if (typeof d.coreWeight === "number") elCoreW.value = d.coreWeight;
           if (typeof d.satelliteWeight === "number") elSatW.value = d.satelliteWeight;
+          if (typeof d.availableCash === "number") elAvailCash.value = d.availableCash;
+          if (typeof d.monthlyBase === "number") elMonthlyBase.value = d.monthlyBase;
        }
     }).catch(e => console.error("Strategy load err:", e));
 
@@ -160,11 +165,8 @@ export function initScreen() {
     });
   }
 
-  if (btnPrint) {
-    btnPrint.addEventListener("click", () => {
-      window.print();
-    });
-  }
+  // O listener do btnPrint (PDF) é agora gerido dinamicamente pelo reportGenerator.js
+  // para garantir que os dados atuais são exportados via jsPDF (A4).
 
   // Botões de Perfil
   const btnProfCons = document.getElementById("btnProfCons");
@@ -211,6 +213,26 @@ export function initScreen() {
     );
     return;
   }
+
+  // --- LÓGICA DE ABAS (TABS) ---
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabSections = document.querySelectorAll(".settings-section");
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.tab;
+      
+      // Update buttons
+      tabButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      // Update sections
+      tabSections.forEach(sec => {
+        sec.classList.remove("active");
+        if (sec.id === target) sec.classList.add("active");
+      });
+    });
+  });
 
   // 🔒 Logout — liga AQUI (agora o botão existe no DOM)
   if (btnLogout) {
@@ -357,7 +379,9 @@ export function initScreen() {
       try {
         await setDoc(doc(db, "config", "strategy"), {
           coreWeight: Number(elCoreW.value),
-          satelliteWeight: Number(elSatW.value)
+          satelliteWeight: Number(elSatW.value),
+          availableCash: Number(elAvailCash.value),
+          monthlyBase: Number(elMonthlyBase.value)
         }, { merge: true });
       } catch (err) {
         console.error("Strategy save error:", err);

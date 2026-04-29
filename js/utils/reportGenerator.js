@@ -4,12 +4,25 @@ import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/fireba
 import { calculateLucroMaximoScore, parseSma } from "./scoring.js";
 
 const CRISES_HISTORY = [
-  { id: "likely_now", name: "⚠️ Cenário Provável Atual", drop: 13 },
-  { id: "geo_mod", name: "📉 Crise Geopolítica Moderada", drop: 11.5 },
-  { id: "rus_ukraine", name: "⚔️ Invasão da Ucrânia (2022)", drop: 24 },
-  { id: "covid_crash", name: "🦠 Crash COVID-19 (2020)", drop: 34 },
-  { id: "subprime", name: "📉 Crise Financeira (2008)", drop: 56 }
+  { id: "likely_now", name: "Cenário Provável Atual", drop: 13 },
+  { id: "geo_mod", name: "Crise Geopolítica Moderada", drop: 11.5 },
+  { id: "rus_ukraine", name: "Invasão da Ucrânia (2022)", drop: 24 },
+  { id: "covid_crash", name: "Crash COVID-19 (2020)", drop: 34 },
+  { id: "subprime", name: "Crise Financeira (2008)", drop: 56 }
 ];
+
+// Helper para converter imagem local em Base64 para o jsPDF
+const getBase64Image = async (path) => {
+  try {
+    const response = await fetch(path);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) { return null; }
+};
 
 export async function generatePortfolioReport() {
   const modal = document.getElementById("reportModal");
@@ -152,6 +165,27 @@ export async function generatePortfolioReport() {
     // 5. Initialize Charts
     initReportCharts(enriched);
 
+    // 6. Bind PDF Export Button (novo)
+    const btnPrint = document.getElementById("btnReportPrint");
+    if (btnPrint) {
+      // Remover listener antigo para não duplicar
+      const newBtn = btnPrint.cloneNode(true);
+      btnPrint.parentNode.replaceChild(newBtn, btnPrint);
+      newBtn.addEventListener("click", () => {
+        exportPortfolioToPDF({
+          totalInvested,
+          totalCurrentValue,
+          globalProfit,
+          globalProfitPct,
+          globalScore,
+          globalYieldPct,
+          totalYieldAnual,
+          enriched,
+          components
+        });
+      });
+    }
+
   } catch (err) {
     console.error("Erro ao gerar relatório:", err);
     content.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--destructive);">
@@ -166,6 +200,7 @@ function renderReportUI(data) {
   const { totalInvested, totalCurrentValue, globalProfit, globalProfitPct, globalScore, globalYieldPct, totalYieldAnual, enriched, components } = data;
   
   const fmtEUR = n => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
+  const fmtPct = n => (n || 0).toFixed(2) + "%";
   const profitColor = globalProfit >= 0 ? "var(--success, #22c55e)" : "var(--destructive, #ef4444)";
   
   // Sort recommendations (Top 3 scores)
@@ -174,9 +209,9 @@ function renderReportUI(data) {
     .slice(0, 3);
 
   return `
-    <div class="report-header" style="margin-bottom: 24px; text-align: center;">
-      <h1 style="font-size: 2rem; margin-bottom: 8px;">Análise de Saúde da Carteira</h1>
-      <p class="muted">Análise consolidada baseada em dados de mercado em tempo real e algoritmos de scoring.</p>
+    <div class="report-header" style="margin-bottom: 24px; text-align: center; background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm);">
+      <h1 style="font-size: 1.8rem; margin-bottom: 4px; color: var(--foreground);">Relatório Consolidado de Investimentos</h1>
+      <p class="muted" style="font-size: 0.9rem;">Gerado em ${new Date().toLocaleDateString("pt-PT")} • Baseado em algoritmos de saúde financeira</p>
     </div>
 
     <div class="report-grid">
@@ -248,159 +283,354 @@ function renderReportUI(data) {
             </p>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="report-grid">
-      <!-- Distribuição por Ativo -->
+      <!-- Gráficos de Alocação -->
       <div class="report-card">
         <h3>Alocação por Ativo</h3>
-        <div class="report-chart-container">
-          <canvas id="chartReportAssets"></canvas>
-        </div>
+        <div style="height: 250px;"><canvas id="chartReportAssets"></canvas></div>
       </div>
-
-      <!-- Distribuição por Setor -->
       <div class="report-card">
-        <h3>Diversificação Setorial</h3>
-        <div class="report-chart-container">
-          <canvas id="chartReportSectors"></canvas>
-        </div>
-      </div>
-      
-      <!-- Stress Test -->
-      <div class="report-card">
-        <h3>Stress Test (Cenários de Crise)</h3>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          ${CRISES_HISTORY.map(c => {
-            const impact = totalCurrentValue * (c.drop / 100);
-            return `
-              <div class="stress-test-item">
-                <div class="stress-test-info">
-                  <span class="stress-test-name">${c.name}</span>
-                  <span class="muted" style="font-size: 0.7rem;">Queda de ${c.drop}%</span>
-                </div>
-                <span class="stress-test-impact">-${fmtEUR(impact)}</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
+        <h3>Alocação por Setor</h3>
+        <div style="height: 250px;"><canvas id="chartReportSectors"></canvas></div>
       </div>
     </div>
 
-    <div class="report-grid">
-      <!-- Top Recomendações -->
-      <div class="report-card" style="grid-column: span 2;">
-        <h3>Insights de Investimento (Top Scores)</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-          ${recommendations.map(r => `
-            <div class="report-kpi" style="background: rgba(var(--primary-rgb, 0,0,0), 0.03); border: 1px solid var(--border);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span class="rec-ticker">${r.ticker}</span>
-                <span style="font-weight: 800; color: var(--premium);">${(r.score * 100).toFixed(0)} pts</span>
-              </div>
-              <div style="font-size: 0.8rem; line-height: 1.4;">
-                <strong>${r.nome}</strong><br>
-                <span class="muted">Posição: ${fmtEUR(r.valAtual)}</span>
-              </div>
-            </div>
-          `).join('')}
-        </div>
+    <!-- TABELA DETALHADA DE ATIVOS -->
+    <div class="report-card" style="grid-column: span 2; margin-top: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0;">Detalhamento do Portfólio</h3>
+        <span class="muted" style="font-size: 0.8rem;">${enriched.length} Ativos Ativos</span>
       </div>
-
-      <!-- Sugestões de Otimização -->
-      <div class="report-card">
-        <h3>Sugestões de Otimização</h3>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${(() => {
-            const suggestions = [];
-            
-            // 1. Draggers (Low score, high weight)
-            const draggers = enriched.filter(e => e.score < 0.45 && (e.valAtual / totalCurrentValue) > 0.1);
-            draggers.forEach(d => {
-              suggestions.push({
-                type: "danger",
-                icon: "fa-arrow-down",
-                text: `<strong>${d.ticker}</strong> está a prejudicar o score global (${(d.score*100).toFixed(0)} pts). Considera reduzir exposição.`
-              });
-            });
-
-            // 2. Opportunities (High score, low weight)
-            const opps = enriched.filter(e => e.score > 0.75 && (e.valAtual / totalCurrentValue) < 0.05);
-            opps.forEach(o => {
-              suggestions.push({
-                type: "success",
-                icon: "fa-arrow-up",
-                text: `<strong>${o.ticker}</strong> tem excelente score (${(o.score*100).toFixed(0)} pts) mas baixo peso. Ideal para reforço.`
-              });
-            });
-
-            // 3. Diversification
-            const sectors = new Map();
-            enriched.forEach(e => sectors.set(e.setor, (sectors.get(e.setor) || 0) + e.valAtual));
-            for (const [sec, val] of sectors.entries()) {
-              const ratio = val / totalCurrentValue;
-              const isGlobal = sec.toLowerCase().includes("global") || 
-                               sec.toLowerCase().includes("world") || 
-                               sec.toLowerCase().includes("múltiplos") ||
-                               sec.toLowerCase().includes("etf");
-              
-              const threshold = isGlobal ? 0.75 : 0.4;
-
-              if (ratio > threshold) {
-                suggestions.push({
-                  type: isGlobal ? "success" : "warning",
-                  icon: isGlobal ? "fa-shield-alt" : "fa-exclamation-triangle",
-                  text: isGlobal 
-                    ? `Excelente base: tens <strong>${((ratio)*100).toFixed(0)}%</strong> em ativos globais/diversificados (${sec}). Isso garante estabilidade e reduz risco setorial.`
-                    : `Concentração elevada em <strong>${sec}</strong> (${((ratio)*100).toFixed(0)}%). Considera diversificar em outros setores.`
-                });
-              }
-            }
-
-            // 4. Global Trend Alert
-            const bearishValue = enriched.filter(e => {
-              const sma200 = parseSma(e.mkt.sma200, e.precoAtual) || 0;
-              return e.precoAtual > 0 && sma200 > 0 && e.precoAtual < sma200;
-            }).reduce((sum, e) => sum + e.valAtual, 0);
-
-            if (bearishValue / totalCurrentValue > 0.5) {
-              suggestions.push({
-                type: "warning",
-                icon: "fa-chart-line",
-                text: "Mais de 50% da tua carteira está em tendência de queda (abaixo da SMA200). Evita reforçar estas posições até haver sinal de inversão."
-              });
-            }
-
-            // 5. High Performance / Profit Taking
-            const winners = enriched.filter(e => {
-              const rsi = Number(e.mkt.rsi_14 || 50);
-              const distSMA50 = e.precoAtual / (parseSma(e.mkt.sma50, e.precoAtual) || e.precoAtual);
-              return e.profitPct > 45 && (rsi > 72 || distSMA50 > 1.15);
-            });
-            winners.forEach(w => {
-              suggestions.push({
-                type: "info",
-                icon: "fa-hand-holding-usd",
-                text: `<strong>${w.ticker}</strong> está com lucros excelentes (${w.profitPct.toFixed(0)}%) mas tecnicamente 'esticado'. Considera realizar lucros parciais.`
-              });
-            });
-
-            if (suggestions.length === 0) {
-              return '<p class="muted" style="font-size: 0.85rem;">Portfólio equilibrado. Nenhuma ação crítica recomendada de momento.</p>';
-            }
-
-            return suggestions.map(s => `
-              <div style="font-size: 0.8rem; display: flex; gap: 10px; align-items: flex-start; padding: 8px; background: var(--muted); border-radius: 8px; border-left: 4px solid ${s.type === 'success' ? '#22c55e' : s.type === 'warning' ? '#f59e0b' : s.type === 'danger' ? '#ef4444' : '#3b82f6'}">
-                <i class="fas ${s.icon}" style="margin-top: 3px; color: ${s.type === 'success' ? '#22c55e' : s.type === 'warning' ? '#f59e0b' : s.type === 'danger' ? '#ef4444' : '#3b82f6'}"></i>
-                <span>${s.text}</span>
-              </div>
-            `).join('');
-          })() }
-        </div>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 800px;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+              <th style="padding: 10px 4px;">Ativo</th>
+              <th style="padding: 10px 4px;">Qtd</th>
+              <th style="padding: 10px 4px;">Preço Médio</th>
+              <th style="padding: 10px 4px;">Preço Atual</th>
+              <th style="padding: 10px 4px;">Investido</th>
+              <th style="padding: 10px 4px;">Val. Atual</th>
+              <th style="padding: 10px 4px;">Lucro/Prejuízo</th>
+              <th style="padding: 10px 4px; text-align: center;">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${enriched.sort((a, b) => b.valAtual - a.valAtual).map(p => {
+              const color = p.profit >= 0 ? "var(--success)" : "var(--destructive)";
+              const avgPrice = p.qtd > 0 ? p.investido / p.qtd : 0;
+              return `
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 10px 4px;">
+                    <div style="font-weight: 700;">${p.ticker}</div>
+                    <div class="muted" style="font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${p.nome}</div>
+                  </td>
+                  <td style="padding: 10px 4px;">${p.qtd.toFixed(4)}</td>
+                  <td style="padding: 10px 4px;">${fmtEUR(avgPrice)}</td>
+                  <td style="padding: 10px 4px;">${fmtEUR(p.precoAtual)}</td>
+                  <td style="padding: 10px 4px;">${fmtEUR(p.investido)}</td>
+                  <td style="padding: 10px 4px; font-weight: 600;">${fmtEUR(p.valAtual)}</td>
+                  <td style="padding: 10px 4px; color: ${color}; font-weight: 500;">
+                    ${fmtEUR(p.profit)}<br>
+                    <small>(${p.profitPct.toFixed(2)}%)</small>
+                  </td>
+                  <td style="padding: 10px 4px; text-align: center;">
+                    <div style="background: ${p.score > 0.7 ? 'var(--success)' : p.score > 0.4 ? 'var(--premium)' : '#ef4444'}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; display: inline-block;">
+                      ${(p.score * 100).toFixed(0)}
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
       </div>
     </div>
   `;
+}
+
+async function ensurePDFLibs() {
+  const scripts = [
+    { id: 'js-jspdf', url: "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" },
+    { id: 'js-jspdf-autotable', url: "https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" }
+  ];
+
+  for (const s of scripts) {
+    if (!document.getElementById(s.id)) {
+      await new Promise((resolve) => {
+        const sc = document.createElement("script");
+        sc.id = s.id;
+        sc.src = s.url;
+        sc.onload = resolve;
+        document.head.appendChild(sc);
+      });
+    }
+  }
+}
+
+/**
+ * Geração de PDF profissional A4 compatível
+ */
+export async function exportPortfolioToPDF(data) {
+  const { totalInvested, totalCurrentValue, globalProfit, globalProfitPct, globalScore, globalYieldPct, totalYieldAnual, enriched, components } = data;
+  
+  await ensurePDFLibs();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  let currY = margin;
+
+  const fmtEUR = n => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
+  const fmtPct = n => (n || 0).toFixed(2) + "%";
+
+  // Helpers
+  const drawLine = (y) => {
+    doc.setDrawColor(230);
+    doc.line(margin, y, pageWidth - margin, y);
+  };
+
+  // Carregar Logo
+  const logoBase64 = await getBase64Image("icons/icon-192.png");
+
+  // --- CABEÇALHO ---
+  doc.setFillColor(30, 41, 59); // Slate 800
+  doc.rect(0, 0, pageWidth, 100, 'F');
+  
+  // Linha decorativa
+  doc.setFillColor(79, 70, 229); // Premium Indigo
+  doc.rect(0, 97, pageWidth, 3, 'F');
+
+  if (logoBase64) {
+    doc.addImage(logoBase64, 'PNG', margin, 25, 45, 45);
+  }
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.text("APPFINANCE", margin + 55, 50);
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("RELATÓRIO DE PERFORMANCE & ESTRATÉGIA", margin + 55, 65);
+  
+  doc.setTextColor(200);
+  doc.setFontSize(9);
+  doc.text(`Data: ${new Date().toLocaleString("pt-PT")}`, margin, 85);
+  doc.text(`Relatório Gerado dinamicamente via Algoritmos de IA`, pageWidth - margin, 85, { align: "right" });
+  
+  currY = 130;
+
+  // --- RESUMO EXECUTIVO (KPIs) ---
+  doc.setTextColor(50, 50, 50);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("1. Resumo Executivo", margin, currY);
+  currY += 20;
+  drawLine(currY);
+  currY += 30;
+
+  // Desenhar cartões de KPI
+  const kpis = [
+    { label: "Património Total", val: fmtEUR(totalCurrentValue) },
+    { label: "Capital Investido", val: fmtEUR(totalInvested) },
+    { label: "Lucro/Prejuízo", val: `${fmtEUR(globalProfit)} (${fmtPct(globalProfitPct)})`, color: globalProfit >= 0 ? [34, 197, 94] : [239, 68, 68] },
+    { label: "Health Score", val: `${globalScore.toFixed(0)}/100`, color: [79, 70, 229] }
+  ];
+
+  let kpiX = margin;
+  const kpiWidth = (pageWidth - 2 * margin) / 4;
+  kpis.forEach(k => {
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.setFont("helvetica", "normal");
+    doc.text(k.label, kpiX, currY);
+    
+    doc.setFontSize(11);
+    if (k.color) doc.setTextColor(k.color[0], k.color[1], k.color[2]);
+    else doc.setTextColor(0);
+    doc.setFont("helvetica", "bold");
+    doc.text(k.val, kpiX, currY + 15);
+    kpiX += kpiWidth;
+  });
+
+  currY += 50;
+
+  // --- DIAGNÓSTICO DO SCORE ---
+  doc.setTextColor(50, 50, 50);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("2. Diagnóstico do Score Global", margin, currY);
+  currY += 20;
+  drawLine(currY);
+  currY += 25;
+
+  const scoreItems = [
+    { label: "Crescimento & EPS (R)", val: components.R },
+    { label: "Valuation & P/E (V)", val: components.V },
+    { label: "Tendência Técnica (T)", val: components.T },
+    { label: "Dividendos (D)", val: components.D },
+    { label: "Eficiência (E)", val: components.E },
+    { label: "Solvência (S)", val: components.S }
+  ];
+
+  scoreItems.forEach((it, idx) => {
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const x = margin + col * ((pageWidth - 2 * margin) / 2 + 10);
+    const y = currY + row * 35;
+
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    doc.setFont("helvetica", "normal");
+    doc.text(it.label, x, y);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${it.val.toFixed(0)}%`, x + 160, y);
+
+    // Barra de progresso
+    doc.setFillColor(240);
+    doc.rect(x, y + 5, 180, 6, 'F');
+    const color = it.val > 70 ? [34, 197, 94] : it.val > 40 ? [79, 70, 229] : [239, 68, 68];
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.rect(x, y + 5, (it.val / 100) * 180, 6, 'F');
+  });
+
+  currY += 120;
+
+  // --- GRÁFICOS (Captura de Canvas) ---
+  doc.setFontSize(14);
+  doc.setTextColor(50);
+  doc.setFont("helvetica", "bold");
+  doc.text("3. Alocação e Diversificação", margin, currY);
+  currY += 20;
+  drawLine(currY);
+  currY += 20;
+
+  try {
+    const canvasAssets = document.getElementById("chartReportAssets");
+    const canvasSectors = document.getElementById("chartReportSectors");
+    
+    if (canvasAssets) {
+      const imgData = canvasAssets.toDataURL("image/png");
+      // Formato quadrado para garantir círculo perfeito
+      doc.addImage(imgData, 'PNG', margin, currY, 230, 230);
+    }
+    if (canvasSectors) {
+      const imgData = canvasSectors.toDataURL("image/png");
+      doc.addImage(imgData, 'PNG', margin + 260, currY, 230, 230);
+    }
+  } catch (e) {
+    doc.setFontSize(10);
+    doc.text("[Gráficos não disponíveis no PDF]", margin, currY + 20);
+  }
+
+  currY += 240;
+
+  // --- STRESS TEST ---
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("4. Stress Test (Simulação de Crises)", margin, currY);
+  currY += 20;
+  drawLine(currY);
+  currY += 25;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  
+  CRISES_HISTORY.forEach((c, i) => {
+    const impact = totalCurrentValue * (c.drop / 100);
+    const y = currY + i * 22;
+    doc.setTextColor(50);
+    doc.text(`> ${c.name}`, margin, y);
+    doc.setTextColor(150);
+    doc.text(`${c.drop}%`, margin + 220, y);
+    doc.setTextColor(239, 68, 68);
+    doc.setFont("helvetica", "bold");
+    doc.text(`-${fmtEUR(impact)}`, pageWidth - margin, y, { align: "right" });
+    doc.setFont("helvetica", "normal");
+  });
+
+  // --- RODAPÉ DA PRIMEIRA PÁGINA ---
+  doc.setFontSize(8);
+  doc.setTextColor(150);
+  doc.text(`Página 1 de 2`, pageWidth / 2, pageHeight - 20, { align: "center" });
+
+  // --- SEGUNDA PÁGINA (TABELA DETALHADA) ---
+  doc.addPage();
+  currY = margin;
+
+  doc.setTextColor(50, 50, 50);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("5. Detalhamento do Portfólio (Tabela Completa)", margin, currY);
+  currY += 20;
+  drawLine(currY);
+  currY += 15;
+
+  const tableData = enriched.sort((a, b) => b.valAtual - a.valAtual).map(p => [
+    { content: `${p.ticker}\n${p.nome.substring(0, 25)}`, styles: { fontStyle: 'bold' } },
+    p.qtd.toFixed(4),
+    fmtEUR(p.investido / p.qtd),
+    fmtEUR(p.precoAtual),
+    fmtEUR(p.investido),
+    fmtEUR(p.valAtual),
+    { content: `${fmtEUR(p.profit)}\n(${p.profitPct.toFixed(1)}%)`, styles: { textColor: p.profit >= 0 ? [34, 197, 94] : [239, 68, 68] } },
+    { content: (p.score * 100).toFixed(0), styles: { halign: 'center', fontStyle: 'bold', textColor: p.score > 0.7 ? [34, 197, 94] : [79, 70, 229] } }
+  ]);
+
+  doc.autoTable({
+    startY: currY,
+    head: [['Ativo / Empresa', 'Qtd', 'P. Médio', 'P. Atual', 'Investido', 'Val. Atual', 'Lucro/Prej.', 'Score']],
+    body: tableData,
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 8, cellPadding: 5 },
+    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: {
+      0: { cellWidth: 100 },
+      7: { cellWidth: 40 }
+    }
+  });
+
+  // Insights finais (depois da tabela)
+  currY = doc.lastAutoTable.finalY + 30;
+  if (currY > pageHeight - 100) {
+    doc.addPage();
+    currY = margin;
+  }
+
+  doc.setTextColor(50);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("6. Notas de Otimização Algorítmica", margin, currY);
+  currY += 20;
+  drawLine(currY);
+  currY += 20;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(80);
+  
+  const notes = [
+    "• O Portfolio Health Score é ajustado pelo risco e volatilidade histórica dos ativos.",
+    "• Ativos em tendência de queda (abaixo da SMA200) penalizam a pontuação técnica.",
+    "• Diversificação setorial equilibrada reduz a exposição a riscos sistémicos.",
+    "• Este relatório é gerado de forma dinâmica com dados de fecho do mercado mais recentes."
+  ];
+
+  notes.forEach(n => {
+    doc.text(n, margin, currY);
+    currY += 15;
+  });
+
+  // RODAPÉ FINAL
+  doc.setFontSize(8);
+  doc.setTextColor(150);
+  doc.text(`Relatório Gerado por Antigravity AI • APPFinance PWA • Página 2 de 2`, pageWidth / 2, pageHeight - 20, { align: "center" });
+
+  // Guardar PDF
+  doc.save(`APPFinance_Relatorio_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 function initReportCharts(enriched) {
@@ -443,14 +673,14 @@ function initReportCharts(enriched) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: { 
-          position: 'right', 
+          position: 'bottom', 
           labels: { 
-            boxWidth: 10, 
-            font: { size: 10 },
-            color: 'var(--foreground)'
+            boxWidth: 8, 
+            font: { size: 9 },
+            color: '#444'
           } 
         }
       }
@@ -469,14 +699,14 @@ function initReportCharts(enriched) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       plugins: {
         legend: { 
-          position: 'right', 
+          position: 'bottom', 
           labels: { 
-            boxWidth: 10, 
-            font: { size: 10 },
-            color: 'var(--foreground)'
+            boxWidth: 8, 
+            font: { size: 9 },
+            color: '#444'
           } 
         }
       }
