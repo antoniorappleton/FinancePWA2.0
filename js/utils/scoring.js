@@ -65,7 +65,30 @@ export const SCORING_CFG = {
     Energia: { lo: 5, hi: 14 },
     Imobiliário: { lo: 6, hi: 18 },
   },
+  TYPE_WEIGHTS: {
+    stock: { R: 0.1, V: 0.25, T: 0.15, D: 0.15, E: 0.25, S: 0.1 },
+    etf: { R: 0.2, V: 0.1, T: 0.25, D: 0.25, E: 0.1, S: 0.1 },
+    crypto: { R: 0.4, V: 0, T: 0.5, D: 0, E: 0, S: 0.1 },
+  }
 };
+
+/**
+ * Detecta o tipo de ativo (stock, etf, crypto) com base em várias fontes.
+ */
+export function getAssetType(ticker, info, grupo) {
+  const t = String(ticker || "").toUpperCase();
+  const s = String(info?.setor || info?.sector || grupo?.setor || "").toLowerCase();
+  const m = String(info?.mercado || info?.market || grupo?.mercado || "").toLowerCase();
+  const n = String(info?.nome || grupo?.nome || "").toUpperCase();
+
+  if (s.includes("cripto") || s.includes("crypto") || m.includes("cripto") || m.includes("crypto") || m.includes("binance") || m.includes("coinbase")) {
+    return "crypto";
+  }
+  if (s.includes("etf") || n.includes(" ETF") || t.endsWith(".EU") || t.endsWith(".DE") || t.includes("ISHRS") || t.includes("VANGUARD") || t.includes("LYXOR") || t.includes("AMUNDI") || t.includes("INVESCO") || t.includes("XTRACKERS") || t.includes("ISHARES")) {
+    return "etf";
+  }
+  return "stock";
+}
 
 function asRate(x) {
   const n = Number(x);
@@ -317,7 +340,26 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const nd_eb = eb > 0 ? nd / eb : null;
   const S = scoreSolvency(cr, de, nd_eb);
 
-  const W = getUserWeights() || SCORING_CFG.WEIGHTS;
+  const W_BASE = getUserWeights() || SCORING_CFG.WEIGHTS;
+  const assetType = getAssetType(acao.ticker, acao);
+  const W_TYPE = SCORING_CFG.TYPE_WEIGHTS[assetType] || SCORING_CFG.TYPE_WEIGHTS.stock;
+
+  // Mesclar pesos: Se o utilizador definiu pesos personalizados, tentamos respeitar a proporção, 
+  // mas zeramos o que não faz sentido para o tipo (ex: V e E em Crypto).
+  const W = { ...W_TYPE };
+  if (getUserWeights()) {
+    // Se houver pesos do user, adaptamos os pesos do tipo para manter a intenção do user onde aplicável
+    Object.keys(W).forEach(k => {
+      if (W_TYPE[k] === 0) W[k] = 0; // Forçar zero se o tipo não suporta
+      else if (W_BASE[k] !== undefined) {
+        // Ajuste proporcional simples (heurística)
+        W[k] = W_BASE[k];
+      }
+    });
+    // Re-normalizar pesos para somarem 1
+    const sum = Object.values(W).reduce((a, b) => a + b, 0) || 1;
+    Object.keys(W).forEach(k => W[k] /= sum);
+  }
 
   const vol = Number.isFinite(acao.volatility) ? Math.max(0, Math.min(1, acao.volatility)) : proxyVol(acao);
   const riskAdj = 1 / (1 + 0.6 * vol); // Slightly less aggressive risk damping

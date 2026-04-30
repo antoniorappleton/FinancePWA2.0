@@ -21,7 +21,7 @@ import {
   deleteField,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-import { parseSma } from "../utils/scoring.js";
+import { parseSma, getAssetType } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 
 // ===============================
@@ -1003,9 +1003,18 @@ function wireQuickActions(gruposArr) {
     }
 
     // BLOCO 7 — METRICAS SECUNDARIAS (colapsavel)
+    const assetType = getAssetType(g.ticker, null, g);
     const yPctModal = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-    $(`#detYield`).textContent  = yPctModal;
-    $(`#detPE`).textContent     = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
+    const elYield = $(`#detYield`);
+    if (elYield) {
+      elYield.textContent = yPctModal;
+      elYield.parentElement.style.display = assetType === "crypto" ? "none" : "flex";
+    }
+    const elPE = $(`#detPE`);
+    if (elPE) {
+      elPE.textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
+      elPE.parentElement.style.display = (assetType === "crypto" || assetType === "etf") ? "none" : "flex";
+    }
     $(`#detSMA50`).textContent  = formatSmaDelta(g._sma50, precoAtual);
     $(`#detSMA200`).textContent = formatSmaDelta(s200, precoAtual);
     const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
@@ -1976,7 +1985,6 @@ function wireQuickActions(gruposArr) {
         if (fltState.sort === "tp_dist") return a._distTP - b._distTP;
         return a.ticker.localeCompare(b.ticker);
       });
-
       const finalHtml = filtered
         .map((g) => {
           const info = infoMap.get(g.ticker) || {};
@@ -1993,8 +2001,18 @@ function wireQuickActions(gruposArr) {
       wireInvPlan(gruposArr, infoMap);
     } catch (e) {
       console.error("Erro ao processar atividade:", e);
-      cont.innerHTML = `<p class="muted">Não foi possível carregar a lista. Detalhe: ${e.message}</p>`;
     }
+  }
+
+  async function getHistoricalData(ticker) {
+    const out = new Map();
+    const q = query(collection(db, "historico"), where("ticker", "==", ticker));
+    const snap = await getDocs(q);
+    snap.forEach((d) => {
+      const x = d.data();
+      if (x.ticker) out.set(String(x.ticker).toUpperCase(), x);
+    });
+    return out;
   }
 
   function tp2NecessarioCalc(g) {
@@ -2014,8 +2032,6 @@ function wireQuickActions(gruposArr) {
     const estadoOp = g._estadoOp || "ESPERAR";
     const tp2 = tp2Necessario || precoMedio * 1.15;
     const s200 = g._sma200;
-
-    const isBelowSMA200 = precoAtual && s200 && precoAtual < s200;
     const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
 
     const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
@@ -2046,11 +2062,25 @@ function wireQuickActions(gruposArr) {
     const objetivoFin = g.objetivo || 0;
     const lucroProgress = objetivoFin > 0 ? (lucroAtual / objetivoFin) * 100 : 0;
     const safeProgress = Math.min(100, Math.max(0, lucroProgress));
-    // Verde se atingido, azul se positivo, vermelho se negativo
     const progressColor = lucroAtual >= objetivoFin ? "var(--success)" : (lucroAtual > 0 ? "#22c55e" : "#ef4444");
 
+    const assetType = getAssetType(g.ticker, info, g);
+    let typeLabel = "AÇÃO";
+    let typeColor = "var(--primary)";
+    let typeIcon = "fa-briefcase";
+
+    if (assetType === "etf") {
+      typeLabel = "ETF";
+      typeColor = "#8b5cf6"; // Violet
+      typeIcon = "fa-layer-group";
+    } else if (assetType === "crypto") {
+      typeLabel = "CRYPTO";
+      typeColor = "#f59e0b"; // Amber
+      typeIcon = "fa-bitcoin-sign";
+    }
+
     return `
-    <div class="asset-card">
+    <div class="asset-card" style="border-top: 3px solid ${typeColor}80;">
       <!-- HEADER: Ticker e Preço -->
       <div class="asset-header" data-toggle-card data-ticker="${g.ticker}">
         <div class="asset-info-main">
@@ -2058,14 +2088,14 @@ function wireQuickActions(gruposArr) {
             ${estadoOp}
           </div>
           <div class="asset-ticker-box">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; flex-wrap: wrap;">
               <span class="asset-ticker-symbol">${g.ticker}</span>
+              <span class="type-badge" style="background: ${typeColor}15; color: ${typeColor}; border: 1px solid ${typeColor}30; font-size: 0.6rem; padding: 1px 6px; border-radius: 4px; font-weight: 800; display: flex; align-items: center; gap: 3px;">
+                <i class="fas ${typeIcon}" style="font-size: 0.55rem;"></i> ${typeLabel}
+              </span>
               ${sInfo ? `<span class="strategy-badge strategy-badge--${sInfo.category.toLowerCase()}">${sInfo.category}</span>` : ''}
             </div>
             <span class="asset-name" title="${g.nome}">${g.nome}</span>
-
-
-
           </div>
         </div>
         
@@ -2125,14 +2155,18 @@ function wireQuickActions(gruposArr) {
           <span class="metric-label">Preço Médio</span>
           <span class="metric-value">${fmtEUR.format(precoMedio)}</span>
         </div>
+        ${assetType !== "crypto" ? `
         <div class="metric-item">
           <span class="metric-label">Yield</span>
           <span class="metric-value">${yPct}</span>
         </div>
+        ` : ""}
+        ${assetType === "stock" ? `
         <div class="metric-item">
           <span class="metric-label">P/E Ratio</span>
           <span class="metric-value">${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</span>
         </div>
+        ` : ""}
         <div class="metric-item">
           <span class="metric-label">Rácio R/R</span>
           <span class="metric-value">
@@ -2174,7 +2208,7 @@ function wireQuickActions(gruposArr) {
         </button>
       </div>
     </div>`;
-}
+  }
 
   // ==========================================
   // 🚀 Planeador de Investimento IA (DCA)
