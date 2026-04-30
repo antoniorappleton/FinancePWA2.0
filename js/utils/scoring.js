@@ -67,8 +67,8 @@ export const SCORING_CFG = {
   },
   TYPE_WEIGHTS: {
     stock: { R: 0.1, V: 0.25, T: 0.15, D: 0.15, E: 0.25, S: 0.1 },
-    etf: { R: 0.3, V: 0.05, T: 0.35, D: 0.15, E: 0.05, S: 0.1 },
-    crypto: { R: 0.45, V: 0, T: 0.45, D: 0, E: 0, S: 0.1 },
+    etf: { R: 0, V: 0, T: 0.6, D: 0.2, E: 0, S: 0.2 },
+    crypto: { R: 0.4, V: 0, T: 0.5, D: 0, E: 0, S: 0.1 },
   }
 };
 
