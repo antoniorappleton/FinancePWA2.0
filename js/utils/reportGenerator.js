@@ -11,6 +11,56 @@ const CRISES_HISTORY = [
   { id: "subprime", name: "Crise Financeira (2008)", drop: 56 }
 ];
 
+function generateSmartDiagnosis(enriched, totalCurrentValue) {
+  const cats = { CORE: 0, SATELLITE: 0, CRYPTO: 0, OTHER: 0 };
+  const sectors = {};
+  let etfCount = 0;
+
+  enriched.forEach(p => {
+    const cat = p.category === "CORE" ? "CORE" : (p.category === "SATELLITE" || p.category === "SATÉLITE") ? "SATELLITE" : p.category === "CRYPTO" ? "CRYPTO" : "OTHER";
+    cats[cat] += p.valAtual;
+    
+    const sector = p.setor || "Outros";
+    sectors[sector] = (sectors[sector] || 0) + p.valAtual;
+
+    const type = getAssetType(p.ticker, p.mkt);
+    if (type === "etf") etfCount++;
+  });
+
+  const corePct = (cats.CORE / totalCurrentValue) * 100;
+  const satPct = (cats.SATELLITE / totalCurrentValue) * 100;
+  const cryPct = (cats.CRYPTO / totalCurrentValue) * 100;
+
+  const forces = [];
+  const risks = [];
+  const actions = [];
+
+  // Avaliação de Estrutura
+  if (corePct >= 60) forces.push("Base 'Core' sólida e bem estruturada.");
+  else risks.push(`A base 'Core' (${corePct.toFixed(1)}%) está abaixo do ideal (60-80%).`);
+
+  if (satPct > 40) risks.push(`Exposição elevada a ativos 'Satélite' (${satPct.toFixed(1)}%), aumentando a volatilidade.`);
+  
+  if (cryPct > 15) risks.push(`Peso excessivo em Criptoativos (${cryPct.toFixed(1)}%). Recomenda-se teto de 10%.`);
+
+  // Avaliação de Concentração
+  Object.entries(sectors).forEach(([s, val]) => {
+    const p = (val / totalCurrentValue) * 100;
+    if (p > 30) risks.push(`Concentração elevada no setor ${s} (${p.toFixed(1)}%).`);
+  });
+
+  if (etfCount > 5 && totalCurrentValue < 10000) {
+    actions.push("Simplificar: tens muitos ETFs para o volume atual. Considera consolidar temáticos.");
+  }
+
+  // Ações Sugeridas
+  if (corePct < 65) actions.push("Priorizar próximos aportes no CORE (ex: VWCE) para equilibrar o risco.");
+  if (satPct > 35) actions.push("Evitar novos ativos temáticos; focar em consolidar os existentes.");
+  if (cryPct > 10) actions.push("Rebalancear lucros de Cripto para ativos Core.");
+
+  return { corePct, satPct, cryPct, forces, risks, actions };
+}
+
 const getBase64Image = async (path) => {
   try {
     const response = await fetch(path);
@@ -110,11 +160,14 @@ export async function generatePortfolioReport() {
       components[k] = totalCurrentValue > 0 ? (componentsSum[k] / totalCurrentValue) * 100 : 0;
     });
 
+    const diagnosis = generateSmartDiagnosis(enriched, totalCurrentValue);
+
     content.innerHTML = renderReportUI({
       totalInvested, totalCurrentValue, 
       globalProfit: totalCurrentValue - totalInvested,
       globalProfitPct: totalInvested > 0 ? ((totalCurrentValue - totalInvested)/totalInvested)*100 : 0,
-      globalScore, components, enriched
+      globalScore, components, enriched,
+      diagnosis
     });
 
     initReportCharts(enriched);
@@ -128,7 +181,8 @@ export async function generatePortfolioReport() {
           totalInvested, totalCurrentValue, 
           globalProfit: totalCurrentValue - totalInvested,
           globalProfitPct: totalInvested > 0 ? ((totalCurrentValue - totalInvested)/totalInvested)*100 : 0,
-          globalScore, components, enriched
+          globalScore, components, enriched,
+          diagnosis
         });
       });
     }
@@ -213,8 +267,32 @@ function renderReportUI(data) {
         </div>
       </div>
 
+      <div class="report-card" style="border-left: 4px solid #4f46e5; background: #fdfdff;">
+        <div class="report-section-title"><i class="fas fa-brain"></i> 7. Diagnóstico Estratégico AI</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+          <div>
+            <h4 style="color:#22c55e; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-check-circle"></i> Pontos Fortes</h4>
+            <ul style="font-size: 0.8rem; padding-left: 18px; margin: 0; color: #475569;">
+              ${data.diagnosis.forces.map(f => `<li>${f}</li>`).join('')}
+            </ul>
+          </div>
+          <div>
+            <h4 style="color:#ef4444; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle"></i> Riscos Detetados</h4>
+            <ul style="font-size: 0.8rem; padding-left: 18px; margin: 0; color: #475569;">
+              ${data.diagnosis.risks.map(r => `<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+          <div>
+            <h4 style="color:#4f46e5; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-lightbulb"></i> Ações Recomendadas</h4>
+            <ul style="font-size: 0.8rem; padding-left: 18px; margin: 0; color: #475569;">
+              ${data.diagnosis.actions.map(a => `<li style="font-weight:600;">${a}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <div class="report-card">
-        <div class="report-section-title"><i class="fas fa-table"></i> 6. Detalhamento do Portfólio</div>
+        <div class="report-section-title"><i class="fas fa-table"></i> 8. Detalhamento do Portfólio</div>
         <div style="overflow-x: auto;">
           <table>
             <thead><tr><th>Ativo</th><th>Qtd</th><th>P. Médio</th><th>Atual</th><th>Lucro/Prej.</th><th>Score</th></tr></thead>
@@ -357,6 +435,24 @@ async function exportPortfolioToPDF(data) {
     doc.text(`-${fmtEUR(totalCurrentValue * c.drop / 100)}`, pageWidth - margin, y, { align: "right" });
     doc.setFont("helvetica", "normal");
   });
+
+  // --- DIAGNÓSTICO ESTRATÉGICO NO PDF ---
+  currY += 130;
+  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(79, 70, 229);
+  doc.text("4. Diagnóstico Estratégico AI", margin, currY);
+  currY += 10; drawLine(currY); currY += 25;
+  
+  doc.setFontSize(9); doc.setTextColor(30); doc.setFont("helvetica", "bold");
+  doc.text("Riscos e Sobreposições:", margin, currY);
+  doc.setFont("helvetica", "normal"); doc.setTextColor(80);
+  data.diagnosis.risks.forEach(r => { doc.text(`- ${r}`, margin + 10, currY + 12); currY += 12; });
+
+  currY += 15;
+  doc.setFontSize(9); doc.setTextColor(79, 70, 229); doc.setFont("helvetica", "bold");
+  doc.text("Plano de Ação Sugerido:", margin, currY);
+  doc.setFont("helvetica", "bold"); doc.setTextColor(30);
+  data.diagnosis.actions.forEach(a => { doc.text(`> ${a}`, margin + 10, currY + 12); currY += 12; });
+
   doc.setFontSize(8); doc.setTextColor(180); doc.text("Página 1 de 3", pageWidth/2, pageHeight - 20, { align: "center" });
 
   // --- PÁGINA 2: Gráficos ---
