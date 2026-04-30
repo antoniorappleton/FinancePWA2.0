@@ -34,6 +34,36 @@ function generateSmartDiagnosis(enriched, totalCurrentValue) {
   return { corePct, satPct, cryPct, forces, risks, actions };
 }
 
+function calculatePortfolioStrategicScore(enriched, diagnosis, totalValue) {
+  let strategicScore = 80; // Base neutra para um portfólio equilibrado
+
+  // 1. Avaliação de Core (O coração da estratégia)
+  if (diagnosis.corePct >= 70) strategicScore += 15;
+  else if (diagnosis.corePct >= 50) strategicScore += 5;
+  else strategicScore -= 20;
+
+  // 2. Penalização por Cripto Excessiva
+  if (diagnosis.cryPct > 15) strategicScore -= 20;
+  else if (diagnosis.cryPct > 10) strategicScore -= 5;
+
+  // 3. Penalização por Satélites / Temáticos excessivos
+  if (diagnosis.satPct > 40) strategicScore -= 15;
+
+  // 4. Concentração em ativos individuais
+  const topAsset = enriched.sort((a,b) => b.valAtual - a.valAtual)[0];
+  if (topAsset && (topAsset.valAtual / totalValue) > 0.35) strategicScore -= 10;
+
+  // 5. Penalização por sobreposição (Simples: muitos ETFs)
+  const etfCount = enriched.filter(p => getAssetType(p.ticker, p.mkt) === "etf").length;
+  if (etfCount > 8) strategicScore -= 10;
+
+  return clamp(strategicScore, 0, 100);
+}
+
+function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
+}
+
 const getBase64Image = async (path) => {
   try {
     const response = await fetch(path);
@@ -69,31 +99,55 @@ export async function generatePortfolioReport() {
     const activePositions = Array.from(grupos.values()).filter(g => g.qtd > 0.0001);
     let totalInvested = 0, totalCurrentValue = 0, totalScoreWeight = 0;
     let componentsSum = { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 };
+    let weightsSum = { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 };
 
     const enriched = activePositions.map(p => {
       const mkt = acoesMap.get(p.ticker) || {};
       const precoAtual = Number(mkt.valorStock || mkt.price || 0), valAtual = p.qtd * precoAtual, profit = valAtual - p.investido;
       const scoreObj = calculateLucroMaximoScore(mkt), score = scoreObj.score || 0.5;
+      
       totalInvested += p.investido; totalCurrentValue += valAtual; totalScoreWeight += score * valAtual;
-      Object.keys(componentsSum).forEach(k => { componentsSum[k] += (scoreObj.components[k] || 0) * valAtual; });
+      
+      Object.keys(componentsSum).forEach(k => { 
+        componentsSum[k] += (scoreObj.components[k] || 0) * valAtual; 
+        weightsSum[k] += (scoreObj.finalWeights[k] || 0) * valAtual;
+      });
       const stratDoc = stratSnap.exists() ? stratSnap.data() : { tickers: {} };
       const dynTickers = stratDoc.tickers || {};
       let category = "NÃO DEFINIDA"; if (dynTickers[p.ticker] && dynTickers[p.ticker].category !== "NONE") category = dynTickers[p.ticker].category;
       return { ...p, precoAtual, valAtual, profit, profitPct: p.investido > 0 ? (profit/p.investido)*100 : 0, score, category: category.toUpperCase(), mkt };
     });
     const globalScore = totalCurrentValue > 0 ? (totalScoreWeight / totalCurrentValue) * 100 : 0;
-    const components = {}; Object.keys(componentsSum).forEach(k => { components[k] = totalCurrentValue > 0 ? (componentsSum[k] / totalCurrentValue) * 100 : 0; });
+    const components = {}; 
+    Object.keys(componentsSum).forEach(k => { 
+      // Só incluímos se o peso desse componente no portfólio for superior a 1%
+      if (weightsSum[k] / totalCurrentValue > 0.01) {
+        components[k] = totalCurrentValue > 0 ? (componentsSum[k] / totalCurrentValue) * 100 : 0; 
+      }
+    });
     const diagnosis = generateSmartDiagnosis(enriched, totalCurrentValue);
+    const strategicScore = calculatePortfolioStrategicScore(enriched, diagnosis, totalCurrentValue);
+    
+    // O Score Final é 70% Qualidade dos Ativos + 30% Saúde da Estratégia
+    const weightedAssetScore = totalCurrentValue > 0 ? (totalScoreWeight / totalCurrentValue) * 100 : 0;
+    const finalHealthScore = (weightedAssetScore * 0.6) + (strategicScore * 0.4);
 
     const PILLAR_NAMES = { R: "Crescimento (R)", V: "Valuation (V)", T: "Tendência (T)", D: "Dividendos (D)", E: "Eficiência (E)", S: "Solvência (S)" };
 
-    content.innerHTML = renderReportUI({ totalInvested, totalCurrentValue, globalProfit: totalCurrentValue - totalInvested, globalProfitPct: totalInvested > 0 ? ((totalCurrentValue - totalInvested)/totalInvested)*100 : 0, globalScore, components, enriched, diagnosis, pillarNames: PILLAR_NAMES });
+    content.innerHTML = renderReportUI({ 
+      totalInvested, totalCurrentValue, 
+      globalProfit: totalCurrentValue - totalInvested, 
+      globalProfitPct: totalInvested > 0 ? ((totalCurrentValue - totalInvested)/totalInvested)*100 : 0, 
+      globalScore: finalHealthScore, 
+      components, enriched, diagnosis, pillarNames: PILLAR_NAMES,
+      originalScore: weightedAssetScore
+    });
     initReportCharts(enriched);
 
     const btnPrint = document.getElementById("btnReportPrint");
     if (btnPrint) {
       const newBtn = btnPrint.cloneNode(true); btnPrint.parentNode.replaceChild(newBtn, btnPrint);
-      newBtn.addEventListener("click", () => { exportPortfolioToPDF({ totalInvested, totalCurrentValue, globalProfit: totalCurrentValue - totalInvested, globalProfitPct: totalInvested > 0 ? ((totalCurrentValue - totalInvested)/totalInvested)*100 : 0, globalScore, components, enriched, diagnosis, pillarNames: PILLAR_NAMES }); });
+      newBtn.addEventListener("click", () => { exportPortfolioToPDF({ totalInvested, totalCurrentValue, globalProfit: totalCurrentValue - totalInvested, globalProfitPct: totalInvested > 0 ? ((totalCurrentValue - totalInvested)/totalInvested)*100 : 0, globalScore: finalHealthScore, components, enriched, diagnosis, pillarNames: PILLAR_NAMES }); });
     }
   } catch (err) { console.error(err); content.innerHTML = `<div style="padding:40px;text-align:center;color:#ef4444;">Erro: ${err.message}</div>`; }
 }
@@ -129,7 +183,10 @@ function renderReportUI(data) {
           <div class="kpi-item"><span class="kpi-l">Património</span><span class="kpi-v">${fmtEUR(totalCurrentValue)}</span></div>
           <div class="kpi-item"><span class="kpi-l">Investido</span><span class="kpi-v">${fmtEUR(totalInvested)}</span></div>
           <div class="kpi-item"><span class="kpi-l">P/L Total</span><span class="kpi-v" style="color:${globalProfit>=0?'#22c55e':'#ef4444'}">${fmtEUR(globalProfit)} (${globalProfitPct.toFixed(1)}%)</span></div>
-          <div class="kpi-item"><span class="kpi-l">Health Score</span><span class="kpi-v">${globalScore.toFixed(0)}/100</span></div>
+          <div class="kpi-item" style="border-color:#4f46e5; background: rgba(79, 70, 229, 0.05);">
+            <span class="kpi-l" style="color:#4f46e5;">Health Score</span>
+            <span class="kpi-v" style="color:#4f46e5;">${data.globalScore.toFixed(0)}/100</span>
+          </div>
         </div>
       </div>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
@@ -190,7 +247,7 @@ async function exportPortfolioToPDF(data) {
   doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(200); doc.text(`Relatório de Performance • ${new Date().toLocaleDateString("pt-PT")}`, margin + 65, 75);
 
   currY = 130; doc.setFontSize(12); doc.setTextColor(30); doc.setFont("helvetica", "bold"); doc.text("1. Resumo Executivo", margin, currY); currY += 10; line(currY); currY += 25;
-  const kpis = [ { l: "PATRIMÓNIO", v: fmtEUR(totalCurrentValue) }, { l: "INVESTIDO", v: fmtEUR(totalInvested) }, { l: "LUCRO TOTAL", v: `${fmtEUR(globalProfit)} (${globalProfitPct.toFixed(1)}%)`, c: globalProfit>=0?[34,197,94]:[239,68,68] }, { l: "HEALTH SCORE", v: `${globalScore.toFixed(0)}/100` } ];
+  const kpis = [ { l: "PATRIMÓNIO", v: fmtEUR(totalCurrentValue) }, { l: "INVESTIDO", v: fmtEUR(totalInvested) }, { l: "LUCRO TOTAL", v: `${fmtEUR(globalProfit)} (${globalProfitPct.toFixed(1)}%)`, c: globalProfit>=0?[34,197,94]:[239,68,68] }, { l: "HEALTH SCORE", v: `${globalScore.toFixed(0)}/100`, c: [79, 70, 229] } ];
   let kX = margin; kpis.forEach(k => { doc.setFontSize(7); doc.setTextColor(120); doc.text(k.l, kX, currY); if (k.c) doc.setTextColor(k.c[0], k.c[1], k.c[2]); else doc.setTextColor(30); doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text(k.v, kX, currY + 12); kX += 130; });
 
   currY += 60; doc.setFontSize(12); doc.setTextColor(30); doc.text("2. Diagnóstico & Stress Test", margin, currY); currY += 10; line(currY); currY += 25;

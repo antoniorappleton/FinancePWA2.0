@@ -272,7 +272,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const eps5y = Number(acao.eps_next_5y || 0);
   
   const R_Eps = scoreEPS(epsYoY, epsNextY, eps5y);
-  const R = R_Price * 0.4 + R_Eps * 0.6;
+  let R = R_Price * 0.4 + R_Eps * 0.6;
 
   // Valuation refined
   const pe = Number(acao.pe || acao.p_e || 0);
@@ -282,7 +282,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const V_PE = scorePE(pe);
   const V_PEG = scoreGeneric(peg, infoToConfig(INDICATOR_INFO.peg));
   const V_FCF = scoreGeneric(pfcf, infoToConfig(INDICATOR_INFO.p_fcf));
-  const V = V_PE * 0.5 + V_PEG * 0.3 + V_FCF * 0.2;
+  let V = V_PE * 0.5 + V_PEG * 0.3 + V_FCF * 0.2;
 
   // Tendência
   const p = Number(acao.valorStock || acao.price || 0);
@@ -338,7 +338,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const eb = Number(acao.ebitda || 0);
   const nd = Number(acao.dividaLiquida || 0);
   const nd_eb = eb > 0 ? nd / eb : null;
-  const S = scoreSolvency(cr, de, nd_eb);
+  let S = scoreSolvency(cr, de, nd_eb);
 
   const W_BASE = getUserWeights() || SCORING_CFG.WEIGHTS;
   const assetType = getAssetType(acao.ticker, acao);
@@ -367,20 +367,28 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
   const tickerStr = String(acao.ticker || "").toUpperCase();
   const nomeStr = String(acao.nome || "").toUpperCase();
   const isAcc = tickerStr.includes("ACC") || nomeStr.includes("ACC") || nomeStr.includes("ACUM") || nomeStr.includes("ACCUM");
-
+  // --- SCORING 2.0: Lógica Diferenciada por Tipo ---
   let score;
-  if (isAcc && W.D > 0) {
-    // Para ativos acumulativos, redistribuímos o peso de D pelos outros pilares
-    const totalW_NoD = (W.R || 0) + (W.V || 0) + (W.T || 0) + (W.E || 0) + (W.S || 0) + (W.Rsk || 0);
-    if (totalW_NoD > 0) {
-      const factor = 1 / totalW_NoD;
-      const baseScore = (W.R * R + W.V * V + W.T * T + W.E * E + (W.S || 0) * S + (W.Rsk || 0) * 1.0) * factor;
-      score = clamp(baseScore, 0, 1);
-      // Para o breakdown, mostramos D como neutro (igual ao score final) para não penalizar visualmente
-      D = score; 
-    } else {
-      score = 0.5;
-    }
+  
+  if (assetType === "etf") {
+    // ETF Score: Foco em Tendência, Momentum e Distribuição
+    // Ignoramos R (EPS), V (P/E) e E (Eficiência)
+    const isCore = ["VWCE", "IWDA", "VUSA", "CSPX", "EUNL"].includes(tickerStr);
+    const isThematic = ["QDVE", "GRID", "NUKL", "VVMX", "WCLD"].includes(tickerStr);
+    
+    // Tendência Técnica (60%) + Valorização Real (30%) + Bónus de Estrutura (10%)
+    const T_Adjusted = clamp(T * 0.7 + R_Price * 0.3, 0, 1);
+    const structureBonus = isCore ? 0.1 : isThematic ? -0.05 : 0;
+    
+    score = clamp(T_Adjusted + structureBonus, 0, 1);
+    
+    // Para o gráfico, mapeamos as métricas de forma a não "sujar" o diagnóstico
+    R = R_Price; // Crescimento é a valorização do preço
+    V = 0.8;    // ETFs são considerados "Fair Value" por definição de mercado
+    E = 0.8;    // Eficiência é delegada ao gestor do fundo
+  } else if (assetType === "crypto") {
+    score = clamp(T * 0.8 + R_Price * 0.2, 0, 1);
+    R = R_Price; V = 0; E = 0; D = 0;
   } else {
     score = clamp(
       W.R * R + W.V * V + W.T * T + W.D * D + W.E * E + (W.S || 0) * S + (W.Rsk || 0) * 1.0,
@@ -402,6 +410,7 @@ export function calculateLucroMaximoScore(acao, periodoSel = "1m") {
     riskAdj,
     valuationLabel,
     components: { R, V, T, D, E, S },
+    finalWeights: W
   };
 }
 
