@@ -124,7 +124,19 @@ function scoreGeneric(v, cfg) {
   }
 }
 
-function annualizeRate(acao) {
+export function annualizeRate(acao, period = "1y") {
+  // Try to use pre-calculated rates from the database
+  if (period === "1w" && acao.taxaCrescimento_1semana !== undefined)
+    return Number(acao.taxaCrescimento_1semana) / 100;
+  if (period === "1m" && acao.taxaCrescimento_1mes !== undefined)
+    return Number(acao.taxaCrescimento_1mes) / 100;
+  if (
+    (period === "1y" || period === "1a") &&
+    acao.taxaCrescimento_1ano !== undefined
+  )
+    return Number(acao.taxaCrescimento_1ano) / 100;
+
+  // Fallback to price-based estimation
   const pClose = Number(acao.valorStock || acao.price || 0);
   const pOpen = Number(acao.price_open_1y || acao.price_1y_ago || pClose * 0.9);
   if (pOpen <= 0) return 0.1;
@@ -134,7 +146,7 @@ function annualizeRate(acao) {
 export function calculateLucroMaximoScore(acao, period = "1y") {
   if (!acao) return { score: 0.5, components: { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 } };
   const assetType = getAssetType(acao.ticker, acao);
-  const rAnnual = annualizeRate(acao);
+  const rAnnual = annualizeRate(acao, period);
   const R_Price = clamp(rAnnual / 0.5, 0, 1);
   const R_Eps = scoreEPS(Number(acao.epsYoY)||0, Number(acao.epsNextY)||0, Number(acao.eps_next_5y)||0);
   const R = clamp(R_Price * 0.4 + R_Eps * 0.6, 0, 1);
@@ -149,7 +161,14 @@ export function calculateLucroMaximoScore(acao, period = "1y") {
   if (assetType === "etf") finalScore = scoreETF(acao, metrics);
   else if (assetType === "crypto") finalScore = scoreCrypto(acao, metrics);
   else finalScore = scoreStock(acao, metrics);
-  return { score: Number(finalScore)||0.5, assetType, components: { R, V, T, D, E, S }, finalWeights: SCORING_CFG.TYPE_WEIGHTS[assetType] || SCORING_CFG.TYPE_WEIGHTS.stock };
+  return {
+    score: Number(finalScore) || 0.5,
+    rAnnual,
+    assetType,
+    components: { R, V, T, D, E, S },
+    finalWeights:
+      SCORING_CFG.TYPE_WEIGHTS[assetType] || SCORING_CFG.TYPE_WEIGHTS.stock,
+  };
 }
 
 export function parseSma(sma, currentPrice) {

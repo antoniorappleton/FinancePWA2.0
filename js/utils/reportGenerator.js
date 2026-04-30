@@ -66,11 +66,43 @@ export async function generatePortfolioReport() {
     const [ativosSnap, acoesSnap] = await Promise.all([getDocs(collection(db, "ativos")), getDocs(collection(db, "acoesDividendos"))]);
     const acoesMap = new Map(); acoesSnap.forEach(d => { const x = d.data(); if (x.ticker) acoesMap.set(String(x.ticker).toUpperCase(), x); });
     
-    const grupos = new Map();
+    const movimentos = [];
     ativosSnap.forEach(docu => {
-      const d = docu.data(), t = String(d.ticker || "").toUpperCase(); if (!t) return;
-      const g = grupos.get(t) || { ticker: t, nome: d.nome || t, qtd: 0, investido: 0, setor: d.setor || "Outros" };
-      if (Number(d.quantidade) > 0) { g.investido += Number(d.quantidade) * Number(d.precoCompra); g.qtd += Number(d.quantidade); }
+      const d = docu.data();
+      const dt = d.dataCompra && typeof d.dataCompra.toDate === "function" 
+        ? d.dataCompra.toDate() 
+        : new Date(0);
+      movimentos.push({ ...d, date: dt });
+    });
+    movimentos.sort((a, b) => a.date - b.date);
+
+    const grupos = new Map();
+    movimentos.forEach(m => {
+      const t = String(m.ticker || "").toUpperCase();
+      if (!t) return;
+      const g = grupos.get(t) || { 
+        ticker: t, 
+        nome: m.nome || t, 
+        qtd: 0, 
+        custoMedio: 0, 
+        investido: 0, 
+        setor: m.setor || "Outros" 
+      };
+
+      const q = Number(m.quantidade) || 0;
+      const p = Number(m.precoCompra) || 0;
+
+      if (q > 0) {
+        const totalAntes = g.qtd * g.custoMedio;
+        const totalCompra = q * p;
+        const novaQtd = g.qtd + q;
+        g.custoMedio = novaQtd > 0 ? (totalAntes + totalCompra) / novaQtd : 0;
+        g.qtd = novaQtd;
+      } else if (q < 0) {
+        g.qtd = Math.max(0, g.qtd + q);
+        if (g.qtd === 0) g.custoMedio = 0;
+      }
+      g.investido = g.qtd * g.custoMedio;
       grupos.set(t, g);
     });
 

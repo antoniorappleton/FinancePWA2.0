@@ -1204,7 +1204,13 @@ function calcularMetricasBase(
   { periodo = "1m", horizonte = 1, incluirDiv = true } = {},
 ) {
   const precoAtual = toNum(acao.valorStock);
-  const anualDiv = toNum(acao.divAnual ?? anualPreferido(acao)); // média 24m preferida
+  // Sanity check: cap dividend yield at 50% for projections (prevents broken data outliers)
+  let anualDiv = toNum(acao.divAnual ?? anualPreferido(acao));
+  if (precoAtual > 0 && anualDiv > precoAtual * 0.5) {
+    console.warn(`[Simulação] Outlier detetado em ${acao.ticker}: Dividend Yield > 50%. Cap aplicado.`);
+    anualDiv = precoAtual * 0.5;
+  }
+
   const rAnnual = annualizeRate(acao, periodo);
   const h = Math.max(1, Number(horizonte || 1));
 
