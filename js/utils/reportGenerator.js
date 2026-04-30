@@ -199,27 +199,57 @@ function renderReportUI(data) {
   
   return `
     <style>
-      .report-modal-body { color: #0f172a; font-family: system-ui, -apple-system, sans-serif; }
-      .report-header { margin-bottom: 24px; text-align: center; background: white; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; }
-      .report-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
-      .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 10px; }
-      .kpi-item { padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
-      .kpi-v { display: block; font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
-      .kpi-l { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 600; }
-      .report-section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-      th { text-align: left; padding: 12px 8px; border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 0.75rem; text-transform: uppercase; }
-      td { padding: 12px 8px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
-      .badge-score { padding: 4px 8px; border-radius: 6px; color: white; font-weight: 700; font-size: 0.75rem; }
+      .report-modal-body { color: #1e293b; font-family: 'Inter', -apple-system, sans-serif; line-height: 1.5; }
+      .report-header { 
+        margin-bottom: 32px; 
+        padding: 32px; 
+        background: #f8fafc; 
+        border-radius: 12px; 
+        border-left: 6px solid #1e293b;
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between;
+      }
+      .report-card { background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+      .report-section-title { 
+        font-size: 1rem; 
+        font-weight: 800; 
+        color: #0f172a; 
+        text-transform: uppercase; 
+        letter-spacing: 0.05em;
+        margin-bottom: 20px; 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+      }
+      .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 20px; }
+      .kpi-item { padding: 16px; border-radius: 8px; border: 1px solid #f1f5f9; background: #ffffff; }
+      .kpi-v { display: block; font-size: 1.1rem; font-weight: 700; color: #0f172a; }
+      .kpi-l { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.025em; }
+      
+      .report-footer-legal { 
+        margin-top: 40px; 
+        padding: 24px; 
+        border-top: 1px solid #e2e8f0; 
+        font-size: 0.75rem; 
+        color: #94a3b8; 
+        text-align: center;
+        font-style: italic;
+      }
+      
+      table { width: 100%; border-collapse: collapse; }
+      th { text-align: left; padding: 12px; background: #f8fafc; color: #475569; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+      td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; }
     </style>
 
     <div class="report-modal-body">
-      <div class="report-header" style="display: flex; align-items: center; justify-content: space-between; text-align: left;">
+      <div class="report-header">
         <div>
-          <h1 style="margin:0; font-size: 1.8rem; letter-spacing: -0.02em; color: #0f172a;">Relatório de Performance</h1>
-          <p style="margin:4px 0 0; color:#64748b; font-size:0.95rem;">Análise Algorítmica Consolidada • ${new Date().toLocaleDateString("pt-PT")}</p>
+          <span style="background: #1e293b; color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Private Report</span>
+          <h1 style="margin: 8px 0 0; font-size: 2rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">Investment Outlook</h1>
+          <p style="margin: 4px 0 0; color:#64748b; font-size:0.9rem;">Consolidado de Performance e Alocação Estratégica • ${new Date().toLocaleDateString("pt-PT")}</p>
         </div>
-        <img src="icons/icon-192.png" alt="Logo" style="width: 60px; height: 60px; object-fit: contain;">
+        <img src="icons/icon-192.png" alt="Logo" style="width: 70px; height: 70px; filter: grayscale(0.2);">
       </div>
 
       <div class="report-card">
@@ -311,6 +341,10 @@ function renderReportUI(data) {
           </table>
         </div>
       </div>
+      <div class="report-footer-legal">
+        Este relatório é gerado automaticamente para fins informativos. Performance passada não é garantia de resultados futuros. 
+        Mantenha a sua estratégia de longo prazo e consulte um consultor financeiro se necessário.
+      </div>
     </div>
   `;
 }
@@ -380,18 +414,20 @@ async function exportPortfolioToPDF(data) {
   const fmtEUR = n => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(n);
   const drawLine = (y) => { doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.5); doc.line(margin, y, pageWidth - margin, y); };
 
-  // --- PÁGINA 1: Sumário ---
+  // Cabeçalho Premium
+  doc.setFillColor(30, 41, 59); doc.rect(0, 0, pageWidth, 120, 'F');
+  
   const logoB64 = await getBase64Image("icons/icon-192.png");
   if (logoB64) {
-    doc.addImage(logoB64, 'PNG', pageWidth - margin - 50, 45, 50, 50);
+    doc.addImage(logoB64, 'PNG', margin, 35, 50, 50);
   }
 
-  doc.setFontSize(22); doc.setTextColor(15, 23, 42); doc.setFont("helvetica", "bold");
-  doc.text("Relatório de Portfólio", margin, currY);
-  currY += 15;
-  doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(100);
-  doc.text(`Gerado em: ${new Date().toLocaleString("pt-PT")}`, margin, currY);
-  currY += 40;
+  doc.setFontSize(24); doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold");
+  doc.text("Investment Outlook", margin + 70, 65);
+  doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(200);
+  doc.text(`Análise Consolidada de Portfólio • ${new Date().toLocaleDateString("pt-PT")}`, margin + 70, 82);
+  
+  currY = 160;
 
   doc.setFontSize(14); doc.setTextColor(30); doc.setFont("helvetica", "bold");
   doc.text("1. Resumo Executivo", margin, currY);
@@ -453,7 +489,11 @@ async function exportPortfolioToPDF(data) {
   doc.setFont("helvetica", "bold"); doc.setTextColor(30);
   data.diagnosis.actions.forEach(a => { doc.text(`> ${a}`, margin + 10, currY + 12); currY += 12; });
 
-  doc.setFontSize(8); doc.setTextColor(180); doc.text("Página 1 de 3", pageWidth/2, pageHeight - 20, { align: "center" });
+  // --- RODAPÉ LEGAL ---
+  doc.setFontSize(7); doc.setTextColor(180);
+  const legalText = "IMPORTANTE: Este documento é estritamente confidencial e destinado a fins informativos. O investimento em mercados financeiros envolve riscos. Performance passada não garante resultados futuros.";
+  doc.text(legalText, pageWidth / 2, pageHeight - 35, { align: "center" });
+  doc.text(`Página 1 de 3 • APPFinance Intelligence System`, pageWidth / 2, pageHeight - 20, { align: "center" });
 
   // --- PÁGINA 2: Gráficos ---
   doc.addPage(); currY = 60;
