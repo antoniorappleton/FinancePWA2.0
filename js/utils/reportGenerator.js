@@ -148,6 +148,22 @@ function renderReportUI(data) {
       .title-v2 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: #1e293b; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
       .chart-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; padding: 20px; background: white; margin: 0 20px 20px 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
       .chart-box { height: 260px; text-align: center; }
+
+      @media (max-width: 850px) {
+        .chart-container { grid-template-columns: 1fr; gap: 30px; height: auto; }
+        .chart-box { height: 300px; }
+        .kpi-row { grid-template-columns: repeat(2, 1fr); }
+        .main-grid { grid-template-columns: 1fr; }
+      }
+
+      @media (max-width: 480px) {
+        .kpi-row { grid-template-columns: 1fr; }
+        .header-v2 { flex-direction: column; text-align: center; gap: 15px; padding: 20px; }
+        .header-v2 img { width: 60px !important; }
+        .section-v2 { padding: 15px; }
+        .chart-container { margin: 0 10px 20px 10px; padding: 15px; }
+        .kpi-row, .main-grid { padding: 15px; }
+      }
     </style>
     <div class="report-v2">
       <div class="header-v2">
@@ -198,21 +214,23 @@ function renderReportUI(data) {
 
       <div class="section-v2" style="margin: 0 20px 20px 20px;">
         <div class="title-v2">Detalhamento do Portfólio</div>
-        <table style="width:100%; border-collapse:collapse; font-size:0.7rem;">
-          <thead><tr style="text-align:left; color:#64748b; background:#f8fafc;"><th style="padding:8px;">Ativo</th><th>Tipo</th><th>Investido</th><th>Atual</th><th>Lucro</th><th>Score</th></tr></thead>
-          <tbody>
-            ${enriched.sort((a,b)=>b.valAtual-a.valAtual).map(p => `
-              <tr style="border-top:1px solid #f1f5f9;">
-                <td style="padding:8px;"><strong>${p.ticker}</strong><br><span style="font-size:0.6rem; color:#94a3b8;">${p.nome}</span></td>
-                <td><span style="padding:2px 6px; background:#f1f5f9; border-radius:4px; font-size:0.6rem; font-weight:700;">${p.category.toUpperCase()}</span></td>
-                <td>${fmt(p.investido)}</td>
-                <td>${fmt(p.valAtual)}</td>
-                <td style="color:${(p.valAtual-p.investido)>=0?'#22c55e':'#ef4444'}">${(((p.valAtual-p.investido)/p.investido)*100).toFixed(1)}%</td>
-                <td><div style="font-weight:700;">${(p.score*100).toFixed(0)}</div></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div style="overflow-x: auto;">
+          <table style="width:100%; min-width: 650px; border-collapse:collapse; font-size:0.75rem;">
+            <thead><tr style="text-align:left; color:#64748b; background:#f8fafc;"><th style="padding:8px;">Ativo</th><th>Tipo</th><th>Investido</th><th>Atual</th><th>Lucro</th><th>Score</th></tr></thead>
+            <tbody>
+              ${enriched.sort((a,b)=>b.valAtual-a.valAtual).map(p => `
+                <tr style="border-top:1px solid #f1f5f9;">
+                  <td style="padding:8px;"><strong>${p.ticker}</strong><br><span style="font-size:0.6rem; color:#94a3b8;">${p.nome}</span></td>
+                  <td><span style="padding:2px 6px; background:#f1f5f9; border-radius:4px; font-size:0.6rem; font-weight:700;">${p.category.toUpperCase()}</span></td>
+                  <td>${fmt(p.investido)}</td>
+                  <td>${fmt(p.valAtual)}</td>
+                  <td style="color:${(p.valAtual-p.investido)>=0?'#22c55e':'#ef4444'}">${(((p.valAtual-p.investido)/p.investido)*100).toFixed(1)}%</td>
+                  <td><div style="font-weight:700;">${(p.score*100).toFixed(0)}</div></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `;

@@ -72,6 +72,26 @@
     flex-direction: column;
     gap: 4px;
   }
+
+  /* Responsividade do Modal de Relatório */
+  @media (max-width: 600px) {
+    #reportModal .modal-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+    }
+    #reportModal .modal-header h2 {
+      font-size: 1.1rem !important;
+    }
+    #reportModal .modal-header div {
+      width: 100%;
+      justify-content: flex-end;
+    }
+    #reportModal .modal-body {
+      padding: 12px !important;
+    }
+  }
 </style>
 
 <div class="page" data-screen-title="Configurações">
