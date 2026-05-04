@@ -20,6 +20,10 @@
   --transition: all .3s ease;
 }
 
+.hidden {
+  display: none !important;
+}
+
 /* ---------- Toast Notification ---------- */
 .toast {
   position: fixed;

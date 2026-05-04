@@ -199,6 +199,16 @@
                  <button id="btnSaveAlloc" class="btn premium small">Guardar Estratégia</button>
               </div>
             </div>
+
+            <!-- BOTÃO PARA PORTFÓLIO SUGERIDO -->
+            <div style="margin-top: 24px; text-align: center;">
+              <button id="btnShowSuggested" class="btn outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border-style: dashed;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                Ver Portfólio Sugerido (IA Algorithm)
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -430,6 +440,126 @@
          <div class="spinner"></div>
          <p class="muted">A analisar portfólio...</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DO PORTFÓLIO SUGERIDO (NOVO) -->
+<div id="suggestedPortfolioModal" class="modal hidden" style="z-index: 2002;">
+  <div class="modal-dialog" style="width: min(800px, 96vw); max-height: 90vh;">
+    <div class="modal-header">
+      <h2 style="font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-magic" style="color: var(--premium);"></i>
+        Portfólio Sugerido - Lucro Máximo
+      </h2>
+      <button id="suggestedModalClose" class="icon-btn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding: 20px; overflow-y: auto;">
+      <div id="suggestedLoader" style="text-align: center; padding: 40px;">
+        <div class="spinner" style="margin: 0 auto 16px;"></div>
+        <p class="muted">A calcular alocação ideal...</p>
+      </div>
+      <div id="suggestedContent" class="hidden">
+        <!-- KPI GRID -->
+        <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 20px;">
+          <div class="kpi-card-mini">
+            <span class="muted" style="font-size: 0.65rem;">CAPITAL TOTAL</span>
+            <strong id="sugTotalCapital" style="font-size: 1rem;">0,00 €</strong>
+          </div>
+          <div class="kpi-card-mini">
+            <span class="muted" style="font-size: 0.65rem;">SCORE MÉDIO</span>
+            <strong id="sugAvgScore" style="font-size: 1rem;">0.0</strong>
+          </div>
+          <div class="kpi-card-mini">
+            <span class="muted" style="font-size: 0.65rem;">YIELD ESTIMADO</span>
+            <strong id="sugEstYield" style="font-size: 1rem;">0.0%</strong>
+          </div>
+          <div class="kpi-card-mini">
+            <span class="muted" style="font-size: 0.65rem;">CRESC. ANUAL MÉDIO</span>
+            <strong id="sugAvgGrowth" style="font-size: 1rem; color: var(--success);">0.0%</strong>
+          </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="card" style="margin:0; padding: 12px; background: var(--background); border: 1px solid var(--border);">
+            <p class="label" style="font-size: 0.75rem; margin-bottom: 8px; text-align: center;">Alocação por Classe</p>
+            <div style="height: 180px; position: relative;">
+              <canvas id="chartSugClass" width="300" height="180"></canvas>
+            </div>
+          </div>
+          <div class="card" style="margin:0; padding: 12px; background: var(--background); border: 1px solid var(--border);">
+            <p class="label" style="font-size: 0.75rem; margin-bottom: 8px; text-align: center;">Concentração Setorial</p>
+            <div style="height: 180px; position: relative;">
+              <canvas id="chartSugSector" width="300" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- TOP METRICS SNAPSHOT (NOVO) -->
+        <div id="suggestedMetrics" class="card" style="margin: 0 0 20px 0; padding: 12px; background: rgba(var(--primary-rgb), 0.02); border-left: 4px solid var(--primary);">
+          <p class="label" style="font-size: 0.7rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Highlights do Portfólio</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.75rem;">
+            <div id="metPE"><strong>P/E Médio:</strong> <span>--</span></div>
+            <div id="metROIC"><strong>ROIC Médio:</strong> <span>--</span></div>
+            <div id="metSolv"><strong>Solvência (Debt/Eq):</strong> <span>--</span></div>
+            <div id="metDiv"><strong>Dividendos:</strong> <span>--</span></div>
+          </div>
+        </div>
+
+        <!-- TABLE SECTION -->
+        <div class="card" style="margin:0 0 24px 0; padding: 0; overflow: hidden; border: 1px solid var(--border);">
+          <div style="padding: 12px 16px; background: var(--muted); border-bottom: 1px solid var(--border); font-size: 0.8rem; font-weight: 700;">
+            Ativos Selecionados (Top Performance)
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; font-size: 0.8rem;">
+              <thead>
+                <tr style="text-align: left; background: var(--background);">
+                  <th style="padding: 10px;">Ativo</th>
+                  <th>Classe</th>
+                  <th style="text-align: right;">Alocação</th>
+                  <th style="text-align: right;">%</th>
+                  <th style="text-align: right;">Score</th>
+                </tr>
+              </thead>
+              <tbody id="suggestedTableBody">
+                <!-- JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PROJECTIONS SECTION -->
+        <div class="card premium" style="margin: 0; padding: 20px;">
+          <p class="label" style="margin-bottom: 16px;">Projeção de Crescimento do Portfólio</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div class="muted" style="font-size: 0.7rem; margin-bottom: 4px;">1 ANO</div>
+              <strong id="proj1y" style="color: var(--success);">0,00 €</strong>
+            </div>
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div class="muted" style="font-size: 0.7rem; margin-bottom: 4px;">3 ANOS</div>
+              <strong id="proj3y" style="color: var(--success);">0,00 €</strong>
+            </div>
+            <div style="text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <div class="muted" style="font-size: 0.7rem; margin-bottom: 4px;">5 ANOS</div>
+              <strong id="proj5y" style="color: var(--success);">0,00 €</strong>
+            </div>
+          </div>
+          <div class="muted" style="margin-top: 12px; font-size: 0.65rem; text-align: center;">
+            * Valores estimados com base no crescimento histórico anualizado e dividendos médios.
+          </div>
+        </div>
+        
+        <div class="muted" style="margin-top: 24px; font-size: 0.7rem; line-height: 1.4; text-align: center;">
+          Esta sugestão é baseada no algoritmo de Lucro Máximo da APPFInance.<br>
+          A alocação respeita as tuas definições de estratégia e perfis de risco.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+      <button class="btn premium" id="suggestedModalOk">Entendido</button>
     </div>
   </div>
 </div>

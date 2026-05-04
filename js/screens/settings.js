@@ -5,8 +5,9 @@
 // - Se estiver lado a lado com auth.js, usa "./auth.js".
 import { doLogout } from "./auth.js";
 import { db } from "../firebase-config.js";
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { generatePortfolioReport } from "../utils/reportGenerator.js";
+import { calculateLucroMaximoScore, getAssetType } from "../utils/scoring.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -184,6 +185,246 @@ export function initScreen() {
         btnSaveAlloc.textContent = "Guardar Estratégia";
       });
     }
+
+    // --- LOGICA DO PORTFÓLIO SUGERIDO ---
+    const btnShowSuggested = document.getElementById("btnShowSuggested");
+    const sugModal = document.getElementById("suggestedPortfolioModal");
+    const sugClose = document.getElementById("suggestedModalClose");
+    const sugOk = document.getElementById("suggestedModalOk");
+    const sugLoader = document.getElementById("suggestedLoader");
+    const sugContent = document.getElementById("suggestedContent");
+    const sugTableBody = document.getElementById("suggestedTableBody");
+
+    let chartClass = null;
+    let chartSector = null;
+
+    async function showSuggestedPortfolio() {
+      if (!sugModal) return;
+      sugModal.classList.remove("hidden");
+      sugLoader.classList.remove("hidden");
+      sugContent.classList.add("hidden");
+
+      // Destruir gráficos anteriores se existirem
+      if (chartClass) { chartClass.destroy(); chartClass = null; }
+      if (chartSector) { chartSector.destroy(); chartSector = null; }
+
+      let count = 0;
+      let classData = { Stocks: 0, ETFs: 0, Bonds: 0 };
+      let sectorData = {};
+      let html = "";
+
+      try {
+        const snap = await getDocs(collection(db, "acoesDividendos"));
+        const allData = [];
+        snap.forEach(d => allData.push({ ...d.data(), id: d.id }));
+
+        const totalCash = Number(elAvailCash.value) || 0;
+        const targets = {
+          stock: Number(elAllocStocks.value) || 0,
+          etf: Number(elAllocEtfs.value) || 0,
+          bond: Number(elAllocBonds.value) || 0
+        };
+
+        const scored = allData.map(d => {
+          const res = calculateLucroMaximoScore(d, "1m");
+          let type = getAssetType(d.ticker, d);
+          const nomeU = String(d.nome || "").toUpperCase();
+          if (nomeU.includes("BOND") || nomeU.includes("OBRIGA") || nomeU.includes("TREASURY")) {
+            type = "bond";
+          }
+          return { ...d, score: res.score, rAnnual: res.rAnnual, type };
+        });
+
+        const groups = {
+          stock: scored.filter(s => s.type === "stock").sort((a, b) => b.score - a.score).slice(0, 5),
+          etf: scored.filter(s => s.type === "etf").sort((a, b) => b.score - a.score).slice(0, 5),
+          bond: scored.filter(s => s.type === "bond").sort((a, b) => b.score - a.score).slice(0, 5)
+        };
+
+        let totalScore = 0;
+        let totalYield = 0;
+        let totalGrowth = 0;
+        let sumPE = 0, sumROIC = 0, sumDebtEq = 0, countFundamental = 0;
+        const selectedAssets = [];
+
+        ["stock", "etf", "bond"].forEach(cat => {
+          const catP = targets[cat];
+          if (catP <= 0) return;
+          const catCash = totalCash * (catP / 100);
+          const items = groups[cat];
+          if (!items.length) return;
+
+          const cashPerItem = catCash / items.length;
+          items.forEach(item => {
+            const pctOfTotal = (cashPerItem / totalCash) * 100;
+            const y = Number(item.yield) || 0;
+            const g = Number(item.rAnnual) || 0;
+            
+            selectedAssets.push({ ...item, allocation: cashPerItem });
+            
+            // Fundamental metrics for snapshot
+            if (cat === "stock") {
+              const pe = Number(item.pe || item.p_e || 0);
+              const roic = Number(item.roic || 0);
+              const de = Number(item.debt_eq || 0);
+              if (pe > 0) sumPE += pe;
+              if (roic > 0) sumROIC += roic;
+              if (de > 0) sumDebtEq += de;
+              countFundamental++;
+            }
+
+            // Dados para gráficos
+            const clsName = cat === "stock" ? "Stocks" : cat === "etf" ? "ETFs" : "Bonds";
+            classData[clsName] += cashPerItem;
+            
+            const sector = item.setor || item.sector || "Outros";
+            sectorData[sector] = (sectorData[sector] || 0) + cashPerItem;
+
+            html += `
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 10px;">
+                  <div style="font-weight: 700;">${item.ticker}</div>
+                  <div class="muted" style="font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                    ${item.nome || item.ticker}
+                  </div>
+                </td>
+                <td><span class="badge" style="background: var(--muted); color: var(--foreground); font-size: 0.6rem;">${cat.toUpperCase()}</span></td>
+                <td style="text-align: right; font-weight: 700;">${fmtEUR(cashPerItem)}</td>
+                <td style="text-align: right; color: var(--muted-foreground);">${pctOfTotal.toFixed(1)}%</td>
+                <td style="text-align: right;">
+                  <span class="badge ${item.score > 0.7 ? "ok" : item.score > 0.5 ? "warn" : "danger"}">
+                    ${(item.score * 10).toFixed(1)}
+                  </span>
+                </td>
+              </tr>
+            `;
+            totalScore += item.score;
+            totalYield += y;
+            totalGrowth += g;
+            count++;
+          });
+        });
+
+        sugTableBody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:30px;" class="muted">Sem dados suficientes.</td></tr>';
+        
+        const avgGrowth = count > 0 ? (totalGrowth / count) : 0;
+        const avgYield = count > 0 ? (totalYield / count) : 0;
+
+        document.getElementById("sugTotalCapital").textContent = fmtEUR(totalCash);
+        document.getElementById("sugAvgScore").textContent = count > 0 ? (totalScore / count * 10).toFixed(1) : "0.0";
+        document.getElementById("sugEstYield").textContent = avgYield.toFixed(2) + "%";
+        document.getElementById("sugAvgGrowth").textContent = (avgGrowth * 100).toFixed(2) + "%";
+
+        // Update fundamental highlights
+        if (countFundamental > 0) {
+          const elPE = document.querySelector("#metPE span");
+          const elROIC = document.querySelector("#metROIC span");
+          const elSolv = document.querySelector("#metSolv span");
+          const elDiv = document.querySelector("#metDiv span");
+          if (elPE) elPE.textContent = (sumPE / countFundamental).toFixed(1) + "x";
+          if (elROIC) elROIC.textContent = (sumROIC / countFundamental * 100).toFixed(1) + "%";
+          if (elSolv) elSolv.textContent = (sumDebtEq / countFundamental).toFixed(2);
+          if (elDiv) elDiv.textContent = avgYield.toFixed(1) + "%";
+        }
+
+        // Projeções ...
+        const rTotal = avgGrowth + (avgYield / 100);
+        const proj = (years) => totalCash * Math.pow(1 + rTotal, years);
+
+        const updateProj = (id, years) => {
+          const val = proj(years);
+          const profit = val - totalCash;
+          const el = document.getElementById(id);
+          if (el) {
+            el.innerHTML = `
+              <div>${fmtEUR(val)}</div>
+              <div style="font-size: 0.65rem; color: var(--success); margin-top: 2px;">
+                +${fmtEUR(profit)} Lucro
+              </div>
+            `;
+          }
+        };
+
+        updateProj("proj1y", 1);
+        updateProj("proj3y", 3);
+        updateProj("proj5y", 5);
+
+      } catch (err) {
+        console.error("Error generating suggestion:", err);
+      } finally {
+        // Garantir que a roda de loading desaparece SEMPRE
+        if (sugLoader) sugLoader.classList.add("hidden");
+        if (sugContent) sugContent.classList.remove("hidden");
+      }
+
+      // Criar Gráficos (atraso maior para garantir renderização estável)
+      setTimeout(() => {
+        try {
+          const canvasClass = document.getElementById("chartSugClass");
+          const canvasSector = document.getElementById("chartSugSector");
+
+          if (!canvasClass || !canvasSector) return;
+
+          // Forçar redimensionamento para evitar canvas com tamanho 0
+          window.dispatchEvent(new Event('resize'));
+
+          if (typeof Chart !== "undefined" && count > 0) {
+            chartClass = new Chart(canvasClass, {
+              type: "doughnut",
+              data: {
+                labels: Object.keys(classData).filter(k => classData[k] > 0),
+                datasets: [{
+                  data: Object.values(classData).filter(v => v > 0),
+                  backgroundColor: ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7"],
+                  borderWidth: 2,
+                  borderColor: "rgba(255,255,255,0.1)"
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "70%",
+                animation: { duration: 1000, easing: 'easeOutQuart' },
+                plugins: { 
+                  legend: { 
+                    position: "bottom", 
+                    labels: { color: "#888", font: { size: 10, weight: "bold" }, padding: 15 } 
+                  } 
+                }
+              }
+            });
+
+            chartSector = new Chart(canvasSector, {
+              type: "pie",
+              data: {
+                labels: Object.keys(sectorData),
+                datasets: [{
+                  data: Object.values(sectorData),
+                  backgroundColor: ["#6366f1", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316", "#ef4444", "#06b6d4"],
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.1)"
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1200, easing: 'easeOutQuart' },
+                plugins: { 
+                  legend: { display: false } 
+                }
+              }
+            });
+          }
+        } catch (chartErr) {
+          console.error("Chart.js Error:", chartErr);
+        }
+      }, 500);
+    }
+
+    if (btnShowSuggested) btnShowSuggested.addEventListener("click", showSuggestedPortfolio);
+    if (sugClose) sugClose.addEventListener("click", () => sugModal.classList.add("hidden"));
+    if (sugOk) sugOk.addEventListener("click", () => sugModal.classList.add("hidden"));
+    if (sugModal) sugModal.addEventListener("click", (e) => { if (e.target === sugModal) sugModal.classList.add("hidden"); });
   }
 
   // Relatório de Investimento
