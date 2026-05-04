@@ -96,6 +96,38 @@ export function initScreen() {
   // Estratégia
   const elCoreW = document.getElementById("cfgCoreWeight");
   const elSatW = document.getElementById("cfgSatelliteWeight");
+  const elAllocStocks = document.getElementById("cfgAllocStocks");
+  const elAllocEtfs = document.getElementById("cfgAllocEtfs");
+  const elAllocBonds = document.getElementById("cfgAllocBonds");
+  const valAllocStocks = document.getElementById("valAllocStocks");
+  const valAllocEtfs = document.getElementById("valAllocEtfs");
+  const valAllocBonds = document.getElementById("valAllocBonds");
+  const valAllocTotal = document.getElementById("valAllocTotal");
+  const btnSaveAlloc = document.getElementById("btnSaveAlloc");
+  const allocStatus = document.getElementById("cfgAllocStatus");
+
+  const fmtEUR = (v) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v || 0);
+
+  function calculateAllocations() {
+    const totalCash = Number(elAvailCash.value) || 0;
+    const pStocks = Number(elAllocStocks.value) || 0;
+    const pEtfs = Number(elAllocEtfs.value) || 0;
+    const pBonds = Number(elAllocBonds.value) || 0;
+
+    const totalPct = pStocks + pEtfs + pBonds;
+    if (valAllocTotal) {
+      valAllocTotal.textContent = `${totalPct}%`;
+      valAllocTotal.style.color = totalPct === 100 ? "var(--success)" : "var(--destructive)";
+    }
+
+    if (valAllocStocks) valAllocStocks.textContent = fmtEUR(totalCash * (pStocks / 100));
+    if (valAllocEtfs) valAllocEtfs.textContent = fmtEUR(totalCash * (pEtfs / 100));
+    if (valAllocBonds) valAllocBonds.textContent = fmtEUR(totalCash * (pBonds / 100));
+  }
+
+  [elAvailCash, elAllocStocks, elAllocEtfs, elAllocBonds].forEach(el => {
+    el?.addEventListener("input", calculateAllocations);
+  });
 
   if (elCoreW && elSatW) {
     elCoreW.addEventListener("input", () => {
@@ -106,6 +138,8 @@ export function initScreen() {
        const v = Number(elSatW.value);
        if (v <= 100 && v >= 0) elCoreW.value = 100 - v;
     });
+    
+    // Load Strategy from Firebase
     getDoc(doc(db, "config", "strategy")).then(snap => {
        if (snap.exists()) {
           const d = snap.data();
@@ -113,33 +147,44 @@ export function initScreen() {
           if (typeof d.satelliteWeight === "number") elSatW.value = d.satelliteWeight;
           if (typeof d.availableCash === "number") elAvailCash.value = d.availableCash;
           if (typeof d.monthlyBase === "number") elMonthlyBase.value = d.monthlyBase;
+          
+          if (typeof d.allocStocks === "number") elAllocStocks.value = d.allocStocks;
+          if (typeof d.allocEtfs === "number") elAllocEtfs.value = d.allocEtfs;
+          if (typeof d.allocBonds === "number") elAllocBonds.value = d.allocBonds;
+          
+          calculateAllocations();
        }
     }).catch(e => console.error("Strategy load err:", e));
 
-    const btnSaveStratG = document.getElementById("btnSaveStrategyG");
-    const stStatus = document.getElementById("cfgStrategyStatus");
-    if (btnSaveStratG && stStatus) {
-       btnSaveStratG.addEventListener("click", async () => {
-          btnSaveStratG.disabled = true;
-          btnSaveStratG.textContent = "...";
-          try {
-             await setDoc(doc(db, "config", "strategy"), {
-                coreWeight: Number(elCoreW.value),
-                satelliteWeight: Number(elSatW.value)
-             }, { merge: true });
-             stStatus.textContent = "Alocação atualizada! ✅";
-             stStatus.style.color = "var(--success)";
-             setTimeout(() => { stStatus.textContent = ""; }, 3000);
-          } catch(err) {
-             stStatus.textContent = err.message || "Erro";
-             stStatus.style.color = "var(--destructive)";
-             console.error(err);
+    if (btnSaveAlloc) {
+      btnSaveAlloc.addEventListener("click", async () => {
+        btnSaveAlloc.disabled = true;
+        btnSaveAlloc.textContent = "...";
+        try {
+          await setDoc(doc(db, "config", "strategy"), {
+            allocStocks: Number(elAllocStocks.value),
+            allocEtfs: Number(elAllocEtfs.value),
+            allocBonds: Number(elAllocBonds.value),
+            availableCash: Number(elAvailCash.value),
+            monthlyBase: Number(elMonthlyBase.value)
+          }, { merge: true });
+          if (allocStatus) {
+            allocStatus.textContent = "Estratégia guardada! ✅";
+            allocStatus.style.color = "var(--success)";
+            setTimeout(() => { allocStatus.textContent = ""; }, 3000);
           }
-          btnSaveStratG.disabled = false;
-          btnSaveStratG.textContent = "Guardar Alocação";
-       });
+        } catch(err) {
+          if (allocStatus) {
+            allocStatus.textContent = "Erro ao guardar";
+            allocStatus.style.color = "var(--destructive)";
+          }
+          console.error(err);
+        }
+        btnSaveAlloc.disabled = false;
+        btnSaveAlloc.textContent = "Guardar Estratégia";
+      });
+    }
   }
-}
 
   // Relatório de Investimento
   const btnGenReport = document.getElementById("btnGenerateReport");
@@ -381,7 +426,10 @@ export function initScreen() {
           coreWeight: Number(elCoreW.value),
           satelliteWeight: Number(elSatW.value),
           availableCash: Number(elAvailCash.value),
-          monthlyBase: Number(elMonthlyBase.value)
+          monthlyBase: Number(elMonthlyBase.value),
+          allocStocks: Number(elAllocStocks.value),
+          allocEtfs: Number(elAllocEtfs.value),
+          allocBonds: Number(elAllocBonds.value)
         }, { merge: true });
       } catch (err) {
         console.error("Strategy save error:", err);

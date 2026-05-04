@@ -141,12 +141,74 @@
         </div>
       </div>
 
-      <!-- ALOCAÇÃO ESTRUTURAL -->
+      <!-- ALOCAÇÃO POR CLASSE DE ATIVOS (NOVO) -->
+      <div class="card premium">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label" style="display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-chart-pie" style="color: var(--primary)"></i>
+              Estratégia de Alocação por Classe
+            </p>
+            <div class="muted" style="margin-bottom: 20px">
+              Define quanto queres alocar a cada tipo de ativo. O sistema calcula os valores com base na tua Liquidez Disponível.
+            </div>
+
+            <div style="display: grid; gap: 20px;">
+              <!-- Ações -->
+              <div style="display: grid; grid-template-columns: 1fr 100px 120px; gap: 16px; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 12px; height: 12px; border-radius: 3px; background: #3b82f6;"></div>
+                  <span>Ações</span>
+                </div>
+                <div style="position: relative;">
+                  <input id="cfgAllocStocks" type="number" step="1" max="100" min="0" value="40" style="padding-right: 25px;" />
+                  <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5;">%</span>
+                </div>
+                <div id="valAllocStocks" style="font-weight: 700; text-align: right; color: var(--primary);">0,00 €</div>
+              </div>
+
+              <!-- ETFs -->
+              <div style="display: grid; grid-template-columns: 1fr 100px 120px; gap: 16px; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 12px; height: 12px; border-radius: 3px; background: #22c55e;"></div>
+                  <span>ETFs</span>
+                </div>
+                <div style="position: relative;">
+                  <input id="cfgAllocEtfs" type="number" step="1" max="100" min="0" value="40" style="padding-right: 25px;" />
+                  <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5;">%</span>
+                </div>
+                <div id="valAllocEtfs" style="font-weight: 700; text-align: right; color: var(--primary);">0,00 €</div>
+              </div>
+
+              <!-- Obrigações -->
+              <div style="display: grid; grid-template-columns: 1fr 100px 120px; gap: 16px; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 12px; height: 12px; border-radius: 3px; background: #f59e0b;"></div>
+                  <span>Obrigações</span>
+                </div>
+                <div style="position: relative;">
+                  <input id="cfgAllocBonds" type="number" step="1" max="100" min="0" value="20" style="padding-right: 25px;" />
+                  <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5;">%</span>
+                </div>
+                <div id="valAllocBonds" style="font-weight: 700; text-align: right; color: var(--primary);">0,00 €</div>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--border);">
+                 <div style="font-size: 0.85rem;">Total: <strong id="valAllocTotal">100%</strong></div>
+                 <div id="cfgAllocStatus" class="muted" style="font-size: 0.8rem;"></div>
+                 <button id="btnSaveAlloc" class="btn premium small">Guardar Estratégia</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALOCAÇÃO ESTRUTURAL (Antiga, mantida mas secundária) -->
       <div class="card">
         <div class="card-content">
           <div style="width: 100%">
-            <p class="label">Alocação Estrutural (%)</p>
-            <div class="muted" style="margin-bottom: 16px">Define o equilíbrio entre ativos CORE e SATÉLITE.</div>
+            <p class="label">Alocação Estrutural CORE/SATÉLITE (%)</p>
+            <div class="muted" style="margin-bottom: 16px">Define o equilíbrio entre ativos principais e satélites.</div>
             <div class="form-grid">
               <label>
                 CORE (%)
@@ -156,10 +218,6 @@
                 SATÉLITE (%)
                 <input id="cfgSatelliteWeight" type="number" step="1" max="100" min="0" />
               </label>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
-               <span id="cfgStrategyStatus" class="muted" style="font-size: 0.8rem;"></span>
-               <button id="btnSaveStrategyG" class="btn premium small">Guardar Alocação</button>
             </div>
           </div>
         </div>
