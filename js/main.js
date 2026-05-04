@@ -44,7 +44,7 @@ window.navigateTo = navigateTo;
 
 // Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 APPFinance v2.2.4");
+  console.log("🚀 APPFinance v2.2.6");
   navigateTo("auth");
 
   // Registo do Service Worker para PWA
@@ -57,7 +57,10 @@ document.addEventListener("DOMContentLoaded", () => {
           installingWorker.onstatechange = () => {
             if (installingWorker.state === "installed") {
               if (navigator.serviceWorker.controller) {
-                console.log("[PWA] Nova versão disponível. Por favor, reinicia a app.");
+                console.log("[PWA] Nova versão disponível.");
+                if (confirm("Nova versão disponível! Deseja atualizar agora?")) {
+                  window.location.reload();
+                }
               }
             }
           };

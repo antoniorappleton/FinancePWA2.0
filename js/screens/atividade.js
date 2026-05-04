@@ -173,16 +173,28 @@ async function fetchDividendInfoByTickers(tickers) {
   return out;
 }
 function pickBestRate(info) {
-  if (typeof info?.taxaCrescimento_1mes === "number")
-    return { taxa: info.taxaCrescimento_1mes, periodLabel: "mês" };
-  if (typeof info?.taxaCrescimento_1semana === "number")
-    return { taxa: info.taxaCrescimento_1semana, periodLabel: "semana" };
-  if (typeof info?.taxaCrescimento_1ano === "number")
-    return { taxa: info.taxaCrescimento_1ano, periodLabel: "ano" };
+  const m = info?.priceChange_1m ?? info?.taxaCrescimento_1mes;
+  if (m !== undefined && m !== null)
+    return { taxa: m, periodLabel: "mês" };
+    
+  const w = info?.priceChange_1w ?? info?.taxaCrescimento_1semana;
+  if (w !== undefined && w !== null)
+    return { taxa: w, periodLabel: "semana" };
+    
+  const y = info?.priceChange_1y ?? info?.taxaCrescimento_1ano;
+  if (y !== undefined && y !== null)
+    return { taxa: y, periodLabel: "ano" };
+    
   return { taxa: null, periodLabel: null };
 }
 function estimateTime(currentPrice, targetPrice, growthPct, label) {
-  const r = Number(growthPct || 0) / 100;
+  if (growthPct === null || growthPct === undefined) return "—";
+  let nVal = Number(growthPct);
+  if (isNaN(nVal)) return "—";
+
+  // Normalização similar à do scoring.js
+  const r = Math.abs(nVal) > 1 ? nVal / 100 : nVal;
+
   if (
     r <= 0 ||
     !isFiniteNum(currentPrice) ||

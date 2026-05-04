@@ -25,6 +25,21 @@ const INDICATOR_INFO = {
   oper_margin: { min: 0.05, target: 0.15, max: 0.40, inverse: false }
 };
 
+function toNum(v) {
+  if (typeof v === "number") return v;
+  if (v === undefined || v === null || v === "") return NaN;
+  let s = String(v).trim();
+  // Se contiver vírgula e ponto, assume-se que o ponto é milhar e a vírgula é decimal (PT format)
+  if (s.includes(",") && s.includes(".")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (s.includes(",")) {
+    // Se só tiver vírgula, é o separador decimal
+    s = s.replace(",", ".");
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : n;
+}
+
 function clamp(v, min, max) { 
   const val = Number(v) || 0;
   return Math.max(min, Math.min(max, val)); 
@@ -125,21 +140,33 @@ function scoreGeneric(v, cfg) {
 }
 
 export function annualizeRate(acao, period = "1y") {
+  if (!acao) return 0.1;
+
   // Try to use pre-calculated rates from the database
-  if (period === "1w" && acao.taxaCrescimento_1semana !== undefined)
-    return Number(acao.taxaCrescimento_1semana) / 100;
-  if (period === "1m" && acao.taxaCrescimento_1mes !== undefined)
-    return Number(acao.taxaCrescimento_1mes) / 100;
-  if (
-    (period === "1y" || period === "1a") &&
-    acao.taxaCrescimento_1ano !== undefined
-  )
-    return Number(acao.taxaCrescimento_1ano) / 100;
+  let val = undefined;
+  if (period === "1w" || period === "1s") {
+    val = acao.priceChange_1w ?? acao.taxaCrescimento_1semana ?? acao.g1w;
+  } else if (period === "1m") {
+    val = acao.priceChange_1m ?? acao.taxaCrescimento_1mes ?? acao.g1m;
+  } else if (period === "1y" || period === "1a") {
+    val = acao.priceChange_1y ?? acao.taxaCrescimento_1ano ?? acao.g1y;
+  }
+
+  const nVal = toNum(val);
+  if (!isNaN(nVal)) {
+    // Normalização: se o valor absoluto for > 1, assume-se que está em percentagem (ex: 5.4 para 5.4%)
+    // Se for <= 1, assume-se que já é uma fração (ex: 0.054 para 5.4%)
+    // Excepto se for exatamente 1 ou -1, mas na prática crescimento raramente é exactamente 100%
+    return Math.abs(nVal) > 1 ? nVal / 100 : nVal;
+  }
 
   // Fallback to price-based estimation
-  const pClose = Number(acao.valorStock || acao.price || 0);
-  const pOpen = Number(acao.price_open_1y || acao.price_1y_ago || pClose * 0.9);
-  if (pOpen <= 0) return 0.1;
+  const pClose = toNum(acao.valorStock || acao.price);
+  const pOpen = toNum(acao.price_open_1y || acao.price_1y_ago);
+
+  if (isNaN(pClose) || pClose <= 0) return 0.1;
+  if (isNaN(pOpen) || pOpen <= 0) return 0.1;
+
   return (pClose - pOpen) / pOpen;
 }
 

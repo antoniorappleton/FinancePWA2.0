@@ -790,7 +790,7 @@ async function carregarTop10Crescimento(periodo = "1m") {
         fullName: c.nome,
         value: visualArea,
         colorValue: c.score, // Cor continua a ser o score (qualidade)
-        growth: c.rAnnual,
+        growth: c.growth,
         yield: c.yieldPct,
         meta: {
           valorStock: Number(c.raw.valorStock || 0),
@@ -909,20 +909,26 @@ function dividirPeriodicidade(dividendo, periodicidade) {
   return dividendo; // anual ou n/a
 }
 function campoCrescimento(periodoSel) {
-  if (periodoSel === "1s") return "taxaCrescimento_1semana";
-  if (periodoSel === "1m") return "taxaCrescimento_1mes";
-  return "taxaCrescimento_1ano";
+  if (periodoSel === "1s" || periodoSel === "1w") return "priceChange_1w";
+  if (periodoSel === "1m") return "priceChange_1m";
+  return "priceChange_1y";
 }
 function melhorTaxaDisponivel(acao, prefer) {
   const ordem = [
     prefer,
+    "priceChange_1m",
+    "priceChange_1w",
+    "priceChange_1y",
     "taxaCrescimento_1mes",
     "taxaCrescimento_1semana",
     "taxaCrescimento_1ano",
   ];
   for (const k of ordem) {
-    const v = Number(acao[k] || 0);
-    if (v !== 0) return v;
+    const v = acao[k];
+    if (v !== undefined && v !== null && v !== "") {
+      const n = parseFloat(String(v).replace(",", "."));
+      if (!isNaN(n) && n !== 0) return n;
+    }
   }
   return 0;
 }
