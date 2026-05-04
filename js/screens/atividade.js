@@ -603,6 +603,7 @@ function renderDividendoCalendario12m(arr) {
 
 // (NOVO) estado global para evitar duplicar listeners
 let byTickerGlobal = new Map();
+let _allMovimentos = [];
 let _eventsWired = false;
 
 // ===============================
@@ -1146,12 +1147,22 @@ function wireQuickActions(gruposArr) {
       if (e.target.id === "pfAddModal") closeModal();
     });
 
-    // BUY/SELL buttons
+    // BUY/SELL/CHART buttons
     document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
       const buy = e.target.closest?.("[data-buy]");
       const sell = e.target.closest?.("[data-sell]");
+      const chart = e.target.closest?.("[data-chart]");
       if (buy) openActionModal("compra", buy.getAttribute("data-buy"));
       if (sell) openActionModal("venda", sell.getAttribute("data-sell"));
+      if (chart) openTechnicalChart(chart.getAttribute("data-chart"));
+    });
+
+    // Modal Technical Chart Close
+    const techClose = document.getElementById("techChartClose");
+    const techModal = document.getElementById("techChartModal");
+    techClose?.addEventListener("click", () => techModal?.classList.add("hidden"));
+    techModal?.addEventListener("click", (e) => {
+      if (e.target.id === "techChartModal") techModal.classList.add("hidden");
     });
 
     // Collapse per card (MODIFICADO para abrir o Modal de Detalhes)
@@ -1640,6 +1651,8 @@ function wireQuickActions(gruposArr) {
           preco: safePreco,
         });
       });
+
+      _allMovimentos = movimentosAsc;
 
       const gruposArr = Array.from(grupos.values());
       const fmtEUR = new Intl.NumberFormat("pt-PT", {
@@ -2206,8 +2219,160 @@ function wireQuickActions(gruposArr) {
         <button class="btn ghost btn-icon" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" title="Editar movimento">
           <i class="fas fa-edit"></i>
         </button>
+
+        <button class="btn ghost btn-icon" data-chart="${g.ticker}" title="Ver gráfico técnico">
+          <i class="fas fa-chart-area"></i>
+        </button>
       </div>
     </div>`;
+  }
+
+  // ==========================================
+  // 📈 Gráfico Técnico (Compras + SMAs)
+  // ==========================================
+  async function openTechnicalChart(ticker) {
+    const g = byTickerGlobal.get(ticker);
+    if (!g) return;
+
+    const modal = document.getElementById("techChartModal");
+    const title = document.getElementById("techChartTitle");
+    const subtitle = document.getElementById("techChartSubtitle");
+    const meta = document.getElementById("techChartMeta");
+
+    if (title) title.textContent = `Análise Técnica: ${ticker}`;
+    if (subtitle) subtitle.textContent = g.nome;
+
+    // Filtrar compras para o ticker
+    const compras = _allMovimentos
+      .filter(m => m.ticker === ticker && m.qtd > 0)
+      .sort((a, b) => a.date - b.date);
+
+    if (compras.length === 0) {
+      alert("Não foram encontrados registos de compra para este ativo.");
+      return;
+    }
+
+    modal.classList.remove("hidden");
+    await ensureChartJS();
+
+    const el = document.getElementById("chartTechnical");
+    if (!el) return;
+    if (window.__chTechnical) window.__chTechnical.destroy();
+
+    const labels = compras.map(c => c.date.toLocaleDateString("pt-PT"));
+    // Se tivermos preço atual, adicionamos como último ponto
+    if (g.precoAtual) {
+      labels.push("Atual");
+    }
+
+    const dataPrices = compras.map(c => c.preco);
+    if (g.precoAtual) dataPrices.push(g.precoAtual);
+
+    const avgPrice = g.custoMedio;
+    const sma50 = g._sma50;
+    const sma200 = g._sma200;
+
+    const datasets = [
+      {
+        label: "Preço de Compra / Atual",
+        data: dataPrices,
+        borderColor: "#3b82f6",
+        backgroundColor: "rgba(59, 130, 246, 0.1)",
+        borderWidth: 3,
+        pointRadius: 6,
+        pointBackgroundColor: compras.map(() => "#3b82f6").concat(g.precoAtual ? ["#ef4444"] : []),
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+        tension: 0.4, // Estilo sinusoidal (curva suave)
+        fill: true
+      },
+      {
+        label: "Preço Médio",
+        data: new Array(labels.length).fill(avgPrice),
+        borderColor: "#94a3b8",
+        borderDash: [5, 5],
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false
+      }
+    ];
+
+    if (sma50) {
+      datasets.push({
+        label: "SMA 50",
+        data: new Array(labels.length).fill(sma50),
+        borderColor: "#f59e0b",
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false
+      });
+    }
+
+    if (sma200) {
+      datasets.push({
+        label: "SMA 200",
+        data: new Array(labels.length).fill(sma200),
+        borderColor: "#ef4444",
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false
+      });
+    }
+
+    window.__chTechnical = new Chart(el, {
+      type: "line",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: chartColors().ticks }, grid: { display: false } },
+          y: { 
+            ticks: { 
+              color: chartColors().ticks,
+              callback: (val) => "€" + val.toFixed(2)
+            }, 
+            grid: { color: chartColors().grid } 
+          }
+        },
+        plugins: {
+          legend: { display: true, position: "top", labels: { color: chartColors().ticks, boxWidth: 12, font: { size: 11 } } },
+          tooltip: {
+            backgroundColor: chartColors().tooltipBg,
+            titleColor: chartColors().tooltipFg,
+            bodyColor: chartColors().tooltipFg,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: €${ctx.parsed.y.toFixed(2)}`
+            }
+          }
+        }
+      }
+    });
+
+    // Meta info
+    if (meta) {
+      const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+      meta.innerHTML = `
+        <div class="det-kpi">
+          <div class="det-kpi-label">Preço Médio</div>
+          <div class="det-kpi-value">${fmtEUR.format(avgPrice)}</div>
+        </div>
+        <div class="det-kpi">
+          <div class="det-kpi-label">SMA 50</div>
+          <div class="det-kpi-value" style="color:#f59e0b;">${sma50 ? fmtEUR.format(sma50) : "—"}</div>
+        </div>
+        <div class="det-kpi">
+          <div class="det-kpi-label">SMA 200</div>
+          <div class="det-kpi-value" style="color:#ef4444;">${sma200 ? fmtEUR.format(sma200) : "—"}</div>
+        </div>
+        <div class="det-kpi">
+          <div class="det-kpi-label">Distância Médio</div>
+          <div class="det-kpi-value" style="color:${g.precoAtual > avgPrice ? "#22c55e" : "#ef4444"}">
+            ${g.precoAtual ? (((g.precoAtual - avgPrice)/avgPrice)*100).toFixed(1) + "%" : "—"}
+          </div>
+        </div>
+      `;
+    }
   }
 
   // ==========================================

@@ -388,6 +388,32 @@
 </div>
 <!-- Modal QUICK BUY/SELL (mantém o teu modal existente) -->
 
+<!-- ======== Modal de Gráfico Técnico (Análise de Posições) ======== -->
+<div id="techChartModal" class="modal hidden">
+  <div class="modal-dialog" style="max-width: 850px; width: 95vw; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; overflow: hidden;">
+    <div class="modal-header" style="border-bottom: 1px solid var(--border); padding: 16px 24px;">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div class="icon-box" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-chart-area"></i>
+        </div>
+        <div>
+          <h3 id="techChartTitle" style="margin: 0; font-size: 1.1rem;">Análise Técnica</h3>
+          <p id="techChartSubtitle" style="margin: 0; font-size: 0.75rem; color: var(--muted-foreground);"></p>
+        </div>
+      </div>
+      <button id="techChartClose" class="icon-btn" style="margin-left: auto;">✖</button>
+    </div>
+    <div class="modal-body" style="padding: 24px;">
+      <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+        <canvas id="chartTechnical"></canvas>
+      </div>
+      <div id="techChartMeta" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border);">
+        <!-- Dados resumidos aqui -->
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="pfAddModal" class="modal hidden">
   <div class="modal-dialog">
     <div class="modal-header">
