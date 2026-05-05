@@ -1188,6 +1188,17 @@ function wireQuickActions(gruposArr) {
       }
     });
 
+    // (NOVO) Expandir/Recolher card
+    document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
+      const btn = e.target.closest?.("[data-expand-card]");
+      if (!btn) return;
+      
+      const card = btn.closest(".asset-card");
+      if (card) {
+        card.classList.toggle("is-collapsed");
+      }
+    });
+
     // Edit button
     document
       .getElementById("listaAtividades")
@@ -2105,36 +2116,44 @@ function wireQuickActions(gruposArr) {
     }
 
     return `
-    <div class="asset-card" style="border-top: 3px solid ${typeColor}80;">
+    <div class="asset-card is-collapsed" id="card-${g.ticker}" style="border-top: 3px solid ${typeColor}80;">
       <!-- HEADER: Ticker e Preço -->
-      <div class="asset-header" data-toggle-card data-ticker="${g.ticker}">
-        <div class="asset-info-main">
-          <div class="asset-status-badge" style="background: ${stateColor}15; color: ${stateColor}; border: 1px solid ${stateColor}30;">
-            ${estadoOp}
-          </div>
-          <div class="asset-ticker-box">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; flex-wrap: wrap;">
-              <span class="asset-ticker-symbol">${g.ticker}</span>
-              <span class="type-badge" style="background: ${typeColor}15; color: ${typeColor}; border: 1px solid ${typeColor}30; font-size: 0.6rem; padding: 1px 6px; border-radius: 4px; font-weight: 800; display: flex; align-items: center; gap: 3px;">
-                <i class="fas ${typeIcon}" style="font-size: 0.55rem;"></i> ${typeLabel}
-              </span>
-              ${sInfo ? `<span class="strategy-badge strategy-badge--${sInfo.category.toLowerCase()}">${sInfo.category}</span>` : ''}
+      <div class="asset-header">
+        <div class="asset-header-clickable" data-toggle-card data-ticker="${g.ticker}">
+          <div class="asset-info-main">
+            <div class="asset-status-badge" style="background: ${stateColor}15; color: ${stateColor}; border: 1px solid ${stateColor}30;">
+              ${estadoOp}
             </div>
-            <span class="asset-name" title="${g.nome}">${g.nome}</span>
+            <div class="asset-ticker-box">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; flex-wrap: wrap;">
+                <span class="asset-ticker-symbol">${g.ticker}</span>
+                <span class="type-badge" style="background: ${typeColor}15; color: ${typeColor}; border: 1px solid ${typeColor}30; font-size: 0.6rem; padding: 1px 6px; border-radius: 4px; font-weight: 800; display: flex; align-items: center; gap: 3px;">
+                  <i class="fas ${typeIcon}" style="font-size: 0.55rem;"></i> ${typeLabel}
+                </span>
+                ${sInfo ? `<span class="strategy-badge strategy-badge--${sInfo.category.toLowerCase()}">${sInfo.category}</span>` : ''}
+              </div>
+              <span class="asset-name" title="${g.nome}">${g.nome}</span>
+            </div>
+          </div>
+          
+          <div class="asset-price-box">
+            <div class="asset-price">${fmtEUR.format(precoAtual)}</div>
+            <div class="asset-change ${lucroAtual >= 0 ? "up" : "down"}">
+              ${lucroAtual >= 0 ? "+" : ""}${fmtEUR.format(lucroAtual)} (${pLossPct.toFixed(1)}%)
+            </div>
           </div>
         </div>
-        
-        <div class="asset-price-box">
-          <div class="asset-price">${fmtEUR.format(precoAtual)}</div>
-          <div class="asset-change ${lucroAtual >= 0 ? "up" : "down"}">
-            ${lucroAtual >= 0 ? "+" : ""}${fmtEUR.format(lucroAtual)} (${pLossPct.toFixed(1)}%)
-          </div>
-        </div>
+
+        <button class="btn ghost btn-icon expand-toggle" data-expand-card="${g.ticker}" title="Expandir/Recolher">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
       </div>
 
       <!-- PROGRESSO DO OBJETIVO -->
       ${objetivoFin > 0 ? `
-      <div style="margin: 0 16px 12px; padding: 10px; background: rgba(34, 197, 94, 0.03); border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.1);">
+      <div class="asset-goal-progress" style="margin: 0 16px 12px; padding: 10px; background: rgba(34, 197, 94, 0.03); border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.1);">
         <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
           <span style="color: var(--muted-foreground)">Objetivo de Lucro: <strong>${fmtEUR.format(objetivoFin)}</strong></span>
           <span style="color: ${lucroAtual >= objetivoFin ? 'var(--success)' : (lucroAtual > 0 ? '#22c55e' : '#ef4444')}; font-weight: 800;">
@@ -2149,7 +2168,7 @@ function wireQuickActions(gruposArr) {
 
       <!-- ALOCAÇÃO ESTRATÉGICA -->
       ${sInfo ? `
-      <div style="margin: 0 16px 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; border: 1px solid var(--border);">
+      <div class="asset-allocation-box" style="margin: 0 16px 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; border: 1px solid var(--border);">
         <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
           <span style="color: var(--muted-foreground)">Alocação: <strong>${currentW.toFixed(1)}%</strong></span>
           <span style="color: var(--muted-foreground)">Alvo: <strong>${targetW.toFixed(1)}%</strong></span>

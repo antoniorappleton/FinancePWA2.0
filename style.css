@@ -2241,7 +2241,6 @@ body.auth-screen .form-grid {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
   background: rgba(var(--primary), 0.02);
   user-select: none;
 }
@@ -2386,6 +2385,35 @@ body.auth-screen .form-grid {
 [data-theme="dark"] .metric-item--highlight {
   background: rgba(59, 130, 246, 0.1);
   border-color: rgba(59, 130, 246, 0.25);
+}
+
+
+/* Expansion Toggle */
+.expand-toggle {
+  margin-left: 10px;
+  transition: transform 0.3s ease;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.asset-card:not(.is-collapsed) .expand-toggle {
+  transform: rotate(180deg);
+}
+
+.asset-header-clickable {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Collapsed State */
+.asset-card.is-collapsed .asset-goal-progress,
+.asset-card.is-collapsed .asset-allocation-box,
+.asset-card.is-collapsed .asset-metrics-grid,
+.asset-card.is-collapsed .asset-actions {
+  display: none !important;
 }
 
 .asset-actions {
