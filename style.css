@@ -2388,16 +2388,22 @@ body.auth-screen .form-grid {
 }
 
 
-/* Expansion Toggle */
-.expand-toggle {
-  margin-left: 10px;
-  transition: transform 0.3s ease;
-  z-index: 2;
-  cursor: pointer;
+/* --- Estilos de Colapsar/Expandir (Refined) --- */
+.asset-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+  position: relative;
 }
 
-.asset-card:not(.is-collapsed) .expand-toggle {
-  transform: rotate(180deg);
+.asset-card:active {
+  transform: scale(0.995);
+}
+
+.asset-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0; /* padding is handled by children */
 }
 
 .asset-header-clickable {
@@ -2405,15 +2411,87 @@ body.auth-screen .form-grid {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 16px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Collapsed State */
+.expand-toggle {
+  width: 44px; /* Larger hit area for mobile */
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.asset-card:not(.is-collapsed) .expand-toggle {
+  transform: rotate(180deg);
+  background: rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+  border-color: rgba(var(--primary-rgb, 59, 130, 246), 0.3);
+  color: var(--primary);
+}
+
+/* Collapsed State Visibility Control */
 .asset-card.is-collapsed .asset-goal-progress,
 .asset-card.is-collapsed .asset-allocation-box,
 .asset-card.is-collapsed .asset-metrics-grid,
 .asset-card.is-collapsed .asset-actions {
   display: none !important;
+}
+
+/* --- Ajustes Mobile (Responsiveness) --- */
+@media (max-width: 600px) {
+  .asset-header-clickable {
+    padding: 12px 14px;
+  }
+  
+  .asset-ticker-symbol {
+    font-size: 0.95rem;
+  }
+  
+  .asset-name {
+    font-size: 0.7rem;
+  }
+  
+  .asset-price {
+    font-size: 1rem;
+  }
+  
+  .asset-change {
+    font-size: 0.65rem;
+  }
+
+  .asset-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .asset-actions {
+    padding: 12px;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  
+  .asset-actions .btn {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 8px 4px;
+  }
+  
+  .asset-actions .btn-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+  }
 }
 
 .asset-actions {

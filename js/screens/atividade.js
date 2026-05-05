@@ -1149,9 +1149,9 @@ function wireQuickActions(gruposArr) {
 
     detModalEl.classList.remove("hidden");
   }
-    detClose?.addEventListener("click", () => detModal.classList.add("hidden"));
+    detClose?.addEventListener("click", () => detModal?.classList.add("hidden"));
     detModal?.addEventListener("click", (e) => {
-      if (e.target.id === "activityDetailModal") detModal.classList.add("hidden");
+      if (e.target.id === "activityDetailModal") detModal?.classList.add("hidden");
     });
 
     cancel?.addEventListener("click", closeModal);
@@ -1193,6 +1193,7 @@ function wireQuickActions(gruposArr) {
       const btn = e.target.closest?.("[data-expand-card]");
       if (!btn) return;
       
+      e.stopPropagation(); // Evitar abrir o modal ao expandir
       const card = btn.closest(".asset-card");
       if (card) {
         card.classList.toggle("is-collapsed");
@@ -2215,10 +2216,11 @@ function wireQuickActions(gruposArr) {
           <span class="metric-label">Rácio R/R</span>
           <span class="metric-value">
             ${(() => {
-        const risk = precoAtual - stopTec;
-        const reward = tp2 - precoAtual;
-        return risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
-      })()}
+              const risk = precoAtual - stopTec;
+              const reward = tp2 - precoAtual;
+              if (risk > 0 && reward > 0) return `1:${(reward / risk).toFixed(1)}`;
+              return "—";
+            })()}
           </span>
         </div>
         <div class="metric-item">
