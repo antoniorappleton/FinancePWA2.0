@@ -3093,6 +3093,7 @@ body.auth-screen .form-grid {
     border: 1px solid #ddd !important;
     background: #f0f0f0 !important;
     -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 
