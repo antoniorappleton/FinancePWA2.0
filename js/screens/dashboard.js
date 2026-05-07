@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   getDocs,
   doc,
+  Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   calculateLucroMaximoScore,
@@ -131,8 +132,11 @@ export async function initScreen() {
       } else if (q < 0) {
         // Venda: realiza lucro com base no custo médio
         const sellQtd = Math.abs(q);
-        const lucroVenda = (p - g.custoMedio) * sellQtd;
-        g.realizado += lucroVenda;
+        const effectiveSell = Math.min(sellQtd, g.quantidade);
+        if (effectiveSell > 0) {
+          const lucroVenda = (p - g.custoMedio) * effectiveSell;
+          g.realizado += lucroVenda;
+        }
         g.quantidade -= sellQtd;
         if (g.quantidade <= 0) {
           g.quantidade = 0;
@@ -321,9 +325,11 @@ export async function initScreen() {
   function closeAddModal() {
     addModal?.classList.add("hidden");
     addForm?.reset();
-    // repõe o label (caso tenha mudado para Venda)
+    // repõe o label e data (caso tenha mudado)
     if (labelPreco)
       labelPreco.firstChild.textContent = "Preço da transação (€)";
+    const fData = document.getElementById("dataAtivo");
+    if (fData) fData.value = new Date().toISOString().split("T")[0];
   }
   addClose?.addEventListener("click", closeAddModal);
   addCancel?.addEventListener("click", closeAddModal);
@@ -382,7 +388,10 @@ export async function initScreen() {
       quantidade, // negativo na venda
       precoCompra: preco, // mantém a compatibilidade com os teus cálculos atuais
       objetivoFinanceiro: isNaN(objetivo) ? 0 : objetivo,
-      dataCompra: serverTimestamp(), // data/hora automática
+      dataCompra: (() => {
+        const dVal = document.getElementById("dataAtivo")?.value;
+        return dVal ? Timestamp.fromDate(new Date(dVal)) : serverTimestamp();
+      })(),
     };
 
     try {

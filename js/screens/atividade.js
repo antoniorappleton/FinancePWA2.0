@@ -19,6 +19,8 @@ import {
   getDoc,
   getDocs,
   deleteField,
+  deleteDoc,
+  Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 import { parseSma, getAssetType } from "../utils/scoring.js";
@@ -649,6 +651,7 @@ function wireQuickActions(gruposArr) {
   const fMerc = $("#pfMercado");
   const fQtd = $("#pfQuantidade");
   const fPreco = $("#pfPreco");
+  const fData = $("#pfDataCompra");
   const fObj = $("#pfObjetivo");
   const fLink = $("#pfLink");
 
@@ -673,6 +676,7 @@ function wireQuickActions(gruposArr) {
     if (fMerc) fMerc.value = g.mercado || "";
     if (fQtd) fQtd.value = "";
     if (fPreco) fPreco.value = "";
+    if (fData) fData.value = new Date().toISOString().split("T")[0];
     if (fObj) fObj.value = g.objetivo || "";
     if (fLink) fLink.value = g.link || "";
     if (vendaTot) vendaTot.checked = false;
@@ -1146,8 +1150,83 @@ function wireQuickActions(gruposArr) {
       bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
     }
     if (bBuy) bBuy.innerHTML = `<i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}`;
+    
+    // (NOVO) Renderizar histórico de movimentos
+    renderMovementHistory(ticker);
 
     detModalEl.classList.remove("hidden");
+  }
+
+  function renderMovementHistory(ticker) {
+    const corpo = document.getElementById("detHistoricoCorpo");
+    if (!corpo) return;
+
+    const movimentos = (_allMovimentos || [])
+      .filter(m => m.ticker === ticker)
+      .sort((a, b) => b.date - a.date); // Mais recentes primeiro
+
+    if (movimentos.length === 0) {
+      corpo.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--muted-foreground);">Sem movimentos registados.</td></tr>';
+      return;
+    }
+
+    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+    corpo.innerHTML = movimentos.map(m => {
+      const isVenda = m.qtd < 0;
+      const tipoLabel = isVenda ? '<span style="color:#ef4444;">Venda</span>' : '<span style="color:#22c55e;">Compra</span>';
+      const qtdAbs = Math.abs(m.qtd);
+      const dataStr = m.date.toLocaleDateString("pt-PT");
+      
+      return `
+        <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">
+          <td style="padding: 10px;">${dataStr}</td>
+          <td style="padding: 10px;">${tipoLabel}</td>
+          <td style="padding: 10px; text-align: right; font-weight: 600;">${qtdAbs.toFixed(4).replace(/\.?0+$/, "")}</td>
+          <td style="padding: 10px; text-align: right;">${fmtEUR.format(m.preco)}</td>
+          <td style="padding: 10px; text-align: center;">
+            <div style="display: flex; gap: 8px; justify-content: center;">
+              <button class="btn-history-edit" data-edit-move="${m.id}" style="border:none; background:none; cursor:pointer; color:var(--primary); font-size: 0.9rem;" title="Editar"><i class="fas fa-edit"></i></button>
+              <button class="btn-history-delete" data-delete-move="${m.id}" style="border:none; background:none; cursor:pointer; color:#ef4444; font-size: 0.9rem;" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    // Wire up actions for history items
+    corpo.querySelectorAll("[data-edit-move]").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const docId = btn.getAttribute("data-edit-move");
+        $("#activityDetailModal")?.classList.add("hidden");
+        // Simular o clique no botão de edição global
+        const dummyBtn = document.createElement("button");
+        dummyBtn.setAttribute("data-edit", docId);
+        dummyBtn.setAttribute("data-edit-ticker", ticker);
+        dummyBtn.style.display = "none";
+        document.getElementById("listaAtividades").appendChild(dummyBtn);
+        dummyBtn.click();
+        dummyBtn.remove();
+      };
+    });
+
+    corpo.querySelectorAll("[data-delete-move]").forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm("Tem a certeza que deseja eliminar este movimento? Esta ação é irreversível.")) return;
+        const docId = btn.getAttribute("data-delete-move");
+        try {
+          await deleteDoc(doc(db, "ativos", docId));
+          // O onSnapshot tratará de atualizar a UI, mas vamos fechar o modal para evitar confusão se o ticker desaparecer
+          $("#activityDetailModal")?.classList.add("hidden");
+          showToast("Movimento eliminado com sucesso.");
+        } catch (err) {
+          console.error("Erro ao eliminar movimento:", err);
+          alert("Não foi possível eliminar o movimento.");
+        }
+      };
+    });
   }
     detClose?.addEventListener("click", () => detModal?.classList.add("hidden"));
     detModal?.addEventListener("click", (e) => {
@@ -1234,6 +1313,10 @@ function wireQuickActions(gruposArr) {
           if (fMerc) fMerc.value = d.mercado || "";
           if (fQtd) fQtd.value = Number(d.quantidade || 0);
           if (fPreco) fPreco.value = Number(d.precoCompra || 0);
+          if (fData) {
+            const dtRaw = d.dataCompra && typeof d.dataCompra.toDate === "function" ? d.dataCompra.toDate() : (d.dataCompra ? new Date(d.dataCompra) : new Date());
+            fData.value = dtRaw.toISOString().split("T")[0];
+          }
           if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
           if (fLink) fLink.value = d.linkExterno || "";
 
@@ -1324,6 +1407,7 @@ function wireQuickActions(gruposArr) {
             mercado: merc,
             quantidade: Number.isFinite(qtd) ? qtd : 0,
             precoCompra: Number.isFinite(preco) ? preco : 0,
+            dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : originalData.dataCompra || serverTimestamp(),
             objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
             linkExterno: lnk,
           });
@@ -1393,7 +1477,7 @@ function wireQuickActions(gruposArr) {
             precoCompra: preco,
             objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
             linkExterno: lnk,
-            dataCompra: serverTimestamp(),
+            dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : serverTimestamp(),
           };
           await addDoc(collection(db, "ativos"), payload);
 
@@ -1631,8 +1715,11 @@ function wireQuickActions(gruposArr) {
           g.qtd = novaQtd;
         } else if (safeQtd < 0) {
           const sellQtd = Math.abs(safeQtd);
-          const lucro = (safePreco - g.custoMedio) * sellQtd;
-          g.realizado += lucro;
+          const effectiveSell = Math.min(sellQtd, g.qtd);
+          if (effectiveSell > 0) {
+            const lucro = (safePreco - g.custoMedio) * effectiveSell;
+            g.realizado += lucro;
+          }
           g.qtd -= sellQtd;
           if (g.qtd <= 0) {
             g.qtd = 0;
@@ -1673,6 +1760,7 @@ function wireQuickActions(gruposArr) {
           ticker,
           qtd: safeQtd,
           preco: safePreco,
+          id: docu.id,
         });
       });
 

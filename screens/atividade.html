@@ -225,6 +225,21 @@
     background: rgba(0, 0, 0, 0.4);
     z-index: 9999;
   }
+
+  /* Estilo para a tabela de histórico */
+  #detHistoricoCorpo tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+  [data-theme="dark"] #detHistoricoCorpo tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .btn-history-edit, .btn-history-delete {
+    transition: all 0.2s;
+  }
+  .btn-history-edit:hover, .btn-history-delete:hover {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
 </style>
 
 <!-- ======== Modal de Detalhes do Ativo (Estratégico) ======== -->
@@ -338,6 +353,27 @@
         </div>
       </div>
 
+      <!-- BLOCO 8 — HISTÓRICO DE MOVIMENTOS -->
+      <div class="det-block" style="margin-bottom: 14px;">
+        <div class="det-block-title">📜 Histórico de Movimentos</div>
+        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+          <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
+            <thead style="position: sticky; top: 0; background: var(--background); z-index: 1;">
+              <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground); text-align: left;">
+                <th style="padding: 8px 10px;">Data</th>
+                <th style="padding: 8px 10px;">Tipo</th>
+                <th style="padding: 8px 10px; text-align: right;">Qtd</th>
+                <th style="padding: 8px 10px; text-align: right;">Preço</th>
+                <th style="padding: 8px 10px; text-align: center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="detHistoricoCorpo">
+              <tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--muted-foreground);">A carregar histórico...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- BLOCO 7 — METRICAS SECUNDARIAS (colapsavel) -->
       <details style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
          <summary style="font-weight: 700; font-size: 0.85rem; cursor: pointer; color: var(--muted-foreground); outline: none;">Métricas Secundárias &amp; Estratégia</summary>
@@ -442,6 +478,9 @@
 
         <label>Quantidade</label>
         <input id="pfQuantidade" type="number" step="0.0001" />
+
+        <label>Data</label>
+        <input id="pfDataCompra" type="date" />
 
         <label>Objetivo (lucro €)</label>
         <input id="pfObjetivo" type="number" step="0.01" />
