@@ -2041,8 +2041,18 @@ body.auth-screen .form-grid {
   border-top: 1px solid rgba(0, 0, 0, .08);
 }
 
+.modal-dialog form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* 🔑 Corpo scrolável */
 .modal-body {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 12px 18px 18px;
   /* espaço para o header não “colar” ao topo visualmente */
