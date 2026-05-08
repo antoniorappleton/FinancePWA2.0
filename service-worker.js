@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v21";
+const CACHE_NAME = "finance-pwa-v22";
 
 const ASSETS = [
   "./",
@@ -27,6 +27,15 @@ const ASSETS = [
   "./js/engines/portfolio-health.js",
   "./js/engines/sizing.js",
   "./js/engines/risk-contrib.js",
+  "./js/engines/etf-overlap.js",
+  "./js/engines/correlation.js",
+  "./js/engines/stress-test.js",
+  "./js/engines/thematic.js",
+  "./js/engines/macro.js",
+  "./js/engines/dna.js",
+  "./js/engines/temporal.js",
+  "./js/engines/observations.js",
+  "./js/engines/rebalance.js",
   "./screens/auth.html",
   "./screens/dashboard.html",
   "./screens/atividade.html",
