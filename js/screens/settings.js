@@ -171,21 +171,44 @@ export function initScreen() {
 
     if (btnSaveAlloc) {
       btnSaveAlloc.addEventListener("click", async () => {
+        const origHTML = btnSaveAlloc.innerHTML;
         btnSaveAlloc.disabled = true;
-        btnSaveAlloc.textContent = "...";
+        btnSaveAlloc.innerHTML = `<i class="fas fa-spinner fa-spin"></i> A guardar...`;
         try {
-          await setDoc(doc(db, "config", "strategy"), {
+          // --- Alocação por Classe ---
+          const classPayload = {
             allocStocks: Number(elAllocStocks.value),
             allocEtfs: Number(elAllocEtfs.value),
             allocBonds: Number(elAllocBonds.value),
             availableCash: Number(elAvailCash.value),
             monthlyBase: Number(elMonthlyBase.value)
+          };
+
+          // --- Alocação por Setor ---
+          const sectorAlloc = {};
+          SECTORS.forEach(s => {
+            const range = document.getElementById(s.id);
+            sectorAlloc[s.key] = Number(range?.value || 0);
+          });
+
+          // --- Estilo de Investimento ---
+          const styleAlloc = {};
+          STYLES.forEach(s => {
+            styleAlloc[s.key] = Number(document.getElementById(s.id)?.value || 0);
+          });
+
+          await setDoc(doc(db, "config", "strategy"), {
+            ...classPayload,
+            sectorAlloc,
+            styleAlloc
           }, { merge: true });
+
           if (allocStatus) {
-            allocStatus.textContent = "Estratégia guardada! ✅";
+            allocStatus.textContent = "✅ Estratégia completa guardada!";
             allocStatus.style.color = "var(--success)";
-            setTimeout(() => { allocStatus.textContent = ""; }, 3000);
+            setTimeout(() => { allocStatus.textContent = ""; }, 4000);
           }
+          if (window.showToast) window.showToast("Estratégia guardada! ✅");
         } catch(err) {
           if (allocStatus) {
             allocStatus.textContent = "Erro ao guardar";
@@ -194,7 +217,7 @@ export function initScreen() {
           console.error(err);
         }
         btnSaveAlloc.disabled = false;
-        btnSaveAlloc.textContent = "Guardar Estratégia";
+        btnSaveAlloc.innerHTML = origHTML;
       });
     }
 

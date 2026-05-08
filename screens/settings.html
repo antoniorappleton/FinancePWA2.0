@@ -316,18 +316,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--border);">
                  <div style="font-size: 0.85rem;">Total: <strong id="valAllocTotal">100%</strong></div>
                  <div id="cfgAllocStatus" class="muted" style="font-size: 0.8rem;"></div>
-                 <button id="btnSaveAlloc" class="btn premium small">Guardar Estratégia</button>
               </div>
-            </div>
-
-            <!-- BOTÃO PARA PORTFÓLIO SUGERIDO -->
-            <div style="margin-top: 24px; text-align: center;">
-              <button id="btnShowSuggested" class="btn outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border-style: dashed;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-                Ver Portfólio Sugerido (IA Algorithm)
-              </button>
             </div>
           </div>
         </div>
@@ -511,15 +500,9 @@
 
             </div>
 
-            <!-- Total + Guardar -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
-              <div style="font-size: 0.8rem; color: var(--muted-foreground);">
-                💡 O total pode ser inferior a 100% (restante vai para oportunidades)
-              </div>
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span id="cfgSectorStatus" class="muted" style="font-size: 0.75rem;"></span>
-                <button id="btnSaveSectors" class="btn premium small">Guardar Setores</button>
-              </div>
+            <!-- Nota informativa -->
+            <div style="margin-top: 16px; padding: 10px 12px; background: rgba(var(--primary-rgb),0.05); border-radius: 8px; font-size: 0.8rem; color: var(--muted-foreground);">
+              💡 O total pode ser inferior a 100% (restante vai para oportunidades). <span id="cfgSectorStatus" style="font-weight:700;"></span>
             </div>
           </div>
         </div>
@@ -583,7 +566,6 @@
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding: 12px; background: rgba(var(--primary-rgb), 0.05); border-radius: 8px;">
                <div style="font-size: 0.85rem;">Total de Estilo: <strong id="valStyleTotal">100%</strong></div>
-               <button id="btnSaveStyle" class="btn premium small">Guardar Perfil de Estilo</button>
             </div>
           </div>
         </div>
@@ -665,6 +647,34 @@
           </div>
         </div>
       </div>
+
+      <!-- ============================================================ -->
+      <!-- BLOCO FINAL: GUARDAR TUDO + VER PORTFÓLIO SUGERIDO (IA)      -->
+      <!-- Aparece SEMPRE no final, depois de todas as configurações     -->
+      <!-- ============================================================ -->
+      <div class="card" style="border: 2px solid var(--primary); background: linear-gradient(135deg, rgba(var(--primary-rgb),0.04) 0%, transparent 100%);">
+        <div class="card-content">
+          <div style="width:100%; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <i class="fas fa-brain" style="color:var(--primary); font-size:1.2rem;"></i>
+              <div>
+                <div style="font-weight:800; font-size:1rem;">Estratégia Configurada</div>
+                <div class="muted" style="font-size:0.8rem;">Define Liquidez, Alocação, Setores e Estilo — depois Guarda e vê o Portfólio Sugerido.</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+              <button id="btnSaveAlloc" class="btn premium" style="flex:1; min-width:180px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <i class="fas fa-save"></i> Guardar Estratégia
+              </button>
+              <button id="btnShowSuggested" class="btn outline" style="flex:1; min-width:180px; display:flex; align-items:center; justify-content:center; gap:8px; border-style:dashed;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Ver Portfólio Sugerido (IA)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- TAB: PERFIL & CONTA -->
