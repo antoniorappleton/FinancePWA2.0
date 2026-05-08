@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { safeMetric, clamp } from "../utils/normalize.js";
-import { normalizeSector } from "../utils/scoring.js";
+import { normalizeSector, cleanTicker } from "../utils/scoring.js";
 
 // ── Historical crisis scenarios with sector-level impacts ──
 const SCENARIOS = {
@@ -147,7 +147,7 @@ export function stressTest(portfolio, totalValue) {
       portfolioDrop += sim.expectedDrop * weight;
       
       assetDrops.push({
-        ticker: String(p.ticker || "").toUpperCase(),
+        ticker: cleanTicker(p.ticker),
         drop: sim.expectedDropPct,
         lossEUR: Math.round((p.valAtual || 0) * Math.abs(sim.expectedDrop)),
         sector: sim.sector

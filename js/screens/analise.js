@@ -34,6 +34,7 @@ import {
   annualizeRate,
   anualPreferido,
   parseSma,
+  cleanTicker,
 } from "../utils/scoring.js";
 import { INDICATOR_INFO } from "../utils/indicator-info.js";
 import { repairFirestoreData } from "../utils/maintenance.js";
@@ -134,11 +135,7 @@ const canon = (s) =>
     .replace(/\s+/g, " ")
     .trim();
 
-function cleanTicker(t) {
-  const s = String(t || "");
-  if (s.includes(":")) return s.split(":").pop().toUpperCase();
-  return s.toUpperCase();
-}
+// cleanTicker removido (importado de scoring.js)
 
 /* =========================================================
    Config ajustável — pesos/limites do algoritmo (visível)
@@ -2221,7 +2218,7 @@ export async function generateReportPDF_v2(rows = [], opts = {}) {
     data = (rows || []).map((r) => {
       const nome =
         String(r.nome ?? r.Nome ?? r.ativo ?? "").trim() || r.ticker || "Ativo";
-      const ticker = String(r.ticker ?? r.Ticker ?? "").toUpperCase();
+      const ticker = cleanTicker(r.ticker ?? r.Ticker ?? "");
       const investido = Number(
         r.investido ??
           (r.quantidade || 0) * (r.preco || r.valorStock || 0) ??

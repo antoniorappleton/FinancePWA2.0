@@ -15,6 +15,7 @@ import { generateAssetObservations, generatePortfolioObservations } from "../eng
 import { analyzeETFOverlap } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
 import { canonicalTicker } from "../utils/normalize.js";
+import { cleanTicker } from "../utils/scoring.js";
 
 const db = getFirestore(app);
 
@@ -37,10 +38,9 @@ async function runFullAnalysis() {
       getDoc(doc(db, "config", "strategy"))
     ]);
 
-    const acoesMap = new Map();
     acoesSnap.forEach(d => {
       const x = d.data();
-      if (x.ticker) acoesMap.set(String(x.ticker).toUpperCase(), x);
+      if (x.ticker) acoesMap.set(cleanTicker(x.ticker), x);
     });
 
     const strategy = stratSnap.exists() ? stratSnap.data() : {};
@@ -50,7 +50,7 @@ async function runFullAnalysis() {
     const rawPortfolio = [];
     ativosSnap.forEach(docu => {
       const d = docu.data();
-      const ticker = String(d.ticker || "").toUpperCase();
+      const ticker = cleanTicker(d.ticker);
       const mkt = acoesMap.get(ticker) || {};
       const precoAtual = Number(mkt.valorStock || mkt.price || 0);
       rawPortfolio.push({

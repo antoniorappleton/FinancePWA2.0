@@ -60,11 +60,7 @@ function canon(s) {
     .trim();
 }
 
-function cleanTicker(t) {
-  const s = String(t || "");
-  if (s.includes(":")) return s.split(":").pop().toUpperCase();
-  return s.toUpperCase();
-}
+// cleanTicker removido (importado de scoring.js)
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
@@ -609,9 +605,9 @@ async function carregarSimulacoesGuardadas() {
       let countPE = 0;
 
       sim.ativos.forEach(a => {
-        const ticker = String(a.ticker).toUpperCase();
+        const ticker = cleanTicker(a.ticker);
         const pAtual = _cachedPrices.get(ticker) || a.precoInicial;
-        const acaoFull = _cachedAcoes.find(ac => String(ac.ticker).toUpperCase() === ticker) || {};
+        const acaoFull = _cachedAcoes.find(ac => cleanTicker(ac.ticker) === ticker) || {};
         
         valorAtualTotal += a.qtd * pAtual;
         
@@ -696,7 +692,7 @@ async function carregarSimulacoesGuardadas() {
               </thead>
               <tbody>
                 ${sim.ativos.map(a => {
-                  const ticker = String(a.ticker).toUpperCase();
+                  const ticker = cleanTicker(a.ticker);
                   const pAt = _cachedPrices.get(ticker) || a.precoInicial;
                   const resAt = (pAt - a.precoInicial) * a.qtd;
                   const resPct = ((pAt - a.precoInicial) / a.precoInicial) * 100;
@@ -729,7 +725,7 @@ async function carregarSimulacoesGuardadas() {
   }
 }
 
-import { annualizeRate, anualPreferido, calculateLucroMaximoScore } from "../utils/scoring.js";
+import { annualizeRate, anualPreferido, calculateLucroMaximoScore, cleanTicker } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 
 function calcularMetricasBase_TOP(
@@ -972,7 +968,7 @@ async function fetchAcoesBase() {
     out.push({
       ...d, // Spread all fields (pe, evebitda, sma, etc) for the scoring engine
       nome: d.nome || d.ticker,
-      ticker: String(d.ticker).toUpperCase(),
+      ticker: cleanTicker(d.ticker),
       valorStock: Number(d.valorStock || 0),
       dividendoMedio24m: Number(d.dividendoMedio24m || 0),
       dividendo: Number(d.dividendo || 0),

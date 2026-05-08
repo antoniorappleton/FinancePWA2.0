@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { safeMetric, clamp } from "../utils/normalize.js";
-import { normalizeSector } from "../utils/scoring.js";
+import { normalizeSector, cleanTicker } from "../utils/scoring.js";
 
 // ── Config ──
 const RULES = {
@@ -32,7 +32,7 @@ export function calculatePositionSize(params) {
   if (!asset) return { recommendedSize: 0, maxSize: 0, warnings: ["Ativo inválido"], reasoning: [] };
 
   const totalVal = Math.max(totalPortfolioValue, 1);
-  const ticker = String(asset.ticker || "").toUpperCase();
+  const ticker = cleanTicker(asset.ticker);
   const warnings = [];
   const reasoning = [];
 
@@ -54,7 +54,7 @@ export function calculatePositionSize(params) {
   }
 
   // ── 3. Check existing position ──
-  const existingPos = currentPositions.find(p => String(p.ticker || "").toUpperCase() === ticker);
+  const existingPos = currentPositions.find(p => cleanTicker(p.ticker) === ticker);
   const existingPct = existingPos ? (existingPos.valAtual || 0) / totalVal : 0;
 
   if (existingPct >= RULES.maxSinglePosition) {
@@ -129,7 +129,7 @@ export function auditPositionSizes(positions, totalValue) {
   // Check individual positions
   for (const p of positions) {
     const pct = (p.valAtual || 0) / total;
-    const ticker = String(p.ticker || "").toUpperCase();
+    const ticker = cleanTicker(p.ticker);
 
     if (pct > RULES.maxSinglePosition * 1.5) {
       violations.push({ ticker, pct: Math.round(pct * 100), msg: `${ticker} está em ${(pct * 100).toFixed(1)}% — recomendado reduzir para <${RULES.maxSinglePosition * 100}%`, severity: "high" });

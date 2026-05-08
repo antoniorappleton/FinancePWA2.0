@@ -1,7 +1,7 @@
 // js/utils/reportGenerator.js
 import { db } from "../firebase-config.js";
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { calculateLucroMaximoScore, getAssetType } from "./scoring.js";
+import { calculateLucroMaximoScore, getAssetType, cleanTicker } from "./scoring.js";
 
 let chartInstances = {};
 
@@ -64,7 +64,7 @@ export async function generatePortfolioReport() {
 
   try {
     const [ativosSnap, acoesSnap] = await Promise.all([getDocs(collection(db, "ativos")), getDocs(collection(db, "acoesDividendos"))]);
-    const acoesMap = new Map(); acoesSnap.forEach(d => { const x = d.data(); if (x.ticker) acoesMap.set(String(x.ticker).toUpperCase(), x); });
+    const acoesMap = new Map(); acoesSnap.forEach(d => { const x = d.data(); if (x.ticker) acoesMap.set(cleanTicker(x.ticker), x); });
     
     const movimentos = [];
     ativosSnap.forEach(docu => {
@@ -78,7 +78,7 @@ export async function generatePortfolioReport() {
 
     const grupos = new Map();
     movimentos.forEach(m => {
-      const t = String(m.ticker || "").toUpperCase();
+      const t = cleanTicker(m.ticker);
       if (!t) return;
       const g = grupos.get(t) || { 
         ticker: t, 

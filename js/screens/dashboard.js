@@ -69,7 +69,8 @@ export async function initScreen() {
       if (d.ticker && d.valorStock !== undefined && d.valorStock !== null) {
         const preco = Number(d.valorStock);
         if (!isNaN(preco)) {
-          valorAtualMap.set(String(d.ticker).toUpperCase(), preco);
+          // Usar cleanTicker para garantir correspondência com outros ecrãs
+          valorAtualMap.set(cleanTicker(d.ticker), preco);
         }
       }
     });
@@ -90,7 +91,7 @@ export async function initScreen() {
     movimentosArr.sort((a, b) => a.date - b.date);
 
     movimentosArr.forEach((a) => {
-      const ticker = (a.ticker || "").toUpperCase();
+      const ticker = cleanTicker(a.ticker);
       if (!ticker) return;
 
       const g = agrupadoPorTicker.get(ticker) || {
@@ -413,7 +414,8 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
   // Converter snapshots em Map de objetos para o CapitalManager
   const acoesDataMap = new Map();
   lastAcoesSnap?.forEach(doc => {
-    acoesDataMap.set(String(doc.data().ticker).toUpperCase(), doc.data());
+    const d = doc.data();
+    if (d.ticker) acoesDataMap.set(cleanTicker(d.ticker), d);
   });
 
   const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap);
@@ -526,7 +528,7 @@ async function carregarAtividadeRecenteSimplificada(snapAtivos) {
 
       movimentos.push({
         id: doc.id,
-        ticker: String(d.ticker || "").toUpperCase(),
+        ticker: cleanTicker(d.ticker),
         nome: d.nome || d.ticker || "Ativo",
         tipo: (d.tipoAcao || "compra").toLowerCase(),
         quantidade: toNumStrict(d.quantidade),

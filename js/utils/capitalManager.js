@@ -1,5 +1,5 @@
 // js/utils/capitalManager.js
-import { calculateLucroMaximoScore } from "./scoring.js";
+import { calculateLucroMaximoScore, cleanTicker } from "./scoring.js";
 
 /**
  * Define as regras dinâmicas de reserva (War Chest) baseadas no estado da carteira.
@@ -38,7 +38,7 @@ export const CAPITAL_STRATEGY = {
  */
 export function calculatePortfolioState(positions, acoesData) {
   const acoesMap = Array.isArray(acoesData) 
-    ? new Map(acoesData.map(a => [String(a.ticker).toUpperCase(), a]))
+    ? new Map(acoesData.map(a => [cleanTicker(a.ticker), a]))
     : acoesData;
 
   let totalValue = 0;
@@ -46,7 +46,7 @@ export function calculatePortfolioState(positions, acoesData) {
   let count = 0;
 
   positions.forEach(p => {
-    const ticker = String(p.ticker).toUpperCase();
+    const ticker = cleanTicker(p.ticker);
     const mkt = acoesMap.get(ticker);
     if (!mkt) return;
 

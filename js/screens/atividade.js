@@ -156,7 +156,7 @@ async function fetchDividendInfoByTickers(tickers) {
     const snap = await getDocs(q2);
     snap.forEach((d) => {
       const x = d.data();
-      if (x.ticker) out.set(String(x.ticker).toUpperCase(), x);
+      if (x.ticker) out.set(cleanTicker(x.ticker), x);
     });
   }
   return out;
@@ -1685,7 +1685,7 @@ function wireQuickActions(gruposArr) {
       const infoMap = new Map();
       aSnap.forEach((d) => {
         const x = d.data();
-        if (x.ticker) infoMap.set(String(x.ticker).toUpperCase(), x);
+        if (x.ticker) infoMap.set(cleanTicker(x.ticker), x);
       });
 
       const grupos = new Map();
@@ -2193,7 +2193,7 @@ function wireQuickActions(gruposArr) {
     const snap = await getDocs(q);
     snap.forEach((d) => {
       const x = d.data();
-      if (x.ticker) out.set(String(x.ticker).toUpperCase(), x);
+      if (x.ticker) out.set(cleanTicker(x.ticker), x);
     });
     return out;
   }
