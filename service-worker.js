@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v20";
+const CACHE_NAME = "finance-pwa-v21";
 
 const ASSETS = [
   "./",
@@ -23,6 +23,10 @@ const ASSETS = [
   "./js/engines/valuation.js",
   "./js/engines/risk.js",
   "./js/engines/score-v2.js",
+  "./js/engines/factors.js",
+  "./js/engines/portfolio-health.js",
+  "./js/engines/sizing.js",
+  "./js/engines/risk-contrib.js",
   "./screens/auth.html",
   "./screens/dashboard.html",
   "./screens/atividade.html",
