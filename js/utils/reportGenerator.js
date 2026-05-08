@@ -112,9 +112,10 @@ export async function generatePortfolioReport() {
       const mkt = acoesMap.get(p.ticker) || {};
       const precoAtual = Number(mkt.valorStock || mkt.price || 0), valAtual = p.qtd * precoAtual;
       const scoreObj = calculateLucroMaximoScore(mkt);
+      const assetType = getAssetType(p.ticker, mkt);
       totalValue += valAtual; totalInvested += p.investido;
       totalScoreWeight += (scoreObj.score * 100) * valAtual;
-      return { ...p, precoAtual, valAtual, score: scoreObj.score, mkt, category: scoreObj.assetType };
+      return { ...p, precoAtual, valAtual, score: scoreObj.score, mkt, category: assetType };
     });
 
     const assetAvg = totalValue > 0 ? (totalScoreWeight / totalValue) : 0;

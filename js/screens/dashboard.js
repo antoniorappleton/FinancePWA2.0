@@ -20,6 +20,7 @@ import {
   cleanTicker,
   normalizeSector
 } from "../utils/scoring.js";
+import { toNumStrict } from "../utils/num.js";
 import { Treemap } from "../components/treemap.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 

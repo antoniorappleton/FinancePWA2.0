@@ -7,7 +7,7 @@ import { doLogout } from "./auth.js";
 import { db } from "../firebase-config.js";
 import { doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { generatePortfolioReport } from "../utils/reportGenerator.js";
-import { calculateLucroMaximoScore, getAssetType } from "../utils/scoring.js";
+import { calculateLucroMaximoScore, getAssetType, normalizeSector } from "../utils/scoring.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -140,7 +140,7 @@ export function initScreen() {
        if (v <= 100 && v >= 0) elCoreW.value = 100 - v;
     });
     
-    // Load Strategy from Firebase
+    // Load Strategy from Firebase (single read for class + sector allocations)
     getDoc(doc(db, "config", "strategy")).then(snap => {
        if (snap.exists()) {
           const d = snap.data();
@@ -153,7 +153,19 @@ export function initScreen() {
           if (typeof d.allocEtfs === "number") elAllocEtfs.value = d.allocEtfs;
           if (typeof d.allocBonds === "number") elAllocBonds.value = d.allocBonds;
           
+          // Also load sector allocations from the same snapshot
+          const savedSectors = d.sectorAlloc || {};
+          SECTORS.forEach(s => {
+            if (typeof savedSectors[s.key] === "number") {
+              const range = document.getElementById(s.id);
+              const numEl = document.getElementById(s.id + "Num");
+              if (range) range.value = savedSectors[s.key];
+              if (numEl) numEl.value = savedSectors[s.key];
+            }
+          });
+          
           calculateAllocations();
+          updateSectorUI();
        }
     }).catch(e => console.error("Strategy load err:", e));
 
@@ -185,6 +197,190 @@ export function initScreen() {
         btnSaveAlloc.textContent = "Guardar Estratégia";
       });
     }
+
+    const SECTORS = [
+      { key: "tech",       id: "cfgSectorTech",       valId: "valSectorTech",       color: "#6366f1", dbName: "Tecnologia" },
+      { key: "health",     id: "cfgSectorHealth",     valId: "valSectorHealth",     color: "#ec4899", dbName: "Saúde" },
+      { key: "fin",        id: "cfgSectorFin",        valId: "valSectorFin",        color: "#3b82f6", dbName: "Financeiros" },
+      { key: "energy",     id: "cfgSectorEnergy",     valId: "valSectorEnergy",     color: "#f59e0b", dbName: "Energia" },
+      { key: "cyclical",   id: "cfgSectorCyclical",   valId: "valSectorCyclical",   color: "#f97316", dbName: "Consumo Cíclico" },
+      { key: "defensive",  id: "cfgSectorDefensive",  valId: "valSectorDefensive",  color: "#22c55e", dbName: "Consumo Defensivo" },
+      { key: "industrial", id: "cfgSectorIndustrial", valId: "valSectorIndustrial", color: "#14b8a6", dbName: "Industriais" },
+      { key: "materials",  id: "cfgSectorMaterials",  valId: "valSectorMaterials",  color: "#84cc16", dbName: "Materiais" },
+      { key: "reits",      id: "cfgSectorReits",      valId: "valSectorReits",      color: "#a78bfa", dbName: "Imobiliário" },
+    ];
+
+    function updateSectorUI() {
+      const totalCash = Number(elAvailCash?.value) || 0;
+      let total = 0;
+
+      SECTORS.forEach(s => {
+        const range = document.getElementById(s.id);
+        const numEl = document.getElementById(s.id + "Num");
+        const valEl = document.getElementById(s.valId);
+        const pct = Number(range?.value || 0);
+        total += pct;
+
+        // Update range fill color
+        if (range) {
+          const fill = (pct / 40) * 100;
+          range.style.background = `linear-gradient(to right, ${s.color} ${fill}%, var(--border) ${fill}%)`;
+        }
+
+        // Update EUR value
+        if (valEl) {
+          if (totalCash > 0) {
+            valEl.textContent = fmtEUR(totalCash * (pct / 100));
+          } else {
+            valEl.textContent = `${pct}%`;
+          }
+        }
+      });
+
+      // Update total label
+      const totalEl = document.getElementById("valSectorTotal");
+      if (totalEl) {
+        totalEl.textContent = `${total}%`;
+        totalEl.style.color = total <= 100 ? "var(--success)" : "var(--destructive)";
+      }
+
+      // Update segmented progress bar
+      const bar = document.getElementById("sectorTotalBar");
+      if (bar && total > 0) {
+        bar.innerHTML = SECTORS.map(s => {
+          const range = document.getElementById(s.id);
+          const pct = Number(range?.value || 0);
+          const width = (pct / Math.max(total, 100)) * 100;
+          return pct > 0 ? `<div style="flex: ${pct}; background: ${s.color}; border-radius: 3px; min-width: 2px; transition: flex 0.3s;"></div>` : "";
+        }).join("");
+      } else if (bar) {
+        bar.innerHTML = "";
+      }
+    }
+
+    // Wire range <-> number inputs bidirectionally
+    SECTORS.forEach(s => {
+      const range = document.getElementById(s.id);
+      const numEl = document.getElementById(s.id + "Num");
+
+      range?.addEventListener("input", () => {
+        if (numEl) numEl.value = range.value;
+        updateSectorUI();
+      });
+
+      numEl?.addEventListener("input", () => {
+        const v = Math.min(40, Math.max(0, Number(numEl.value) || 0));
+        numEl.value = v;
+        if (range) range.value = v;
+        updateSectorUI();
+      });
+    });
+
+    // Also update sectors when cash changes
+    elAvailCash?.addEventListener("input", updateSectorUI);
+
+    // Initial sector UI render (data already loaded from single getDoc above)
+    updateSectorUI();
+
+    // Save sectors button
+    const btnSaveSectors = document.getElementById("btnSaveSectors");
+    const sectorStatus = document.getElementById("cfgSectorStatus");
+    btnSaveSectors?.addEventListener("click", async () => {
+      btnSaveSectors.disabled = true;
+      btnSaveSectors.textContent = "...";
+      try {
+        const sectorAlloc = {};
+        SECTORS.forEach(s => {
+          const range = document.getElementById(s.id);
+          sectorAlloc[s.key] = Number(range?.value || 0);
+        });
+        await setDoc(doc(db, "config", "strategy"), { sectorAlloc }, { merge: true });
+        if (sectorStatus) {
+          sectorStatus.textContent = "Setores guardados! ✅";
+          sectorStatus.style.color = "var(--success)";
+          setTimeout(() => { sectorStatus.textContent = ""; }, 3000);
+        }
+      } catch (err) {
+        console.error(err);
+        if (sectorStatus) {
+          sectorStatus.textContent = "Erro ao guardar";
+          sectorStatus.style.color = "var(--destructive)";
+        }
+      }
+      btnSaveSectors.disabled = false;
+      btnSaveSectors.textContent = "Guardar Setores";
+    });
+
+    // --- LÓGICA DE ESTILOS ---
+    const STYLES = [
+      { key: "growth", id: "cfgStyleGrowth", valId: "valStyleGrowth" },
+      { key: "value",  id: "cfgStyleValue",  valId: "valStyleValue" },
+      { key: "div",    id: "cfgStyleDiv",    valId: "valStyleDiv" },
+      { key: "qual",   id: "cfgStyleQual",   valId: "valStyleQual" },
+    ];
+
+    function updateStyleUI() {
+      let total = 0;
+      STYLES.forEach(s => {
+        const range = document.getElementById(s.id);
+        const valEl = document.getElementById(s.valId);
+        const val = Number(range?.value || 0);
+        total += val;
+        if (valEl) valEl.textContent = `${val}%`;
+        
+        // Dynamic track color
+        if (range) {
+          const accent = range.style.getPropertyValue("--accent") || "#4f46e5";
+          range.style.background = `linear-gradient(to right, ${accent} ${val}%, var(--border) ${val}%)`;
+        }
+      });
+
+      const totalEl = document.getElementById("valStyleTotal");
+      if (totalEl) {
+        totalEl.textContent = `${total}%`;
+        totalEl.style.color = total === 100 ? "var(--success)" : "var(--destructive)";
+      }
+    }
+
+    STYLES.forEach(s => {
+      document.getElementById(s.id)?.addEventListener("input", updateStyleUI);
+    });
+
+    // Load styles from Firestore (in the main getDoc)
+    getDoc(doc(db, "config", "strategy")).then(snap => {
+       if (snap.exists()) {
+          const d = snap.data();
+          const savedStyles = d.styleAlloc || {};
+          STYLES.forEach(s => {
+            if (typeof savedStyles[s.key] === "number") {
+              const el = document.getElementById(s.id);
+              if (el) el.value = savedStyles[s.key];
+            }
+          });
+          updateStyleUI();
+       }
+    }).catch(() => {});
+
+    updateStyleUI();
+
+    // Local save for styles
+    const btnSaveStyle = document.getElementById("btnSaveStyle");
+    btnSaveStyle?.addEventListener("click", async () => {
+      btnSaveStyle.disabled = true;
+      btnSaveStyle.textContent = "...";
+      try {
+        const styleAlloc = {};
+        STYLES.forEach(s => {
+          styleAlloc[s.key] = Number(document.getElementById(s.id)?.value || 0);
+        });
+        await setDoc(doc(db, "config", "strategy"), { styleAlloc }, { merge: true });
+        if (window.showToast) window.showToast("Perfil de Estilo guardado! ✅");
+      } catch (err) {
+        console.error(err);
+      }
+      btnSaveStyle.disabled = false;
+      btnSaveStyle.textContent = "Guardar Perfil de Estilo";
+    });
 
     // --- LOGICA DO PORTFÓLIO SUGERIDO ---
     const btnShowSuggested = document.getElementById("btnShowSuggested");
@@ -225,87 +421,163 @@ export function initScreen() {
           bond: Number(elAllocBonds.value) || 0
         };
 
+        // 1. Calcular Pesos dos Setores Definidos
+        const userSectors = {};
+        let totalSectorWeight = 0;
+        SECTORS.forEach(s => {
+          const val = Number(document.getElementById(s.id)?.value || 0);
+          if (val > 0) {
+            userSectors[s.dbName] = val;
+            totalSectorWeight += val;
+          }
+        });
+
+        // Mapeamento de nomes reais da BD → nomes dos setores definidos pelo utilizador
+        const SECTOR_ALIASES = {
+          "Technology": "Tecnologia", "Tecnologia": "Tecnologia", "Tech": "Tecnologia",
+          "Healthcare": "Saúde", "Saúde": "Saúde", "Health Care": "Saúde", "Biotechnology": "Saúde",
+          "Financial Services": "Financeiros", "Financeiros": "Financeiros", "Financials": "Financeiros", "Banks": "Financeiros", "Insurance": "Financeiros",
+          "Energy": "Energia", "Energia": "Energia", "Oil & Gas": "Energia", "Utilities": "Energia",
+          "Consumer Cyclical": "Consumo Cíclico", "Consumo Cíclico": "Consumo Cíclico", "Cyclical": "Consumo Cíclico", "Luxury": "Consumo Cíclico", "Automotive": "Consumo Cíclico",
+          "Consumer Defensive": "Consumo Defensivo", "Consumo Defensivo": "Consumo Defensivo", "Consumer Staples": "Consumo Defensivo", "Defensive": "Consumo Defensivo", "Food": "Consumo Defensivo",
+          "Industrials": "Industriais", "Industriais": "Industriais", "Industrial": "Industriais", "Aerospace": "Industriais",
+          "Basic Materials": "Materiais", "Materiais": "Materiais", "Materials": "Materiais", "Mining": "Materiais", "Chemicals": "Materiais",
+          "Real Estate": "Imobiliário", "Imobiliário": "Imobiliário", "REITs": "Imobiliário", "Real Estate Investment Trusts": "Imobiliário",
+          "Communication Services": "Tecnologia", "Telecom": "Tecnologia",
+        };
+
+        // 1.2 Calcular Pesos de Estilo
+        const userStyles = {
+          growth: (Number(document.getElementById("cfgStyleGrowth")?.value) || 25) / 100,
+          value:  (Number(document.getElementById("cfgStyleValue")?.value) || 25) / 100,
+          div:    (Number(document.getElementById("cfgStyleDiv")?.value) || 25) / 100,
+          qual:   (Number(document.getElementById("cfgStyleQual")?.value) || 25) / 100,
+        };
+
         const scored = allData.map(d => {
-          const res = calculateLucroMaximoScore(d, "1m");
+          // Ajustar pesos do algoritmo baseados no Estilo do utilizador
+          // O Estilo atua como um multiplicador de preferência
+          const styleAdjWeights = {
+             R: 1 + (userStyles.growth * 2), // Growth aumenta importância de Crescimento
+             V: 1 + (userStyles.value * 2),  // Value aumenta importância de Valuation
+             D: 1 + (userStyles.div * 2),    // Div aumenta importância de Dividendos
+             E: 1 + (userStyles.qual * 2),   // Quality aumenta importância de Eficiência
+          };
+
+          const res = calculateLucroMaximoScore(d, "1m", styleAdjWeights);
           let type = getAssetType(d.ticker, d);
           const nomeU = String(d.nome || "").toUpperCase();
           if (nomeU.includes("BOND") || nomeU.includes("OBRIGA") || nomeU.includes("TREASURY")) {
             type = "bond";
           }
-          return { ...d, score: res.score, rAnnual: res.rAnnual, type };
+          const rawSector = normalizeSector(d);
+          const mappedSector = SECTOR_ALIASES[rawSector] || rawSector;
+          return { ...d, score: res.score, rAnnual: res.rAnnual, type, sector: mappedSector, rawSector };
         });
 
+        let selectedAssets = [];
+
+        // 2. Alocação por Classe
+        // ETFs e Bonds mantêm lógica simplificada (Top 5)
         const groups = {
-          stock: scored.filter(s => s.type === "stock").sort((a, b) => b.score - a.score).slice(0, 5),
           etf: scored.filter(s => s.type === "etf").sort((a, b) => b.score - a.score).slice(0, 5),
           bond: scored.filter(s => s.type === "bond").sort((a, b) => b.score - a.score).slice(0, 5)
         };
+
+        // 3. Alocação Estratégica de STOCKS por SETOR
+        const stockTotalCash = totalCash * (targets.stock / 100);
+        if (stockTotalCash > 0) {
+          if (totalSectorWeight > 0) {
+            // Seguir pesos do utilizador
+            for (const [sName, sWeight] of Object.entries(userSectors)) {
+              const sectorCash = stockTotalCash * (sWeight / totalSectorWeight);
+              const bestInSector = scored
+                .filter(a => a.type === "stock" && a.sector === sName)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 2); // 2 melhores de cada setor
+              
+              if (bestInSector.length > 0) {
+                const cashPerAsset = sectorCash / bestInSector.length;
+                bestInSector.forEach(item => {
+                  selectedAssets.push({ ...item, allocation: cashPerAsset, cat: "stock" });
+                });
+              }
+            }
+          } else {
+            // Fallback: Top 5 Stocks geral
+            const topStocks = scored.filter(s => s.type === "stock").sort((a, b) => b.score - a.score).slice(0, 5);
+            const cashPerStock = stockTotalCash / (topStocks.length || 1);
+            topStocks.forEach(item => {
+              selectedAssets.push({ ...item, allocation: cashPerStock, cat: "stock" });
+            });
+          }
+        }
+
+        // 4. Adicionar ETFs e Bonds
+        ["etf", "bond"].forEach(cat => {
+          const catCash = totalCash * (targets[cat] / 100);
+          if (catCash > 0 && groups[cat].length > 0) {
+            const cashPerAsset = catCash / groups[cat].length;
+            groups[cat].forEach(item => {
+              selectedAssets.push({ ...item, allocation: cashPerAsset, cat });
+            });
+          }
+        });
 
         let totalScore = 0;
         let totalYield = 0;
         let totalGrowth = 0;
         let sumPE = 0, sumROIC = 0, sumDebtEq = 0, countFundamental = 0;
-        const selectedAssets = [];
 
-        ["stock", "etf", "bond"].forEach(cat => {
-          const catP = targets[cat];
-          if (catP <= 0) return;
-          const catCash = totalCash * (catP / 100);
-          const items = groups[cat];
-          if (!items.length) return;
+        selectedAssets.forEach(item => {
+          const pctOfTotal = (item.allocation / totalCash) * 100;
+          const y = Number(item.yield) || 0;
+          const g = Number(item.rAnnual) || 0;
+          
+          // Fundamental metrics for snapshot
+          if (item.cat === "stock") {
+            const pe = Number(item.pe || item.p_e || 0);
+            const roic = Number(item.roic || 0);
+            const de = Number(item.debt_eq || 0);
+            if (pe > 0) sumPE += pe;
+            if (roic > 0) sumROIC += roic;
+            if (de > 0) sumDebtEq += de;
+            countFundamental++;
+          }
 
-          const cashPerItem = catCash / items.length;
-          items.forEach(item => {
-            const pctOfTotal = (cashPerItem / totalCash) * 100;
-            const y = Number(item.yield) || 0;
-            const g = Number(item.rAnnual) || 0;
-            
-            selectedAssets.push({ ...item, allocation: cashPerItem });
-            
-            // Fundamental metrics for snapshot
-            if (cat === "stock") {
-              const pe = Number(item.pe || item.p_e || 0);
-              const roic = Number(item.roic || 0);
-              const de = Number(item.debt_eq || 0);
-              if (pe > 0) sumPE += pe;
-              if (roic > 0) sumROIC += roic;
-              if (de > 0) sumDebtEq += de;
-              countFundamental++;
-            }
+          // Dados para gráficos
+          const clsName = item.cat === "stock" ? "Stocks" : item.cat === "etf" ? "ETFs" : "Bonds";
+          classData[clsName] += item.allocation;
+          
+          const sector = item.setor || item.sector || "Outros";
+          sectorData[sector] = (sectorData[sector] || 0) + item.allocation;
 
-            // Dados para gráficos
-            const clsName = cat === "stock" ? "Stocks" : cat === "etf" ? "ETFs" : "Bonds";
-            classData[clsName] += cashPerItem;
-            
-            const sector = item.setor || item.sector || "Outros";
-            sectorData[sector] = (sectorData[sector] || 0) + cashPerItem;
-
-            html += `
-              <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding: 10px;">
-                  <div style="font-weight: 700;">${item.ticker}</div>
-                  <div class="muted" style="font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-                    ${item.nome || item.ticker}
-                  </div>
-                </td>
-                <td><span class="badge" style="background: var(--muted); color: var(--foreground); font-size: 0.6rem;">${cat.toUpperCase()}</span></td>
-                <td style="text-align: right; font-weight: 700;">${fmtEUR(cashPerItem)}</td>
-                <td style="text-align: right; color: var(--muted-foreground);">${pctOfTotal.toFixed(1)}%</td>
-                <td style="text-align: right;">
-                  <span class="badge ${item.score > 0.7 ? "ok" : item.score > 0.5 ? "warn" : "danger"}">
-                    ${(item.score * 10).toFixed(1)}
-                  </span>
-                </td>
-              </tr>
-            `;
-            totalScore += item.score;
-            totalYield += y;
-            totalGrowth += g;
-            count++;
-          });
+          html += `
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 10px;">
+                <div style="font-weight: 700;">${item.ticker}</div>
+                <div class="muted" style="font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                  ${item.nome || item.ticker}
+                </div>
+              </td>
+              <td><span class="badge" style="background: var(--muted); color: var(--foreground); font-size: 0.6rem;">${item.cat.toUpperCase()}</span></td>
+              <td style="font-size: 0.7rem; color: var(--muted-foreground);">${sector}</td>
+              <td style="text-align: right; font-weight: 700;">${fmtEUR(item.allocation)}</td>
+              <td style="text-align: right; color: var(--muted-foreground);">${pctOfTotal.toFixed(1)}%</td>
+              <td style="text-align: right;">
+                <span class="badge ${item.score > 0.7 ? "ok" : item.score > 0.5 ? "warn" : "danger"}">
+                  ${(item.score * 10).toFixed(1)}
+                </span>
+              </td>
+            </tr>
+          `;
+          totalScore += item.score;
+          totalYield += y;
+          totalGrowth += g;
+          count++;
         });
 
-        sugTableBody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:30px;" class="muted">Sem dados suficientes.</td></tr>';
+        sugTableBody.innerHTML = html || '<tr><td colspan="6" style="text-align:center; padding:30px;" class="muted">Sem dados suficientes.</td></tr>';
         
         const avgGrowth = count > 0 ? (totalGrowth / count) : 0;
         const avgYield = count > 0 ? (totalYield / count) : 0;
@@ -670,7 +942,30 @@ export function initScreen() {
           monthlyBase: Number(elMonthlyBase.value),
           allocStocks: Number(elAllocStocks.value),
           allocEtfs: Number(elAllocEtfs.value),
-          allocBonds: Number(elAllocBonds.value)
+          allocBonds: Number(elAllocBonds.value),
+          sectorAlloc: (() => {
+            const sa = {};
+            const SECTOR_KEYS = ["tech","health","fin","energy","cyclical","defensive","industrial","materials","reits"];
+            SECTOR_KEYS.forEach(k => {
+              const el = document.getElementById(`cfgSector${k.charAt(0).toUpperCase() + k.slice(1)}`);
+              sa[k] = Number(el?.value || 0);
+            });
+            return sa;
+          })(),
+          styleAlloc: (() => {
+            const sta = {};
+            const STYLE_KEYS = ["growth", "value", "div", "qual"];
+            STYLE_KEYS.forEach(k => {
+              const el = document.getElementById(`cfgStyle${k.charAt(0).toUpperCase() + k.slice(1).replace("Qual", "Qual").replace("Div", "Div")}`);
+              // Special case for ID names
+              let id = `cfgStyle${k.charAt(0).toUpperCase() + k.slice(1)}`;
+              if (k === "div") id = "cfgStyleDiv";
+              if (k === "qual") id = "cfgStyleQual";
+              const input = document.getElementById(id);
+              sta[k] = Number(input?.value || 0);
+            });
+            return sta;
+          })()
         }, { merge: true });
       } catch (err) {
         console.error("Strategy save error:", err);

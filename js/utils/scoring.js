@@ -49,12 +49,7 @@ function infoToConfig(info) { return { min: info.min, target: info.target, max: 
 
 // --- FUNÇÕES DE SCORING ESPECIALIZADAS ---
 
-function scoreStock(acao, metrics) {
-  const { R, V, T, D, E, S } = metrics;
-  const W = SCORING_CFG.TYPE_WEIGHTS.stock;
-  const res = (W.R * (R||0)) + (W.V * (V||0)) + (W.T * (T||0)) + (W.D * (D||0)) + (W.E * (E||0)) + (W.S * (S||0));
-  return clamp(res, 0, 1);
-}
+// Duplicate early definition of scoreStock removed – using later version with custom multipliers.
 
 function scoreETF(acao, metrics) {
   const ticker = String(acao.ticker || "").toUpperCase();
@@ -170,33 +165,60 @@ export function annualizeRate(acao, period = "1y") {
   return (pClose - pOpen) / pOpen;
 }
 
-export function calculateLucroMaximoScore(acao, period = "1y") {
-  if (!acao) return { score: 0.5, components: { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 } };
-  const assetType = getAssetType(acao.ticker, acao);
-  const rAnnual = annualizeRate(acao, period);
-  const R_Price = clamp(rAnnual / 0.5, 0, 1);
-  const R_Eps = scoreEPS(Number(acao.epsYoY)||0, Number(acao.epsNextY)||0, Number(acao.eps_next_5y)||0);
-  const R = clamp(R_Price * 0.4 + R_Eps * 0.6, 0, 1);
-  const V = clamp(scorePE(acao.pe) * 0.5 + scoreGeneric(acao.peg, infoToConfig(INDICATOR_INFO.peg)) * 0.3 + scoreGeneric(acao.p_fcf, infoToConfig(INDICATOR_INFO.p_fcf)) * 0.2, 0, 1);
-  const p = Number(acao.valorStock || acao.price || 0);
-  const T = scoreTrend(p, acao.sma50, acao.sma200, acao.rsi_14);
-  const D = scoreDividendYield(acao.yield);
-  const E = clamp(scoreGeneric(acao.roic, infoToConfig(INDICATOR_INFO.roic)) * 0.4 + scoreGeneric(acao.roe, infoToConfig(INDICATOR_INFO.roe)) * 0.3 + scoreGeneric(acao.oper_margin, infoToConfig(INDICATOR_INFO.oper_margin)) * 0.3, 0, 1);
-  const S = scoreSolvency(acao.current_ratio, acao.debt_eq, null);
-  const metrics = { R, V, T, D, E, S, R_Price };
-  let finalScore = 0.5;
-  if (assetType === "etf") finalScore = scoreETF(acao, metrics);
-  else if (assetType === "crypto") finalScore = scoreCrypto(acao, metrics);
-  else finalScore = scoreStock(acao, metrics);
-  return {
-    score: Number(finalScore) || 0.5,
-    rAnnual,
-    assetType,
-    components: { R, V, T, D, E, S },
-    finalWeights:
-      SCORING_CFG.TYPE_WEIGHTS[assetType] || SCORING_CFG.TYPE_WEIGHTS.stock,
-  };
-}
+export function calculateLucroMaximoScore(acao, period = "1y", customMultipliers = null) {
+    if (!acao) return { score: 0.5, components: { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 } };
+    const assetType = getAssetType(acao.ticker, acao);
+    const rAnnual = annualizeRate(acao, period);
+
+    const R_Price = clamp(rAnnual / 0.5, 0, 1);
+    const R_Eps = scoreEPS(Number(acao.epsYoY)||0, Number(acao.epsNextY)||0, Number(acao.eps_next_5y)||0);
+    const R = clamp(R_Price * 0.4 + R_Eps * 0.6, 0, 1);
+
+    const V = clamp(scorePE(acao.pe) * 0.5 + scoreGeneric(acao.peg, infoToConfig(INDICATOR_INFO.peg)) * 0.3 + scoreGeneric(acao.p_fcf, infoToConfig(INDICATOR_INFO.p_fcf)) * 0.2, 0, 1);
+    
+    const p = Number(acao.valorStock || acao.price || 0);
+    const T = scoreTrend(p, acao.sma50, acao.sma200, acao.rsi_14);
+    const D = scoreDividendYield(acao.yield);
+    const E = clamp(scoreGeneric(acao.roic, infoToConfig(INDICATOR_INFO.roic)) * 0.4 + scoreGeneric(acao.roe, infoToConfig(INDICATOR_INFO.roe)) * 0.3 + scoreGeneric(acao.oper_margin, infoToConfig(INDICATOR_INFO.oper_margin)) * 0.3, 0, 1);
+    const S = scoreSolvency(acao.current_ratio, acao.debt_eq, null);
+
+    const metrics = { R, V, T, D, E, S, R_Price };
+
+    let finalScore = 0.5;
+    if (assetType === "etf") finalScore = scoreETF(acao, metrics);
+    else if (assetType === "crypto") finalScore = scoreCrypto(acao, metrics);
+    else finalScore = scoreStock(acao, metrics, customMultipliers);
+
+    return {
+      score: Number(finalScore) || 0.5,
+      rAnnual,
+      components: metrics
+    };
+  }
+
+  function scoreStock(acao, metrics, customMultipliers = null) {
+    const { R, V, T, D, E, S } = metrics;
+    const W = { ...SCORING_CFG.TYPE_WEIGHTS.stock };
+    
+    // Apply custom multipliers if provided (e.g., from Style settings)
+    if (customMultipliers) {
+      if (customMultipliers.R) W.R *= customMultipliers.R;
+      if (customMultipliers.V) W.V *= customMultipliers.V;
+      if (customMultipliers.D) W.D *= customMultipliers.D;
+      if (customMultipliers.E) W.E *= customMultipliers.E;
+      if (customMultipliers.T) W.T *= customMultipliers.T;
+      if (customMultipliers.S) W.S *= customMultipliers.S;
+      
+      // Re-normalize weights so they sum to 1
+      const sum = W.R + W.V + W.T + W.D + W.E + W.S;
+      if (sum > 0) {
+        W.R /= sum; W.V /= sum; W.T /= sum; W.D /= sum; W.E /= sum; W.S /= sum;
+      }
+    }
+
+    const res = (W.R * (R||0)) + (W.V * (V||0)) + (W.T * (T||0)) + (W.D * (D||0)) + (W.E * (E||0)) + (W.S * (S||0));
+    return clamp(res, 0, 1);
+  }
 
 export function parseSma(sma, currentPrice) {
   if (sma === undefined || sma === null || sma === "") return null;
