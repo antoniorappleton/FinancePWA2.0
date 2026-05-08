@@ -38,6 +38,7 @@ async function runFullAnalysis() {
       getDoc(doc(db, "config", "strategy"))
     ]);
 
+    const acoesMap = new Map();
     acoesSnap.forEach(d => {
       const x = d.data();
       if (x.ticker) acoesMap.set(cleanTicker(x.ticker), x);
