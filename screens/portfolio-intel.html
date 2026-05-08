@@ -1,0 +1,186 @@
+<!-- screens/portfolio-intel.html -->
+<div class="page" data-screen-title="Portfolio Intelligence">
+
+  <!-- HERO -->
+  <div class="card" style="border:2px solid var(--primary); background: linear-gradient(135deg, rgba(var(--primary-rgb),0.06) 0%, transparent 100%); margin-bottom:16px;">
+    <div class="card-content" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+      <div style="font-size:2.2rem;">🧠</div>
+      <div style="flex:1; min-width:200px;">
+        <div style="font-weight:800; font-size:1.15rem;">Portfolio Intelligence</div>
+        <div class="muted" style="font-size:0.85rem;">Análise quantitativa avançada — Quality, Momentum, Valuation, Risk, Factor Exposure, Stress Tests e mais.</div>
+      </div>
+      <button id="piRunAnalysis" class="btn premium" style="display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-bolt"></i> Analisar Portfólio
+      </button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="piLoading" class="card hidden" style="text-align:center; padding:40px;">
+    <i class="fas fa-spinner fa-spin" style="font-size:2rem; color:var(--primary);"></i>
+    <div class="muted" style="margin-top:12px;">A processar engines de análise...</div>
+  </div>
+
+  <!-- RESULTS (hidden until analysis runs) -->
+  <div id="piResults" class="hidden">
+
+    <!-- ── ROW 1: DNA + Health + Resilience ── -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:12px; margin-bottom:16px;">
+
+      <!-- Portfolio DNA -->
+      <div class="card" id="piDnaCard">
+        <div class="card-content" style="display:block;">
+          <div class="muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Portfolio DNA</div>
+          <div id="piDnaEmoji" style="font-size:2.5rem; margin-bottom:4px;">🧩</div>
+          <div id="piDnaName" style="font-weight:800; font-size:1.1rem;">—</div>
+          <div id="piDnaSecondary" class="muted" style="font-size:0.8rem;"></div>
+        </div>
+      </div>
+
+      <!-- Portfolio Health -->
+      <div class="card" id="piHealthCard">
+        <div class="card-content" style="display:block;">
+          <div class="muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Saúde do Portfólio</div>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <div id="piHealthScore" style="font-size:2.5rem; font-weight:900; color:var(--primary);">—</div>
+            <span class="muted">/100</span>
+          </div>
+          <div id="piHealthClass" class="muted" style="font-size:0.85rem;">—</div>
+          <div id="piHiddenRisk" style="font-size:0.8rem; margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <!-- Stress Resilience -->
+      <div class="card" id="piResilienceCard">
+        <div class="card-content" style="display:block;">
+          <div class="muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Resiliência a Crises</div>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <div id="piResilience" style="font-size:2.5rem; font-weight:900;">—</div>
+            <span class="muted">/100</span>
+          </div>
+          <div id="piResilienceSummary" class="muted" style="font-size:0.8rem;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROW 2: Factor Radar + Correlation ── -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+      <div class="card">
+        <div class="card-content" style="display:block;">
+          <h3 style="margin:0 0 12px 0; font-size:0.95rem;">📊 Exposição por Fatores</h3>
+          <canvas id="piFactorRadar" height="260"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-content" style="display:block;">
+          <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🔗 Correlação (Heatmap)</h3>
+          <div id="piCorrelationGrid" style="overflow-x:auto;"></div>
+          <div id="piCorrWarnings" class="muted" style="font-size:0.8rem; margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROW 3: Thematic Exposure ── -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-content" style="display:block;">
+        <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🌐 Exposição Temática (Megatrends)</h3>
+        <div id="piThematicBars" style="display:grid; gap:8px;"></div>
+        <div id="piThematicWarnings" class="muted" style="font-size:0.8rem; margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <!-- ── ROW 4: Stress Test Results ── -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-content" style="display:block;">
+        <h3 style="margin:0 0 12px 0; font-size:0.95rem;">💥 Stress Tests — Simulação de Crises</h3>
+        <div id="piStressGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- ── ROW 5: Weight vs Risk ── -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-content" style="display:block;">
+        <h3 style="margin:0 0 12px 0; font-size:0.95rem;">⚖️ Peso vs Contribuição de Risco</h3>
+        <canvas id="piWeightRiskChart" height="220"></canvas>
+        <div id="piRiskWarnings" class="muted" style="font-size:0.8rem; margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <!-- ── ROW 6: Asset Scorecards ── -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-content" style="display:block;">
+        <h3 style="margin:0 0 12px 0; font-size:0.95rem;">📋 Scorecards por Ativo (V2 Engine)</h3>
+        <div id="piScorecards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ── ROW 7: AI Observations ── -->
+    <div class="card" style="margin-bottom:16px; border-left: 3px solid var(--primary);">
+      <div class="card-content" style="display:block;">
+        <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🤖 Observações AI</h3>
+        <div id="piObservations" style="display:grid; gap:8px;"></div>
+      </div>
+    </div>
+
+    <!-- ── ROW 8: Rebalancing Suggestions ── -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-content" style="display:block;">
+        <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🔄 Sugestões de Rebalanceamento</h3>
+        <div id="piRebalanceSummary" style="font-weight:700; margin-bottom:10px;"></div>
+        <div id="piRebalanceActions" style="display:grid; gap:8px;"></div>
+      </div>
+    </div>
+
+  </div><!-- /piResults -->
+</div>
+
+<style>
+@media (max-width: 700px) {
+  #piResults [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.pi-obs { padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: flex-start; gap: 8px; }
+.pi-obs.positive  { background: rgba(34,197,94,0.08); border-left: 3px solid #22c55e; }
+.pi-obs.warning   { background: rgba(239,68,68,0.08); border-left: 3px solid #ef4444; }
+.pi-obs.caution   { background: rgba(249,115,22,0.08); border-left: 3px solid #f97316; }
+.pi-obs.neutral   { background: rgba(99,102,241,0.08); border-left: 3px solid #6366f1; }
+
+.pi-stress-card { padding: 12px; border-radius: 8px; background: var(--muted); }
+.pi-stress-card .scenario-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
+.pi-stress-card .drop-value { font-size: 1.4rem; font-weight: 900; }
+.pi-stress-card .drop-value.extreme { color: #ef4444; }
+.pi-stress-card .drop-value.high { color: #f97316; }
+.pi-stress-card .drop-value.moderate { color: #eab308; }
+.pi-stress-card .drop-value.low { color: #22c55e; }
+.pi-stress-card .loss-eur { font-size: 0.8rem; color: var(--muted-foreground); }
+
+.pi-theme-bar { display: flex; align-items: center; gap: 10px; }
+.pi-theme-bar .bar-fill { height: 8px; border-radius: 4px; background: var(--primary); transition: width 0.5s ease; }
+.pi-theme-bar .bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.pi-theme-bar .theme-label { min-width: 180px; font-size: 0.85rem; font-weight: 600; }
+.pi-theme-bar .theme-pct { min-width: 40px; text-align: right; font-weight: 800; font-size: 0.85rem; }
+
+.pi-scorecard { background: var(--muted); border-radius: 10px; padding: 14px; }
+.pi-scorecard .sc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.pi-scorecard .sc-ticker { font-weight: 800; font-size: 1rem; }
+.pi-scorecard .sc-grade { padding: 2px 10px; border-radius: 6px; font-weight: 800; font-size: 0.85rem; color: white; }
+.pi-scorecard .sc-grade.A { background: #22c55e; } .pi-scorecard .sc-grade.B { background: #3b82f6; }
+.pi-scorecard .sc-grade.C { background: #eab308; } .pi-scorecard .sc-grade.D { background: #f97316; }
+.pi-scorecard .sc-grade.F { background: #ef4444; }
+.pi-scorecard .sc-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.8rem; }
+.pi-scorecard .sc-bar-label { min-width: 75px; }
+.pi-scorecard .sc-bar-track { flex: 1; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.pi-scorecard .sc-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.pi-scorecard .sc-bar-val { min-width: 30px; text-align: right; font-weight: 700; }
+
+.pi-rebal-action { padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; }
+.pi-rebal-action.high { background: rgba(239,68,68,0.08); border-left: 3px solid #ef4444; }
+.pi-rebal-action.medium { background: rgba(249,115,22,0.08); border-left: 3px solid #f97316; }
+.pi-rebal-action.low { background: rgba(34,197,94,0.08); border-left: 3px solid #22c55e; }
+
+.corr-heatmap { border-collapse: collapse; font-size: 0.7rem; }
+.corr-heatmap th, .corr-heatmap td { padding: 4px 6px; text-align: center; border: 1px solid var(--border); min-width: 38px; }
+.corr-heatmap th { background: var(--muted); font-weight: 700; position: sticky; top: 0; }
+</style>
