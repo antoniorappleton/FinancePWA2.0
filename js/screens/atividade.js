@@ -1875,59 +1875,23 @@ function wireQuickActions(gruposArr) {
       _currentTotalInvested = totalInvestido;
       _currentGruposArr = gruposArr;
 
-      // Lucro Atual (aberto)
-      const lucroAberto = abertos.reduce((a, g) => a + (g.lucroAtual || 0), 0);
-      // Lucro Total (Acumulado) = Lucro Aberto + Lucro já realizado (vendas passadas)
-      const lucroRealizado = gruposArr.reduce(
-        (a, g) => a + (g.realizado || 0),
-        0,
-      );
-      const lucroTotal = lucroAberto + lucroRealizado;
-
-      const retornoPct = totalInvestido > 0.01 ? (lucroTotal / totalInvestido) * 100 : (lucroTotal > 0 ? 100 : 0);
-
-      // Dividendos
-      let rendimentoAnual = 0;
-      const eurosMes = new Array(12).fill(0);
-      for (const g of abertos) {
-        const info = infoMap.get(g.ticker) || {};
-        const divUnit = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0;
-        const per = info.periodicidade;
-        const mesT = info.mes;
-        const payN = pagamentosAno(per);
-        rendimentoAnual += g.qtd * divUnit * payN;
-        for (const m of mesesPagos(per, mesT)) eurosMes[m] += g.qtd * divUnit;
-      }
-
-      // Exposição acima da SMA200
-      let somaPesosAcima = 0;
-      for (const g of abertos) {
-        if (!totalInvestido) continue;
-        const w = (g.investido || 0) / totalInvestido;
-        const p = g.precoAtual,
-          s200 = g._sma200;
-        if (isFiniteNum(p) && isFiniteNum(s200) && Number(p) > Number(s200))
-          somaPesosAcima += w;
-      }
-      const expSMA200Pct = somaPesosAcima * 100;
-
-      // Preencher KPIs
-      const elTI = document.getElementById("prtTotalInvestido");
-      const elLT = document.getElementById("prtLucroTotal");
-      const elLA = document.getElementById("prtLucroAcumulado");
-      const elRA = document.getElementById("prtRendimentoAnual");
-      const elRP = document.getElementById("prtRetorno");
-      const elEX = document.getElementById("prtExpSMA200");
-      const elWC = document.getElementById("prtWarChest");
-
-      // --- (NOVO) Cálculo Estratégico do War Chest (CORE/SATELLITE) ---
-      let totalWarChest = 0;
+      // (NOVO) Cálculo da distribuição estratégica e por ativo
+      const estrategiaMap = new Map();
+      const ativosMap = new Map();
+      const tickerCatMap = new Map();
+      
       let satWeightTotal = 0;
 
-      // Primeiro pass: calcular exposição de Satélites
+      // Primeiro pass: preparar mapas e calcular exposição de Satélites
       for (const g of abertos) {
         const sInfo = getDynStrat(g.ticker, g.nome);
         g._strategy = sInfo; // Cache da info estratégica
+        const cat = sInfo ? sInfo.category : "NÃO DEFINIDA";
+        
+        estrategiaMap.set(cat, (estrategiaMap.get(cat) || 0) + (g.investido || 0));
+        ativosMap.set(g.ticker, (ativosMap.get(g.ticker) || 0) + (g.investido || 0));
+        tickerCatMap.set(g.ticker, cat);
+
         if (sInfo && sInfo.category === "SATELLITE" && totalInvestido > 0) {
           satWeightTotal += (g.investido / totalInvestido);
         }
@@ -1935,15 +1899,20 @@ function wireQuickActions(gruposArr) {
 
       const canReinforceSatellite = satWeightTotal < dynSatTotal;
 
-      // Segundo pass: calcular necessidade de capital por ativo
+      // Injetar peso total da categoria e calcular GAPs
+      let totalWarChest = 0;
       for (const g of abertos) {
+        const cat = g._strategy ? g._strategy.category : "NÃO DEFINIDA";
+        const catTotalInv = estrategiaMap.get(cat) || 0;
+        g._categoryWeightTotal = totalInvestido > 0 ? (catTotalInv / totalInvestido) : 0;
+
         const sInfo = g._strategy;
         if (!sInfo) continue;
 
         const currentWeight = totalInvestido > 0 ? (g.investido / totalInvestido) : 0;
         const deviation = sInfo.target - currentWeight;
       
-        // Regra 3 e 5: Desvio > 5% e prioridade Core
+        // Regra: Desvio > 5% e prioridade Core
         const isUnderweight = deviation > 0.05;
         let shouldReinforce = false;
       
@@ -1967,26 +1936,52 @@ function wireQuickActions(gruposArr) {
         g._strategicExcess = Math.max(0, g.investido - (totalInvestido * sInfo.target));
       }
 
+      // Lucro Atual (aberto)
+      const lucroAberto = abertos.reduce((a, g) => a + (g.lucroAtual || 0), 0);
+      const lucroRealizado = gruposArr.reduce((a, g) => a + (g.realizado || 0), 0);
+      const lucroTotal = lucroAberto + lucroRealizado;
+      const retornoPct = totalInvestido > 0.01 ? (lucroTotal / totalInvestido) * 100 : (lucroTotal > 0 ? 100 : 0);
+
+      // Dividendos
+      let rendimentoAnual = 0;
+      const eurosMes = new Array(12).fill(0);
+      for (const g of abertos) {
+        const info = infoMap.get(g.ticker) || {};
+        const divUnit = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0;
+        const per = info.periodicidade;
+        const mesT = info.mes;
+        const payN = pagamentosAno(per);
+        rendimentoAnual += g.qtd * divUnit * payN;
+        for (const m of mesesPagos(per, mesT)) eurosMes[m] += g.qtd * divUnit;
+      }
+
+      // Exposição acima da SMA200
+      let somaPesosAcima = 0;
+      for (const g of abertos) {
+        if (!totalInvestido) continue;
+        const w = (g.investido || 0) / totalInvestido;
+        const p = g.precoAtual, s200 = g._sma200;
+        if (isFiniteNum(p) && isFiniteNum(s200) && Number(p) > Number(s200))
+          somaPesosAcima += w;
+      }
+      const expSMA200Pct = somaPesosAcima * 100;
+
+      // Preencher KPIs
+      const elTI = document.getElementById("prtTotalInvestido");
+      const elLT = document.getElementById("prtLucroTotal");
+      const elLA = document.getElementById("prtLucroAcumulado");
+      const elRA = document.getElementById("prtRendimentoAnual");
+      const elRP = document.getElementById("prtRetorno");
+      const elEX = document.getElementById("prtExpSMA200");
+      const elWC = document.getElementById("prtWarChest");
+
       if (elTI) elTI.textContent = fmtEUR.format(totalInvestido);
       if (elLT) elLT.textContent = fmtEUR.format(lucroAberto);
       if (elLA) elLA.textContent = `Acumulado: ${fmtEUR.format(lucroTotal)}`;
       if (elRA) elRA.textContent = fmtEUR.format(rendimentoAnual);
-      if (elRP)
-        elRP.textContent =
-          totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
+      if (elRP) elRP.textContent = totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
       if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
       if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
-
-      // (NOVO) Cálculo da distribuição estratégica e por ativo
-      const estrategiaMap = new Map();
-      const ativosMap = new Map();
-      const tickerCatMap = new Map();
-      for (const g of abertos) {
-        const cat = g._strategy ? g._strategy.category : "NÃO DEFINIDA";
-        estrategiaMap.set(cat, (estrategiaMap.get(cat) || 0) + (g.investido || 0));
-        ativosMap.set(g.ticker, (ativosMap.get(g.ticker) || 0) + (g.investido || 0));
-        tickerCatMap.set(g.ticker, cat);
-      }
 
       // 2.3) Timeline
       movimentosAsc.sort((a, b) => a.date - b.date);
@@ -2273,8 +2268,8 @@ function wireQuickActions(gruposArr) {
       <div class="asset-header">
         <div class="asset-header-clickable" data-toggle-card data-ticker="${g.ticker}">
           <div class="asset-info-main">
-            <div class="asset-status-badge" style="background: ${stateColor}15; color: ${stateColor}; border: 1px solid ${stateColor}30;">
-              ${estadoOp}
+            <div class="asset-allocation-badge" title="Alocação no Portfólio">
+              ${currentW.toFixed(1)}%
             </div>
             <div class="asset-ticker-box">
               <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; flex-wrap: wrap;">
@@ -2291,7 +2286,7 @@ function wireQuickActions(gruposArr) {
           <div class="asset-price-box">
             <div class="asset-price">${fmtEUR.format(precoAtual)}</div>
             <div class="asset-change ${lucroAtual >= 0 ? "up" : "down"}">
-              ${lucroAtual >= 0 ? "+" : ""}${fmtEUR.format(lucroAtual)} (${pLossPct.toFixed(1)}%)
+              ${lucroAtual >= 0 ? "+" : ""}${fmtEUR.format(lucroAtual)}
             </div>
           </div>
         </div>
@@ -2318,22 +2313,47 @@ function wireQuickActions(gruposArr) {
 
       <!-- ALOCAÇÃO ESTRATÉGICA -->
       ${sInfo ? `
-      <div class="asset-allocation-box" style="margin: 0 16px 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; border: 1px solid var(--border);">
-        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
-          <span style="color: var(--muted-foreground)">Alocação: <strong>${currentW.toFixed(1)}%</strong></span>
-          <span style="color: var(--muted-foreground)">Alvo: <strong>${targetW.toFixed(1)}%</strong></span>
+      <div class="asset-allocation-box" style="margin: 0 16px 12px; padding: 12px; background: rgba(var(--primary-rgb), 0.03); border-radius: 12px; border: 1.5px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 8px; align-items: center;">
+          <span style="color: var(--muted-foreground); font-weight: 600;">Contribuição Estratégica: <span style="color: var(--foreground);">${sInfo.category}</span></span>
+          <span class="asset-status-badge" style="background: ${stateColor}15; color: ${stateColor}; border: 1px solid ${stateColor}30; font-size: 0.6rem; padding: 2px 6px;">
+            ${estadoOp}
+          </span>
         </div>
-        <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: flex;">
-          <div style="width: ${Math.min(100, (currentW / targetW) * 100)}%; background: ${weightColor};"></div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+          <div>
+             <div style="font-size: 0.6rem; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.5px;">Ativo no Portfólio</div>
+             <div style="font-size: 0.9rem; font-weight: 800;">${currentW.toFixed(1)}% <span style="font-size: 0.65rem; font-weight: 500; color: var(--muted-foreground);">/ ${targetW.toFixed(1)}% Alvo</span></div>
+          </div>
+          <div style="text-align: right;">
+             <div style="font-size: 0.6rem; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.5px;">Peso Categoria (${sInfo.category})</div>
+             <div style="font-size: 0.9rem; font-weight: 800;">${((g._categoryWeightTotal || 0) * 100).toFixed(1)}% <span style="font-size: 0.65rem; font-weight: 500; color: var(--muted-foreground);">/ ${((sInfo.category === 'CORE' ? window._dynamicStrategyGlobals.CORE : window._dynamicStrategyGlobals.SATELLITE) * 100).toFixed(0)}% Target</span></div>
+          </div>
         </div>
+
+        <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: flex; margin-bottom: 8px;">
+          <div style="width: ${Math.min(100, (currentW / targetW) * 100)}%; background: ${weightColor}; transition: width 0.8s ease;"></div>
+        </div>
+
         ${g._shouldReinforceStrategic ? `
-          <div style="font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
-            <i class="fas fa-arrow-up"></i> Falta alocar €${formatNum(g._strategicNeed)} (~${formatNum(g._strategicNeed / (precoAtual || 1))} unid.) p/ atingir o alvo dos ${targetW.toFixed(1)}%
+          <div style="background: rgba(239, 68, 68, 0.08); padding: 8px; border-radius: 6px; border: 1px dashed rgba(239, 68, 68, 0.3); margin-top: 4px;">
+            <div style="font-size: 0.68rem; color: #ef4444; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-bullseye"></i> GAP PARA O ALVO: +${formatNum(g._strategicNeed)}€
+            </div>
+            <div style="font-size: 0.62rem; color: #ef4444; margin-top: 2px; opacity: 0.9;">
+              Comprar <strong>~${formatNum(g._strategicNeed / (precoAtual || 1))} unid.</strong> para equilibrar a posição.
+            </div>
           </div>
         ` : ""}
         ${estadoOp === "REDUZIR" && (g._strategicExcess || 0) > 0 ? `
-          <div style="font-size: 0.65rem; color: #f59e0b; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
-            <i class="fas fa-arrow-down"></i> Reduzir €${formatNum(g._strategicExcess)} (${formatNum(g._strategicExcess / (precoAtual || 1))} unid.) p/ atingir o alvo
+          <div style="background: rgba(245, 158, 11, 0.08); padding: 8px; border-radius: 6px; border: 1px dashed rgba(245, 158, 11, 0.3); margin-top: 4px;">
+            <div style="font-size: 0.68rem; color: #f59e0b; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+              <i class="fas fa-scissors"></i> EXCESSO DETETADO: -${formatNum(g._strategicExcess)}€
+            </div>
+            <div style="font-size: 0.62rem; color: #f59e0b; margin-top: 2px; opacity: 0.9;">
+              Vender <strong>~${formatNum(g._strategicExcess / (precoAtual || 1))} unid.</strong> para libertar capital estratégico.
+            </div>
           </div>
         ` : ""}
       </div>

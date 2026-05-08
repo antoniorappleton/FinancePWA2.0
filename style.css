@@ -2219,6 +2219,165 @@ body.auth-screen .form-grid {
 [data-theme="dark"] .det-block--danger { background: rgba(239,68,68,0.06);  }
 
 /* =========================================================
+   GLOBAL HELP SYSTEM
+   ========================================================= */
+.btn-help-trigger {
+  background: none;
+  border: none;
+  color: var(--muted-foreground);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.btn-help-trigger:hover {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.global-help-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.global-help-modal.hidden {
+  display: none;
+}
+
+.help-modal-content {
+  background: var(--card);
+  width: 100%;
+  max-width: 500px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  overflow: hidden;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.help-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.help-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.help-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.help-header-section h2 {
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+  font-weight: 850;
+  color: var(--foreground);
+}
+
+.help-header-section p {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+.help-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.help-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.help-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+.help-text h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.help-text p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+.help-footer-note {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+.help-modal-actions {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+[data-theme="dark"] .help-modal-content {
+  background: #1c222b;
+}
+
+/* =========================================================
    ASSET CARDS (Portfolio Screen)
    ========================================================= */
 .asset-card {
@@ -2260,6 +2419,28 @@ body.auth-screen .form-grid {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.asset-allocation-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .asset-allocation-badge {
+  background: #fff;
+  color: #000;
+  border-color: rgba(0,0,0,0.1);
 }
 
 .asset-ticker-box {
@@ -2316,6 +2497,15 @@ body.auth-screen .form-grid {
   background: rgba(245, 158, 11, 0.12);
   color: #f59e0b;
   border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.asset-allocation-box {
+  transition: all 0.3s ease;
+}
+
+.asset-allocation-box:hover {
+  background: rgba(var(--primary-rgb), 0.05) !important;
+  border-color: rgba(var(--primary-rgb), 0.2) !important;
 }
 
 [data-theme="dark"] .strategy-badge--core {

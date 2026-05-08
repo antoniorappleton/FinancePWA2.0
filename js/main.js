@@ -2,6 +2,8 @@
 const screenContainer = document.getElementById("screenContainer");
 const screenTitleEl = document.getElementById("screenTitle");
 
+import { initGlobalHelp } from "./components/help.js";
+
 export function navigateTo(screen) {
   console.log("👉 Navegar para:", screen);
 
@@ -28,6 +30,7 @@ export function navigateTo(screen) {
           } else {
             console.warn(`ℹ️ initScreen() não encontrado em ${screen}.js`);
           }
+          initGlobalHelp();
         })
         .catch((err) => {
           console.warn(`ℹ️ Sem JS para "${screen}" ou falha no import.`, err);
@@ -46,6 +49,7 @@ window.navigateTo = navigateTo;
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 APPFinance v2.3.5");
   navigateTo("auth");
+  initGlobalHelp();
 
   // Registo do Service Worker para PWA
   if ("serviceWorker" in navigator) {
