@@ -23,7 +23,7 @@ import {
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-import { parseSma, getAssetType } from "../utils/scoring.js";
+import { parseSma, getAssetType, canon, cleanTicker, normalizeSector } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 
 // ===============================
@@ -70,19 +70,6 @@ const PALETTE = [
   "#14B8A6",
 ];
 
-function canon(s) {
-  return String(s ?? "")
-    .replace(/\u00A0/g, " ")
-    .replace(/[\u200B-\u200D]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function cleanTicker(t) {
-  const s = String(t || "");
-  if (s.includes(":")) return s.split(":").pop().toUpperCase();
-  return s.toUpperCase();
-}
 
 const CRISES_HISTORY = [
   { id: "tension_lim", name: "📉 Tensão Limitada (-3% a -8%)", drop: 5.5 },
@@ -669,6 +656,19 @@ function wireQuickActions(gruposArr) {
     modal?.classList.remove("hidden");
     if (title)
       title.textContent = kind === "compra" ? "Comprar ativo" : "Vender ativo";
+    // Update icon color based on type
+    const iconEl = document.getElementById("pfAddTypeIcon");
+    if (iconEl) {
+      if (kind === "venda") {
+        iconEl.style.background = "rgba(239,68,68,0.1)";
+        iconEl.style.color = "#ef4444";
+        iconEl.innerHTML = '<i class="fas fa-minus-circle"></i>';
+      } else {
+        iconEl.style.background = "rgba(79,70,229,0.1)";
+        iconEl.style.color = "#4f46e5";
+        iconEl.innerHTML = '<i class="fas fa-plus-circle"></i>';
+      }
+    }
     if (tipoSel) tipoSel.value = kind;
     if (fTicker) fTicker.value = g.ticker;
     if (fNome) fNome.value = g.nome;
@@ -684,17 +684,41 @@ function wireQuickActions(gruposArr) {
       vendaTotWrap.style.display = kind === "venda" ? "block" : "none";
     if (labelP)
       labelP.textContent =
-        kind === "venda" ? "Preço de venda (€)" : "Preço de compra (€)";
+        kind === "venda" ? "Preço de venda (€)" : "Preço (€)";
+    // Reset cost summary
+    const custoResumo = document.getElementById("pfCustoResumo");
+    if (custoResumo) custoResumo.style.display = "none";
   }
+
+  // Live cost calculation
+  const calcCusto = () => {
+    const p = parseFloat(fPreco?.value || 0);
+    const q = parseFloat(fQtd?.value || 0);
+    const custoResumo = document.getElementById("pfCustoResumo");
+    const custoTotal = document.getElementById("pfCustoTotal");
+    if (!custoResumo || !custoTotal) return;
+    if (p > 0 && q > 0) {
+      const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+      custoTotal.textContent = fmtEUR.format(p * q);
+      custoResumo.style.display = "flex";
+    } else {
+      custoResumo.style.display = "none";
+    }
+  };
+  fPreco?.addEventListener("input", calcCusto);
+  fQtd?.addEventListener("input", calcCusto);
+
   function closeModal() {
     modal?.classList.add("hidden");
     form?.reset();
     const idHidden = document.getElementById("pfDocId");
     if (idHidden) idHidden.value = "";
     if (tipoSel) tipoSel.value = "compra";
-    if (labelP) labelP.textContent = "Preço de compra (€)";
+    if (labelP) labelP.textContent = "Preço (€)";
     if (vendaTot) vendaTot.checked = false;
     if (vendaTotWrap) vendaTotWrap.style.display = "none";
+    const custoResumo = document.getElementById("pfCustoResumo");
+    if (custoResumo) custoResumo.style.display = "none";
   }
   // --- Modal de Detalhes (Estratégico) ---
   const detModal = $("#activityDetailModal");
@@ -1715,6 +1739,9 @@ function wireQuickActions(gruposArr) {
           g.qtd = novaQtd;
         } else if (safeQtd < 0) {
           const sellQtd = Math.abs(safeQtd);
+          if (sellQtd > g.qtd) {
+            console.warn(`⚠️ Venda de ${ticker} (${sellQtd}) excede posição atual (${g.qtd.toFixed(2)})`);
+          }
           const effectiveSell = Math.min(sellQtd, g.qtd);
           if (effectiveSell > 0) {
             const lucro = (safePreco - g.custoMedio) * effectiveSell;
@@ -1857,7 +1884,7 @@ function wireQuickActions(gruposArr) {
       );
       const lucroTotal = lucroAberto + lucroRealizado;
 
-      const retornoPct = totalInvestido ? (lucroTotal / totalInvestido) * 100 : 0;
+      const retornoPct = totalInvestido > 0.01 ? (lucroTotal / totalInvestido) * 100 : (lucroTotal > 0 ? 100 : 0);
 
       // Dividendos
       let rendimentoAnual = 0;
@@ -2077,14 +2104,50 @@ function wireQuickActions(gruposArr) {
         fMercado &&
         (!fMercado.options.length || fMercado.options.length <= 1)
       ) {
-        const markets = [
-          ...new Set(gruposArr.map((g) => g.mercado).filter(Boolean)),
+        // Unir mercados e setores da carteira com os da base de dados (acoesDividendos)
+        const dbMarkets = [];
+        const dbSectors = [];
+        aSnap.forEach(d => {
+          const data = d.data();
+          if (data.mercado) dbMarkets.push(canon(data.mercado));
+          const s = normalizeSector(data);
+          if (s && s !== "—") dbSectors.push(s);
+        });
+
+        const allMarkets = [
+          ...new Set([
+            ...gruposArr.map((g) => g.mercado),
+            ...dbMarkets
+          ].filter(m => m && m !== "—")),
         ].sort();
-        markets.forEach((m) => fMercado.add(new Option(m, m)));
-        const sectors = [
-          ...new Set(gruposArr.map((g) => g.setor).filter(Boolean)),
+        
+        const allSectors = [
+          ...new Set([
+            ...gruposArr.map((g) => g.setor),
+            ...dbSectors,
+            "ETF Países Emergentes",
+            "Tecnologia",
+            "Finanças",
+            "Saúde",
+            "Energia",
+            "Consumo"
+          ].filter(s => s && s !== "—")),
         ].sort();
-        sectors.forEach((s) => fSetor.add(new Option(s, s)));
+
+        allMarkets.forEach((m) => fMercado.add(new Option(m, m)));
+        allSectors.forEach((s) => fSetor.add(new Option(s, s)));
+
+        // Popular datalists do formulário de registo
+        const dlSectors = document.getElementById("setoresList");
+        const dlMarkets = document.getElementById("mercadosList");
+        if (dlSectors) {
+          dlSectors.innerHTML = "";
+          allSectors.forEach(s => dlSectors.appendChild(new Option(s, s)));
+        }
+        if (dlMarkets) {
+          dlMarkets.innerHTML = "";
+          allMarkets.forEach(m => dlMarkets.appendChild(new Option(m, m)));
+        }
       }
 
       // Aplicar Filtros

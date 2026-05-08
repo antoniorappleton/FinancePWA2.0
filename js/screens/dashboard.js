@@ -16,6 +16,9 @@ import {
   calculateLucroMaximoScore,
   getUserWeights,
   SCORING_CFG,
+  canon,
+  cleanTicker,
+  normalizeSector
 } from "../utils/scoring.js";
 import { Treemap } from "../components/treemap.js";
 import * as CapitalManager from "../utils/capitalManager.js";
@@ -29,26 +32,6 @@ let unsubConfig = null;
 let lastConfigData = null;
 let histFltState = { ticker: "", tipo: "", periodo: "" };
 
-function toNumStrict(v) {
-  if (typeof v === "number") return v;
-  if (!v) return 0;
-  const n = parseFloat(String(v).replace(",", "."));
-  return isNaN(n) ? 0 : n;
-}
-
-function canon(s) {
-  return String(s ?? "")
-    .replace(/\u00A0/g, " ")
-    .replace(/[\u200B-\u200D]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function cleanTicker(t) {
-  const s = String(t || "");
-  if (s.includes(":")) return s.split(":").pop().toUpperCase();
-  return s.toUpperCase();
-}
 
 export async function initScreen() {
   console.log("✅ dashboard.js iniciado");
@@ -132,6 +115,9 @@ export async function initScreen() {
       } else if (q < 0) {
         // Venda: realiza lucro com base no custo médio
         const sellQtd = Math.abs(q);
+        if (sellQtd > g.quantidade) {
+          console.warn(`⚠️ Venda de ${ticker} (${sellQtd}) excede posição atual (${g.quantidade.toFixed(2)})`);
+        }
         const effectiveSell = Math.min(sellQtd, g.quantidade);
         if (effectiveSell > 0) {
           const lucroVenda = (p - g.custoMedio) * effectiveSell;
@@ -172,8 +158,13 @@ export async function initScreen() {
     });
 
     const totalLucroAcumulado = lucroNaoRealizadoTotal + lucroRealizadoTotal;
+    
+    // Novo Cálculo de Retorno: Baseado no total investido em aberto para o retorno da exposição atual,
+    // mas guardamos o lucro acumulado para o retorno global se preferível.
+    // Para resolver a volatilidade, usamos o total investido original se quisermos ROI histórico.
+    // Contudo, mantemos a lógica mas garantimos que não explode se totalInvestido for minúsculo.
     const retorno =
-      totalInvestido > 0 ? (totalLucroAcumulado / totalInvestido) * 100 : 0;
+      totalInvestido > 0.01 ? (totalLucroAcumulado / totalInvestido) * 100 : (totalLucroAcumulado > 0 ? 100 : 0);
 
     // Progresso para Objetivo (anterior Taxa de Sucesso):
     // Main (Atual): Lucro Aberto / Objetivo Total (Capado a 0% se negativo para evitar confusões de -1000%)
@@ -687,23 +678,7 @@ async function carregarTop10Crescimento(periodo = "1m") {
 
         const tickerLimpo = cleanTicker(d.ticker);
         
-        // Busca exaustiva por campos de setor/indústria
-        const sRaw = d.setor || d.sector || d.Setor || d.Sector || 
-                     d.industry || d.Industry || d.indústria || d.Indústria ||
-                     d.segmento || d.segment || "";
-        
-        let setorNormalizado = canon(sRaw);
-        
-        // Fallback: se o setor estiver vazio mas o ticker original tiver um prefixo (ex: "Tecnologia:AAPL"),
-        // usamos o prefixo como setor temporário.
-        if (!setorNormalizado && String(d.ticker).includes(":")) {
-          const parts = String(d.ticker).split(":");
-          if (parts.length > 1 && parts[0].length > 2) {
-            setorNormalizado = canon(parts[0]);
-          }
-        }
-        
-        if (!setorNormalizado) setorNormalizado = "Outros";
+        const setorNormalizado = normalizeSector(d);
 
         allCands.push({
           ticker: tickerLimpo,

@@ -67,11 +67,11 @@
     <div class="card info" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.03);">
       <div class="card-content">
         <div>
-          <p class="label">War Chest (Estratégico)</p>
+          <p class="label">Necessidade de Reforço</p>
           <p class="value" id="prtWarChest">€0,00</p>
-          <p class="subvalue muted">Liquidez p/ Reforço e Reequilíbrio</p>
+          <p class="subvalue muted">Gap para atingir alvos estratégicos</p>
         </div>
-        <div class="icon-box" style="color: #ef4444; background: rgba(239, 68, 68, 0.08);"><i class="fas fa-shield-alt"></i></div>
+        <div class="icon-box" style="color: #ef4444; background: rgba(239, 68, 68, 0.08);"><i class="fas fa-bullseye"></i></div>
       </div>
     </div>
   </div>
@@ -451,55 +451,112 @@
 </div>
 
 <div id="pfAddModal" class="modal hidden">
-  <div class="modal-dialog">
-    <div class="modal-header">
-      <h3 id="pfAddTitle">Registar</h3>
-      <button id="pfAddClose" class="btn">Fechar</button>
+  <div class="modal-dialog pf-add-dialog">
+    <div class="modal-header" style="padding: 16px 20px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div id="pfAddTypeIcon" style="width: 36px; height: 36px; border-radius: 10px; background: rgba(79,70,229,0.1); display: flex; align-items: center; justify-content: center; color: #4f46e5; font-size: 1rem;">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <div>
+          <h3 id="pfAddTitle" style="margin: 0; font-size: 1rem; font-weight: 800;">Registar</h3>
+          <p style="margin: 0; font-size: 0.72rem; color: var(--muted-foreground);">Preencha os dados do ativo</p>
+        </div>
+      </div>
+      <button id="pfAddClose" class="icon-btn" style="font-size: 1.2rem; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--border); background: transparent;">✖</button>
     </div>
+
     <form id="pfAddForm">
-      <div class="modal-body">
+      <div class="modal-body pf-form-body">
         <input type="hidden" id="pfDocId" />
         <input type="hidden" id="pfTipoAcao" value="compra" />
 
-        <label>Nome</label>
-        <input id="pfNome" type="text" />
+        <!-- SECÇÃO: Identificação do Ativo -->
+        <div class="pf-form-section">
+          <div class="pf-form-section-title">
+            <i class="fas fa-tag"></i> Identificação
+          </div>
+          <div class="pf-form-grid">
+            <div class="pf-field pf-field--full">
+              <label class="pf-label" for="pfNome">Nome do Ativo</label>
+              <input id="pfNome" type="text" class="pf-input" placeholder="Ex: STOXX Europe 600" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label" for="pfTicker">Ticker</label>
+              <input id="pfTicker" type="text" class="pf-input pf-ticker-input" placeholder="Ex: EXSA" autocapitalize="characters" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label" for="pfSetor">Setor</label>
+              <input id="pfSetor" type="text" class="pf-input" list="setoresList" placeholder="Ex: Tecnologia" />
+              <datalist id="setoresList"></datalist>
+            </div>
+            <div class="pf-field pf-field--full">
+              <label class="pf-label" for="pfMercado">Mercado</label>
+              <input id="pfMercado" type="text" class="pf-input" list="mercadosList" placeholder="Ex: Euronext, Xetra..." />
+              <datalist id="mercadosList"></datalist>
+            </div>
+          </div>
+        </div>
 
-        <label>Ticker</label>
-        <input id="pfTicker" type="text" />
+        <!-- SECÇÃO: Dados da Transação -->
+        <div class="pf-form-section">
+          <div class="pf-form-section-title">
+            <i class="fas fa-receipt"></i> Transação
+          </div>
+          <div class="pf-form-grid">
+            <div class="pf-field">
+              <label class="pf-label" id="pfLabelPreco" for="pfPreco">Preço (€)</label>
+              <input id="pfPreco" type="number" class="pf-input" step="0.0001" placeholder="0.0000" min="0" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label" for="pfQuantidade">Quantidade</label>
+              <input id="pfQuantidade" type="number" class="pf-input" step="0.0001" placeholder="0" min="0" />
+            </div>
+            <div class="pf-field pf-field--full">
+              <label class="pf-label" for="pfDataCompra">Data da Transação</label>
+              <input id="pfDataCompra" type="date" class="pf-input" />
+            </div>
 
-        <label>Setor</label>
-        <input id="pfSetor" type="text" />
+            <!-- Resumo de custo (calculado dinamicamente) -->
+            <div class="pf-field pf-field--full">
+              <div id="pfCustoResumo" style="display: none; padding: 10px 14px; background: rgba(79,70,229,0.06); border: 1px solid rgba(79,70,229,0.15); border-radius: 8px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--muted-foreground);">Custo total estimado:</span>
+                <strong id="pfCustoTotal" style="color: #4f46e5; font-size: 1rem;">—</strong>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <label>Mercado</label>
-        <input id="pfMercado" type="text" />
+        <!-- SECÇÃO: Configurações Opcionais -->
+        <div class="pf-form-section">
+          <div class="pf-form-section-title">
+            <i class="fas fa-sliders-h"></i> Configurações (opcional)
+          </div>
+          <div class="pf-form-grid">
+            <div class="pf-field">
+              <label class="pf-label" for="pfObjetivo">Objetivo de Lucro (€)</label>
+              <input id="pfObjetivo" type="number" class="pf-input" step="0.01" placeholder="0.00" min="0" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label" for="pfLink">Link Externo</label>
+              <input id="pfLink" type="url" class="pf-input" placeholder="https://..." />
+            </div>
+          </div>
+        </div>
 
-        <label id="pfLabelPreco">Preço de compra (€)</label>
-        <input id="pfPreco" type="number" step="0.0001" />
-
-        <label>Quantidade</label>
-        <input id="pfQuantidade" type="number" step="0.0001" />
-
-        <label>Data</label>
-        <input id="pfDataCompra" type="date" />
-
-        <label>Objetivo (lucro €)</label>
-        <input id="pfObjetivo" type="number" step="0.01" />
-
-        <label>Link Externo (URL)</label>
-        <input id="pfLink" type="url" placeholder="https://..." />
-
-        <div id="pfVendaTotalWrap" style="display: none; margin-top: 8px">
+        <!-- Vender toda a posição -->
+        <div id="pfVendaTotalWrap" style="display: none; margin: 0 0 4px; padding: 10px 14px; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px;">
           <input type="hidden" id="pfPosicaoAtual" value="0" />
-          <label style="display: flex; gap: 0.5rem; align-items: center">
-            <input id="pfVendaTotal" type="checkbox" />
-            Vender posição (fechar posição)
+          <label style="display: flex; gap: 10px; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #ef4444;">
+            <input id="pfVendaTotal" type="checkbox" style="width: 16px; height: 16px;" />
+            <span>Vender posição inteira (fechar completamente)</span>
           </label>
         </div>
       </div>
-      <div class="modal-actions">
-        <button type="button" id="pfAddCancel" class="btn">Cancelar</button>
-        <button type="submit" id="pfAddSave" class="btn primary">
-          Guardar
+
+      <div class="modal-actions" style="padding: 14px 20px; border-top: 1px solid var(--border); gap: 10px;">
+        <button type="button" id="pfAddCancel" class="btn outline" style="flex: 1; margin-top: 0;">Cancelar</button>
+        <button type="submit" id="pfAddSave" class="btn premium" style="flex: 2; margin-top: 0; font-weight: 800;">
+          <i class="fas fa-check"></i> Guardar
         </button>
       </div>
     </form>

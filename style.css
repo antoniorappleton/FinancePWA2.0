@@ -3097,4 +3097,153 @@ body.auth-screen .form-grid {
   }
 }
 
+/* =========================================================
+   MODAL DE REGISTO DE ATIVO (pfAddModal)
+   ========================================================= */
+.pf-add-dialog {
+  width: min(520px, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.pf-form-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+  color: #111 !important;
+}
+
+/* Secções com fundo subtil */
+.pf-form-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.pf-form-section:last-child {
+  border-bottom: none;
+}
+
+.pf-form-section-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-form-section-title i {
+  font-size: 0.75rem;
+}
+
+/* Grid de campos: 2 colunas */
+.pf-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Campo individual */
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Campo que ocupa as 2 colunas */
+.pf-field--full {
+  grid-column: 1 / -1;
+}
+
+/* Label alinhada */
+.pf-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.2;
+  margin: 0;
+  display: block;
+}
+
+/* Input estilizado */
+.pf-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: #f8fafc;
+  color: #111;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-sizing: border-box;
+  height: 38px;
+}
+
+.pf-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.pf-input::placeholder {
+  color: #a0aec0;
+  font-weight: 400;
+}
+
+.pf-ticker-input {
+  text-transform: uppercase;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+  font-size: 1rem;
+}
+
+/* Modo escuro: dentro do modal ainda usa fundo branco */
+[data-theme="dark"] .pf-label {
+  color: #374151;
+}
+
+[data-theme="dark"] .pf-input {
+  background: #f8fafc;
+  color: #111;
+  border-color: #e2e8f0;
+}
+
+[data-theme="dark"] .pf-input:focus {
+  border-color: #4f46e5;
+  background: #fff;
+}
+
+[data-theme="dark"] .pf-form-section-title {
+  color: #64748b;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .pf-add-dialog {
+    width: 96vw;
+    max-height: 92vh;
+    border-radius: 14px;
+  }
+
+  .pf-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-field--full {
+    grid-column: 1;
+  }
+
+  .pf-form-section {
+    padding: 14px 16px;
+  }
+}
 

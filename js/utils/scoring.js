@@ -227,3 +227,29 @@ export function anualPreferido(doc) {
   if (d24 > 0) return d24;
   return anualizarDividendo(doc.dividendo, doc.periodicidade);
 }
+export function canon(s) {
+  return String(s ?? "")
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function cleanTicker(t) {
+  const s = String(t || "");
+  if (s.includes(":")) return s.split(":").pop().toUpperCase();
+  return s.toUpperCase();
+}
+
+export function normalizeSector(d) {
+  const sRaw = d.setor || d.sector || d.Setor || d.Sector || 
+               d.industry || d.Industry || d.indústria || d.Indústria ||
+               d.segmento || d.segment || "";
+  
+  let s = canon(sRaw);
+  if ((!s || s === "—") && String(d.ticker).includes(":")) {
+    const p = String(d.ticker).split(":")[0].trim();
+    if (p.length > 2) s = canon(p);
+  }
+  return s || "—";
+}
