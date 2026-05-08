@@ -135,9 +135,42 @@
 </div>
 
 <style>
+/* ── Portfolio Intelligence: Responsive Grid ── */
 @media (max-width: 700px) {
   #piResults [style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
+  }
+  #piResults [style*="repeat(auto-fit, minmax(260px"] {
+    grid-template-columns: 1fr !important;
+  }
+  #piResults [style*="repeat(auto-fill, minmax(300px"] {
+    grid-template-columns: 1fr !important;
+  }
+  #piResults [style*="repeat(auto-fit, minmax(200px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 420px) {
+  #piResults [style*="repeat(auto-fit, minmax(200px"] {
+    grid-template-columns: 1fr !important;
+  }
+  .pi-theme-bar .theme-label {
+    min-width: 110px !important;
+    font-size: 0.78rem !important;
+  }
+  .pi-scorecard {
+    padding: 10px !important;
+  }
+  .pi-scorecard .sc-ticker { font-size: 0.9rem !important; }
+  .pi-scorecard .sc-grade { font-size: 0.75rem !important; padding: 2px 8px !important; }
+  .pi-stress-card .drop-value { font-size: 1.1rem !important; }
+  .pi-stress-card .scenario-name { font-size: 0.78rem !important; }
+  .pi-obs { padding: 8px 10px !important; font-size: 0.8rem !important; }
+  .pi-rebal-action { padding: 8px 10px !important; font-size: 0.8rem !important; }
+  .corr-heatmap th, .corr-heatmap td {
+    padding: 3px 4px !important;
+    min-width: 30px !important;
+    font-size: 0.6rem !important;
   }
 }
 
