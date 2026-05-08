@@ -1,12 +1,14 @@
-// js/engines/risk.js
-// ═══════════════════════════════════════════════════════════════════
-// RISK ENGINE (0–100)
-// Comprehensive risk assessment: volatility, leverage, drawdown
-// sensitivity, liquidity, and concentration risk.
-// Outputs: Risk Score, Crash Sensitivity, Stress Classification
-// ═══════════════════════════════════════════════════════════════════
+import { safeMetric, safePercent, clamp, isValid, getAssetCategory } from "../utils/normalize.js";
 
-import { safeMetric, safePercent, clamp, isValid } from "../utils/normalize.js";
+// ── Contextual Concentration Limits ──
+const HEALTHY_LIMITS = {
+  "Broad Market ETF": 0.70, // 70% max for a core anchor
+  "Sector ETF":       0.20, // 20% max
+  "Thematic ETF":     0.10, // 10% max
+  "Single Stock":     0.08, // 8% max
+  "Speculative Asset": 0.04, // 4% max
+  "Satellite Asset":  0.05
+};
 
 // ── Historical crisis baselines ──
 const CRISIS_DROPS = {
@@ -17,191 +19,121 @@ const CRISIS_DROPS = {
   eurozone:  { name: "Crise Eurozona (2011)",    avgDrop: -0.22, techDrop: -0.18, energyDrop: -0.25 }
 };
 
-// ── Sub-scores ──
+/**
+ * Calculate Concentration Risk with contextual awareness.
+ * Healthy: Diversified broad ETFs. Risky: Heavy single stock positions.
+ */
+export function calculateConcentrationRisk(portfolio, totalValue) {
+  if (!portfolio || portfolio.length === 0) return { score: 100, warnings: [] };
 
-function scoreBeta(asset) {
-  const beta = safeMetric(asset, "beta", "Beta");
-  if (!isFinite(beta)) return { score: 0.5, available: false };
-
-  // Lower beta = lower risk = higher score
-  let s;
-  if (beta <= 0.5) s = 1.0;       // Very defensive
-  else if (beta <= 0.8) s = 0.85;  // Low volatility
-  else if (beta <= 1.0) s = 0.7;   // Market-like
-  else if (beta <= 1.3) s = 0.5;   // Slightly aggressive
-  else if (beta <= 1.8) s = 0.3;   // High risk
-  else s = 0.1;                    // Extreme volatility
-
-  let classification;
-  if (beta <= 0.7) classification = "Defensive";
-  else if (beta <= 1.1) classification = "Market-neutral";
-  else if (beta <= 1.5) classification = "Aggressive";
-  else classification = "Speculative";
-
-  return { score: s, value: beta, available: true, classification };
-}
-
-function scoreLeverage(asset) {
-  const de = safeMetric(asset, "debt_eq", "debtEquity");
-  const cr = safeMetric(asset, "current_ratio", "currentRatio");
-
-  let total = 0, count = 0;
-  const breakdown = {};
-
-  if (isFinite(de)) {
-    let s;
-    if (de <= 0.3) s = 1.0;       // Very low leverage
-    else if (de <= 0.8) s = 0.8;
-    else if (de <= 1.5) s = 0.5;
-    else if (de <= 3.0) s = 0.25;
-    else s = 0.05;                 // Dangerously leveraged
-    total += s * 0.6; count++;
-    breakdown.debtEquity = { score: s, value: de };
-  }
-
-  if (isFinite(cr)) {
-    let s;
-    if (cr >= 2.5) s = 1.0;
-    else if (cr >= 1.5) s = 0.8;
-    else if (cr >= 1.0) s = 0.5;
-    else if (cr >= 0.5) s = 0.2;
-    else s = 0.05;
-    total += s * 0.4; count++;
-    breakdown.currentRatio = { score: s, value: cr };
-  }
-
-  if (count === 0) return { score: 0.5, available: false, breakdown };
-  const weights = count === 2 ? 1.0 : 0.6;
-  return { score: clamp(total / weights, 0, 1), available: true, breakdown };
-}
-
-function scoreVolatility(asset) {
-  const beta = safeMetric(asset, "beta", "Beta");
-  const w1 = safePercent(asset, "priceChange_1w", "g1w");
-  const m1 = safePercent(asset, "priceChange_1m", "g1m");
-  const rsi = safeMetric(asset, "rsi_14", "RSI");
-
-  let volatilityEstimate = 0.5; // default neutral
-  let count = 0;
+  const total = Math.max(totalValue, 1);
+  let penaltyTotal = 0;
   const warnings = [];
 
-  // Beta-implied volatility
-  if (isFinite(beta)) {
-    volatilityEstimate = clamp(beta / 2, 0, 1); // beta 2 = max vol
-    count++;
-  }
+  for (const p of portfolio) {
+    const category = getAssetCategory(p.mkt || p);
+    const weight = (p.valAtual || 0) / total;
+    const limit = HEALTHY_LIMITS[category] || 0.10;
 
-  // Short-term price swings — detect abnormal volatility
-  if (isFinite(w1) && isFinite(m1)) {
-    const weeklyVol = Math.abs(w1);
-    const monthlyVol = Math.abs(m1);
-
-    // If weekly change is > 50% of monthly, volatility is extreme
-    if (monthlyVol > 0 && weeklyVol / monthlyVol > 0.7) {
-      warnings.push("Volatilidade semanal anormalmente alta vs mensal");
-      volatilityEstimate = Math.max(volatilityEstimate, 0.8);
-    }
-    count++;
-  }
-
-  // RSI extremes indicate instability
-  if (isFinite(rsi)) {
-    if (rsi > 80 || rsi < 20) {
-      warnings.push(`RSI extremo (${rsi.toFixed(0)}) — instabilidade de preço`);
-      volatilityEstimate = Math.max(volatilityEstimate, 0.7);
+    if (weight > limit) {
+      const excess = weight - limit;
+      // Penalty is quadratic to punish extreme concentration
+      penaltyTotal += Math.pow(excess * 10, 2);
+      
+      const ticker = String(p.ticker || "").toUpperCase();
+      warnings.push(`Concentração excessiva em ${ticker} (${category}): ${(weight * 100).toFixed(1)}% (Limite ideal: ${limit * 100}%)`);
     }
   }
 
-  // Score: lower volatility = higher score
-  const score = clamp(1 - volatilityEstimate, 0, 1);
-
-  return { score, volatilityEstimate, available: count > 0, warnings };
+  // 100 is perfect, 0 is extreme concentration
+  const score = Math.round(clamp(100 - penaltyTotal, 0, 100));
+  return { score, warnings };
 }
-
-function calculateCrashSensitivity(asset) {
-  const beta = safeMetric(asset, "beta", "Beta") || 1.0;
-  const sector = String(asset.setor || asset.sector || "").toLowerCase();
-  
-  const results = {};
-  for (const [key, crisis] of Object.entries(CRISIS_DROPS)) {
-    let baseDrop = crisis.avgDrop;
-    
-    // Sector-specific adjustments
-    if (sector.includes("tech") || sector.includes("tecnol")) {
-      baseDrop = crisis.techDrop || baseDrop;
-    } else if (sector.includes("energ")) {
-      baseDrop = crisis.energyDrop || baseDrop;
-    }
-
-    // Beta-adjusted drop
-    const expectedDrop = baseDrop * beta;
-    results[key] = {
-      name: crisis.name,
-      expectedDrop: Math.round(expectedDrop * 100),
-      severity: expectedDrop < -0.40 ? "Extreme" : expectedDrop < -0.25 ? "High" : expectedDrop < -0.15 ? "Moderate" : "Low"
-    };
-  }
-
-  return results;
-}
-
-// ══════════════════════════════════════════════════════════════
-// MAIN EXPORT
-// ══════════════════════════════════════════════════════════════
 
 /**
- * Calculate Risk Score for a single asset.
- * Higher score = LOWER risk (safer asset).
- * @param {Object} asset
- * @returns {{ score: number, classification: string, crashSensitivity: Object, warnings: Array, breakdown: Object }}
+ * Decomposed Risk Analysis for a portfolio.
+ */
+export function portfolioRiskDecomposition(portfolio, totalValue, avgCorrelation) {
+  const conc = calculateConcentrationRisk(portfolio, totalValue);
+  
+  // 1. Volatility Risk (Weighted Beta)
+  let weightedBeta = 0, weightSum = 0;
+  for (const p of portfolio) {
+    const w = (p.valAtual || 0) / totalValue;
+    const b = safeMetric(p.mkt || p, "beta") || 1;
+    weightedBeta += b * w;
+    weightSum += w;
+  }
+  const avgBeta = weightSum > 0 ? weightedBeta / weightSum : 1;
+  const volatilityRisk = Math.round(clamp(avgBeta * 40, 0, 100)); // Beta 2.5 = 100 risk
+
+  // 2. Correlation/Diversification Risk
+  const correlationRisk = Math.round(avgCorrelation * 100);
+
+  // 3. Macro/Sector Risk
+  // Penalize if too many assets are in same sensitive sectors (Tech, Finance)
+  const sectorMap = {};
+  for (const p of portfolio) {
+    const s = String(p.mkt?.setor || p.setor || "Outros");
+    sectorMap[s] = (sectorMap[s] || 0) + ((p.valAtual || 0) / totalValue);
+  }
+  let macroRisk = 0;
+  for (const w of Object.values(sectorMap)) {
+    if (w > 0.40) macroRisk += (w - 0.40) * 100;
+  }
+  macroRisk = Math.round(clamp(macroRisk, 0, 100));
+
+  // 4. Resilience Score (Higher is better)
+  // Weighted: 40% Diversification, 30% Volatility (Beta), 30% Concentration
+  const resilienceScore = Math.round(
+    (100 - correlationRisk) * 0.4 +
+    (100 - volatilityRisk) * 0.3 +
+    conc.score * 0.3
+  );
+
+  return {
+    resilienceScore,
+    decomposition: {
+      volatility: volatilityRisk,
+      concentration: 100 - conc.score,
+      macro: macroRisk,
+      correlation: correlationRisk
+    },
+    avgBeta,
+    warnings: conc.warnings
+  };
+}
+
+/**
+ * Individual Asset Risk Score.
  */
 export function riskScore(asset) {
   if (!asset) return { score: 50, classification: "Unknown", crashSensitivity: {}, warnings: [], breakdown: {} };
 
-  const betaResult   = scoreBeta(asset);
-  const leverage     = scoreLeverage(asset);
-  const volatility   = scoreVolatility(asset);
-  const crashSens    = calculateCrashSensitivity(asset);
+  const beta = safeMetric(asset, "beta") || 1;
+  const category = getAssetCategory(asset);
+  
+  // Base score from Beta
+  let bScore = 1 - clamp((beta - 0.5) / 1.5, 0, 1); // Beta 0.5=100%, Beta 2.0=0%
+  
+  // Category adjustment
+  if (category === "Broad Market ETF") bScore = Math.max(bScore, 0.85);
+  else if (category === "Speculative Asset") bScore = Math.min(bScore, 0.30);
 
-  const W = { beta: 0.30, leverage: 0.35, volatility: 0.35 };
-  const components = { beta: betaResult, leverage, volatility };
-
-  let weightedSum = 0, weightTotal = 0;
-
-  for (const [key, comp] of Object.entries(components)) {
-    const w = W[key];
-    if (comp.available !== false) {
-      weightedSum += comp.score * w;
-      weightTotal += w;
-    } else {
-      weightedSum += 0.5 * w * 0.3;
-      weightTotal += w * 0.3;
-    }
-  }
-
-  const raw = weightTotal > 0 ? weightedSum / weightTotal : 0.5;
-  const score = Math.round(clamp(raw * 100, 0, 100));
-
-  // Collect all warnings
-  const warnings = [...(volatility.warnings || [])];
-
-  // Overall classification
+  const score = Math.round(bScore * 100);
+  
+  // Classification
   let classification;
-  if (score >= 80) classification = "Stable";
+  if (score >= 80) classification = "Stable / Core";
   else if (score >= 65) classification = "Moderate";
   else if (score >= 45) classification = "Aggressive";
-  else if (score >= 25) classification = "Speculative";
-  else classification = "Extreme Volatility";
+  else classification = "Speculative";
 
   return {
     score,
     classification,
-    crashSensitivity: crashSens,
-    warnings,
-    breakdown: {
-      beta:       { ...betaResult, weight: W.beta },
-      leverage:   { ...leverage, weight: W.leverage },
-      volatility: { ...volatility, weight: W.volatility }
-    }
+    category,
+    beta,
+    warnings: beta > 1.8 ? ["Volatilidade histórica extrema"] : []
   };
 }

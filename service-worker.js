@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v25";
+const CACHE_NAME = "finance-pwa-v26";
 
 const ASSETS = [
   "./",
@@ -36,6 +36,7 @@ const ASSETS = [
   "./js/engines/temporal.js",
   "./js/engines/observations.js",
   "./js/engines/rebalance.js",
+  "./js/engines/economic-drivers.js",
   "./screens/auth.html",
   "./screens/dashboard.html",
   "./screens/atividade.html",

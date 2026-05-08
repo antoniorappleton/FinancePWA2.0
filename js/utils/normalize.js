@@ -122,26 +122,67 @@ export function safePercent(asset, ...keys) {
 }
 
 /**
+ * Asset Classification Layer
+ * Categorizes assets into: Broad Market ETF, Sector ETF, Thematic ETF, Single Stock, Speculative, Satellite.
+ */
+export function getAssetCategory(asset) {
+  const ticker = String(asset.ticker || "").toUpperCase();
+  const name = String(asset.nome || asset.name || "").toLowerCase();
+  const sector = String(asset.setor || asset.sector || "").toLowerCase();
+  
+  // ── 1. Broad Market ETFs ──
+  const broadTickers = new Set(["VWCE", "VUSA", "SPY", "VOO", "IWDA", "VTI", "VT", "VEU", "VXUS", "QQQ", "IWVL", "VHYL"]);
+  if (broadTickers.has(ticker) || broadTickers.has(ticker.split(":")[0])) return "Broad Market ETF";
+  if (name.includes("world") || name.includes("s&p 500") || name.includes("stoxx 600") || name.includes("all-world")) {
+    if (sector.includes("etf") || sector.includes("múltiplos")) return "Broad Market ETF";
+  }
+
+  // ── 2. Sector ETFs ──
+  if (sector.includes("etf") && (sector.includes("tech") || sector.includes("finan") || sector.includes("ener") || sector.includes("health"))) {
+    return "Sector ETF";
+  }
+
+  // ── 3. Thematic ETFs ──
+  if (sector.includes("etf") || name.includes("etf")) {
+    const thematicKeywords = ["ai", "robotics", "automation", "cyber", "clean energy", "semiconductor", "cloud", "blockchain", "space", "quantum", "defense", "lithium", "battery", "water", "aging"];
+    if (thematicKeywords.some(k => name.includes(k) || ticker.includes(k))) return "Thematic ETF";
+    return "Sector ETF"; // Default for other ETFs
+  }
+
+  // ── 4. Speculative / Crypto ──
+  if (sector.includes("cripto") || sector.includes("crypto") || ticker === "BTC" || ticker === "ETH") return "Speculative Asset";
+  
+  // ── 5. Single Stocks ──
+  // Assume if not ETF/Crypto and has a sector, it's a stock
+  if (sector && !sector.includes("etf")) return "Single Stock";
+
+  return "Satellite Asset";
+}
+
+/**
  * Data confidence score (0–1) for an asset.
  * Measures how many critical fields are present and valid.
  */
 export function confidenceScore(asset) {
-  const CRITICAL = [
+  const category = getAssetCategory(asset);
+  
+  let CRITICAL = [
     "valorStock", "price",           // price
-    "pe",                             // valuation
-    "roic", "roe",                    // efficiency
-    "debt_eq", "current_ratio",       // solvency
-    "sma50", "sma200", "rsi_14",      // technical
-    "epsYoY", "epsNextY",             // growth
-    "yield",                          // dividends
     "setor", "sector",                // classification
     "beta"                            // risk
   ];
 
+  if (category === "Single Stock") {
+    CRITICAL.push("pe", "roic", "roe", "debt_eq", "epsYoY", "yield");
+  } else if (category.includes("ETF")) {
+    CRITICAL.push("ter", "holdings_count", "tracking_diff");
+  }
+
   const NICE = [
     "peg", "p_fcf", "p_s", "p_b", "ev_ebitda", "forward_pe",
     "gross_margin", "oper_margin", "profit_margin",
-    "roa", "quick_ratio",
+    "roa", "quick_ratio", "current_ratio",
+    "sma50", "sma200", "rsi_14",
     "priceChange_1w", "priceChange_1m", "priceChange_1y",
     "eps_next_5y", "sales_y_y_ttm"
   ];
@@ -150,20 +191,13 @@ export function confidenceScore(asset) {
   let nicePresent = 0;
 
   for (const k of CRITICAL) {
-    const v = asset[k];
-    if (v !== undefined && v !== null && v !== "" && !NA_STRINGS.has(String(v).trim())) {
-      criticalPresent++;
-    }
+    if (isValid(asset[k])) criticalPresent++;
   }
 
   for (const k of NICE) {
-    const v = asset[k];
-    if (v !== undefined && v !== null && v !== "" && !NA_STRINGS.has(String(v).trim())) {
-      nicePresent++;
-    }
+    if (isValid(asset[k])) nicePresent++;
   }
 
-  // Critical fields worth 70%, nice-to-have worth 30%
   const critScore = CRITICAL.length > 0 ? criticalPresent / CRITICAL.length : 0;
   const niceScore = NICE.length > 0 ? nicePresent / NICE.length : 0;
 
@@ -184,5 +218,7 @@ export function clamp(v, min, max) {
 export function isValid(v) {
   if (v === undefined || v === null) return false;
   if (typeof v === "number") return isFinite(v);
-  return !NA_STRINGS.has(String(v).trim());
+  const s = String(v).trim();
+  if (s === "" || NA_STRINGS.has(s)) return false;
+  return true;
 }

@@ -1,21 +1,16 @@
-// js/screens/portfolio-intel.js
-// ═══════════════════════════════════════════════════════════════════
-// PORTFOLIO INTELLIGENCE — UI Integration
-// Imports all engines and renders results in the portfolio-intel screen.
-// ═══════════════════════════════════════════════════════════════════
-
 import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { app } from "../firebase-config.js";
 
 import { scoreAssetV2, styleToMultipliers } from "../engines/score-v2.js";
-import { factorExposure } from "../engines/factors.js";
+import { portfolioFactors } from "../engines/factors.js";
 import { portfolioHealth } from "../engines/portfolio-health.js";
 import { riskContribution, weightVsRiskChart } from "../engines/risk-contrib.js";
 import { correlationMatrix } from "../engines/correlation.js";
 import { stressTest } from "../engines/stress-test.js";
+import { portfolioRiskDecomposition } from "../engines/risk.js";
 import { thematicExposure } from "../engines/thematic.js";
 import { portfolioDNA } from "../engines/dna.js";
-import { temporalScore } from "../engines/temporal.js";
+import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
 import { analyzeETFOverlap } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
@@ -73,8 +68,7 @@ async function runFullAnalysis() {
 
     const totalValue = portfolio.reduce((s, p) => s + p.valAtual, 0);
 
-    // ── 2. Run all engines ──
-    // Score V2 for each asset
+    // ── 2. Run all structural engines ──
     const assetScores = [];
     for (const p of portfolio) {
       const v2 = scoreAssetV2(p.mkt, styleMult);
@@ -84,26 +78,28 @@ async function runFullAnalysis() {
     }
     assetScores.sort((a, b) => b.v2.finalScore - a.v2.finalScore);
 
-    const factorArray = portfolio.map(p => ({ asset: p.mkt, weight: p.valAtual / Math.max(totalValue, 1) }));
-    const factors = factorExposure(factorArray);
+    const corr = correlationMatrix(portfolio);
+    const factors = portfolioFactors(portfolio, totalValue);
     const health = portfolioHealth(portfolio, totalValue);
+    const riskDecomp = portfolioRiskDecomposition(portfolio, totalValue, corr.avgCorrelation);
     const riskContrib = riskContribution(portfolio, totalValue);
     const wrChart = weightVsRiskChart(portfolio, totalValue);
-    const corr = correlationMatrix(portfolio);
     const stress = stressTest(portfolio, totalValue);
     const themes = thematicExposure(portfolio, totalValue);
     const dna = portfolioDNA(portfolio, totalValue);
+    const economicDrivers = calculateEconomicDrivers(portfolio, totalValue);
     const etfOverlap = analyzeETFOverlap(portfolio);
     const rebalance = rebalanceSuggestions(portfolio, totalValue, { riskContrib });
     const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap });
 
     // ── 3. Render everything ──
     renderDNA(dna);
-    renderHealth(health);
-    renderResilience(stress);
+    renderHealth(health, riskDecomp);
+    renderResilience(riskDecomp);
     renderFactorRadar(factors);
     renderCorrelation(corr);
     renderThematic(themes);
+    renderEconomicDrivers(economicDrivers);
     renderStressTests(stress);
     renderWeightRisk(wrChart, riskContrib);
     renderScorecards(assetScores.slice(0, 12));
@@ -131,35 +127,44 @@ function renderDNA(dna) {
   el("piDnaSecondary").textContent = dna.secondary ? `Secundário: ${dna.secondary.emoji} ${dna.secondary.name}` : "";
 }
 
-function renderHealth(health) {
+function renderHealth(health, riskDecomp) {
   const el = (id) => document.getElementById(id);
-  el("piHealthScore").textContent = health.score;
-  el("piHealthScore").style.color = health.score >= 65 ? "var(--success)" : health.score >= 40 ? "#eab308" : "var(--destructive)";
+  // Blend health and resilience for total health score
+  const totalScore = Math.round(health.score * 0.6 + riskDecomp.resilienceScore * 0.4);
+  el("piHealthScore").textContent = totalScore;
+  el("piHealthScore").style.color = totalScore >= 65 ? "var(--success)" : totalScore >= 40 ? "#eab308" : "var(--destructive)";
   el("piHealthClass").textContent = health.classification;
-  el("piHiddenRisk").innerHTML = health.hiddenRiskScore > 40
-    ? `<span style="color:#f97316;">⚠️ Risco Escondido: ${health.hiddenRiskScore}/100</span>`
-    : `<span style="color:#22c55e;">✅ Risco escondido baixo</span>`;
+  
+  const riskHtml = riskDecomp.decomposition.concentration > 40
+    ? `<span style="color:#f97316;">⚠️ Risco Concentração: ${riskDecomp.decomposition.concentration}/100</span>`
+    : `<span style="color:#22c55e;">✅ Concentração saudável</span>`;
+  el("piHiddenRisk").innerHTML = riskHtml;
 }
 
-function renderResilience(stress) {
+function renderResilience(riskDecomp) {
   const el = (id) => document.getElementById(id);
-  el("piResilience").textContent = stress.resilience;
-  el("piResilience").style.color = stress.resilience >= 60 ? "var(--success)" : stress.resilience >= 40 ? "#eab308" : "var(--destructive)";
-  el("piResilienceSummary").textContent = stress.summary;
+  const r = riskDecomp.resilienceScore;
+  el("piResilience").textContent = r;
+  el("piResilience").style.color = r >= 60 ? "var(--success)" : r >= 40 ? "#eab308" : "var(--destructive)";
+  
+  let summary = "Portfolio resiliente e estruturado.";
+  if (r < 40) summary = "Alta fragilidade estrutural detectada.";
+  else if (r < 60) summary = "Resiliência moderada com pontos de atenção.";
+  el("piResilienceSummary").textContent = summary;
 }
 
 function renderFactorRadar(factors) {
   const ctx = document.getElementById("piFactorRadar");
-  if (!ctx) return;
+  if (!ctx || !factors) return;
   const labels = ["Growth", "Value", "Quality", "Momentum", "Defensive", "Cyclical"];
-  const data = [factors.factors.growth, factors.factors.value, factors.factors.quality, factors.factors.momentum, factors.factors.defensive, factors.factors.cyclical];
+  const data = [factors.growth, factors.value, factors.quality, factors.momentum, factors.defensive, factors.cyclical];
 
   new Chart(ctx, {
     type: "radar",
     data: {
       labels,
       datasets: [{
-        label: "Exposição (%)",
+        label: "Fatores (%)",
         data,
         backgroundColor: "rgba(99,102,241,0.15)",
         borderColor: "#6366f1",
@@ -169,7 +174,7 @@ function renderFactorRadar(factors) {
     },
     options: {
       responsive: true,
-      scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, font: { size: 10 } }, pointLabels: { font: { size: 11, weight: "bold" } } } },
+      scales: { r: { min: 0, max: 100, ticks: { display: false }, pointLabels: { font: { size: 11, weight: "bold" } } } },
       plugins: { legend: { display: false } }
     }
   });
@@ -186,9 +191,12 @@ function renderCorrelation(corr) {
     html += `<tr><th>${t}</th>`;
     for (const t2 of tickers) {
       const v = corr.matrix[t]?.[t2] || 0;
-      const r = Math.round(v * 255), g = Math.round((1 - v) * 200);
-      const bg = t === t2 ? "var(--muted)" : `rgba(${r}, ${g}, 100, 0.3)`;
-      html += `<td style="background:${bg}; font-weight:${v > 0.6 ? 700 : 400};">${v.toFixed(2)}</td>`;
+      // High correlation = Red, Low = Green/Neutral
+      const intensity = Math.abs(v);
+      const r = v > 0.6 ? 239 : 100;
+      const g = v > 0.6 ? 68 : 200;
+      const bg = t === t2 ? "var(--muted)" : `rgba(${r}, ${g}, 100, ${0.1 + intensity * 0.4})`;
+      html += `<td style="background:${bg}; font-weight:${v > 0.6 ? 800 : 400}; color:${v > 0.6 ? "#ef4444" : "inherit"};">${v.toFixed(2)}</td>`;
     }
     html += `</tr>`;
   }
@@ -207,13 +215,21 @@ function renderThematic(themes) {
 
   container.innerHTML = (themes.dominant || []).map((t, i) => `
     <div class="pi-theme-bar">
-      <span class="theme-label">${t.icon || "🏷️"} ${t.name}</span>
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem;">
+        <span class="theme-label">${t.icon || "🏷️"} ${t.name}</span>
+        <span class="theme-pct" style="font-weight:700;">${t.exposure}%</span>
+      </div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.min(t.exposure, 100)}%; background:${colors[i % colors.length]};"></div></div>
-      <span class="theme-pct">${t.exposure}%</span>
     </div>
   `).join("");
 
   if (warn) warn.innerHTML = (themes.warnings || []).map(w => `<div>⚠️ ${w}</div>`).join("");
+}
+
+function renderEconomicDrivers(drivers) {
+  const container = document.getElementById("piThematicBars"); // Reusing for now or find new ID
+  if (!container || !drivers) return;
+  // This could be a separate section if needed
 }
 
 function renderStressTests(stress) {
@@ -271,6 +287,7 @@ function renderScorecards(assets) {
           <span class="sc-ticker">${a.ticker}</span>
           <span class="sc-grade ${gradeClass(v2.grade)}">${v2.grade} — ${v2.finalScore}</span>
         </div>
+        <div style="font-size:0.7rem; color:var(--muted-foreground); margin-bottom:8px;">${v2.category}</div>
         ${["quality", "momentum", "valuation", "risk"].map(k => {
           const e = engines[k] || {};
           return `
@@ -280,7 +297,10 @@ function renderScorecards(assets) {
               <span class="sc-bar-val">${e.score || 0}</span>
             </div>`;
         }).join("")}
-        <div class="muted" style="font-size:0.75rem; margin-top:6px;">Confiança: ${v2.confidence}%</div>
+        <div class="muted" style="font-size:0.7rem; margin-top:6px; display:flex; justify-content:space-between;">
+           <span>Confiança: ${v2.confidence}%</span>
+           <span>Beta: ${v2.engines.risk?.beta?.toFixed(2) || "1.00"}</span>
+        </div>
       </div>`;
   }).join("");
 }
@@ -289,14 +309,12 @@ function renderObservations(portfolioObs, assetScores) {
   const container = document.getElementById("piObservations");
   if (!container) return;
 
-  // Collect top asset observations too
   const allObs = [...portfolioObs];
   for (const a of assetScores.slice(0, 6)) {
     const assetObs = generateAssetObservations(a.mkt, a.v2.engines);
     allObs.push(...assetObs.slice(0, 2));
   }
 
-  // Deduplicate and limit
   const unique = [];
   const seen = new Set();
   for (const o of allObs) {
