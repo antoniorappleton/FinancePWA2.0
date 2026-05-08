@@ -1,11 +1,4 @@
-// js/engines/correlation.js
-// ═══════════════════════════════════════════════════════════════════
-// CORRELATION ENGINE
-// Proxy-based correlation using sector, factor, and beta similarity.
-// Detects false diversification and hidden clusters.
-// ═══════════════════════════════════════════════════════════════════
-
-import { safeMetric, safePercent, clamp, getAssetCategory } from "../utils/normalize.js";
+import { safeMetric, safePercent, clamp, getAssetCategory, canonicalTicker } from "../utils/normalize.js";
 import { normalizeSector } from "../utils/scoring.js";
 
 // ── Refined Sector correlation matrix (Institutional standard) ──
@@ -44,54 +37,18 @@ function getSectorCorrelation(s1, s2) {
 }
 
 /**
- * Historical Proxy Correlation (Pseudo-Pearson)
- * Uses 1w, 1m, 1y price changes to detect coupling.
- */
-function getHistoricalCorrelation(assetA, assetB) {
-  const changesA = [
-    safePercent(assetA.mkt || assetA, "priceChange_1w"),
-    safePercent(assetA.mkt || assetA, "priceChange_1m"),
-    safePercent(assetA.mkt || assetA, "priceChange_1y")
-  ].filter(v => isFinite(v));
-
-  const changesB = [
-    safePercent(assetB.mkt || assetB, "priceChange_1w"),
-    safePercent(assetB.mkt || assetB, "priceChange_1m"),
-    safePercent(assetB.mkt || assetB, "priceChange_1y")
-  ].filter(v => isFinite(v));
-
-  if (changesA.length < 2 || changesB.length < 2) return NaN;
-
-  // Correlation of direction
-  let score = 0, count = 0;
-  for (let i = 0; i < Math.min(changesA.length, changesB.length); i++) {
-    const dirA = Math.sign(changesA[i]);
-    const dirB = Math.sign(changesB[i]);
-    if (dirA === dirB) score += 1;
-    else if (dirA === -dirB) score -= 0.5;
-    count++;
-  }
-  
-  return count > 0 ? score / count : NaN;
-}
-
-/**
- * Calculate pairwise correlation proxy between two assets.
+ * Pairs correlation proxy between two assets.
  */
 function pairCorrelation(assetA, assetB) {
   const catA = getAssetCategory(assetA.mkt || assetA);
   const catB = getAssetCategory(assetB.mkt || assetB);
 
-  // Broad Market ETFs are treated as diversifying anchors (lower specific correlation)
   let baseMultiplier = 1.0;
   if (catA === "Broad Market ETF" || catB === "Broad Market ETF") {
-    // If one is VWCE and another is a single stock, correlation is naturally lower
-    // unless the stock is a massive part of the ETF (handled in overlap)
-    baseMultiplier = 0.6; 
-    if (catA === "Broad Market ETF" && catB === "Broad Market ETF") baseMultiplier = 0.9; // Broad ETFs move together
+    baseMultiplier = 0.55; 
+    if (catA === "Broad Market ETF" && catB === "Broad Market ETF") baseMultiplier = 0.9;
   }
 
-  const histCorr = getHistoricalCorrelation(assetA, assetB);
   const sA = normalizeSector(assetA.mkt || assetA);
   const sB = normalizeSector(assetB.mkt || assetB);
   const sectorCorr = getSectorCorrelation(sA, sB);
@@ -100,116 +57,90 @@ function pairCorrelation(assetA, assetB) {
   const betaB = safeMetric(assetB.mkt || assetB, "beta") || 1;
   const betaSimilarity = 1 - Math.min(Math.abs(betaA - betaB) / 2, 1);
 
-  let finalCorr;
-  if (isFinite(histCorr)) {
-    // Hybrid: 50% Historical Proxy, 30% Sector, 20% Beta
-    finalCorr = (histCorr * 0.5 + sectorCorr * 0.3 + betaSimilarity * 0.2);
-  } else {
-    // Proxy only: 70% Sector, 30% Beta
-    finalCorr = (sectorCorr * 0.7 + betaSimilarity * 0.3);
-  }
-
-  return clamp(finalCorr * baseMultiplier, -1, 1);
+  return clamp((sectorCorr * 0.7 + betaSimilarity * 0.3) * baseMultiplier, -1, 1);
 }
 
 /**
- * Generate a correlation matrix for the portfolio.
+ * Generate a correlation matrix and detect structural clusters.
  */
 export function correlationMatrix(portfolio) {
-  if (!portfolio || portfolio.length < 2) {
-    return { matrix: {}, clusters: [], avgCorrelation: 0, diversificationScore: 100, warnings: [] };
-  }
+  if (!portfolio || portfolio.length === 0) return { matrix: {}, tickers: [], clusters: [], avgCorrelation: 0, warnings: [] };
 
-  const n = portfolio.length;
+  // 1. Deduplicate by canonical ticker
+  const dedup = {};
+  for (const p of portfolio) {
+    const t = canonicalTicker(p.ticker);
+    if (!dedup[t]) dedup[t] = p;
+    else if (p.valAtual > dedup[t].valAtual) dedup[t] = p; // Keep largest position
+  }
+  const positions = Object.values(dedup);
+  const tickers = positions.map(p => canonicalTicker(p.ticker));
+  const n = tickers.length;
+
   const matrix = {};
   let totalCorr = 0, pairCount = 0;
-  const warnings = [];
 
-  // Build matrix
   for (let i = 0; i < n; i++) {
-    const a = portfolio[i];
-    const tA = String(a.ticker || "").toUpperCase();
+    const tA = tickers[i];
     matrix[tA] = {};
-
     for (let j = 0; j < n; j++) {
-      const b = portfolio[j];
-      const tB = String(b.ticker || "").toUpperCase();
-
+      const tB = tickers[j];
       if (i === j) {
         matrix[tA][tB] = 1.0;
       } else {
-        const corr = Math.round(pairCorrelation(a, b) * 100) / 100;
+        const corr = Math.round(pairCorrelation(positions[i], positions[j]) * 100) / 100;
         matrix[tA][tB] = corr;
-
-        if (j > i) {
-          totalCorr += corr;
-          pairCount++;
-        }
+        if (j > i) { totalCorr += corr; pairCount++; }
       }
     }
   }
 
-  const avgCorrelation = pairCount > 0 ? Math.round((totalCorr / pairCount) * 100) / 100 : 0;
-
-  // ── Detect clusters ──
+  // 2. Detect Clusters (Agglomerative style)
+  const CLUSTER_THRESHOLD = 0.65;
   const clusters = [];
   const visited = new Set();
 
   for (let i = 0; i < n; i++) {
-    const tA = String(portfolio[i].ticker || "").toUpperCase();
+    const tA = tickers[i];
     if (visited.has(tA)) continue;
 
     const cluster = [tA];
     visited.add(tA);
 
     for (let j = i + 1; j < n; j++) {
-      const tB = String(portfolio[j].ticker || "").toUpperCase();
+      const tB = tickers[j];
       if (visited.has(tB)) continue;
-
-      if (matrix[tA][tB] >= 0.7) { // Higher threshold for cluster detection
+      if (matrix[tA][tB] >= CLUSTER_THRESHOLD) {
         cluster.push(tB);
         visited.add(tB);
       }
     }
 
     if (cluster.length >= 2) {
+      // Name cluster by dominant sector or assets
+      const mainAsset = positions.find(p => canonicalTicker(p.ticker) === cluster[0]);
+      const sector = normalizeSector(mainAsset?.mkt || mainAsset);
       clusters.push({
+        name: `${sector} Cluster`,
         assets: cluster,
-        avgCorrelation: Math.round(
-          cluster.reduce((s, a) =>
-            s + cluster.reduce((s2, b) => s2 + (a === b ? 0 : (matrix[a]?.[b] || 0)), 0), 0
-          ) / Math.max(1, cluster.length * (cluster.length - 1)) * 100
-        ) / 100
+        avgCorr: Math.round(cluster.reduce((s, a) => s + cluster.reduce((s2, b) => s2 + (a===b?0:matrix[a][b]), 0), 0) / (cluster.length*(cluster.length-1)) * 100) / 100
       });
     }
   }
 
-  // ── Diversification score ──
-  // Lower avg correlation = better diversification. Adjusted for portfolio size.
-  const sizeAdjustment = Math.min(n / 10, 1);
-  const diversificationScore = Math.round(clamp((1 - avgCorrelation) * 100 * sizeAdjustment, 0, 100));
-
-  // ── Warnings ──
-  if (avgCorrelation > 0.65) {
-    warnings.push(`Correlação média elevada (${avgCorrelation}) — falsa diversificação`);
+  const avgCorrelation = pairCount > 0 ? Math.round((totalCorr / pairCount) * 100) / 100 : 0;
+  const warnings = [];
+  if (avgCorrelation > 0.6) warnings.push("Elevada correlação sistémica — diversificação pode ser ilusória.");
+  for (const c of clusters) {
+    if (c.assets.length >= 3) warnings.push(`Cluster detetado: ${c.name} (${c.assets.join(", ")}). Risco de acoplamento.`);
   }
-
-  for (const cluster of clusters) {
-    if (cluster.assets.length >= 3) {
-      warnings.push(`Cluster acoplado: ${cluster.assets.join(", ")} (corr. ~${cluster.avgCorrelation})`);
-    }
-  }
-
-  const tickers = portfolio.map(p => String(p.ticker || "").toUpperCase());
-  const heatmapData = tickers.map(t => tickers.map(t2 => matrix[t]?.[t2] || 0));
 
   return {
     matrix,
-    heatmapData,
     tickers,
     clusters,
     avgCorrelation,
-    diversificationScore,
     warnings
   };
 }
+

@@ -1,11 +1,4 @@
-// js/engines/quality.js
-// ═══════════════════════════════════════════════════════════════════
-// QUALITY SCORE ENGINE (0–100)
-// Measures business quality: profitability, margins, balance sheet,
-// capital efficiency, and earnings consistency.
-// ═══════════════════════════════════════════════════════════════════
-
-import { safeMetric, safePercent, clamp, isValid, confidenceScore } from "../utils/normalize.js";
+import { safeMetric, safePercent, clamp, isValid, confidenceScore, getAssetCategory } from "../utils/normalize.js";
 
 // ── Sector-aware thresholds ──
 const SECTOR_PROFILES = {
@@ -31,6 +24,47 @@ const SECTOR_PROFILES = {
 function getSectorProfile(asset) {
   const sector = asset.setor || asset.sector || asset.Setor || asset.Sector || "";
   return SECTOR_PROFILES[sector] || SECTOR_PROFILES.default;
+}
+
+// ── ETF Quality Model (Diversification, TER, Tracking) ──
+function scoreETFQuality(asset) {
+  const ter = safePercent(asset, "ter", "expense_ratio");
+  const holdings = safeMetric(asset, "holdings_count", "num_holdings");
+  const cat = getAssetCategory(asset);
+
+  let total = 0, count = 0;
+
+  // 1. TER Score (0.0% to 1.0%)
+  if (isFinite(ter)) {
+    let s;
+    if (ter <= 0.0010) s = 1.0;      // 0.10% (Exceptional)
+    else if (ter <= 0.0025) s = 0.85; // 0.25% (Good)
+    else if (ter <= 0.0050) s = 0.6;  // 0.50% (Average)
+    else if (ter <= 0.0080) s = 0.3;  // 0.80% (Expensive)
+    else s = 0.05;
+    total += s * 0.4; count += 0.4;
+  }
+
+  // 2. Diversification Score
+  if (isFinite(holdings)) {
+    let s;
+    if (cat === "Broad Market ETF") {
+      s = holdings > 1500 ? 1.0 : holdings > 500 ? 0.8 : holdings > 100 ? 0.5 : 0.2;
+    } else {
+      s = holdings > 100 ? 1.0 : holdings > 50 ? 0.8 : holdings > 20 ? 0.5 : 0.2;
+    }
+    total += s * 0.4; count += 0.4;
+  }
+
+  // 3. Category Premium
+  const catScore = cat === "Broad Market ETF" ? 0.9 : cat === "Sector ETF" ? 0.7 : 0.6;
+  total += catScore * 0.2; count += 0.2;
+
+  const raw = count > 0 ? total / count : 0.6;
+  return { 
+    score: Math.round(raw * 100), 
+    classification: raw > 0.8 ? "Institutional Grade ETF" : raw > 0.6 ? "Quality ETF" : "Niche / High Cost ETF" 
+  };
 }
 
 // ── Sub-scores (each 0–1) ──
@@ -157,21 +191,28 @@ function scoreGrowthQuality(asset) {
 
 /**
  * Calculate Quality Score for a single asset.
- * @param {Object} asset - Raw asset data from Firestore
- * @returns {{ score: number, breakdown: Object, confidence: number, classification: string }}
  */
 export function qualityScore(asset) {
   if (!asset) return { score: 50, breakdown: {}, confidence: 0, classification: "Unknown" };
 
+  const category = getAssetCategory(asset);
+  if (category.includes("ETF")) {
+    const etf = scoreETFQuality(asset);
+    return {
+      score: etf.score,
+      classification: etf.classification,
+      confidence: Math.round(confidenceScore(asset) * 100),
+      breakdown: { etf: true, ...etf }
+    };
+  }
+
   const profile = getSectorProfile(asset);
-  
   const roic     = scoreROIC(asset, profile);
   const margins  = scoreMargins(asset, profile);
   const balance  = scoreBalanceSheet(asset, profile);
   const roe      = scoreROE(asset);
   const growth   = scoreGrowthQuality(asset);
 
-  // Weighted combination
   const W = { roic: 0.25, margins: 0.25, balance: 0.20, roe: 0.15, growth: 0.15 };
   const components = { roic, margins, balance, roe, growth };
 
@@ -184,7 +225,6 @@ export function qualityScore(asset) {
       weightedSum += comp.score * w;
       weightTotal += w;
     } else {
-      // Data missing → use neutral score but with reduced weight
       weightedSum += 0.5 * w * 0.3;
       weightTotal += w * 0.3;
     }
@@ -192,9 +232,7 @@ export function qualityScore(asset) {
 
   const raw = weightTotal > 0 ? weightedSum / weightTotal : 0.5;
   const score = Math.round(clamp(raw * 100, 0, 100));
-  const conf = confidenceScore(asset);
-
-  // Classification
+  
   let classification;
   if (score >= 85) classification = "Exceptional Quality";
   else if (score >= 70) classification = "High Quality";
@@ -205,13 +243,8 @@ export function qualityScore(asset) {
   return {
     score,
     classification,
-    confidence: Math.round(conf * 100),
-    breakdown: {
-      roic:     { ...roic, weight: W.roic },
-      margins:  { ...margins, weight: W.margins },
-      balance:  { ...balance, weight: W.balance },
-      roe:      { ...roe, weight: W.roe },
-      growth:   { ...growth, weight: W.growth }
-    }
+    confidence: Math.round(confidenceScore(asset) * 100),
+    breakdown: { roic, margins, balance, roe, growth }
   };
 }
+

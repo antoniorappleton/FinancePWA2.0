@@ -122,38 +122,78 @@ export function safePercent(asset, ...keys) {
 }
 
 /**
+ * Ticker Normalization / Deduplication
+ * Resolves aliases and exchanges to a canonical ID.
+ * Examples: "VWCE.DE" -> "VWCE", "QDVF.DE" -> "QDVE", "VOO.US" -> "VOO"
+ */
+export function canonicalTicker(ticker) {
+  if (!ticker) return "";
+  let t = String(ticker).toUpperCase().trim();
+  
+  // Remove exchange suffixes: .DE, .AS, .LS, .US, :EUR, :USD
+  t = t.split(".")[0].split(":")[0];
+
+  // Alias Mapping (Deduplication)
+  const ALIASES = {
+    "QDVF": "QDVE", // iShares S&P 500 Info Tech (different listings)
+    "QDVK": "QDVE",
+    "IS0D": "IS3N", // Emerging Markets variations
+    "IWVL": "IWVL", // World Value
+    "VUSA": "VOO",  // S&P 500
+    "VUSA:LS": "VOO"
+  };
+
+  return ALIASES[t] || t;
+}
+
+// ── Contextual Concentration Limits ──
+export const HEALTHY_LIMITS = {
+  "Broad Market ETF": 0.70, // 70% max for a core anchor
+  "Sector ETF":       0.25, // 25% max
+  "Thematic ETF":     0.15, // 15% max
+  "Single Stock":     0.10, // 10% max
+  "Speculative Asset": 0.05, // 5% max
+  "Satellite Asset":  0.08,
+  "Crypto":           0.05
+};
+
+/**
  * Asset Classification Layer
  * Categorizes assets into: Broad Market ETF, Sector ETF, Thematic ETF, Single Stock, Speculative, Satellite.
  */
 export function getAssetCategory(asset) {
-  const ticker = String(asset.ticker || "").toUpperCase();
+  const ticker = canonicalTicker(asset.ticker);
   const name = String(asset.nome || asset.name || "").toLowerCase();
   const sector = String(asset.setor || asset.sector || "").toLowerCase();
   
-  // ── 1. Broad Market ETFs ──
-  const broadTickers = new Set(["VWCE", "VUSA", "SPY", "VOO", "IWDA", "VTI", "VT", "VEU", "VXUS", "QQQ", "IWVL", "VHYL"]);
-  if (broadTickers.has(ticker) || broadTickers.has(ticker.split(":")[0])) return "Broad Market ETF";
-  if (name.includes("world") || name.includes("s&p 500") || name.includes("stoxx 600") || name.includes("all-world")) {
-    if (sector.includes("etf") || sector.includes("múltiplos")) return "Broad Market ETF";
+  // ── 1. Broad Market ETFs (Diversified Core) ──
+  const broadTickers = new Set(["VWCE", "VOO", "SPY", "IWDA", "VTI", "VT", "VEU", "VXUS", "VHYL", "VWRL", "IWVL", "SWDA"]);
+  if (broadTickers.has(ticker)) return "Broad Market ETF";
+  
+  if (name.includes("world") || name.includes("s&p 500") || name.includes("all-world") || name.includes("acwi")) {
+    if (sector.includes("etf") || sector.includes("múltiplos") || name.includes("core")) return "Broad Market ETF";
   }
 
-  // ── 2. Sector ETFs ──
-  if (sector.includes("etf") && (sector.includes("tech") || sector.includes("finan") || sector.includes("ener") || sector.includes("health"))) {
-    return "Sector ETF";
-  }
-
-  // ── 3. Thematic ETFs ──
+  // ── 2. Specialized ETFs ──
   if (sector.includes("etf") || name.includes("etf")) {
-    const thematicKeywords = ["ai", "robotics", "automation", "cyber", "clean energy", "semiconductor", "cloud", "blockchain", "space", "quantum", "defense", "lithium", "battery", "water", "aging"];
+    const thematicKeywords = ["ai", "robotics", "automation", "cyber", "clean energy", "semiconductor", "cloud", "blockchain", "space", "quantum", "defense", "lithium", "battery", "water", "aging", "tech", "digital"];
+    const cryptoKeywords = ["crypto", "bitcoin", "ethereum", "blockchain"];
+    
+    if (cryptoKeywords.some(k => name.includes(k))) return "Speculative Asset";
     if (thematicKeywords.some(k => name.includes(k) || ticker.includes(k))) return "Thematic ETF";
+    
+    // Check if it's a specific sector (Tech, Finance, etc)
+    if (sector.includes("tech") || sector.includes("finan") || sector.includes("ener") || sector.includes("health") || sector.includes("utilit")) {
+      return "Sector ETF";
+    }
+    
     return "Sector ETF"; // Default for other ETFs
   }
 
-  // ── 4. Speculative / Crypto ──
-  if (sector.includes("cripto") || sector.includes("crypto") || ticker === "BTC" || ticker === "ETH") return "Speculative Asset";
+  // ── 3. Speculative / Crypto ──
+  if (sector.includes("cripto") || sector.includes("crypto") || ticker === "BTC" || ticker === "ETH" || ticker === "SOL") return "Speculative Asset";
   
-  // ── 5. Single Stocks ──
-  // Assume if not ETF/Crypto and has a sector, it's a stock
+  // ── 4. Single Stocks ──
   if (sector && !sector.includes("etf")) return "Single Stock";
 
   return "Satellite Asset";
@@ -175,7 +215,7 @@ export function confidenceScore(asset) {
   if (category === "Single Stock") {
     CRITICAL.push("pe", "roic", "roe", "debt_eq", "epsYoY", "yield");
   } else if (category.includes("ETF")) {
-    CRITICAL.push("ter", "holdings_count", "tracking_diff");
+    CRITICAL.push("ter", "holdings_count");
   }
 
   const NICE = [
@@ -183,8 +223,7 @@ export function confidenceScore(asset) {
     "gross_margin", "oper_margin", "profit_margin",
     "roa", "quick_ratio", "current_ratio",
     "sma50", "sma200", "rsi_14",
-    "priceChange_1w", "priceChange_1m", "priceChange_1y",
-    "eps_next_5y", "sales_y_y_ttm"
+    "priceChange_1w", "priceChange_1m", "priceChange_1y"
   ];
 
   let criticalPresent = 0;
@@ -201,6 +240,7 @@ export function confidenceScore(asset) {
   const critScore = CRITICAL.length > 0 ? criticalPresent / CRITICAL.length : 0;
   const niceScore = NICE.length > 0 ? nicePresent / NICE.length : 0;
 
+  // Impact: Critical fields represent 70% of the confidence
   return Math.min(1, critScore * 0.7 + niceScore * 0.3);
 }
 
@@ -222,3 +262,4 @@ export function isValid(v) {
   if (s === "" || NA_STRINGS.has(s)) return false;
   return true;
 }
+

@@ -14,6 +14,7 @@ import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
 import { analyzeETFOverlap } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
+import { canonicalTicker } from "../utils/normalize.js";
 
 const db = getFirestore(app);
 
@@ -45,27 +46,34 @@ async function runFullAnalysis() {
     const strategy = stratSnap.exists() ? stratSnap.data() : {};
     const styleMult = styleToMultipliers(strategy.styleAlloc);
 
-    // Build enriched portfolio
-    const portfolio = [];
+    // Build enriched portfolio with Canonical Deduplication
+    const rawPortfolio = [];
     ativosSnap.forEach(docu => {
       const d = docu.data();
       const ticker = String(d.ticker || "").toUpperCase();
       const mkt = acoesMap.get(ticker) || {};
       const precoAtual = Number(mkt.valorStock || mkt.price || 0);
-      const valAtual = (d.quantidade || 0) * precoAtual;
-
-      portfolio.push({
+      rawPortfolio.push({
         ticker,
         nome: d.nome || mkt.nome || ticker,
         quantidade: d.quantidade || 0,
         precoMedio: d.precoMedio || 0,
         precoAtual,
-        valAtual,
-        mkt,
-        score: 0
+        valAtual: (d.quantidade || 0) * precoAtual,
+        mkt
       });
     });
 
+    const aggregated = {};
+    for (const p of rawPortfolio) {
+      const t = canonicalTicker(p.ticker);
+      if (!aggregated[t]) {
+        aggregated[t] = { ...p, ticker: t, quantidade: 0, valAtual: 0 };
+      }
+      aggregated[t].quantidade += p.quantidade;
+      aggregated[t].valAtual += p.valAtual;
+    }
+    const portfolio = Object.values(aggregated);
     const totalValue = portfolio.reduce((s, p) => s + p.valAtual, 0);
 
     // ── 2. Run all structural engines ──
@@ -102,7 +110,7 @@ async function runFullAnalysis() {
     renderEconomicDrivers(economicDrivers);
     renderStressTests(stress);
     renderWeightRisk(wrChart, riskContrib);
-    renderScorecards(assetScores.slice(0, 12));
+    renderScorecards(assetScores.slice(0, 15));
     renderObservations(portfolioObs, assetScores);
     renderRebalance(rebalance);
 
@@ -129,14 +137,13 @@ function renderDNA(dna) {
 
 function renderHealth(health, riskDecomp) {
   const el = (id) => document.getElementById(id);
-  // Blend health and resilience for total health score
   const totalScore = Math.round(health.score * 0.6 + riskDecomp.resilienceScore * 0.4);
   el("piHealthScore").textContent = totalScore;
   el("piHealthScore").style.color = totalScore >= 65 ? "var(--success)" : totalScore >= 40 ? "#eab308" : "var(--destructive)";
   el("piHealthClass").textContent = health.classification;
   
   const riskHtml = riskDecomp.decomposition.concentration > 40
-    ? `<span style="color:#f97316;">⚠️ Risco Concentração: ${riskDecomp.decomposition.concentration}/100</span>`
+    ? `<span style="color:#f97316;">⚠️ Risco Concentração: ${riskDecomp.decomposition.concentration.toFixed(0)}/100</span>`
     : `<span style="color:#22c55e;">✅ Concentração saudável</span>`;
   el("piHiddenRisk").innerHTML = riskHtml;
 }
@@ -159,7 +166,8 @@ function renderFactorRadar(factors) {
   const labels = ["Growth", "Value", "Quality", "Momentum", "Defensive", "Cyclical"];
   const data = [factors.growth, factors.value, factors.quality, factors.momentum, factors.defensive, factors.cyclical];
 
-  new Chart(ctx, {
+  if (window.piRadarChart) window.piRadarChart.destroy();
+  window.piRadarChart = new Chart(ctx, {
     type: "radar",
     data: {
       labels,
@@ -185,18 +193,17 @@ function renderCorrelation(corr) {
   const warn = document.getElementById("piCorrWarnings");
   if (!grid) return;
 
-  const tickers = corr.tickers.slice(0, 10);
+  const tickers = corr.tickers.slice(0, 12);
   let html = `<table class="corr-heatmap"><tr><th></th>${tickers.map(t => `<th>${t}</th>`).join("")}</tr>`;
   for (const t of tickers) {
     html += `<tr><th>${t}</th>`;
     for (const t2 of tickers) {
       const v = corr.matrix[t]?.[t2] || 0;
-      // High correlation = Red, Low = Green/Neutral
       const intensity = Math.abs(v);
-      const r = v > 0.6 ? 239 : 100;
-      const g = v > 0.6 ? 68 : 200;
-      const bg = t === t2 ? "var(--muted)" : `rgba(${r}, ${g}, 100, ${0.1 + intensity * 0.4})`;
-      html += `<td style="background:${bg}; font-weight:${v > 0.6 ? 800 : 400}; color:${v > 0.6 ? "#ef4444" : "inherit"};">${v.toFixed(2)}</td>`;
+      const r = v > 0.65 ? 239 : 100;
+      const g = v > 0.65 ? 68 : 200;
+      const bg = t === t2 ? "var(--muted)" : `rgba(${r}, ${g}, 100, ${0.05 + intensity * 0.35})`;
+      html += `<td style="background:${bg}; font-weight:${v > 0.65 ? 800 : 400}; color:${v > 0.65 ? "#ef4444" : "inherit"};">${v.toFixed(2)}</td>`;
     }
     html += `</tr>`;
   }
@@ -208,28 +215,39 @@ function renderCorrelation(corr) {
 
 function renderThematic(themes) {
   const container = document.getElementById("piThematicBars");
-  const warn = document.getElementById("piThematicWarnings");
   if (!container) return;
 
-  const colors = ["#6366f1", "#ec4899", "#f59e0b", "#22c55e", "#3b82f6", "#f97316", "#14b8a6", "#a78bfa", "#ef4444", "#84cc16"];
+  const colors = ["#6366f1", "#ec4899", "#f59e0b", "#22c55e", "#3b82f6", "#f97316", "#14b8a6", "#a78bfa"];
 
   container.innerHTML = (themes.dominant || []).map((t, i) => `
     <div class="pi-theme-bar">
       <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem;">
         <span class="theme-label">${t.icon || "🏷️"} ${t.name}</span>
-        <span class="theme-pct" style="font-weight:700;">${t.exposure}%</span>
+        <span class="theme-pct">${t.exposure}%</span>
       </div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.min(t.exposure, 100)}%; background:${colors[i % colors.length]};"></div></div>
+      <div class="bar-track" style="display:flex;">
+        <div class="bar-fill" style="width:${t.directPct}%; background:${colors[i % colors.length]};" title="Direto: ${t.directPct}%"></div>
+        <div class="bar-fill" style="width:${t.indirectPct}%; background:${colors[i % colors.length]}; opacity:0.4;" title="Indireto: ${t.indirectPct}%"></div>
+      </div>
     </div>
   `).join("");
-
-  if (warn) warn.innerHTML = (themes.warnings || []).map(w => `<div>⚠️ ${w}</div>`).join("");
 }
 
 function renderEconomicDrivers(drivers) {
-  const container = document.getElementById("piThematicBars"); // Reusing for now or find new ID
+  const container = document.getElementById("piThematicBars"); // Appending to the same logical area
   if (!container || !drivers) return;
-  // This could be a separate section if needed
+  
+  const html = drivers.map(d => `
+    <div style="display:flex; align-items:center; gap:10px; margin-top:12px; padding:8px; background:rgba(var(--primary-rgb), 0.05); border-radius:6px;">
+      <span style="font-size:1.2rem;">${d.icon}</span>
+      <div style="flex:1;">
+        <div style="font-size:0.85rem; font-weight:700;">${d.name}</div>
+        <div class="muted" style="font-size:0.75rem;">Exposure: ${d.exposure}%</div>
+      </div>
+    </div>
+  `).join("");
+  
+  container.insertAdjacentHTML("beforeend", `<h4 style="margin:20px 0 10px 0; font-size:0.85rem; text-transform:uppercase; opacity:0.7;">Economic Drivers</h4>` + html);
 }
 
 function renderStressTests(stress) {
@@ -241,7 +259,7 @@ function renderStressTests(stress) {
       <div class="scenario-name">${s.name}</div>
       <div class="drop-value ${s.severity.toLowerCase()}">${s.portfolioDropPct}%</div>
       <div class="loss-eur">Perda: ~${s.estimatedLoss?.toLocaleString("pt-PT")}€</div>
-      <div class="muted" style="font-size:0.75rem;">Duração: ${s.duration} | Recup.: ~${s.recoveryMonths}m</div>
+      <div class="muted" style="font-size:0.75rem;">Recuperação: ~${s.recoveryMonths} meses</div>
     </div>
   `).join("");
 }
@@ -251,20 +269,21 @@ function renderWeightRisk(wrData, riskContrib) {
   const warn = document.getElementById("piRiskWarnings");
   if (!ctx) return;
 
-  const labels = wrData.map(d => d.ticker);
-  new Chart(ctx, {
+  if (window.piWRChart) window.piWRChart.destroy();
+  const labels = wrData.slice(0, 15).map(d => d.ticker);
+  window.piWRChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels,
       datasets: [
-        { label: "Peso (%)", data: wrData.map(d => d.weightPct), backgroundColor: "rgba(99,102,241,0.6)", borderRadius: 4 },
-        { label: "Risco (%)", data: wrData.map(d => d.riskPct), backgroundColor: "rgba(239,68,68,0.6)", borderRadius: 4 }
+        { label: "Peso (%)", data: wrData.slice(0, 15).map(d => d.weightPct), backgroundColor: "rgba(99,102,241,0.6)", borderRadius: 4 },
+        { label: "Risco (%)", data: wrData.slice(0, 15).map(d => d.riskPct), backgroundColor: "rgba(239,68,68,0.6)", borderRadius: 4 }
       ]
     },
     options: {
       responsive: true,
       plugins: { legend: { position: "top" } },
-      scales: { y: { beginAtZero: true, title: { display: true, text: "%" } } }
+      scales: { y: { beginAtZero: true } }
     }
   });
 
@@ -353,3 +372,4 @@ function renderRebalance(rebalance) {
     </div>
   `).join("");
 }
+

@@ -1,8 +1,8 @@
-import { getAssetCategory } from "../utils/normalize.js";
+import { getAssetCategory, canonicalTicker } from "../utils/normalize.js";
 
 /**
  * ECONOMIC DRIVER ENGINE
- * Maps traditional sectors to structural future economy drivers.
+ * Maps traditional sectors and ETF compositions to structural future economy drivers.
  */
 
 const DRIVERS = {
@@ -10,19 +10,19 @@ const DRIVERS = {
     name: "AI & Computing Power",
     icon: "🧠",
     sectors: ["Tecnologia"],
-    keywords: ["ai", "gpu", "semiconductor", "cloud", "data center"]
+    keywords: ["ai ", "gpu", "semiconductor", "cloud", "data center"]
   },
   electrification: {
-    name: "Electrification & Net Zero",
+    name: "Electrification & Energy Transition",
     icon: "🔋",
     sectors: ["Energia", "Industriais", "Materiais"],
-    keywords: ["ev", "battery", "solar", "wind", "grid", "copper", "lithium"]
+    keywords: ["ev", "battery", "solar", "wind", "grid", "copper", "lithium", "nuclear", "uranium"]
   },
   global_finance: {
     name: "Global Financial Systems",
     icon: "💳",
     sectors: ["Financeiros"],
-    keywords: ["payment", "bank", "credit", "fintech"]
+    keywords: ["payment", "bank", "credit", "fintech", "insurance"]
   },
   industrial_automation: {
     name: "Industrial Automation",
@@ -40,9 +40,22 @@ const DRIVERS = {
     name: "Resource Scarcity",
     icon: "🌍",
     sectors: ["Materiais", "Energia"],
-    keywords: ["mining", "oil", "gas", "rare earth"]
+    keywords: ["mining", "oil", "gas", "rare earth", "commodity"]
   }
 };
+
+function getETFDriverDecomposition(asset) {
+  const ticker = canonicalTicker(asset.ticker);
+  const name = String(asset.nome || asset.name || "").toLowerCase();
+
+  if (getAssetCategory(asset) === "Broad Market ETF") {
+    if (name.includes("s&p 500") || ticker === "VUSA" || ticker === "VOO") {
+      return { ai_compute: 0.35, global_finance: 0.15, healthcare_innovation: 0.12, industrial_automation: 0.08 };
+    }
+    return { ai_compute: 0.20, global_finance: 0.20, electrification: 0.08, resilience_scarcity: 0.10 };
+  }
+  return null;
+}
 
 export function calculateEconomicDrivers(portfolio, totalValue) {
   if (!portfolio || portfolio.length === 0) return null;
@@ -56,6 +69,15 @@ export function calculateEconomicDrivers(portfolio, totalValue) {
     const sector = String(m.setor || m.sector || "");
     const name = String(m.nome || m.name || "").toLowerCase();
     
+    const decomp = getETFDriverDecomposition(p);
+    if (decomp) {
+      for (const [key, purity] of Object.entries(decomp)) {
+        if (!driverMap[key]) driverMap[key] = { name: DRIVERS[key].name, icon: DRIVERS[key].icon, exposure: 0 };
+        driverMap[key].exposure += weight * purity;
+      }
+      continue;
+    }
+
     let matched = false;
     for (const [key, d] of Object.entries(DRIVERS)) {
       const sectorMatch = d.sectors.includes(sector);
@@ -78,3 +100,4 @@ export function calculateEconomicDrivers(portfolio, totalValue) {
     .map(d => ({ ...d, exposure: Math.round(d.exposure * 100) }))
     .sort((a, b) => b.exposure - a.exposure);
 }
+

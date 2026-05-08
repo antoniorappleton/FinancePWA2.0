@@ -6,7 +6,7 @@
 // Examples: "AI Infrastructure Portfolio", "Defensive Income", etc.
 // ═══════════════════════════════════════════════════════════════════
 
-import { factorExposure } from "./factors.js";
+import { portfolioFactors } from "./factors.js";
 import { thematicExposure } from "./thematic.js";
 
 // ── DNA Templates ──
@@ -82,26 +82,14 @@ const DNA_TEMPLATES = [
 
 /**
  * Classify portfolio DNA.
- * @param {Array} portfolio - Array of { asset, weight } or { ticker, valAtual, mkt }
- * @param {number} totalValue
- * @returns {{ primary: Object, secondary: Object|null, factors: Object, themes: Object }}
  */
 export function portfolioDNA(portfolio, totalValue) {
   if (!portfolio || portfolio.length === 0) {
     return { primary: { id: "empty", name: "Empty Portfolio", emoji: "📭" }, secondary: null, factors: {}, themes: {} };
   }
 
-  // Build factor-compatible array
-  const factorArray = portfolio.map(p => ({
-    asset: p.mkt || p,
-    weight: (p.valAtual || 0) / Math.max(totalValue, 1)
-  }));
-
-  const fResult = factorExposure(factorArray);
-  const tResult = thematicExposure(portfolio, totalValue);
-
-  const factors = fResult.factors;
-  const themes = tResult;
+  const factors = portfolioFactors(portfolio, totalValue);
+  const themes = thematicExposure(portfolio, totalValue);
 
   // Match templates
   const matches = [];

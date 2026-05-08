@@ -1,4 +1,4 @@
-import { getAssetCategory } from "../utils/normalize.js";
+import { getAssetCategory, canonicalTicker } from "../utils/normalize.js";
 
 // ── Refined Thematic classification with Decomposition ──
 const THEMES = {
@@ -53,46 +53,42 @@ const THEMES = {
 };
 
 /**
- * Infer thematic exposure for diversified ETFs based on index composition.
- * Example: SPY (S&P 500) has high tech weight, which contributes to AI/Semis.
+ * Infer thematic exposure for specialized ETFs based on index composition.
  */
 function getETFThematicDecomposition(asset) {
-  const category = getAssetCategory(asset);
+  const ticker = canonicalTicker(asset.ticker);
   const name = String(asset.nome || asset.name || "").toLowerCase();
-  const ticker = String(asset.ticker || "").toUpperCase();
 
-  if (category !== "Broad Market ETF") return null;
-
-  // Typical SP500 / World Index decomposition
-  // Values represent "purity" contribution to each theme
-  const worldWeights = {
-    ai_infrastructure: 0.12,
-    semiconductors: 0.08,
-    financial_infra: 0.15,
-    electrification: 0.05,
-    quantum_cloud: 0.10
-  };
-
-  const sp500Weights = {
-    ai_infrastructure: 0.18,
-    semiconductors: 0.10,
-    financial_infra: 0.12,
-    electrification: 0.04,
-    quantum_cloud: 0.15
-  };
-
-  if (name.includes("s&p 500") || ticker === "VUSA" || ticker === "VOO" || ticker === "SPY") {
-    return sp500Weights;
+  // ── Specialized ETFs ──
+  if (ticker === "QDVE" || ticker === "IITU") {
+    return { ai_infrastructure: 0.65, semiconductors: 0.30, quantum_cloud: 0.25 };
   }
-  
-  return worldWeights; // Default World/Global ETF
+  if (ticker === "SMH" || ticker === "SOXX") {
+    return { semiconductors: 1.0, ai_infrastructure: 0.85 };
+  }
+  if (name.includes("robotics") || ticker === "ROBO") {
+    return { robotics: 0.80, ai_infrastructure: 0.30 };
+  }
+  if (ticker === "NUKL" || ticker === "URNM") {
+    return { electrification: 0.70, resource_scarcity: 0.40 };
+  }
+
+  // ── Broad Market ETFs ──
+  if (getAssetCategory(asset) === "Broad Market ETF") {
+    if (name.includes("s&p 500") || ticker === "VUSA" || ticker === "VOO") {
+      return { ai_infrastructure: 0.22, semiconductors: 0.12, financial_infra: 0.15, quantum_cloud: 0.18 };
+    }
+    return { ai_infrastructure: 0.15, semiconductors: 0.08, financial_infra: 0.18, electrification: 0.06 };
+  }
+
+  return null;
 }
 
 /**
  * Classify a single asset's thematic exposure.
  */
 export function classifyAssetThemes(asset) {
-  const ticker = String(asset.ticker || "").toUpperCase();
+  const ticker = canonicalTicker(asset.ticker);
   const nome = String(asset.nome || asset.name || "").toLowerCase();
   const sector = String(asset.setor || asset.sector || "").toLowerCase();
   const combined = `${nome} ${sector}`;
@@ -102,15 +98,10 @@ export function classifyAssetThemes(asset) {
   // 1. Direct Rule-based detection
   for (const [key, theme] of Object.entries(THEMES)) {
     let confidence = 0;
-
-    if (theme.tickers.has(ticker)) {
-      confidence = 0.9;
-    }
-
-    for (const kw of theme.keywords) {
-      if (combined.includes(kw)) {
-        confidence = Math.max(confidence, 0.7);
-        break;
+    if (theme.tickers.has(ticker)) confidence = 1.0;
+    else {
+      for (const kw of theme.keywords) {
+        if (combined.includes(kw)) { confidence = 0.75; break; }
       }
     }
 
@@ -119,19 +110,13 @@ export function classifyAssetThemes(asset) {
     }
   }
 
-  // 2. Decomposition for Broad ETFs
+  // 2. Recursive Decomposition for ETFs
   const decomp = getETFThematicDecomposition(asset);
   if (decomp) {
     for (const [key, purity] of Object.entries(decomp)) {
-      if (!themes.find(t => t.key === key)) {
-        themes.push({ 
-          key, 
-          name: THEMES[key].name, 
-          icon: THEMES[key].icon, 
-          confidence: Math.round(purity * 100),
-          isIndirect: true 
-        });
-      }
+      const existing = themes.find(t => t.key === key);
+      if (existing) existing.confidence = Math.max(existing.confidence, Math.round(purity * 100));
+      else themes.push({ key, name: THEMES[key].name, icon: THEMES[key].icon, confidence: Math.round(purity * 100), isIndirect: true });
     }
   }
 
@@ -142,30 +127,33 @@ export function classifyAssetThemes(asset) {
  * Calculate portfolio-level thematic exposure.
  */
 export function thematicExposure(portfolio, totalValue) {
-  if (!portfolio || portfolio.length === 0) {
-    return { themes: {}, dominant: [], warnings: [] };
-  }
+  if (!portfolio || portfolio.length === 0) return { themes: {}, dominant: [], warnings: [] };
 
   const total = Math.max(totalValue, 1);
   const themeMap = {};
 
+  // Deduplicate and Aggregate
+  const aggregated = {};
   for (const p of portfolio) {
-    const weight = (p.valAtual || 0) / total;
+    const t = canonicalTicker(p.ticker);
+    if (!aggregated[t]) aggregated[t] = { ...p, valAtual: 0 };
+    aggregated[t].valAtual += (p.valAtual || 0);
+  }
+
+  for (const p of Object.values(aggregated)) {
+    const weight = p.valAtual / total;
     const assetThemes = classifyAssetThemes({ ...p, ...(p.mkt || {}) });
 
     for (const t of assetThemes) {
-      if (!themeMap[t.key]) {
-        themeMap[t.key] = { name: t.name, icon: t.icon, exposure: 0, assetCount: 0, assets: [] };
-      }
-      // Weight exposure by confidence/purity
+      if (!themeMap[t.key]) themeMap[t.key] = { name: t.name, icon: t.icon, exposure: 0, directPct: 0, indirectPct: 0, assets: [] };
+      
       const contribution = weight * (t.confidence / 100);
       themeMap[t.key].exposure += contribution;
-      themeMap[t.key].assetCount++;
-      themeMap[t.key].assets.push({ 
-        ticker: String(p.ticker || "").toUpperCase(), 
-        weight: Math.round(weight * 100),
-        purity: t.confidence
-      });
+      
+      if (t.isIndirect) themeMap[t.key].indirectPct += contribution;
+      else themeMap[t.key].directPct += contribution;
+
+      themeMap[t.key].assets.push({ ticker: p.ticker, weight: Math.round(weight * 100), purity: t.confidence });
     }
   }
 
@@ -173,19 +161,17 @@ export function thematicExposure(portfolio, totalValue) {
   for (const [key, data] of Object.entries(themeMap)) {
     themes[key] = {
       ...data,
-      exposure: Math.round(data.exposure * 100)
+      exposure: Math.round(data.exposure * 100),
+      directPct: Math.round(data.directPct * 100),
+      indirectPct: Math.round(data.indirectPct * 100)
     };
   }
 
-  const sorted = Object.entries(themes).sort((a, b) => b[1].exposure - a[1].exposure);
-  const dominant = sorted.slice(0, 6).map(([key, data]) => ({ key, ...data }));
+  const dominant = Object.entries(themes)
+    .sort((a, b) => b[1].exposure - a[1].exposure)
+    .slice(0, 8)
+    .map(([key, data]) => ({ key, ...data }));
 
-  const warnings = [];
-  for (const [key, data] of sorted) {
-    if (data.exposure > 50) {
-      warnings.push(`Concentração estrutural: ${data.name} representa ${data.exposure}% da economia do portfólio.`);
-    }
-  }
-
-  return { themes, dominant, warnings };
+  return { themes, dominant };
 }
+
