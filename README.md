@@ -6,48 +6,36 @@
 
 ## 🚀 Funcionalidades Principais
 
-- **📊 Dashboard Dinâmico**: Visão em tempo real do valor total investido, lucro acumulado (realizado e não realizado) e taxa de sucesso face aos objetivos.
-- **📈 Treemap de Oportunidades**: Visualização interativa das 10 principais ações baseada no algoritmo **Score Lucro Máximo**, com legendas dinâmicas que refletem os pesos definidos pelo utilizador.
-- **💼 Gestão de Portfólio**: Registro completo de compras e vendas com cálculo automático de **Preço Médio Ponderado** e rentabilidade.
-- **🧮 Simulador de Objetivos**: Ferramenta "Wizard" para projetar o investimento necessário para atingir lucros específicos num horizonte temporal definido.
-- **⚙️ Configuração Personalizada**: Ajuste dos pesos (Weights) utilizados nos algoritmos de cálculo, sincronizados automaticamente com a UI de análise.
-- **📱 PWA Ready**: Experiência nativa em mobile com suporte para instalação, ícones personalizados e acesso via navegador.
+- **📊 Dashboard Dinâmico**: Visão em tempo real do valor total investido, lucro acumulado e gestão de capital via **Smart DCA**.
+- **🧠 Portfolio Intel (Novo)**: Uma suite de análise avançada que utiliza motores de IA e financeira para auditar a saúde do portfólio.
+- **📈 Diagramas de Fatores**: Visualização em radar (teia de aranha) das exposições a Growth, Value, Quality, Momentum, Defensive e Cyclical.
+- **🌡️ Saúde do Portfólio**: Score de estabilidade estrutural baseado em diversificação (HHI), concentração e dependência de mega-caps.
+- **🌪️ Stress Testing**: Simulação de crises históricas (COVID, 2008, Dotcom) para prever drawdowns e perdas estimadas.
+- **🌐 Análise Temática**: Deteção automática de exposição a temas como IA, Electrificação, Cibersegurança e Decomposição de ETFs.
+- **💼 Gestão de Portfólio**: Registro completo de movimentos com cálculo automático de Preço Médio e Lucro Realizado.
 
 ---
 
-## 🧠 Algoritmos e Lógica de Cálculo
+## 🧠 Motores de Cálculo e IA
 
-A APPFinance destaca-se pelo uso de lógica financeira avançada (Qualidade + Crescimento) para apoiar a decisão de investimento:
+A APPFinance utiliza uma arquitetura modular de motores (`engines`) para processar dados financeiros brutos em *insights* acionáveis:
 
-### 1. Score Lucro Máximo (Multicritério)
-O algoritmo de pontuação avalia cada ativo de 0 a 1 em cinco pilares fundamentais:
-- **Crescimento (R)**: Média ponderada entre a variação do preço (`priceChange`) e o crescimento real dos lucros (**EPS YoY**).
-- **Valor (V)**: Análise do P/E Ratio (Preço/Lucro) com curvas de normalização.
-- **Tendência (T)**: Avaliação técnica comparando o preço com as médias móveis SMA50 e SMA200.
-- **Dividendos (D)**: Pontuação baseada no *Dividend Yield* anualizado.
-- **Eficiência (E)**: Combinação entre o **EV/Ebitda** (valor operacional) e o **ROIC** (Retorno sobre o Capital Investido), ajustada por setor.
+### 1. Algoritmo "Lucro Máximo" (Core Engine)
+O pilar central da aplicação, localizado em `js/utils/scoring.js`. Avalia cada ativo de 0 a 100 com base em:
+- **Crescimento (R)**: Crescimento de EPS (Lucro por Ação) YoY e aceleração de lucros.
+- **Valor (V)**: Média de P/E, P/FCF e PEG Ratio ajustados por setor.
+- **Tendência (T)**: Momentum técnico (distância das médias móveis SMA50/200).
+- **Dividendos (D)**: Yield anualizado e sustentabilidade.
+- **Eficiência (E)**: Qualidade operacional medida por ROIC e Margens.
 
-**Fórmula Base**:  
-`Score = (W.R * R_Comp + W.V * V + W.T * T + W.D * D + W.E * E_Comp) * RiskAdj`  
-*Onde `R_Comp` e `E_Comp` integram as novas métricas de qualidade empresarial.*
+### 2. Motor de Fatores (Factor Exposure)
+Localizado em `js/engines/factors.js`. Desconstrói o DNA de cada ativo em 6 dimensões quantitativas para visualização no gráfico de radar.
+*Nota: Utiliza proxies de performance para ETFs de modo a garantir que o perfil de "Growth" é capturado mesmo sem dados fundamentais diretos.*
 
-### 2. Anualização e Realism Cap
-Para garantir projeções realistas nas simulações:
-- As taxas de crescimento são normalizadas usando `Math.pow(1 + taxa, frequencia) - 1`.
-- Um **"Realism Cap"** é aplicado para amortecer taxas excessivamente altas, evitando projeções financeiras impossíveis.
-
-### 3. Gestão de Portfólio (Weighted Average Cost)
-- **Lucro Realizado**: Calculado no momento da venda comparando o preço de saída com o custo médio ponderado atual.
-- **Taxa de Sucesso**: Medida pela relação entre o lucro gerado e os objetivos financeiros definidos para cada ativo.
-
----
-
-## 🛠️ Stack Tecnológica
-
-- **Frontend**: HTML5 Semântico, Vanilla JavaScript (ES6+ Modules), CSS3 (Modern UI com Glassmorphism).
-- **Base de Dados**: [Firebase Firestore](https://firebase.google.com/) para persistência de dados em tempo real.
-- **Gráficos**: [Chart.js](https://www.chartjs.org/) e componentes customizados para Treemaps.
-- **Ícones**: Font Awesome e ícones PWA personalizados.
+### 3. Gestão de Capital e War Chest
+Localizado em `js/utils/capitalManager.js`. Define o estado do mercado (Sobrevalorizado/Subvalorizado) e recomenda:
+- **Smart DCA**: Ajuste do investimento mensal (ex: investir 150% se o mercado estiver barato).
+- **War Chest**: Alocação automática para reserva de oportunidade.
 
 ---
 
@@ -56,33 +44,29 @@ Para garantir projeções realistas nas simulações:
 ```bash
 FinancePWA2.0/
 ├── js/
-│   ├── screens/     # Lógica específica de cada ecrã (Dashboard, Simulador, etc.)
-│   ├── utils/       # Algoritmos de cálculo (scoring.js)
-│   ├── components/  # Componentes reutilizáveis (Treemap.js)
-│   └── main.js      # Router e inicialização da app
-├── screens/         # Ficheiros HTML parciais carregados dinamicamente
-├── icons/           # Assets visuais para a PWA
-├── index.html       # Estrutura base da aplicação
-├── manifest.json    # Configuração PWA para instalação
-└── style.css        # Design system e estilos globais
+│   ├── engines/     # 🧠 Motores de análise (Health, Factors, Risk, Stress, Themes)
+│   ├── screens/     # 📱 Lógica de UI (Dashboard, Portfolio Intel, Atividade)
+│   ├── utils/       # 🧮 Algoritmos base (scoring.js, capitalManager.js, normalize.js)
+│   ├── components/  # 📊 Componentes visuais (Charts, Treemap)
+│   └── main.js      # 🚀 Inicialização e Routing
+├── screens/         # 📁 Templates HTML parciais
+├── style.css        # 🎨 Design System (Glassmorphism & Dark Mode)
+└── index.html       # 🏠 Ponto de entrada PWA
 ```
 
 ---
 
-## ⚙️ Instalação e Configuração
+## 🛠️ Tecnologias e Precisão de Dados
 
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/antoniorappleton/FinancePWA2.0.git
-   ```
-2. Configure o seu projeto Firebase:
-   - Crie um projeto no console do Firebase.
-   - Ative o **Firestore Database**.
-   - Copie as credenciais para o ficheiro `js/firebase-config.js`.
-3. Abra o ficheiro `index.html` usando um Live Server.
+- **Firebase Firestore**: Base de dados real-time para ativos e cotações.
+- **Sistema de Tickers Canónicos**: Garantia de consistência entre diferentes bolsas (ex: `AAPL.US` e `AAPL` são tratados como o mesmo ativo para análise).
+- **Normalização Financeira**: Tratamento de strings, percentagens e valores "N/A" para evitar erros de cálculo (`js/utils/normalize.js`).
 
 ---
 
-## 📄 Licença
+## 📄 Licença e Desenvolvimento
 
-Este projeto foi desenvolvido por Antonio Appleton como parte do seu curso de programação.
+Este projeto é desenvolvido por **Antonio Appleton** como uma ferramenta profissional de gestão de património pessoal.
+
+---
+*v2.0 - Optimized for Portfolio Intelligence & Factor Analysis*
