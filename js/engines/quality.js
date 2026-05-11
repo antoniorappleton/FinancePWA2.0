@@ -70,7 +70,7 @@ function scoreETFQuality(asset) {
 // ── Sub-scores (each 0–1) ──
 
 function scoreROIC(asset, profile) {
-  const roic = safePercent(asset, "roic", "return_on_capital");
+  const roic = safePercent(asset, "roic", "return_on_capital", "ROIC", "return_on_invested_capital");
   if (!isFinite(roic)) return { score: 0.5, available: false };
   const target = profile.roicTarget;
   let s;
@@ -85,7 +85,7 @@ function scoreROIC(asset, profile) {
 function scoreMargins(asset, profile) {
   const gross = safePercent(asset, "gross_margin", "grossMargin");
   const oper  = safePercent(asset, "oper_margin", "operMargin", "operating_margin");
-  const net   = safePercent(asset, "profit_margin", "profitMargin", "net_margin");
+  const net   = safePercent(asset, "profit_margin", "profitMargin", "net_margin", "net_profit_margin", "lucro_liquido_margem");
   
   let total = 0, count = 0;
   const breakdown = {};

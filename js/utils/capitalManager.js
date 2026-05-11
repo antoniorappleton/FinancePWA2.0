@@ -47,10 +47,10 @@ export function calculatePortfolioState(positions, acoesData) {
 
   positions.forEach(p => {
     const ticker = cleanTicker(p.ticker);
-    const mkt = acoesMap.get(ticker);
+    const mkt = acoesMap.get(p.canonical || ticker);
     if (!mkt) return;
 
-    const precoAtual = Number(mkt.valorStock || mkt.price || 0);
+    const precoAtual = Number(mkt.valorStock || mkt.price || mkt.preco || 0);
     const valAtual = (p.quantidade || p.qtd || 0) * precoAtual;
     if (valAtual <= 0) return;
 

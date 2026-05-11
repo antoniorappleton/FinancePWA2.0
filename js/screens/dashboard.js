@@ -22,6 +22,7 @@ import {
 } from "../utils/scoring.js";
 import { toNumStrict } from "../utils/num.js";
 import { Treemap } from "../components/treemap.js";
+import { canonicalTicker } from "../utils/normalize.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 
 let lastAtivosSnap = null;
@@ -415,7 +416,9 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
   const acoesDataMap = new Map();
   lastAcoesSnap?.forEach(doc => {
     const d = doc.data();
-    if (d.ticker) acoesDataMap.set(cleanTicker(d.ticker), d);
+    if (d.ticker) {
+      acoesDataMap.set(canonicalTicker(cleanTicker(d.ticker)), d);
+    }
   });
 
   const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap);

@@ -40,7 +40,7 @@ function getSectorPE(asset) {
 // ── Sub-scorers ──
 
 function scorePE(asset, sectorBounds) {
-  const pe = safeMetric(asset, "pe", "p_e", "PE");
+  const pe = safeMetric(asset, "pe", "p_e", "PE", "forward_pe", "forward_p_e");
   if (!isFinite(pe) || pe <= 0) return { score: 0.3, available: pe <= 0, value: pe, note: pe < 0 ? "EPS negativo" : "N/A" };
 
   const { cheap, fair, expensive } = sectorBounds;
@@ -54,7 +54,7 @@ function scorePE(asset, sectorBounds) {
 }
 
 function scoreForwardPE(asset, sectorBounds) {
-  const fpe = safeMetric(asset, "forward_pe", "forwardPE", "fpe");
+  const fpe = safeMetric(asset, "forward_pe", "forwardPE", "fpe", "forward_p_e");
   const pe = safeMetric(asset, "pe", "p_e");
   if (!isFinite(fpe) || fpe <= 0) return { score: 0.5, available: false };
 
@@ -87,7 +87,7 @@ function scorePEG(asset) {
 }
 
 function scoreEVEBITDA(asset) {
-  const ev = safeMetric(asset, "ev_ebitda", "evEbitda", "EV_EBITDA");
+  const ev = safeMetric(asset, "ev_ebitda", "evEbitda", "EV_EBITDA", "EV/Ebitda", "ev_ebitda_ttm");
   if (!isFinite(ev) || ev <= 0) return { score: 0.5, available: false };
 
   let s;
@@ -115,7 +115,7 @@ function scorePriceSales(asset) {
 }
 
 function scorePriceFCF(asset) {
-  const pfcf = safeMetric(asset, "p_fcf", "priceToFCF", "PFCF");
+  const pfcf = safeMetric(asset, "p_fcf", "priceToFCF", "PFCF", "p_fcf_ttm", "price_fcf");
   if (!isFinite(pfcf) || pfcf <= 0) return { score: 0.5, available: false };
 
   let s;

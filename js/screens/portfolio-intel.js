@@ -14,7 +14,7 @@ import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
 import { analyzeETFOverlap } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
-import { canonicalTicker } from "../utils/normalize.js";
+import { canonicalTicker, confidenceScore } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
 
 const db = getFirestore(app);
@@ -41,7 +41,13 @@ async function runFullAnalysis() {
     const acoesMap = new Map();
     acoesSnap.forEach(d => {
       const x = d.data();
-      if (x.ticker) acoesMap.set(cleanTicker(x.ticker), x);
+      if (x.ticker) {
+        const ct = canonicalTicker(cleanTicker(x.ticker));
+        // Se houver duplicados, preferimos o que tiver mais dados (confidenceScore)
+        if (!acoesMap.has(ct) || confidenceScore(x) > confidenceScore(acoesMap.get(ct))) {
+          acoesMap.set(ct, x);
+        }
+      }
     });
 
     const strategy = stratSnap.exists() ? stratSnap.data() : {};
@@ -51,12 +57,15 @@ async function runFullAnalysis() {
     const rawPortfolio = [];
     ativosSnap.forEach(docu => {
       const d = docu.data();
-      const ticker = cleanTicker(d.ticker);
-      const mkt = acoesMap.get(ticker) || {};
-      const precoAtual = Number(mkt.valorStock || mkt.price || 0);
+      const rawTicker = cleanTicker(d.ticker);
+      const ct = canonicalTicker(rawTicker);
+      const mkt = acoesMap.get(ct) || acoesMap.get(rawTicker) || {};
+      
+      const precoAtual = Number(mkt.valorStock || mkt.price || mkt.preco || 0);
       rawPortfolio.push({
-        ticker,
-        nome: d.nome || mkt.nome || ticker,
+        ticker: rawTicker,
+        canonical: ct,
+        nome: d.nome || mkt.nome || rawTicker,
         quantidade: d.quantidade || 0,
         precoMedio: d.precoMedio || 0,
         precoAtual,
@@ -67,7 +76,7 @@ async function runFullAnalysis() {
 
     const aggregated = {};
     for (const p of rawPortfolio) {
-      const t = canonicalTicker(p.ticker);
+      const t = p.canonical;
       if (!aggregated[t]) {
         aggregated[t] = { ...p, ticker: t, quantidade: 0, valAtual: 0 };
       }

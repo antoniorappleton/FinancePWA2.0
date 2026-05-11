@@ -140,11 +140,11 @@ export function annualizeRate(acao, period = "1y") {
   // Try to use pre-calculated rates from the database
   let val = undefined;
   if (period === "1w" || period === "1s") {
-    val = acao.priceChange_1w ?? acao.taxaCrescimento_1semana ?? acao.g1w;
+    val = acao.priceChange_1w ?? acao.taxaCrescimento_1semana ?? acao.g1w ?? acao.price_change_1w;
   } else if (period === "1m") {
-    val = acao.priceChange_1m ?? acao.taxaCrescimento_1mes ?? acao.g1m;
+    val = acao.priceChange_1m ?? acao.taxaCrescimento_1mes ?? acao.g1m ?? acao.price_change_1m;
   } else if (period === "1y" || period === "1a") {
-    val = acao.priceChange_1y ?? acao.taxaCrescimento_1ano ?? acao.g1y;
+    val = acao.priceChange_1y ?? acao.taxaCrescimento_1ano ?? acao.g1y ?? acao.price_change_1y ?? acao.taxa_crescimento_anual;
   }
 
   const nVal = toNum(val);
@@ -171,7 +171,11 @@ export function calculateLucroMaximoScore(acao, period = "1y", customMultipliers
     const rAnnual = annualizeRate(acao, period);
 
     const R_Price = clamp(rAnnual / 0.5, 0, 1);
-    const R_Eps = scoreEPS(Number(acao.epsYoY)||0, Number(acao.epsNextY)||0, Number(acao.eps_next_5y)||0);
+    const R_Eps = scoreEPS(
+      Number(acao.epsYoY || acao.eps_yoy || acao.eps_growth || 0),
+      Number(acao.epsNextY || acao.eps_next_y || acao.eps_growth_next || 0),
+      Number(acao.eps_next_5y || acao.eps_growth_5y || 0)
+    );
     const R = clamp(R_Price * 0.4 + R_Eps * 0.6, 0, 1);
 
     const V = clamp(scorePE(acao.pe) * 0.5 + scoreGeneric(acao.peg, infoToConfig(INDICATOR_INFO.peg)) * 0.3 + scoreGeneric(acao.p_fcf, infoToConfig(INDICATOR_INFO.p_fcf)) * 0.2, 0, 1);
