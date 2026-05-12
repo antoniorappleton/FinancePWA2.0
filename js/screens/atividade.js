@@ -832,6 +832,81 @@ window.openDetails = async function(ticker) {
     bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
   }
 
+  // 📈 Estratégia de Compra (Se cair)
+  const reforcos = [
+    { label: "-5%",  pct: 0.95, acao: "Reforço Leve",  montante: 75 },
+    { label: "-10%", pct: 0.90, acao: "Reforço Médio", montante: 150 },
+    { label: "-20%", pct: 0.80, acao: "REFORÇO FORTE", montante: 250 },
+  ];
+  let refHTML = "";
+  reforcos.forEach(r => {
+    const pr = precoAtual * r.pct;
+    const units = r.montante / (pr || 1);
+    refHTML += `<div style="display:grid;grid-template-columns:1fr 1.5fr 1.5fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;">` +
+      `<div style="font-weight:800;color:#ef4444;">${r.label}</div>` +
+      `<div style="font-family:monospace;">${fmtEUR.format(pr)}<span style="display:block;font-size:0.65rem;color:var(--muted-foreground);">${fmtEUR.format(r.montante)} = ~${units.toFixed(2)} un.</span></div>` +
+      `<div style="font-weight:700;color:var(--muted-foreground);font-size:0.75rem;text-transform:uppercase;">${r.acao}</div></div>`;
+  });
+  const elRef = $("#detNiveisReforco");
+  if (elRef) elRef.innerHTML = refHTML;
+
+  // 🔄 Simular Nova Compra
+  const cenarios = [
+    { label: "Investir 75€ agora", valor: 75 },
+    { label: "Investir 150€ agora", valor: 150 },
+    { label: "Investir 250€ agora", valor: 250 },
+  ];
+  let cenHTML = "";
+  cenarios.forEach(c => {
+    const buyUnits = c.valor / (precoAtual || 1);
+    const newQ = g.qtd + buyUnits;
+    const newPM = (g.investido + c.valor) / newQ;
+    cenHTML += `<div style="background:rgba(0,0,0,0.02); padding:10px; border-radius:8px; border:1px solid var(--border); font-size:0.8rem;">` +
+      `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>${c.label} (~${buyUnits.toFixed(2)} un.)</span> <strong>${fmtEUR.format(c.valor)}</strong></div>` +
+      `<div style="display:flex; justify-content:space-between; color:var(--muted-foreground); font-size:0.75rem;"><span>Novo Preço Médio:</span> <strong style="color:#22c55e;">${fmtEUR.format(newPM)}</strong></div>` +
+      `</div>`;
+  });
+  const elCen = $("#detCenariosNovos");
+  if (elCen) elCen.innerHTML = cenHTML;
+
+  // 💰 Reserva p/ Oportunidades (War Chest)
+  const gapW = g._strategicNeed || 0;
+  const statusW = gapW > 0 ? "REFORÇAR" : "EQUILIBRADO";
+  const colorW = gapW > 0 ? "#ef4444" : "#22c55e";
+  const gapUnits = gapW / (precoAtual || 1);
+  const elChest = $("#detWarChestTable");
+  if (elChest) {
+    elChest.innerHTML = `
+      <div style="padding:12px; font-size:0.85rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span style="color:var(--muted-foreground)">Diferença para Alvo:</span>
+          <div>
+            <strong style="color:${colorW};">${gapW > 0 ? "+" : ""}${fmtEUR.format(gapW)}</strong>
+            <span style="display:block;font-size:0.65rem;color:var(--muted-foreground);text-align:right;">~${gapUnits.toFixed(2)} un.</span>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--muted-foreground)">Estado Estratégico:</span>
+          <strong style="color:${colorW};">${statusW}</strong>
+        </div>
+      </div>
+    `;
+  }
+
+  // 🛡️ Plano de Recuperação
+  const recBloco = $("#detRecuperacaoBloco");
+  if (recBloco) {
+    if (lucroAtual < 0) {
+      recBloco.style.display = "block";
+      $(`#detBEML`).textContent = fmtEUR.format(precoMedio);
+      $(`#detTPComp`).textContent = fmtEUR.format(precoMedio * 1.05);
+      $(`#detRecSub5`).textContent = fmtEUR.format(precoMedio * 0.95 * 1.05);
+      $(`#detRecSub10`).textContent = fmtEUR.format(precoMedio * 0.90 * 1.05);
+    } else {
+      recBloco.style.display = "none";
+    }
+  }
+
   renderMovementHistory(ticker);
   detModalEl.classList.remove("hidden");
 };
