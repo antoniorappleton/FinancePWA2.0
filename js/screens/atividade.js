@@ -25,6 +25,7 @@ import {
 
 import { parseSma, getAssetType, canon, cleanTicker, normalizeSector } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
+import { Treemap } from "../components/treemap.js";
 
 // ===============================
 // Carregar Chart.js on-demand
@@ -34,6 +35,20 @@ async function ensureChartJS() {
   await new Promise((resolve, reject) => {
     const s = document.createElement("script");
     s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js";
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ===============================
+// Carregar ECharts on-demand
+// ===============================
+async function ensureECharts() {
+  if (window.echarts) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js";
     s.onload = resolve;
     s.onerror = reject;
     document.head.appendChild(s);
@@ -607,6 +622,282 @@ let byTickerGlobal = new Map();
 let _allMovimentos = [];
 let _eventsWired = false;
 
+// Expor globalmente para onclick no HTML
+window.openDetails = async function(ticker) {
+  const g = byTickerGlobal.get(ticker);
+  if (!g) return;
+
+  const $ = (s) => document.querySelector(s);
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+  // VARIAVEIS BASE
+  const precoAtual = g.precoAtual || 0;
+  const precoMedio = g.qtd > 0 ? (g.investido || 0) / g.qtd : 0;
+  const lucroAtual = g.lucroAtual || 0;
+  const estadoOp   = g._estadoOp || "ESPERAR";
+  const s200       = g._sma200;
+
+  const tpObjetivo = g.qtd > 0 ? ((g.investido || 0) + (g.objetivo || 0)) / g.qtd : 0;
+  const faltaMeta  = (g.objetivo || 0) - lucroAtual;
+  const upsideP    = precoAtual > 0 ? ((tpObjetivo / precoAtual) - 1) * 100 : 0;
+  const percL      = (g.investido || 0) > 0 ? (lucroAtual / (g.investido || 0)) * 100 : 0;
+
+  const warChestRaw = document.getElementById("prtWarChest")?.textContent || "";
+  const warChestTotal = parseFloat(warChestRaw.replace(/[^\d,.]/g, "").replace(",", ".")) || 0;
+
+  const s50 = g._sma50;
+  const isGoldenCross = s50 && s200 && s50 > s200;
+  const isDeathCross = s50 && s200 && s50 < s200;
+  const trendSignal = isGoldenCross ? "GOLDEN CROSS 🚀" : (isDeathCross ? "DEATH CROSS ⚠️" : "SEM TENDÊNCIA CLARA");
+  const trendColor = isGoldenCross ? "#22c55e" : (isDeathCross ? "#ef4444" : "var(--muted-foreground)");
+
+  let esforcoStr = "Muito próximo", esforcoColor = "#22c55e";
+  if (upsideP > 12)     { esforcoStr = "Agressivo"; esforcoColor = "#ef4444"; }
+  else if (upsideP > 7) { esforcoStr = "Exigente";  esforcoColor = "#f59e0b"; }
+  else if (upsideP > 3) { esforcoStr = "Plausível"; esforcoColor = "#3b82f6"; }
+  if (upsideP <= 0 && g.qtd > 0) { esforcoStr = "Atingido"; esforcoColor = "#22c55e"; }
+
+  let decisaoEmoji = "🟢", decisaoTexto = "GUARDAR / MANTER", decisaoSub = "";
+  let decisaoBorder = "#22c55e", decisaoBg = "rgba(34,197,94,0.07)";
+
+  const capReforco = warChestTotal > 0 ? warChestTotal * 0.2 : 250; 
+  const unitsReforco = capReforco / (precoAtual || 1);
+  const tp1Price = precoMedio * 1.05;
+  const unitsVenda = g.qtd * 0.2;
+  const valorVenda = unitsVenda * tp1Price;
+
+  const objetivoFin = g.objetivo || 0;
+  const lucroProgress = objetivoFin > 0 ? (lucroAtual / objetivoFin) * 100 : 0;
+  const safeProgress = Math.min(100, Math.max(0, lucroProgress));
+  const isGoalMet = lucroAtual >= objetivoFin && objetivoFin > 0;
+  const progressColor = isGoalMet ? "#22c55e" : (lucroAtual > 0 ? "#3b82f6" : "#ef4444");
+
+  const progressBarHTML = objetivoFin > 0 ? `
+    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.05);">
+      <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 4px;">
+        <span style="color: var(--muted-foreground)">Progresso do Objetivo: <strong>${lucroProgress.toFixed(1)}%</strong></span>
+        <span style="color: ${progressColor}; font-weight: 800;">${isGoalMet ? "CONCLUÍDO" : ""}</span>
+      </div>
+      <div style="height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden;">
+        <div style="width: ${safeProgress}%; height: 100%; background: ${progressColor}; transition: width 0.8s ease;"></div>
+      </div>
+    </div>
+  ` : "";
+
+  if (isGoalMet) {
+    decisaoEmoji = "🏆"; decisaoTexto = "OBJETIVO ATINGIDO";
+    decisaoBorder = "#22c55e"; decisaoBg = "rgba(34,197,94,0.07)";
+    decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+      <span style="color:#22c55e;">🌟 <strong>Parabéns!</strong> O lucro alvo foi atingido.</span><br>
+      <span style="opacity:0.8;">Pode considerar <strong>Vender a posição</strong> para realizar lucros ou manter para ganhos adicionais.</span>
+      ${progressBarHTML}
+    </div>`;
+  } else if (estadoOp === "REFORÇAR" || estadoOp === "COMPRAR") {
+    decisaoEmoji = "🔵"; decisaoTexto = "COMPRAR MAIS";
+    decisaoBorder = "#3b82f6"; decisaoBg = "rgba(59,130,246,0.07)";
+    decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+      <span style="color:#3b82f6;">✅ <strong>Comprar ${fmtEUR.format(capReforco)} (~${unitsReforco.toFixed(2)} un.)</strong> agora.</span><br>
+      <span style="opacity:0.8;">Preço atrativo para aumentar a posição.</span>
+      ${progressBarHTML}
+    </div>`;
+  } else if (upsideP > 12) {
+    decisaoEmoji = "🔴"; decisaoTexto = "VENDER FORTE";
+    decisaoBorder = "#ef4444"; decisaoBg = "rgba(239,68,68,0.07)";
+    decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+      <span style="color:#ef4444;">🚨 <strong>Venda forte:</strong> Libertar 50% (${fmtEUR.format(g.investido * 0.5)}) aos <strong>${fmtEUR.format(precoMedio * 1.15)}</strong>.</span><br>
+      <span style="opacity:0.8;">Risco de correção elevado.</span>
+      ${progressBarHTML}
+    </div>`;
+  } else if (upsideP > 7 || estadoOp === "REDUZIR" || estadoOp === "VENDER") {
+    decisaoEmoji = "🟡"; decisaoTexto = "VENDER UM POUCO";
+    decisaoBorder = "#f59e0b"; decisaoBg = "rgba(245,158,11,0.07)";
+    decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+      <span style="color:#f59e0b;">💰 <strong>Vender ${fmtEUR.format(valorVenda)} (~${unitsVenda.toFixed(2)} un.)</strong> nos <strong>${fmtEUR.format(tp1Price)}</strong>.</span><br>
+      <span style="opacity:0.8;">Garantir lucros parciais.</span>
+      ${progressBarHTML}
+    </div>`;
+  } else {
+    decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
+      <span>💎 <strong>Guardar e manter.</strong> Potencial de crescimento saudável.</span><br>
+      <span style="opacity:0.8;">Próxima compra recomendada aos <strong>${fmtEUR.format(precoAtual * 0.98)}</strong>.</span>
+      ${progressBarHTML}
+    </div>`;
+  }
+
+  // TÉCNICA
+  const formatSmaDelta = (sma, cur) => {
+    if (!Number.isFinite(sma) || !Number.isFinite(cur) || sma <= 0) return "—";
+    const d = ((cur - sma) / sma) * 100;
+    return `${d > 0 ? "+" : ""}${d.toFixed(1)}%`;
+  };
+
+  decisaoSub += `
+    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.1); font-size: 0.72rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="color: var(--muted-foreground)">Sinal de Tendência:</span>
+        <span style="padding: 2px 8px; border-radius: 4px; background: ${trendColor}15; color: ${trendColor}; font-weight: 800; font-size: 0.65rem; border: 1px solid ${trendColor}30;">
+          ${trendSignal}
+        </span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div style="background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px; border: 1px solid var(--border);">
+          <div style="color: var(--muted-foreground); font-size: 0.6rem; text-transform: uppercase;">Média 50d (Dist.)</div>
+          <div style="font-weight: 700; color: ${precoAtual > s50 ? "#22c55e" : "#ef4444"}">${formatSmaDelta(s50, precoAtual)}</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px; border: 1px solid var(--border);">
+          <div style="color: var(--muted-foreground); font-size: 0.6rem; text-transform: uppercase;">Média 200d (Dist.)</div>
+          <div style="font-weight: 700; color: ${precoAtual > s200 ? "#22c55e" : "#ef4444"}">${formatSmaDelta(s200, precoAtual)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  let stateColor = "#64748b";
+  if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
+  if (estadoOp === "COMPRAR")  stateColor = "#22c55e";
+  if (estadoOp === "REDUZIR")  stateColor = "#f59e0b";
+  if (estadoOp === "VENDER")   stateColor = "#ef4444";
+  if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
+
+  const detBadge = document.getElementById("detEstadoBadge");
+  if (detBadge) {
+    detBadge.textContent = estadoOp;
+    detBadge.style.background = `${stateColor}18`;
+    detBadge.style.color = stateColor;
+    detBadge.style.borderColor = `${stateColor}35`;
+  }
+
+  $(`#detTickerTitle`).textContent = `${g.ticker} — ${g.nome}`;
+  $(`#detPrecoAtualHeader`).textContent = fmtEUR.format(precoAtual);
+  const elLucroHeader = $(`#detLucroAtualHeader`);
+  elLucroHeader.textContent = `${fmtEUR.format(lucroAtual)} (${percL > 0 ? "+" : ""}${percL.toFixed(2)}%)`;
+  elLucroHeader.className = lucroAtual >= 0 ? "up" : "down";
+  $(`#detQtdHeader`).textContent = g.qtd.toFixed(4).replace(/\.?0+$/, "");
+  $(`#detPMHeader`).textContent = fmtEUR.format(precoMedio);
+  const capEl = $(`#detCapitalHeader`);
+  if (capEl) capEl.textContent = fmtEUR.format(g.investido || 0);
+
+  const decDiv = $(`#detDecisaoSistema`);
+  if (decDiv) { decDiv.style.borderColor = decisaoBorder; decDiv.style.background = decisaoBg; }
+  const decTextoEl = $(`#detDecisaoTexto`);
+  if (decTextoEl) { decTextoEl.textContent = `${decisaoEmoji} ${decisaoTexto}`; decTextoEl.style.color = decisaoBorder; }
+  const decSubEl = $(`#detDecisaoSub`);
+  if (decSubEl) decSubEl.innerHTML = decisaoSub;
+
+  const bgBadge = document.getElementById("detEsforcoBadge");
+  if (bgBadge) {
+    bgBadge.textContent = esforcoStr;
+    bgBadge.style.color = esforcoColor;
+    bgBadge.style.borderColor = esforcoColor;
+    bgBadge.style.backgroundColor = `${esforcoColor}15`;
+  }
+
+  $(`#detKpiCapital`).textContent = fmtEUR.format(g.investido || 0);
+  $(`#detKpiUpside`).textContent = upsideP > 0 ? `+${upsideP.toFixed(1)}%` : `${upsideP.toFixed(1)}%`;
+  $(`#detKpiTP`).textContent = tpObjetivo > 0 ? fmtEUR.format(tpObjetivo) : "—";
+  $(`#detKpiSMA200`).textContent = formatSmaDelta(s200, precoAtual);
+
+  const tpLevels = [
+    { label: "TP1", pct: 5,  acao: "Reduzir leve",  posicao: "20%", color: "#22c55e" },
+    { label: "TP2", pct: 10, acao: "Reduzir médio", posicao: "30%", color: "#f59e0b" },
+    { label: "TP3", pct: 15, acao: "Reduzir forte", posicao: "50%", color: "#ef4444" },
+  ];
+  let saidaHTML = "";
+  tpLevels.forEach(tp => {
+    const pr = precoMedio * (1 + tp.pct / 100);
+    saidaHTML += `<div style="display:grid;grid-template-columns:1fr 1.2fr 1.2fr 1fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;">` +
+      `<div style="font-weight:800;color:${tp.color};">${tp.label} (+${tp.pct}%)</div>` +
+      `<div style="font-family:monospace;">${fmtEUR.format(pr)}</div>` +
+      `<div style="font-weight:700;color:${tp.color};font-size:0.75rem;text-transform:uppercase;">${tp.acao}</div>` +
+      `<div style="text-align:right;font-weight:700;font-size:0.75rem;">${tp.posicao}</div></div>`;
+  });
+  $(`#detPlanSaida`).innerHTML = saidaHTML;
+
+  const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
+  $(`#detBarStop`).textContent  = fmtEUR.format(stopTec);
+  $(`#detBarPreco`).textContent = fmtEUR.format(precoAtual);
+  $(`#detBarAlvo`).textContent  = fmtEUR.format(tpObjetivo);
+
+  const bBuy = $("#detBtnBuy");
+  const bSell = $("#detBtnSell");
+  const bEdit = $("#detBtnEdit");
+  const bLink = $("#detBtnLink");
+  const detModalEl = $("#activityDetailModal");
+
+  if (bBuy)  bBuy.onclick  = () => { detModalEl.classList.add("hidden"); window.openActionModal?.("compra", g.ticker); };
+  if (bSell) bSell.onclick = () => { detModalEl.classList.add("hidden"); window.openActionModal?.("venda", g.ticker); };
+  if (bEdit) bEdit.onclick = () => { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); };
+  if (bLink) {
+    bLink.onclick = () => { if (g.link) window.open(g.link, "_blank"); else { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); } };
+    bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
+  }
+
+  renderMovementHistory(ticker);
+  detModalEl.classList.remove("hidden");
+};
+
+function renderMovementHistory(ticker) {
+  const corpo = document.getElementById("detHistoricoCorpo");
+  if (!corpo) return;
+
+  const movimentos = (_allMovimentos || [])
+    .filter(m => m.ticker === ticker)
+    .sort((a, b) => b.date - a.date);
+
+  if (movimentos.length === 0) {
+    corpo.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--muted-foreground);">Sem movimentos registados.</td></tr>';
+    return;
+  }
+
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  corpo.innerHTML = movimentos.map(m => {
+    const isVenda = m.qtd < 0;
+    const tipoLabel = isVenda ? '<span style="color:#ef4444;">Venda</span>' : '<span style="color:#22c55e;">Compra</span>';
+    return `
+      <tr style="border-bottom: 1px solid var(--border);">
+        <td style="padding: 10px;">${m.date.toLocaleDateString("pt-PT")}</td>
+        <td style="padding: 10px;">${tipoLabel}</td>
+        <td style="padding: 10px; text-align: right; font-weight: 600;">${Math.abs(m.qtd).toFixed(4).replace(/\.?0+$/, "")}</td>
+        <td style="padding: 10px; text-align: right;">${fmtEUR.format(m.preco)}</td>
+        <td style="padding: 10px; text-align: center;">
+          <div style="display: flex; gap: 8px; justify-content: center;">
+            <button class="btn-history-edit" data-edit-move="${m.id}" style="border:none; background:none; cursor:pointer; color:var(--primary);"><i class="fas fa-edit"></i></button>
+            <button class="btn-history-delete" data-delete-move="${m.id}" style="border:none; background:none; cursor:pointer; color:#ef4444;"><i class="fas fa-trash-alt"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  corpo.querySelectorAll("[data-edit-move]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const docId = btn.getAttribute("data-edit-move");
+      document.getElementById("activityDetailModal")?.classList.add("hidden");
+      const dummyBtn = document.createElement("button");
+      dummyBtn.setAttribute("data-edit", docId);
+      dummyBtn.setAttribute("data-edit-ticker", ticker);
+      dummyBtn.style.display = "none";
+      document.getElementById("listaAtividades").appendChild(dummyBtn);
+      dummyBtn.click();
+      dummyBtn.remove();
+    };
+  });
+
+  corpo.querySelectorAll("[data-delete-move]").forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm("Eliminar este movimento?")) return;
+      const docId = btn.getAttribute("data-delete-move");
+      try {
+        await deleteDoc(doc(db, "ativos", docId));
+        document.getElementById("activityDetailModal")?.classList.add("hidden");
+        showToast("Movimento eliminado.");
+      } catch (err) { console.error(err); }
+    };
+  });
+}
+
 // ===============================
 // Quick Actions (comprar/vender/editar + collapse)
 // ===============================
@@ -638,10 +929,31 @@ function wireQuickActions(gruposArr) {
   const fMerc = $("#pfMercado");
   const fQtd = $("#pfQuantidade");
   const fPreco = $("#pfPreco");
-  const fData = $("#pfDataCompra");
+  const fData = $("#pfData");
   const fObj = $("#pfObjetivo");
   const fLink = $("#pfLink");
 
+  // --- Listeners do Modal (Internos) ---
+  tipoSel?.addEventListener("change", () => {
+    const isVenda = tipoSel.value === "venda";
+    if (labelP) labelP.textContent = isVenda ? "Preço de venda (€)" : "Preço de compra (€)";
+    if (vendaTotWrap) vendaTotWrap.style.display = isVenda ? "block" : "none";
+    if (!isVenda) {
+      if (vendaTot) vendaTot.checked = false;
+      if (fQtd) fQtd.removeAttribute("readonly");
+    }
+  });
+
+  vendaTot?.addEventListener("change", () => {
+    const checked = !!vendaTot.checked;
+    if (checked && fQtd) {
+      fQtd.value = currentPosQty.toFixed(4).replace(/\.?0+$/, "");
+      fQtd.setAttribute("readonly", true);
+    } else if (fQtd) {
+      fQtd.removeAttribute("readonly");
+    }
+  });
+  window.openActionModal = openActionModal;
   function openActionModal(kind, ticker) {
     const g = byTickerGlobal.get(ticker);
     if (!g) return;
@@ -708,6 +1020,7 @@ function wireQuickActions(gruposArr) {
   fPreco?.addEventListener("input", calcCusto);
   fQtd?.addEventListener("input", calcCusto);
 
+  window.closeModalAtividade = closeModal;
   function closeModal() {
     modal?.classList.add("hidden");
     form?.reset();
@@ -720,868 +1033,239 @@ function wireQuickActions(gruposArr) {
     const custoResumo = document.getElementById("pfCustoResumo");
     if (custoResumo) custoResumo.style.display = "none";
   }
-  // --- Modal de Detalhes (Estratégico) ---
-  const detModal = $("#activityDetailModal");
-  const detClose = $("#activityDetailClose");
+  close?.addEventListener("click", closeModal);
+  cancel?.addEventListener("click", closeModal);
+  modal?.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
 
-  function openDetailModal(ticker) {
-    const g = byTickerGlobal.get(ticker);
-    if (!g) return;
-
-    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
-
-    // VARIAVEIS BASE
-    const precoAtual = g.precoAtual || 0;
-    const precoMedio = g.qtd > 0 ? (g.investido || 0) / g.qtd : 0;
-    const lucroAtual = g.lucroAtual || 0;
-    const estadoOp   = g._estadoOp || "ESPERAR";
-    const s200       = g._sma200;
-
-    const tpObjetivo = g.qtd > 0 ? ((g.investido || 0) + (g.objetivo || 0)) / g.qtd : 0;
-    const faltaMeta  = (g.objetivo || 0) - lucroAtual;
-    const upsideP    = precoAtual > 0 ? ((tpObjetivo / precoAtual) - 1) * 100 : 0;
-    const percL      = (g.investido || 0) > 0 ? (lucroAtual / (g.investido || 0)) * 100 : 0;
-
-    // WAR CHEST TOTAL
-    const warChestRaw = document.getElementById("prtWarChest")?.textContent || "";
-    const warChestTotal = parseFloat(warChestRaw.replace(/[^\d,.]/g, "").replace(",", ".")) || 0;
-
-    const formatSmaDelta = (sma, cur) => {
-      if (!isFiniteNum(sma) || !isFiniteNum(cur) || sma <= 0) return "—";
-      const d = ((cur - sma) / sma) * 100;
-      return `${d > 0 ? "+" : ""}${d.toFixed(1)}%`;
-    };
-
-    const s50 = g._sma50;
-    const isGoldenCross = s50 && s200 && s50 > s200;
-    const isDeathCross = s50 && s200 && s50 < s200;
-    const trendSignal = isGoldenCross ? "GOLDEN CROSS 🚀" : (isDeathCross ? "DEATH CROSS ⚠️" : "SEM TENDÊNCIA CLARA");
-    const trendColor = isGoldenCross ? "#22c55e" : (isDeathCross ? "#ef4444" : "var(--muted-foreground)");
-
-    // ESFORCO / DECISAO DO SISTEMA
-    let esforcoStr = "Muito próximo", esforcoColor = "#22c55e";
-    if (upsideP > 12)     { esforcoStr = "Agressivo"; esforcoColor = "#ef4444"; }
-    else if (upsideP > 7) { esforcoStr = "Exigente";  esforcoColor = "#f59e0b"; }
-    else if (upsideP > 3) { esforcoStr = "Plausível"; esforcoColor = "#3b82f6"; }
-    if (upsideP <= 0 && g.qtd > 0) { esforcoStr = "Atingido"; esforcoColor = "#22c55e"; }
-
-    let decisaoEmoji = "🟢", decisaoTexto = "GUARDAR / MANTER", decisaoSub = "";
-    let decisaoBorder = "#22c55e", decisaoBg = "rgba(34,197,94,0.07)";
-
-    // Cálculo de valores para instruções
-    const capReforco = warChestTotal > 0 ? warChestTotal * 0.2 : 250; 
-    const precoReforco = precoAtual * 0.98;
-    const unitsReforco = capReforco / precoAtual;
-
-    const tp1Price = precoMedio * 1.05;
-    const unitsVenda = g.qtd * 0.2;
-    const valorVenda = unitsVenda * tp1Price;
-
-    // Progress bar logic
-    const objetivoFin = g.objetivo || 0;
-    const lucroProgress = objetivoFin > 0 ? (lucroAtual / objetivoFin) * 100 : 0;
-    const safeProgress = Math.min(100, Math.max(0, lucroProgress));
-    const isGoalMet = lucroAtual >= objetivoFin && objetivoFin > 0;
-    const progressColor = isGoalMet ? "#22c55e" : (lucroAtual > 0 ? "#3b82f6" : "#ef4444");
-
-    const progressBarHTML = objetivoFin > 0 ? `
-      <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.05);">
-        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 4px;">
-          <span style="color: var(--muted-foreground)">Progresso do Objetivo: <strong>${lucroProgress.toFixed(1)}%</strong></span>
-          <span style="color: ${progressColor}; font-weight: 800;">${isGoalMet ? "CONCLUÍDO" : ""}</span>
-        </div>
-        <div style="height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden;">
-          <div style="width: ${safeProgress}%; height: 100%; background: ${progressColor}; transition: width 0.8s ease;"></div>
-        </div>
-      </div>
-    ` : "";
-
-    if (isGoalMet) {
-      decisaoEmoji = "🏆"; decisaoTexto = "OBJETIVO ATINGIDO";
-      decisaoBorder = "#22c55e"; decisaoBg = "rgba(34,197,94,0.07)";
-      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
-        <span style="color:#22c55e;">🌟 <strong>Parabéns!</strong> O lucro alvo foi atingido.</span><br>
-        <span style="opacity:0.8;">Pode considerar <strong>Vender a posição</strong> para realizar lucros ou manter para ganhos adicionais.</span>
-        ${progressBarHTML}
-      </div>`;
-    } else if (estadoOp === "REFORÇAR" || estadoOp === "COMPRAR") {
-      decisaoEmoji = "🔵"; decisaoTexto = "COMPRAR MAIS";
-      decisaoBorder = "#3b82f6"; decisaoBg = "rgba(59,130,246,0.07)";
-      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
-        <span style="color:#3b82f6;">✅ <strong>Comprar ${fmtEUR.format(capReforco)} (~${unitsReforco.toFixed(2)} un.)</strong> agora.</span><br>
-        <span style="opacity:0.8;">Preço atrativo para aumentar a posição.</span>
-        ${progressBarHTML}
-      </div>`;
-    } else if (upsideP > 12) {
-      decisaoEmoji = "🔴"; decisaoTexto = "VENDER FORTE";
-      decisaoBorder = "#ef4444"; decisaoBg = "rgba(239,68,68,0.07)";
-      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
-        <span style="color:#ef4444;">🚨 <strong>Venda forte:</strong> Libertar 50% (${fmtEUR.format(g.investido * 0.5)}) aos <strong>${fmtEUR.format(precoMedio * 1.15)}</strong>.</span><br>
-        <span style="opacity:0.8;">Risco de correção elevado.</span>
-        ${progressBarHTML}
-      </div>`;
-    } else if (upsideP > 7 || estadoOp === "REDUZIR" || estadoOp === "VENDER") {
-      decisaoEmoji = "🟡"; decisaoTexto = "VENDER UM POUCO";
-      decisaoBorder = "#f59e0b"; decisaoBg = "rgba(245,158,11,0.07)";
-      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
-        <span style="color:#f59e0b;">💰 <strong>Vender ${fmtEUR.format(valorVenda)} (~${unitsVenda.toFixed(2)} un.)</strong> nos <strong>${fmtEUR.format(tp1Price)}</strong>.</span><br>
-        <span style="opacity:0.8;">Garantir lucros parciais.</span>
-        ${progressBarHTML}
-      </div>`;
+  // --- Listeners de Ação do Modal (Submit e Venda Total) ---
+  vendaTot?.addEventListener("change", () => {
+    const checked = !!vendaTot.checked;
+    const pos = Number(fPosAtual?.value || currentPosQty || 0);
+    if (!fQtd) return;
+    if (checked) {
+      if (!(pos > 0)) {
+        alert("Não há posição para fechar.");
+        vendaTot.checked = false;
+        return;
+      }
+      fQtd.value = Math.abs(pos).toString();
+      fQtd.setAttribute("readonly", "readonly");
     } else {
-      // MANTER / ESPERAR
-      decisaoSub = `<div style="margin-top:4px; line-height:1.4;">
-        <span>💎 <strong>Guardar e manter.</strong> Potencial de crescimento saudável.</span><br>
-        <span style="opacity:0.8;">Próxima compra recomendada aos <strong>${fmtEUR.format(precoReforco)}</strong>.</span>
-        ${progressBarHTML}
-      </div>`;
+      fQtd.removeAttribute("readonly");
+      fQtd.value = "";
     }
+  });
 
-    // Adicionar Secção de Análise Técnica ao decisaoSub
-    decisaoSub += `
-      <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(0,0,0,0.1); font-size: 0.72rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="color: var(--muted-foreground)">Sinal de Tendência:</span>
-          <span style="padding: 2px 8px; border-radius: 4px; background: ${trendColor}15; color: ${trendColor}; font-weight: 800; font-size: 0.65rem; border: 1px solid ${trendColor}30;">
-            ${trendSignal}
-          </span>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <div style="background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px; border: 1px solid var(--border);">
-            <div style="color: var(--muted-foreground); font-size: 0.6rem; text-transform: uppercase;">Média 50d (Dist.)</div>
-            <div style="font-weight: 700; color: ${precoAtual > s50 ? "#22c55e" : "#ef4444"}">${formatSmaDelta(s50, precoAtual)}</div>
-          </div>
-          <div style="background: rgba(0,0,0,0.02); padding: 6px; border-radius: 6px; border: 1px solid var(--border);">
-            <div style="color: var(--muted-foreground); font-size: 0.6rem; text-transform: uppercase;">Média 200d (Dist.)</div>
-            <div style="font-weight: 700; color: ${precoAtual > s200 ? "#22c55e" : "#ef4444"}">${formatSmaDelta(s200, precoAtual)}</div>
-          </div>
-        </div>
-        <p style="margin-top: 8px; opacity: 0.7; font-style: italic; font-size: 0.65rem; line-height: 1.3;">
-          * Se o preço estiver acima das médias e houver um Golden Cross, a confiança no reforço é máxima.
-        </p>
-      </div>
-    `;
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const tipo = (tipoSel?.value || "compra").toLowerCase();
+    const nome = fNome?.value.trim() || "";
+    const ticker = fTicker?.value.trim().toUpperCase() || "";
+    const setor = fSetor?.value.trim() || "";
+    const merc = fMerc?.value.trim() || "";
+    const qtd = parseFloat(fQtd?.value || 0);
+    const preco = parseFloat(fPreco?.value || 0);
+    const obj = parseFloat(fObj?.value || 0);
+    const lnk = fLink?.value.trim() || "";
+    const vendaTotal = !!vendaTot?.checked;
+    const docId = (document.getElementById("pfDocId")?.value || "").trim();
 
-    // HEADER
-    let stateColor = "#64748b";
-    if (estadoOp === "REFORÇAR") stateColor = "#ef4444";
-    if (estadoOp === "COMPRAR")  stateColor = "#22c55e";
-    if (estadoOp === "REDUZIR")  stateColor = "#f59e0b";
-    if (estadoOp === "VENDER")   stateColor = "#ef4444";
-    if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
-
-    const detBadge = document.getElementById("detEstadoBadge");
-    if (detBadge) {
-      detBadge.textContent = estadoOp;
-      detBadge.style.background = `${stateColor}18`;
-      detBadge.style.color = stateColor;
-      detBadge.style.borderColor = `${stateColor}35`;
-    }
-
-    $(`#detTickerTitle`).textContent = `${g.ticker} — ${g.nome}`;
-    $(`#detPrecoAtualHeader`).textContent = fmtEUR.format(precoAtual);
-    const elLucroHeader = $(`#detLucroAtualHeader`);
-    elLucroHeader.textContent = `${fmtEUR.format(lucroAtual)} (${percL > 0 ? "+" : ""}${percL.toFixed(2)}%)`;
-    elLucroHeader.className = lucroAtual >= 0 ? "up" : "down";
-    $(`#detQtdHeader`).textContent = g.qtd.toFixed(4).replace(/\.?0+$/, "");
-    $(`#detPMHeader`).textContent = fmtEUR.format(precoMedio);
-    const capEl = $(`#detCapitalHeader`);
-    if (capEl) capEl.textContent = fmtEUR.format(g.investido || 0);
-
-    // BLOCO 0 — DECISAO DO SISTEMA
-    const decDiv = $(`#detDecisaoSistema`);
-    if (decDiv) { decDiv.style.borderColor = decisaoBorder; decDiv.style.background = decisaoBg; }
-    const decTextoEl = $(`#detDecisaoTexto`);
-    if (decTextoEl) { decTextoEl.textContent = `${decisaoEmoji} ${decisaoTexto}`; decTextoEl.style.color = decisaoBorder; }
-    const decSubEl = $(`#detDecisaoSub`);
-    if (decSubEl) decSubEl.innerHTML = decisaoSub;
-
-    const bgBadge = document.getElementById("detEsforcoBadge");
-    if (bgBadge) {
-      bgBadge.textContent = esforcoStr;
-      bgBadge.style.color = esforcoColor;
-      bgBadge.style.borderColor = esforcoColor;
-      bgBadge.style.backgroundColor = `${esforcoColor}15`;
-    }
-
-    // BLOCO 1 — QUICK KPIs
-    const kpiCap = $(`#detKpiCapital`);
-    if (kpiCap) kpiCap.textContent = fmtEUR.format(g.investido || 0);
-
-    const kpiUp = $(`#detKpiUpside`);
-    if (kpiUp) {
-      kpiUp.textContent = upsideP > 0 ? `+${upsideP.toFixed(1)}%` : (upsideP < 0 ? `${upsideP.toFixed(1)}%` : "0%");
-      kpiUp.style.color = "#3b82f6";
-    }
-
-    const kpiTP = $(`#detKpiTP`);
-    if (kpiTP) kpiTP.textContent = tpObjetivo > 0 ? fmtEUR.format(tpObjetivo) : "—";
-
-    const kpiSMA = $(`#detKpiSMA200`);
-    if (kpiSMA) {
-      const smaD = formatSmaDelta(s200, precoAtual);
-      kpiSMA.textContent = smaD;
-      const num = s200 && precoAtual ? ((precoAtual - s200) / s200) * 100 : 0;
-      kpiSMA.style.color = num >= 0 ? "#22c55e" : "#ef4444";
-    }
-
-    // BLOCO 2 — PLANO DE SAIDA (Multi-TP)
-    const tpLevels = [
-      { label: "TP1", pct: 5,  acao: "Reduzir leve",  posicao: "20%", color: "#22c55e" },
-      { label: "TP2", pct: 10, acao: "Reduzir médio", posicao: "30%", color: "#f59e0b" },
-      { label: "TP3", pct: 15, acao: "Reduzir forte", posicao: "50%", color: "#ef4444" },
-    ];
-    let saidaHTML = "";
-    tpLevels.forEach(tp => {
-      const pr = precoMedio * (1 + tp.pct / 100);
-      const isActive = precoAtual >= pr * 0.98;
-      const units = g.qtd * (parseInt(tp.posicao) / 100);
-      const posText = `${tp.posicao} <span style="font-size:0.65rem;font-weight:500;display:block;opacity:0.8;text-transform:none;">(~${units.toFixed(2)} un.)</span>`;
-
-      saidaHTML += `<div style="display:grid;grid-template-columns:1fr 1.2fr 1.2fr 1fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;${isActive ? "background:" + tp.color + "08;" : ""}">` +
-        `<div style="font-weight:800;color:${tp.color};">${tp.label} (+${tp.pct}%)</div>` +
-        `<div style="font-family:monospace;font-size:0.82rem;">${fmtEUR.format(pr)}</div>` +
-        `<div style="font-weight:700;color:${tp.color};font-size:0.75rem;text-transform:uppercase;">${tp.acao}</div>` +
-        `<div style="text-align:right;font-weight:700;font-size:0.75rem;color:var(--muted-foreground);">${posText}</div></div>`;
-    });
-    const saidaEl = $(`#detPlanSaida`);
-    if (saidaEl) saidaEl.innerHTML = saidaHTML;
-
-    const saidaInterp = $(`#detSaidaInterpretativo`);
-    if (saidaInterp) {
-      if (esforcoStr === "Plausível")    saidaInterp.textContent = "✅ Upside plausível — não vender ainda.";
-      else if (esforcoStr === "Exigente") saidaInterp.textContent = "⚠️ Upside exigente — começar a reduzir no TP1/TP2.";
-      else if (esforcoStr === "Agressivo") saidaInterp.textContent = "🔴 Upside agressivo — distribuir posição forte no TP2/TP3.";
-      else if (esforcoStr === "Atingido") saidaInterp.textContent = "🏆 Objetivo cumprido — considera vender e reiniciar ciclo.";
-      else saidaInterp.textContent = "🟢 Perto do alvo — manter posição.";
-    }
-
-    // BLOCO 3 — PLANO DE QUEDA
-    const niveisArr = [
-      { d: 2,  action: "Reforço Leve",       color: "#3b82f6" },
-      { d: 3,  action: "Reforço Leve",       color: "#3b82f6" },
-      { d: 5,  action: "Reforço Médio",      color: "#f59e0b" },
-      { d: 8,  action: "Reforço Forte",      color: "#f59e0b" },
-      { d: 10, action: "Rever Tese / Risco", color: "#ef4444" },
-      { d: 15, action: "Stop / Invalidar",   color: "#ef4444" }
-    ];
-    let niveisHTML = "";
-    niveisArr.forEach(n => {
-      const pr = precoAtual * (1 - n.d / 100);
-      let actionTxt = n.action;
-      if (n.action.includes("Reforço")) {
-          const defaultAmt = n.action.includes("Leve") ? 250 : n.action.includes("Médio") ? 500 : 1000;
-          const units = defaultAmt / (pr || 1);
-          actionTxt = `${n.action} <span style="display:block;font-size:0.65rem;opacity:0.8;text-transform:none;margin-top:2px;">(~${units.toFixed(2)} un. / €${defaultAmt})</span>`;
-      }
-      niveisHTML += `<div style="display:grid;grid-template-columns:1fr 1.5fr 1.5fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;">` +
-        `<div style="font-weight:800;color:#ef4444;">-${n.d}%</div>` +
-        `<div style="font-family:monospace;font-size:0.85rem;">${fmtEUR.format(pr)}</div>` +
-        `<div style="font-weight:700;color:${n.color};font-size:0.75rem;text-transform:uppercase;">${actionTxt}</div></div>`;
-    });
-    const niveisEl = $(`#detNiveisReforco`);
-    if (niveisEl) niveisEl.innerHTML = niveisHTML;
-
-    // BLOCO 4 — REFORCO INTELIGENTE
-    const refScenarios = [
-      { val: 250,  label: "Reforço de 250 €"   },
-      { val: 500,  label: "Reforço de 500 €"   },
-      { val: 1000, label: "Reforço de 1.000 €" },
-    ];
-    let cenHTML = "";
-    refScenarios.forEach(sc => {
-      const invest = sc.val;
-      const nQ  = g.qtd + (invest / (precoAtual || 1));
-      const nT  = (g.investido || 0) + invest;
-      const nPM = nT / (nQ || 1);
-      const nTP = (nT + (g.objetivo || 0)) / (nQ || 1);
-      const nUpside = precoAtual > 0 ? ((nTP / precoAtual) - 1) * 100 : 0;
-      const redTP = tpObjetivo - nTP;
-      cenHTML += `<div style="background:rgba(0,0,0,0.015);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.75rem;">` +
-        `<div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center;">` +
-        `<strong style="font-size:0.85rem;color:var(--primary);">${sc.label}</strong>` +
-        `<span style="background:#22c55e15;color:#22c55e;padding:4px 8px;border-radius:6px;font-weight:800;">PM → ${fmtEUR.format(nPM)}</span></div>` +
-        `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border-top:1px dashed var(--border);padding-top:8px;">` +
-        `<div><span style="color:var(--muted-foreground)">Nova Qtd:</span><br><strong style="font-size:0.85rem;">${nQ.toFixed(2)}</strong> <span style="font-size:0.65rem;color:var(--muted-foreground)">(+${(invest/(precoAtual||1)).toFixed(2)})</span></div>` +
-        `<div><span style="color:var(--muted-foreground)">Novo TP:</span><br><strong style="color:#22c55e;font-size:0.85rem;">${fmtEUR.format(nTP)}</strong> <span style="font-size:0.65rem;color:#ef4444">(-${fmtEUR.format(redTP > 0 ? redTP : 0)})</span></div>` +
-        `<div><span style="color:var(--muted-foreground)">Upside:</span><br><strong style="color:#3b82f6;font-size:0.85rem;">${nUpside > 0 ? "+" : ""}${nUpside.toFixed(1)}%</strong></div>` +
-        `</div></div>`;
-    });
-    const cenEl = $(`#detCenariosNovos`);
-    if (cenEl) cenEl.innerHTML = cenHTML;
-
-    // BLOCO 5 — WAR CHEST
-    const warChestLevels = [
-      { queda: 5,  usarPct: 20, color: "#22c55e" },
-      { queda: 10, usarPct: 30, color: "#f59e0b" },
-      { queda: 15, usarPct: 50, color: "#ef4444" },
-    ];
-    let wchHTML = "";
-    warChestLevels.forEach(w => {
-      const pr = precoAtual * (1 - w.queda / 100);
-      const capital = warChestTotal * (w.usarPct / 100);
-      const qtdC = capital > 0 && pr > 0 ? capital / pr : 0;
-      wchHTML += `<div style="display:grid;grid-template-columns:0.6fr 1fr 1fr 1fr;padding:10px 12px;font-size:0.78rem;border-bottom:1px solid var(--border);align-items:center;">` +
-        `<div style="font-weight:800;color:${w.color};">-${w.queda}%</div>` +
-        `<div style="font-family:monospace;">${fmtEUR.format(pr)}</div>` +
-        `<div style="color:var(--muted-foreground);">Usar <strong style="color:${w.color};">${w.usarPct}%</strong></div>` +
-        `<div style="text-align:right;">${capital > 0 ? fmtEUR.format(capital) + " <span style='font-size:0.65rem;color:var(--muted-foreground);display:block;'>(~" + qtdC.toFixed(2) + " unid.)</span>" : "<span style='color:var(--muted-foreground)'>def. War Chest</span>"}</div></div>`;
-    });
-    const wchEl = $(`#detWarChestTable`);
-    if (wchEl) wchEl.innerHTML = `<div style="display:grid;grid-template-columns:0.6fr 1fr 1fr 1fr;padding:6px 12px;font-size:0.65rem;font-weight:700;color:var(--muted-foreground);background:rgba(0,0,0,0.03);border-bottom:1px solid var(--border);"><div>Queda</div><div>Preço</div><div>Capital</div><div style="text-align:right;">Valor</div></div>` + wchHTML;
-
-    // BLOCO 6 — RECUPERACAO DE PERDAS
-    const recBloco = $(`#detRecuperacaoBloco`);
-    if (lucroAtual < 0 && g.qtd > 0) {
-      recBloco.style.display = "block";
-      $(`#detBEML`).textContent  = fmtEUR.format(precoMedio);
-      $(`#detTPComp`).textContent = fmtEUR.format(tpObjetivo);
-      const p5 = precoAtual * 0.95, p10 = precoAtual * 0.90;
-      $(`#detRecSub5`).textContent  = `+${((tpObjetivo / p5  - 1) * 100).toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
-      $(`#detRecSub10`).textContent = `+${((tpObjetivo / p10 - 1) * 100).toFixed(1)}% (até ${fmtEUR.format(tpObjetivo)})`;
-    } else {
-      recBloco.style.display = "none";
-    }
-
-    // BLOCO 7 — METRICAS SECUNDARIAS (colapsavel)
-    const assetType = getAssetType(g.ticker, null, g);
-    const yPctModal = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
-    const elYield = $(`#detYield`);
-    if (elYield) {
-      elYield.textContent = yPctModal;
-      elYield.parentElement.style.display = assetType === "crypto" ? "none" : "flex";
-    }
-    const elPE = $(`#detPE`);
-    if (elPE) {
-      elPE.textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
-      elPE.parentElement.style.display = (assetType === "crypto" || assetType === "etf") ? "none" : "flex";
-    }
-    $(`#detSMA50`).textContent  = formatSmaDelta(g._sma50, precoAtual);
-    $(`#detSMA200`).textContent = formatSmaDelta(s200, precoAtual);
-    const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
-    const risk = precoAtual - stopTec, reward = tpObjetivo - precoAtual;
-    $(`#detRR`).textContent = risk > 0 && reward > 0 ? `1:${(reward / risk).toFixed(1)}` : "—";
-    $(`#detBarStop`).textContent  = fmtEUR.format(stopTec);
-    $(`#detBarPreco`).textContent = fmtEUR.format(precoAtual);
-    $(`#detBarAlvo`).textContent  = fmtEUR.format(tpObjetivo);
-    $(`#detObjLucro`).textContent  = fmtEUR.format(g.objetivo || 0);
-    $(`#detFaltaMeta`).textContent = faltaMeta > 0 ? fmtEUR.format(faltaMeta) : "0";
-    $(`#detTPObj`).textContent     = fmtEUR.format(tpObjetivo);
-    $(`#detUpside`).textContent    = upsideP > 0 ? `+${upsideP.toFixed(2)}%` : "0%";
-    $(`#detResumoInterpretativo`).textContent = upsideP > 0 ? `Precisa subir +${upsideP.toFixed(1)}% para cumprir o objetivo. (${esforcoStr})` : "Objetivo cumprido! Parabéns.";
-
-    // ESTRATEGIA DINAMICA
-    const sInfo = g._strategy;
-    $(`#detStrategyDiv`).innerHTML = `
-      <div style="font-weight:700;margin-bottom:8px;">Definir Estratégia (Ativo Atual)</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-        <select id="detDynStrategyCat" style="flex:1;padding:6px;border-radius:4px;border:1px solid var(--border);font-size:0.8rem;background:var(--background);color:var(--foreground);">
-          <option value="NONE">Automático / Nenhuma</option><option value="CORE">CORE</option><option value="SATELLITE">SATÉLITE</option>
-        </select>
-        <div style="display:flex;align-items:center;gap:4px;flex:1;">
-          <input type="number" id="detDynStrategyTarget" placeholder="%" step="0.1" max="100" min="0" style="width:100%;padding:6px;border-radius:4px;border:1px solid var(--border);font-size:0.8rem;background:var(--background);color:var(--foreground);" />
-          <span style="font-size:0.8rem;">%</span>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:0.75rem;align-items:center;">
-        <div id="detDynStrategyStatus" style="color:var(--muted-foreground);display:none;">Guardado ✅</div>
-        <button id="detBtnSaveStrategy" class="btn outline small" style="padding:4px 12px;margin-left:auto;">Guardar</button>
-      </div>
-      <div id="detDynStrategyCurrentInfo" style="margin-top:10px;font-size:0.75rem;"></div>`;
-
-    const selCat = $(`#detDynStrategyCat`);
-    const iptTarget = $(`#detDynStrategyTarget`);
-    const btnSaveStrat = $(`#detBtnSaveStrategy`);
-
-    if (sInfo) {
-      selCat.value = sInfo.category;
-      iptTarget.value = (sInfo.target * 100).toFixed(1);
-      const currentW = (g._currentWeight || 0) * 100;
-      const targetW  = sInfo.target * 100;
-      let dicaStr = "Aguardar", dicaColor = "var(--muted-foreground)";
-      if (g._shouldReinforceStrategic) { dicaStr = "REFORÇAR"; dicaColor = "#ef4444"; }
-      else if (g._estadoOp === "REDUZIR" || currentW > targetW * 1.5) { dicaStr = "REDUZIR"; dicaColor = "#f59e0b"; }
-      $(`#detDynStrategyCurrentInfo`).innerHTML = `<div style="display:flex;justify-content:space-between;background:rgba(0,0,0,0.02);padding:8px;border-radius:6px;border:1px solid var(--border);"><div>Alocação Atual: <strong style="${Math.abs(targetW - currentW) > 5 ? "color:#ef4444" : ""}">${currentW.toFixed(1)}%</strong></div><div>Dica: <strong><span style="color:${dicaColor}">${dicaStr}</span></strong></div></div>`;
-    }
-
-    selCat.onchange = () => {
-      if (selCat.value === "NONE") iptTarget.value = "";
-      else {
-        const isCore = selCat.value === "CORE";
-        const catTotal = isCore ? (window._dynamicStrategyGlobals?.CORE || 0.65) * 100 : (window._dynamicStrategyGlobals?.SATELLITE || 0.35) * 100;
-        let count = Object.values(window._dynamicStrategyTickers || {}).filter(t => t && t.category === selCat.value && t !== ticker).length;
-        iptTarget.value = (catTotal / (count + 1)).toFixed(1);
-      }
-    };
-
-    btnSaveStrat.onclick = async () => {
-      const cat = selCat.value, target = Number(iptTarget.value);
-      if (cat !== "NONE" && (isNaN(target) || target <= 0)) { alert("Insira uma percentagem alvo válida."); return; }
-      btnSaveStrat.textContent = "...";
-      try {
-        await setDoc(doc(db, "config", "strategy"), { tickers: { [ticker]: cat === "NONE" ? deleteField() : { category: cat, target } } }, { merge: true });
-        $(`#detDynStrategyStatus`).style.display = "block";
-        $(`#detDynStrategyStatus`).style.color = "#22c55e";
-        $(`#detDynStrategyStatus`).textContent = "Guardado ✅";
-      } catch (err) {
-        console.error(err);
-        $(`#detDynStrategyStatus`).style.display = "block";
-        $(`#detDynStrategyStatus`).style.color = "#ef4444";
-        $(`#detDynStrategyStatus`).textContent = err.message || "Erro ao guardar!";
-      }
-      btnSaveStrat.textContent = "Guardar";
-    };
-
-    // CRISES
-    const detCriSel = $(`#detCrisisSelector`);
-    const detCriRes = $(`#detCrisisResult`);
-    if (detCriSel) {
-      detCriSel.innerHTML = '<option value="0">Simular cenário de queda...</option>' + CRISES_HISTORY.map(c => `<option value="${c.drop}">${c.name}</option>`).join("");
-      detCriSel.value = "0";
-      if (detCriRes) detCriRes.style.display = "none";
-      if (!detCriSel.__wired) {
-        detCriSel.__wired = true;
-        detCriSel.addEventListener("change", () => {
-          const dropPct = Number(detCriSel.value);
-          if (dropPct <= 0) { detCriRes.style.display = "none"; return; }
-          const group = byTickerGlobal.get(detCriSel.dataset.ticker);
-          if (!group) return;
-          const pCur = group.precoAtual || 0;
-          const cPrice = pCur * (1 - dropPct / 100);
-          const iO = group.investido || 0, qO = group.qtd || 0;
-          const nQ = qO + (iO / (cPrice || 1));
-          const nPM = (iO * 2) / nQ;
-          $(`#detCrisisPrice`).textContent = fmtEUR.format(cPrice);
-          $(`#detCrisisCost`).textContent  = fmtEUR.format(iO);
-          $(`#detCrisisNewPM`).textContent = fmtEUR.format(nPM);
-          detCriRes.style.display = "block";
+    try {
+      if (tipo === "edicao" && docId) {
+        const docRef = doc(db, "ativos", docId);
+        await updateDoc(docRef, {
+          nome, ticker, setor, mercado: merc,
+          quantidade: qtd, precoCompra: preco,
+          objetivoFinanceiro: obj, linkExterno: lnk,
+          dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : serverTimestamp()
+        });
+      } else {
+        let qtdEfetiva = qtd;
+        if (tipo === "venda" && vendaTotal) {
+          const pos = Number(fPosAtual?.value || currentPosQty || 0);
+          qtdEfetiva = Math.abs(pos);
+          if (!(qtdEfetiva > 0)) { alert("Não há posição para fechar."); return; }
+        }
+        if (!ticker || !nome || qtdEfetiva <= 0 || preco <= 0) {
+          alert("Preenche os campos obrigatórios.");
+          return;
+        }
+        await addDoc(collection(db, "ativos"), {
+          tipoAcao: tipo, nome, ticker, setor, mercado: merc,
+          quantidade: tipo === "venda" ? -qtdEfetiva : qtdEfetiva,
+          precoCompra: preco, objetivoFinanceiro: obj, linkExterno: lnk,
+          dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : serverTimestamp()
         });
       }
-      detCriSel.dataset.ticker = g.ticker;
+      closeModal();
+    } catch (err) {
+      console.error("Erro ao guardar:", err);
+    }
+  });
+}
+
+function wireAtividadeListeners() {
+  const cont = document.getElementById("listaAtividades");
+  if (!cont) return;
+
+  const $ = (s) => document.querySelector(s);
+  const modal = $("#pfAddModal");
+  const title = $("#pfAddTitle");
+  const tipoSel = $("#pfTipoAcao");
+  const labelP = $("#pfLabelPreco");
+  const vendaTotWrap = $("#pfVendaTotalWrap");
+  const fTicker = $("#pfTicker");
+  const fNome = $("#pfNome");
+  const fSetor = $("#pfSetor");
+  const fMerc = $("#pfMercado");
+  const fQtd = $("#pfQuantidade");
+  const fPreco = $("#pfPreco");
+  const fData = $("#pfData");
+  const fObj = $("#pfObjetivo");
+  const fLink = $("#pfLink");
+
+  cont.addEventListener("click", async (e) => {
+    // 1. BUY/SELL/CHART
+    const buy = e.target.closest("[data-buy]");
+    const sell = e.target.closest("[data-sell]");
+    const chart = e.target.closest("[data-chart]");
+    if (buy) window.openActionModal?.("compra", buy.getAttribute("data-buy"));
+    if (sell) window.openActionModal?.("venda", sell.getAttribute("data-sell"));
+    if (chart) openTechnicalChart(chart.getAttribute("data-chart"));
+
+    // 1.1 Holdings Map (NOVO)
+    const hMap = e.target.closest(".holdings-map-trigger");
+    if (hMap) {
+      e.stopPropagation();
+      const ticker = hMap.getAttribute("data-holdings-ticker");
+      const name = hMap.getAttribute("data-holdings-name");
+      const modalH = document.getElementById("holdingsMapModal");
+      if (modalH) {
+        modalH.classList.remove("hidden");
+        renderIndividualHoldingsMap(ticker, name);
+      }
     }
 
-    // BOTOES
-    const bBuy  = $(`#detBtnBuy`);
-    const bSell = $(`#detBtnSell`);
-    const bEdit = $(`#detBtnEdit`);
-    const bLink = $(`#detBtnLink`);
-    const detModalEl = $(`#activityDetailModal`);
-    if (bBuy)  { bBuy.onclick  = () => { detModalEl.classList.add("hidden"); openActionModal("compra", g.ticker); }; }
-    if (bSell) { bSell.onclick = () => { detModalEl.classList.add("hidden"); openActionModal("venda", g.ticker); }; }
-    if (bEdit) { bEdit.onclick = () => { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); }; }
-    if (bLink) {
-      bLink.onclick = () => { if (g.link) window.open(g.link, "_blank"); else { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); } };
-      bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
-    }
-    if (bBuy) bBuy.innerHTML = `<i class="fas fa-plus-circle"></i> ${estadoOp === "REFORÇAR" ? "Reforçar" : "Comprar"}`;
-    
-    // (NOVO) Renderizar histórico de movimentos
-    renderMovementHistory(ticker);
-
-    detModalEl.classList.remove("hidden");
-  }
-
-  function renderMovementHistory(ticker) {
-    const corpo = document.getElementById("detHistoricoCorpo");
-    if (!corpo) return;
-
-    const movimentos = (_allMovimentos || [])
-      .filter(m => m.ticker === ticker)
-      .sort((a, b) => b.date - a.date); // Mais recentes primeiro
-
-    if (movimentos.length === 0) {
-      corpo.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--muted-foreground);">Sem movimentos registados.</td></tr>';
-      return;
+    // 1.2 Holdings Edit (NOVO)
+    const hEdit = e.target.closest(".holdings-edit-trigger");
+    if (hEdit) {
+      e.stopPropagation();
+      const ticker = hEdit.getAttribute("data-holdings-ticker");
+      const editM = document.getElementById("holdingsEditModal");
+      if (editM) {
+        document.getElementById("editHoldingsTitle").textContent = `Holdings: ${ticker}`;
+        editM.classList.remove("hidden");
+        // Nota: A carga dos dados pode ser feita via evento custom ou chamando uma função global
+        window.loadHoldingsForEdit?.(ticker);
+      }
     }
 
-    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
-
-    corpo.innerHTML = movimentos.map(m => {
-      const isVenda = m.qtd < 0;
-      const tipoLabel = isVenda ? '<span style="color:#ef4444;">Venda</span>' : '<span style="color:#22c55e;">Compra</span>';
-      const qtdAbs = Math.abs(m.qtd);
-      const dataStr = m.date.toLocaleDateString("pt-PT");
-      
-      return `
-        <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">
-          <td style="padding: 10px;">${dataStr}</td>
-          <td style="padding: 10px;">${tipoLabel}</td>
-          <td style="padding: 10px; text-align: right; font-weight: 600;">${qtdAbs.toFixed(4).replace(/\.?0+$/, "")}</td>
-          <td style="padding: 10px; text-align: right;">${fmtEUR.format(m.preco)}</td>
-          <td style="padding: 10px; text-align: center;">
-            <div style="display: flex; gap: 8px; justify-content: center;">
-              <button class="btn-history-edit" data-edit-move="${m.id}" style="border:none; background:none; cursor:pointer; color:var(--primary); font-size: 0.9rem;" title="Editar"><i class="fas fa-edit"></i></button>
-              <button class="btn-history-delete" data-delete-move="${m.id}" style="border:none; background:none; cursor:pointer; color:#ef4444; font-size: 0.9rem;" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-    // Wire up actions for history items
-    corpo.querySelectorAll("[data-edit-move]").forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const docId = btn.getAttribute("data-edit-move");
-        $("#activityDetailModal")?.classList.add("hidden");
-        // Simular o clique no botão de edição global
-        const dummyBtn = document.createElement("button");
-        dummyBtn.setAttribute("data-edit", docId);
-        dummyBtn.setAttribute("data-edit-ticker", ticker);
-        dummyBtn.style.display = "none";
-        document.getElementById("listaAtividades").appendChild(dummyBtn);
-        dummyBtn.click();
-        dummyBtn.remove();
-      };
-    });
-
-    corpo.querySelectorAll("[data-delete-move]").forEach(btn => {
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        if (!confirm("Tem a certeza que deseja eliminar este movimento? Esta ação é irreversível.")) return;
-        const docId = btn.getAttribute("data-delete-move");
-        try {
-          await deleteDoc(doc(db, "ativos", docId));
-          // O onSnapshot tratará de atualizar a UI, mas vamos fechar o modal para evitar confusão se o ticker desaparecer
-          $("#activityDetailModal")?.classList.add("hidden");
-          showToast("Movimento eliminado com sucesso.");
-        } catch (err) {
-          console.error("Erro ao eliminar movimento:", err);
-          alert("Não foi possível eliminar o movimento.");
-        }
-      };
-    });
-  }
-    detClose?.addEventListener("click", () => detModal?.classList.add("hidden"));
-    detModal?.addEventListener("click", (e) => {
-      if (e.target.id === "activityDetailModal") detModal?.classList.add("hidden");
-    });
-
-    cancel?.addEventListener("click", closeModal);
-    modal?.addEventListener("click", (e) => {
-      if (e.target.id === "pfAddModal") closeModal();
-    });
-
-    // BUY/SELL/CHART buttons
-    document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
-      const buy = e.target.closest?.("[data-buy]");
-      const sell = e.target.closest?.("[data-sell]");
-      const chart = e.target.closest?.("[data-chart]");
-      if (buy) openActionModal("compra", buy.getAttribute("data-buy"));
-      if (sell) openActionModal("venda", sell.getAttribute("data-sell"));
-      if (chart) openTechnicalChart(chart.getAttribute("data-chart"));
-    });
-
-    // Modal Technical Chart Close
-    const techClose = document.getElementById("techChartClose");
-    const techModal = document.getElementById("techChartModal");
-    techClose?.addEventListener("click", () => techModal?.classList.add("hidden"));
-    techModal?.addEventListener("click", (e) => {
-      if (e.target.id === "techChartModal") techModal.classList.add("hidden");
-    });
-
-    // Collapse per card (MODIFICADO para abrir o Modal de Detalhes)
-    document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
-      const t = e.target.closest?.("[data-toggle-card]");
-      if (!t) return;
-
+    // 2. Collapse per card -> Abrir Detalhes
+    const t = e.target.closest("[data-toggle-card]");
+    if (t) {
       const ticker = t.getAttribute("data-ticker");
-      if (ticker) {
-        openDetailModal(ticker);
-      }
-    });
-
-    // (NOVO) Expandir/Recolher card
-    document.getElementById("listaAtividades")?.addEventListener("click", (e) => {
-      const btn = e.target.closest?.("[data-expand-card]");
-      if (!btn) return;
-      
-      e.stopPropagation(); // Evitar abrir o modal ao expandir
-      const card = btn.closest(".asset-card");
-      if (card) {
-        card.classList.toggle("is-collapsed");
-      }
-    });
-
-    // Edit button
-    document
-      .getElementById("listaAtividades")
-      ?.addEventListener("click", async (e) => {
-        const btn = e.target.closest?.("[data-edit]");
-        if (!btn) return;
-        const docId = btn.getAttribute("data-edit");
-        const ticker = btn.getAttribute("data-edit-ticker") || "";
-        if (!docId) {
-          alert("Não encontrei o último movimento deste ticker.");
-          return;
-        }
-
-        try {
-          const ref = doc(db, "ativos", docId);
-          const snap = await getDoc(ref);
-          if (!snap.exists()) {
-            alert("Documento não encontrado.");
-            return;
-          }
-          const d = snap.data();
-
-          modal?.classList.remove("hidden");
-          if (title) title.textContent = "Editar movimento";
-          if (tipoSel) tipoSel.value = "edicao";
-          const idHidden = document.getElementById("pfDocId");
-          if (idHidden) idHidden.value = docId;
-
-          if (fTicker) fTicker.value = d.ticker || ticker || "";
-          if (fNome) fNome.value = d.nome || "";
-          if (fSetor) fSetor.value = d.setor || "";
-          if (fMerc) fMerc.value = d.mercado || "";
-          if (fQtd) fQtd.value = Number(d.quantidade || 0);
-          if (fPreco) fPreco.value = Number(d.precoCompra || 0);
-          if (fData) {
-            const dtRaw = d.dataCompra && typeof d.dataCompra.toDate === "function" ? d.dataCompra.toDate() : (d.dataCompra ? new Date(d.dataCompra) : new Date());
-            fData.value = dtRaw.toISOString().split("T")[0];
-          }
-          if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
-          if (fLink) fLink.value = d.linkExterno || "";
-
-          if (labelP) labelP.textContent = "Preço (€)";
-          if (vendaTotWrap) vendaTotWrap.style.display = "none";
-        } catch (err) {
-          console.error("Falha ao abrir edição:", err);
-          alert("Não foi possível abrir a edição.");
-        }
-      });
-
-    // Tipo muda o label e visibilidade de venda total
-    tipoSel?.addEventListener("change", () => {
-      const isVenda = tipoSel.value === "venda";
-
-      if (labelP)
-        labelP.textContent = isVenda
-          ? "Preço de venda (€)"
-          : "Preço de compra (€)";
-
-      if (vendaTotWrap) vendaTotWrap.style.display = isVenda ? "block" : "none";
-
-      // (NOVO) se não for venda, limpar estado de "venda total"
-      if (!isVenda) {
-        if (vendaTot) vendaTot.checked = false;
-        if (fQtd) {
-          fQtd.removeAttribute("readonly");
-          // se quiseres limpar também o valor, descomenta:
-          // fQtd.value = "";
-        }
-      }
-    });
-
-    // ===============================
-    // Venda total = fechar posição (SEM apagar histórico)
-    // ===============================
-    vendaTot?.addEventListener("change", () => {
-      const checked = !!vendaTot.checked;
-      const pos = Number(fPosAtual?.value || currentPosQty || 0);
-
-      if (!fQtd) return;
-
-      if (checked) {
-        if (!(pos > 0)) {
-          alert("Não há posição para fechar (quantidade em carteira = 0).");
-          vendaTot.checked = false;
-          return;
-        }
-
-        // preenche com a posição total
-        fQtd.value = Math.abs(pos).toString();
-        fQtd.setAttribute("readonly", "readonly");
-      } else {
-        fQtd.removeAttribute("readonly");
-        fQtd.value = "";
-      }
-    });
-
-    // Submit
-    form?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const tipo = (tipoSel?.value || "compra").toLowerCase(); // compra | venda | edicao
-      const nome = fNome?.value.trim() || "";
-      const ticker = fTicker?.value.trim().toUpperCase() || "";
-      const setor = fSetor?.value.trim() || "";
-      const merc = fMerc?.value.trim() || "";
-      const qtd = toNumStrict(fQtd?.value);
-      const preco = toNumStrict(fPreco?.value);
-      const obj = toNumStrict(fObj?.value);
-      const lnk = fLink?.value?.trim() || "";
-      const vendaTotal = !!vendaTot?.checked;
-      const docId = (document.getElementById("pfDocId")?.value || "").trim();
-
-      try {
-        if (tipo === "edicao" && docId) {
-          // Obter o documento original antes de editar
-          const docRef = doc(db, "ativos", docId);
-          const snap = await getDoc(docRef);
-          const originalData = snap.exists() ? snap.data() : {};
-          const oldTicker = (originalData.ticker || "").toUpperCase();
-
-          // 1. Atualizar o registo atual
-          await updateDoc(docRef, {
-            nome,
-            ticker,
-            setor,
-            mercado: merc,
-            quantidade: Number.isFinite(qtd) ? qtd : 0,
-            precoCompra: Number.isFinite(preco) ? preco : 0,
-            dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : originalData.dataCompra || serverTimestamp(),
-            objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
-            linkExterno: lnk,
-          });
-
-          // 2. (NOVO) Se o objetivo ou link mudou, propagar para TODOS os registos deste ticker
-          if (
-            (Number.isFinite(obj) && obj !== originalData.objetivoFinanceiro) ||
-            lnk !== originalData.linkExterno
-          ) {
-            const q = query(
-              collection(db, "ativos"),
-              where("ticker", "==", ticker),
-            );
-            const snapAll = await getDocs(q);
-            const updates = snapAll.docs.map((d) =>
-              updateDoc(d.ref, {
-                objetivoFinanceiro: obj,
-                linkExterno: lnk,
-              }),
-            );
-            await Promise.all(updates);
-          }
-        } else {
-          let qtdEfetiva = qtd;
-
-          // venda total → usar posição atual
-          if (tipo === "venda" && vendaTotal) {
-            const pos = Number(fPosAtual?.value || currentPosQty || 0);
-            qtdEfetiva = Math.abs(pos);
-
-            if (!(qtdEfetiva > 0)) {
-              alert("Não há posição para fechar (quantidade em carteira = 0).");
-              return;
-            }
-          }
-
-          // validação base
-          if (
-            !ticker ||
-            !nome ||
-            !Number.isFinite(qtdEfetiva) ||
-            !Number.isFinite(preco) ||
-            qtdEfetiva <= 0 ||
-            preco <= 0
-          ) {
-            alert("Preenche Ticker, Nome, Quantidade (>0) e Preço (>0).");
-            return;
-          }
-
-          // venda parcial não pode exceder a posição
-          if (tipo === "venda" && !vendaTotal) {
-            const pos = Number(fPosAtual?.value || currentPosQty || 0);
-            if (qtdEfetiva > pos) {
-              alert(`Não podes vender mais do que tens. Posição atual: ${pos}`);
-              return;
-            }
-          }
-          const quantidade =
-            tipo === "venda" ? -Math.abs(qtdEfetiva) : Math.abs(qtdEfetiva);
-          const payload = {
-            tipoAcao: tipo,
-            nome,
-            ticker,
-            setor,
-            mercado: merc,
-            quantidade,
-            precoCompra: preco,
-            objetivoFinanceiro: Number.isFinite(obj) ? obj : 0,
-            linkExterno: lnk,
-            dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : serverTimestamp(),
-          };
-          await addDoc(collection(db, "ativos"), payload);
-
-          // (OPCIONAL) Propagar objetivo/link para todos os outros registos deste ticker
-          // Isto garante que se mudas o link numa nova compra, ele reflete-se no plano de trade global
-          if (obj > 0 || lnk) {
-            const q = query(
-              collection(db, "ativos"),
-              where("ticker", "==", ticker),
-            );
-            const snapAll = await getDocs(q);
-            const upds = snapAll.docs.map((d) =>
-              updateDoc(d.ref, {
-                objetivoFinanceiro:
-                  obj > 0 ? obj : d.data().objetivoFinanceiro || 0,
-                linkExterno: lnk || d.data().linkExterno || "",
-              }),
-            );
-            await Promise.all(upds);
-          }
-        }
-
-        closeModal();
-        // Removido location.reload() - a atualização é agora em tempo real via onSnapshot
-      } catch (err) {
-        console.error("❌ Erro ao guardar movimento:", err);
-        alert("Não foi possível guardar. Tenta novamente.");
-      }
-    });
-  }
-
-  // ===============================
-  // Ajuda (popup)
-  // ===============================
-  const HELP_KEY = "prt.help.dismissed";
-  function wirePortfolioHelpModal() {
-    const modal = document.getElementById("prtHelpModal");
-    if (!modal || modal.__wired) return;
-    modal.__wired = true;
-
-    const closeBtn = document.getElementById("prtHelpClose");
-    const okBtn = document.getElementById("prtHelpOK");
-    const laterBtn = document.getElementById("prtHelpLater");
-    const dontShow = document.getElementById("prtHelpDontShow");
-    const helpIcon = document.getElementById("btnPrtHelp");
-    const fabHelp = document.getElementById("fabHelp");
-
-    const close = (persist) => {
-      if (persist && dontShow?.checked) {
-        try {
-          localStorage.setItem(HELP_KEY, "1");
-        } catch { }
-      }
-      modal.classList.add("hidden");
-    };
-
-    closeBtn?.addEventListener("click", () => close(false));
-    laterBtn?.addEventListener("click", () => close(false));
-    okBtn?.addEventListener("click", () => close(true));
-    helpIcon?.addEventListener("click", () => showPortfolioHelp(true));
-    fabHelp?.addEventListener("click", () => showPortfolioHelp(true));
-
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) close(false);
-    });
-    document.addEventListener("keydown", (e) => {
-      if (!modal.classList.contains("hidden") && e.key === "Escape") close(false);
-    });
-  }
-
-  function showPortfolioHelp(force = false) {
-    const modal = document.getElementById("prtHelpModal");
-    if (!modal) return;
-    if (!force) {
-      try {
-        if (localStorage.getItem(HELP_KEY) === "1") return;
-      } catch { }
+      if (ticker) window.openDetails?.(ticker);
     }
-    modal.classList.remove("hidden");
+
+    // 3. Expandir/Recolher card (Visual)
+    const btnExp = e.target.closest("[data-expand-card]");
+    if (btnExp) {
+      e.stopPropagation();
+      const card = btnExp.closest(".asset-card");
+      if (card) card.classList.toggle("is-collapsed");
+    }
+
+    // 4. Edit button
+    const btnEdit = e.target.closest("[data-edit]");
+    if (btnEdit) {
+      const docId = btnEdit.getAttribute("data-edit");
+      const ticker = btnEdit.getAttribute("data-edit-ticker") || "";
+      if (!docId) return;
+      try {
+        const ref = doc(db, "ativos", docId);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const d = snap.data();
+        
+        modal?.classList.remove("hidden");
+        if (title) title.textContent = "Editar movimento";
+        if (tipoSel) tipoSel.value = "edicao";
+        const idHidden = document.getElementById("pfDocId");
+        if (idHidden) idHidden.value = docId;
+        
+        if (fTicker) fTicker.value = d.ticker || ticker || "";
+        if (fNome) fNome.value = d.nome || "";
+        if (fSetor) fSetor.value = d.setor || "";
+        if (fMerc) fMerc.value = d.mercado || "";
+        if (fQtd) fQtd.value = Number(d.quantidade || 0);
+        if (fPreco) fPreco.value = Number(d.precoCompra || 0);
+        if (fData) {
+          const dtRaw = d.dataCompra && typeof d.dataCompra.toDate === "function" ? d.dataCompra.toDate() : (d.dataCompra ? new Date(d.dataCompra) : new Date());
+          fData.value = dtRaw.toISOString().split("T")[0];
+        }
+        if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
+        if (fLink) fLink.value = d.linkExterno || "";
+        
+        if (labelP) labelP.textContent = "Preço (€)";
+        if (vendaTotWrap) vendaTotWrap.style.display = "none";
+      } catch (err) {
+        console.error("Erro ao abrir edição:", err);
+      }
+
+    }
+  });
+}
+
+// ===============================
+// Ajuda (popup)
+// ===============================
+const HELP_KEY = "prt.help.dismissed";
+
+function wirePortfolioHelpModal() {
+  const modal = document.getElementById("prtHelpModal");
+  if (!modal || modal.__wired) return;
+  modal.__wired = true;
+
+  const closeBtn = document.getElementById("prtHelpClose");
+  const okBtn = document.getElementById("prtHelpOK");
+  const laterBtn = document.getElementById("prtHelpLater");
+  const dontShow = document.getElementById("prtHelpDontShow");
+  const helpIcon = document.getElementById("btnPrtHelp");
+  const fabHelp = document.getElementById("fabHelp");
+
+  const close = (persist) => {
+    if (persist && dontShow?.checked) {
+      try {
+        localStorage.setItem(HELP_KEY, "1");
+      } catch {}
+    }
+    modal.classList.add("hidden");
+  };
+
+  closeBtn?.addEventListener("click", () => close(false));
+  laterBtn?.addEventListener("click", () => close(false));
+  okBtn?.addEventListener("click", () => close(true));
+  helpIcon?.addEventListener("click", () => showPortfolioHelp(true));
+  fabHelp?.addEventListener("click", () => showPortfolioHelp(true));
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!modal.classList.contains("hidden") && e.key === "Escape") close(false);
+  });
+}
+
+function showPortfolioHelp(force = false) {
+  const modal = document.getElementById("prtHelpModal");
+  if (!modal) return;
+  if (!force) {
+    try {
+      if (localStorage.getItem(HELP_KEY) === "1") return;
+    } catch {}
   }
+  modal.classList.remove("hidden");
+}
 
   // ===============================
   // INIT (screen)
@@ -1602,12 +1286,29 @@ function wireQuickActions(gruposArr) {
     if (!cont) return;
 
     _eventsWired = false; // reset para garantir que os listeners se ligam ao novo DOM
+    _holdingsEventsWired = false; // Reset específico para o mapa de holdings
     cont.innerHTML = "A carregar…";
 
     // Registrar ajuda e plano
     wirePortfolioHelpModal();
     showPortfolioHelp();
     wireInvestPlanner();
+    wireAtividadeListeners();
+    
+    // Wire Modal Detalhes (X e fora)
+    const detModal = document.getElementById("activityDetailModal");
+    const detClose = document.getElementById("activityDetailClose");
+    if (detModal && detClose) {
+      detClose.onclick = () => detModal.classList.add("hidden");
+      detModal.onclick = (e) => { if (e.target === detModal) detModal.classList.add("hidden"); };
+    }
+
+    const techModal = document.getElementById("techChartModal");
+    const techClose = document.getElementById("techChartClose");
+    if (techModal && techClose) {
+      techClose.onclick = () => techModal.classList.add("hidden");
+      techModal.onclick = (e) => { if (e.target === techModal) techModal.classList.add("hidden"); };
+    }
 
     await ensureChartJS();
 
@@ -1654,6 +1355,9 @@ function wireQuickActions(gruposArr) {
       _lastStrategySnap = snap;
       handleUpdate();
     });
+
+    // Inicializar eventos estáticos do Mapa de Holdings (uma única vez)
+    wireHoldingsMapEvents();
   }
 
   async function processAndRender(snap, aSnap, stratSnap) {
@@ -2181,11 +1885,12 @@ function wireQuickActions(gruposArr) {
 
       wireQuickActions(gruposArr);
       wirePortfolioHelpModal();
+      // Atualizar a referência dos dados para o mapa global
+      window._currentGruposArr = gruposArr; 
       wireInvPlan(gruposArr, infoMap);
     } catch (e) {
       console.error("Erro ao processar atividade:", e);
     }
-  }
 
   async function getHistoricalData(ticker) {
     const out = new Map();
@@ -2282,7 +1987,6 @@ function wireQuickActions(gruposArr) {
               <span class="asset-name" title="${g.nome}">${g.nome}</span>
             </div>
           </div>
-          
           <div class="asset-price-box">
             <div class="asset-price">${fmtEUR.format(precoAtual)}</div>
             <div class="asset-change ${lucroAtual >= 0 ? "up" : "down"}">
@@ -2291,9 +1995,22 @@ function wireQuickActions(gruposArr) {
           </div>
         </div>
 
-        <button class="btn ghost btn-icon expand-toggle" data-expand-card="${g.ticker}" title="Expandir/Recolher">
-          <i class="fas fa-chevron-down" style="font-size: 0.9rem;"></i>
-        </button>
+        <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+          ${assetType === "etf" ? `
+            <button class="btn ghost btn-icon holdings-map-trigger" data-holdings-ticker="${g.ticker}" data-holdings-name="${g.nome}" title="Mapa de Holdings" style="color: #8b5cf6;">
+              <i class="fas fa-th" style="font-size: 0.9rem;"></i>
+            </button>
+            <button class="btn ghost btn-icon holdings-edit-trigger" data-holdings-ticker="${g.ticker}" data-holdings-name="${g.nome}" title="Editar Holdings Manualmente" style="color: #10b981;">
+              <i class="fas fa-pen-to-square" style="font-size: 0.9rem;"></i>
+            </button>
+          ` : ""}
+          <button class="btn ghost btn-icon expand-toggle" data-expand-card="${g.ticker}" title="Expandir/Recolher">
+            <i class="fas fa-chevron-down" style="font-size: 0.9rem;"></i>
+          </button>
+          <button class="btn ghost btn-icon" onclick="openDetails('${g.ticker}')" title="Detalhes e Histórico">
+            <i class="fas fa-chevron-right" style="font-size: 0.9rem;"></i>
+          </button>
+        </div>
       </div>
 
       <!-- PROGRESSO DO OBJETIVO -->
@@ -2427,6 +2144,7 @@ function wireQuickActions(gruposArr) {
         </button>
       </div>
     </div>`;
+    }
   }
 
   // ==========================================
@@ -2872,4 +2590,447 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
     }).join("");
 
   resultDiv.style.display = "block";
+}
+
+// ===============================
+// Mapa de Holdings (Treemap)
+// ===============================
+let _holdingsChart = null;
+let _holdingsEventsWired = false;
+
+function wireHoldingsMapEvents() {
+  if (_holdingsEventsWired) return;
+  _holdingsEventsWired = true;
+
+  // Injetar função de debug global para o utilizador
+  window.debugHoldings = async () => {
+    console.log("🚀 [DEBUG] Iniciando diagnóstico manual...");
+    try {
+      const snap = await getDocs(collection(db, "etfHoldings"));
+      console.log("📥 [DEBUG] Documentos na coleção 'etfHoldings':", snap.docs.map(d => d.id));
+      if (snap.empty) console.warn("⚠️ [DEBUG] A coleção parece estar VAZIA para este utilizador/projeto.");
+      else console.log("✅ [DEBUG] Amostra do 1º doc:", snap.docs[0].data());
+    } catch (e) {
+      console.error("🔥 [DEBUG] Erro ao ler coleção:", e);
+    }
+  };
+
+  const btnGlobal = document.getElementById("btnOpenGlobalHoldingsMap");
+  const modal = document.getElementById("holdingsMapModal");
+  const closeBtns = [
+    document.getElementById("holdingsMapClose"),
+    document.getElementById("holdingsMapCloseBtn")
+  ];
+
+  if (!modal) return;
+
+  const closeHoldings = () => {
+    modal.classList.add("hidden");
+    if (_holdingsChart) {
+      _holdingsChart.dispose();
+      _holdingsChart = null;
+    }
+  };
+
+  closeBtns.forEach(btn => btn?.addEventListener("click", closeHoldings));
+  modal.addEventListener("click", (e) => {
+    if (e.target.id === "holdingsMapModal") closeHoldings();
+  });
+
+  // --- Eventos do Editor de Holdings ---
+  const editModal = document.getElementById("holdingsEditModal");
+  const editInput = document.getElementById("holdingsInput");
+  const btnSave = document.getElementById("holdingsEditSave");
+  const statusEl = document.getElementById("editHoldingsStatus");
+  let currentEditingTicker = "";
+
+  document.getElementById("listaAtividades")?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".holdings-edit-trigger");
+    if (btn) {
+      const ticker = btn.getAttribute("data-holdings-ticker");
+      const name = btn.getAttribute("data-holdings-name");
+      currentEditingTicker = ticker;
+      
+      document.getElementById("editHoldingsTitle").textContent = `Holdings: ${ticker}`;
+      editModal.classList.remove("hidden");
+      editInput.value = "A carregar...";
+      
+      try {
+        const cleanT = cleanTicker(ticker).toUpperCase();
+        const snap = await getDocs(collection(db, "etfHoldings"));
+        let existingData = null;
+        snap.forEach(d => {
+          const t = String(d.data().ticker || d.id).toUpperCase();
+          if (t === cleanT || t.split('.')[0] === cleanT.split('.')[0]) existingData = d.data();
+        });
+
+        if (existingData && existingData.holdings) {
+          editInput.value = existingData.holdings
+            .map(h => `${h.name}, ${h.symbol}, ${h.weight}`)
+            .join("\n");
+        } else {
+          editInput.value = "";
+        }
+      } catch (err) {
+        editInput.value = "Erro ao carregar dados.";
+      }
+    }
+  });
+
+  const closeEdit = () => editModal.classList.add("hidden");
+  document.getElementById("holdingsEditClose")?.addEventListener("click", closeEdit);
+  document.getElementById("holdingsEditCancel")?.addEventListener("click", closeEdit);
+  
+  btnSave?.addEventListener("click", async () => {
+    const text = editInput.value.trim();
+    const lines = text.split("\n").filter(l => l.trim() !== "");
+    const holdings = [];
+
+    try {
+      lines.forEach(line => {
+        const parts = line.split(",").map(p => p.trim());
+        if (parts.length >= 3) {
+          holdings.push({
+            name: parts[0],
+            symbol: parts[1],
+            weight: parseFloat(parts[2].replace(",", "."))
+          });
+        }
+      });
+
+      if (holdings.length === 0 && text !== "") {
+        throw new Error("Formato inválido. Usa: Nome, Símbolo, Peso");
+      }
+
+      statusEl.textContent = "A gravar...";
+      const cleanT = cleanTicker(currentEditingTicker).toUpperCase();
+      
+      await setDoc(doc(db, "etfHoldings", cleanT), {
+        ticker: cleanT,
+        name: document.getElementById("editHoldingsTitle").textContent.replace("Holdings: ", ""),
+        holdings: holdings,
+        updatedAt: serverTimestamp(),
+        manual: true
+      }, { merge: true });
+
+      statusEl.style.color = "#10b981";
+      statusEl.textContent = "✅ Gravado com sucesso!";
+      setTimeout(() => {
+        closeEdit();
+        statusEl.textContent = "";
+      }, 1000);
+
+    } catch (err) {
+      statusEl.style.color = "#ef4444";
+      statusEl.textContent = `❌ Erro: ${err.message}`;
+    }
+  });
+
+  const escHandler = (e) => {
+    if (e.key === "Escape" && !modal.classList.contains("hidden")) closeHoldings();
+  };
+  document.addEventListener("keydown", escHandler);
+
+  btnGlobal?.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+    renderGlobalHoldingsMap(window._currentGruposArr || []);
+  });
+
+  // Nota: Os botões individuais (holdings-map-trigger) são agora geridos
+  // por delegação na função wireAtividadeListeners().
+  
+  // Expor função de carga para o editor (chamada pela delegação central)
+  window.loadHoldingsForEdit = async (ticker) => {
+    currentEditingTicker = ticker;
+    const editInput = document.getElementById("holdingsInput");
+    if (!editInput) return;
+    editInput.value = "A carregar...";
+    try {
+      const cleanT = cleanTicker(ticker).toUpperCase();
+      const snap = await getDocs(collection(db, "etfHoldings"));
+      let existingData = null;
+      snap.forEach(d => {
+        const t = String(d.data().ticker || d.id).toUpperCase();
+        if (t === cleanT || t.split('.')[0] === cleanT.split('.')[0]) existingData = d.data();
+      });
+
+      if (existingData && existingData.holdings) {
+        editInput.value = existingData.holdings
+          .map(h => `${h.name}, ${h.symbol}, ${h.weight}`)
+          .join("\n");
+      } else {
+        editInput.value = "";
+      }
+    } catch (err) {
+      editInput.value = "Erro ao carregar dados.";
+    }
+  };
+}
+
+async function renderGlobalHoldingsMap(gruposArr) {
+  console.log("🔍 [HoldingsMap] Iniciando render global consolidado.");
+  const titleEl = document.getElementById("holdingsMapTitle");
+  const subtitleEl = document.getElementById("holdingsMapSubtitle");
+  const loadingEl = document.getElementById("holdingsMapLoading");
+  const emptyEl = document.getElementById("holdingsMapEmpty");
+  const container = document.getElementById("holdingsMapContainer");
+
+  titleEl.textContent = "Big Mapa de Holdings (Consolidado)";
+  subtitleEl.textContent = "Agregação de todas as holdings subjacentes detetadas";
+  loadingEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+  container.innerHTML = "";
+
+  await ensureECharts();
+
+  try {
+    const totalInvestido = gruposArr.reduce((acc, g) => {
+      const inv = Number(g.investido);
+      return acc + (isNaN(inv) ? 0 : inv);
+    }, 0);
+    
+    const aggregated = new Map();
+    console.log(`📡 [HoldingsMap] Total Investido: ${totalInvestido.toFixed(2)}€. Processando ${gruposArr.length} ativos...`);
+
+    const allHoldingsSnap = await getDocs(collection(db, "etfHoldings"));
+    const holdingsDb = []; // Array de objetos { ticker, data }
+    
+    allHoldingsSnap.forEach(doc => {
+      const d = doc.data();
+      const t = String(d.ticker || doc.id).toUpperCase();
+      holdingsDb.push({ ticker: t, data: d });
+    });
+
+    for (const g of gruposArr) {
+      if (!g.ticker) continue;
+      
+      const cleanT = cleanTicker(g.ticker).toUpperCase();
+      const investidoAtivo = Number(g.investido) || 0;
+      const qtdAtivo = Number(g.qtd) || 0;
+      
+      let weightInPortfolio = totalInvestido > 0 ? investidoAtivo / totalInvestido : 0;
+      if (weightInPortfolio <= 0 && qtdAtivo > 0) weightInPortfolio = 0.01; 
+      
+      console.log(`🔎 [HoldingsMap] Procurando match para: ${cleanT}`);
+
+      // Procura inteligente (Fuzzy Match)
+      // 1. Tenta match exato
+      // 2. Tenta match onde o ID da DB começa pelo ticker do portfolio (ex: VWCE -> VWCE.DE)
+      // 3. Tenta match ignorando sufixos comuns
+      let match = holdingsDb.find(h => h.ticker === cleanT);
+      
+      if (!match) {
+        match = holdingsDb.find(h => {
+          const dbT = h.ticker.split('.')[0]; // Remove .DE, .LS, etc
+          const portT = cleanT.split('.')[0];
+          return dbRectify(dbT) === dbRectify(portT) || h.ticker.startsWith(cleanT);
+        });
+      }
+
+      function dbRectify(t) { return t.replace(/[^A-Z0-9]/g, ''); }
+
+      if (match && match.data.holdings && Array.isArray(match.data.holdings)) {
+        const data = match.data;
+        console.log(`✅ [HoldingsMap] Match encontrado: ${cleanT} <-> ${match.ticker}`);
+        data.holdings.forEach(h => {
+          const symbol = h.symbol || h.ticker || h.name || "Unknown";
+          const hWeight = Number(h.weight) || Number(h.Weight) || 0;
+          const contrib = hWeight * weightInPortfolio;
+
+          if (aggregated.has(symbol)) {
+            const ext = aggregated.get(symbol);
+            ext.weight += contrib;
+            ext.etfs.push({ ticker: cleanT, weightInEtf: hWeight, totalContrib: contrib });
+          } else {
+            aggregated.set(symbol, {
+              name: h.name || symbol,
+              symbol,
+              weight: contrib,
+              etfs: [{ ticker: cleanT, weightInEtf: hWeight, totalContrib: contrib }]
+            });
+          }
+        });
+      } else {
+        console.warn(`❓ [HoldingsMap] Sem dados para o ticker limpo: ${cleanT}`);
+      }
+    }
+
+    if (aggregated.size === 0) {
+      console.warn("⚠️ [HoldingsMap] Nenhuma holding agregada.");
+      loadingEl.classList.add("hidden");
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+
+    const chartData = Array.from(aggregated.values())
+      .filter(h => h.weight > 0)
+      .sort((a, b) => b.weight - a.weight)
+      .map(h => ({
+        name: h.symbol,
+        value: h.weight * 100,
+        fullName: h.name,
+        etfs: h.etfs
+      }));
+
+    loadingEl.classList.add("hidden");
+    initTreemap(container, chartData, "Global Portfolio");
+
+  } catch (err) {
+    console.error("💥 [HoldingsMap] Erro Fatal:", err);
+    loadingEl.classList.add("hidden");
+    container.innerHTML = `<p style="color: #ef4444; text-align: center; margin-top: 50px;">Erro: ${err.message}</p>`;
+  }
+}
+
+async function renderIndividualHoldingsMap(ticker, etfName) {
+  console.log(`🔍 [HoldingsMap] Iniciando render individual para: ${ticker}`);
+  const titleEl = document.getElementById("holdingsMapTitle");
+  const subtitleEl = document.getElementById("holdingsMapSubtitle");
+  const loadingEl = document.getElementById("holdingsMapLoading");
+  const emptyEl = document.getElementById("holdingsMapEmpty");
+  const container = document.getElementById("holdingsMapContainer");
+
+  titleEl.textContent = `Holdings: ${ticker}`;
+  subtitleEl.textContent = etfName || "Distribuição interna do ETF";
+  loadingEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+  container.innerHTML = "";
+
+  await ensureECharts();
+
+  try {
+    const cleanT = cleanTicker(ticker).toUpperCase();
+    const allHoldingsSnap = await getDocs(collection(db, "etfHoldings"));
+    let data = null;
+    
+    allHoldingsSnap.forEach(doc => {
+      const d = doc.data();
+      const t = String(d.ticker || doc.id).toUpperCase();
+      // Match flexível para individual também
+      if (t === cleanT || t.startsWith(cleanT) || t.split('.')[0] === cleanT.split('.')[0]) {
+        data = d;
+      }
+    });
+
+    if (!data || !data.holdings || !Array.isArray(data.holdings)) {
+      console.warn(`⚠️ [HoldingsMap] Nenhuma holding encontrada para o ticker limpo: ${cleanT}`);
+      loadingEl.classList.add("hidden");
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+
+    const chartData = data.holdings
+      .map(h => ({
+        name: h.symbol || h.ticker || h.name || "??",
+        value: (Number(h.weight) || Number(h.Weight) || 0) * 100,
+        fullName: h.name || h.symbol
+      }))
+      .filter(h => h.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    loadingEl.classList.add("hidden");
+    initTreemap(container, chartData, ticker);
+
+  } catch (err) {
+    console.error("💥 [HoldingsMap] Erro individual:", err);
+    loadingEl.classList.add("hidden");
+    container.innerHTML = `<p style="color: #ef4444; text-align: center; margin-top: 50px;">Erro: ${err.message}</p>`;
+  }
+}
+
+function initTreemap(container, chartData, contextTitle) {
+  const treemap = new Treemap(container.id, {
+    groupHeaderHeight: 25,
+    padding: 2,
+    width: container.clientWidth || 1000
+  });
+
+  // Encontrar o peso máximo para nivelar as cores (Fasquia do Verde)
+  const maxWeight = Math.max(...chartData.map(item => item.value)) || 1;
+
+  const formattedData = [{
+    name: contextTitle,
+    value: chartData.reduce((sum, item) => sum + item.value, 0),
+    children: chartData.map(item => {
+      // Normalização: A holding mais pesada terá colorValue = 1.0 (Verde Vivo)
+      // Escalonamos entre 0.45 (Neutro/Escuro) e 1.0 (Verde)
+      const ratio = item.value / maxWeight;
+      const colorVal = 0.45 + (ratio * 0.55);
+
+      return {
+        name: item.name,
+        fullName: item.fullName || item.name,
+        value: item.value,
+        colorValue: colorVal, 
+        growth: item.value / 100,
+        meta: {
+          ticker: item.name,
+          fullName: item.fullName,
+          etfs: item.etfs,
+          weight: item.value
+        }
+      };
+    })
+  }];
+
+  // Sobrepor o showTooltip para mostrar informações específicas de holdings
+  treemap.showTooltip = function(e, item) {
+    let tip = document.getElementById("treemap-tooltip");
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.id = "treemap-tooltip";
+      tip.className = "treemap-tooltip-custom"; // Classe CSS se existir
+      Object.assign(tip.style, {
+        position: "fixed",
+        padding: "12px",
+        background: "rgba(15, 23, 42, 0.95)",
+        color: "#f8fafc",
+        borderRadius: "8px",
+        fontSize: "12px",
+        pointerEvents: "none",
+        zIndex: "10000",
+        border: "1px solid #334155",
+        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.4)",
+        backdropFilter: "blur(4px)",
+        minWidth: "180px"
+      });
+      document.body.appendChild(tip);
+    }
+
+    const m = item.meta || {};
+    let breakdownHtml = "";
+    
+    if (m.etfs && m.etfs.length > 0) {
+      breakdownHtml = `
+        <div style="margin-top: 8px; border-top: 1px solid #334155; padding-top: 6px;">
+          <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.05em;">Origem da Posição</div>
+          ${m.etfs.map(etf => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span style="color: #cbd5e1;">${etf.ticker}</span>
+              <span style="font-weight: 600; color: #8b5cf6;">${(etf.totalContrib * 100).toFixed(2)}%</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    tip.innerHTML = `
+      <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px; color: #fff;">${m.fullName || item.name}</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+        <span style="color: #94a3b8;">Símbolo:</span>
+        <span style="font-weight: 600;">${item.name}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #94a3b8;">Peso Portfolio:</span>
+        <span style="font-weight: 600; color: #10b981;">${item.value.toFixed(2)}%</span>
+      </div>
+      ${breakdownHtml}
+    `;
+
+    tip.style.display = "block";
+    this.updateTooltipPos(e);
+  };
+
+  // Renderizar (altura dinâmica baseada no container ou fixo)
+  treemap.render(formattedData, Math.max(container.clientHeight, 500));
 }

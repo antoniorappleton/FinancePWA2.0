@@ -4,6 +4,9 @@
       <p class="subtitle" style="margin:0;">Todos os ativos em carteira</p>
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
+      <button id="btnOpenGlobalHoldingsMap" class="btn premium" style="margin-top: 0; padding: 0 14px; height: 36px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; border-radius: 20px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
+        <i class="fas fa-th-large"></i> <span>Big Mapa de Holdings</span>
+      </button>
       <button id="btnOpenInvPlan" class="btn premium" style="margin-top: 0; padding: 0 14px; height: 36px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; border-radius: 20px;">
         <i class="fas fa-magic"></i> <span>Plano IA</span>
       </button>
@@ -819,4 +822,66 @@
     </div>
   </div>
 </div>
+</div>
+<!-- ======== Modal de Mapa de Holdings (Treemap) ======== -->
+<div id="holdingsMapModal" class="modal hidden">
+  <div class="modal-dialog" style="max-width: 1000px; width: 95vw; height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-header" style="border-bottom: 1px solid var(--border); padding: 16px 24px;">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div class="icon-box" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-th"></i>
+        </div>
+        <div>
+          <h3 id="holdingsMapTitle" style="margin: 0; font-size: 1.1rem;">Mapa Global de Holdings</h3>
+          <p id="holdingsMapSubtitle" style="margin: 0; font-size: 0.75rem; color: var(--muted-foreground);">Distribuição detalhada das empresas subjacentes</p>
+        </div>
+      </div>
+      <button id="holdingsMapClose" class="icon-btn" style="margin-left: auto;">✖</button>
+    </div>
+    <div class="modal-body" style="padding: 10px; flex: 1; min-height: 0; background: #0f172a; position: relative;">
+      <div id="holdingsMapContainer" style="width: 100%; height: 100%;"></div>
+      <div id="holdingsMapLoading" class="hidden" style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.8); display: flex; align-items: center; justify-content: center; z-index: 10;">
+        <div style="text-align: center;">
+          <i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; color: #8b5cf6; margin-bottom: 10px;"></i>
+          <p style="color: #fff; font-size: 0.9rem;">A processar holdings...</p>
+        </div>
+      </div>
+      <div id="holdingsMapEmpty" class="hidden" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+        <p style="color: var(--muted-foreground);">Nenhuma holding encontrada para este critério.</p>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--muted-foreground); display: flex; justify-content: space-between; align-items: center;">
+      <span>Dica: Passe o rato ou toque nos blocos para ver detalhes.</span>
+      <button class="btn ghost" id="holdingsMapCloseBtn" style="margin: 0; height: 32px; font-size: 0.75rem;">Fechar</button>
+    </div>
+  </div>
+</div>
+<!-- ======== Modal de Edição Manual de Holdings ======== -->
+<div id="holdingsEditModal" class="modal hidden">
+  <div class="modal-dialog" style="max-width: 500px; width: 90vw;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div class="icon-box" style="background: rgba(16, 185, 129, 0.1); color: #10b981; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <i class="fas fa-pen-to-square"></i>
+        </div>
+        <h3 id="editHoldingsTitle" style="margin: 0; font-size: 1rem;">Editar Holdings</h3>
+      </div>
+      <button id="holdingsEditClose" class="icon-btn">✖</button>
+    </div>
+    <div class="modal-body">
+      <p class="muted" style="font-size: 0.8rem; margin-bottom: 12px;">
+        Insere uma holding por linha no formato:<br>
+        <code style="background: #1e293b; padding: 2px 4px; border-radius: 4px;">NOME, SYMBOL, PESO</code> (ex: Apple, AAPL, 0.05)
+      </p>
+      <textarea id="holdingsInput" style="width: 100%; height: 250px; background: #0f172a; color: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical;" placeholder="Apple Inc, AAPL, 0.045&#10;Microsoft, MSFT, 0.035"></textarea>
+      
+      <div id="editHoldingsStatus" style="margin-top: 10px; font-size: 0.75rem;"></div>
+    </div>
+    <div class="modal-footer" style="gap: 10px;">
+      <button class="btn ghost" id="holdingsEditCancel">Cancelar</button>
+      <button class="btn primary" id="holdingsEditSave" style="background: #10b981;">
+        <i class="fas fa-save" style="margin-right: 6px;"></i> Gravar Holdings
+      </button>
+    </div>
+  </div>
 </div>
