@@ -2789,6 +2789,28 @@ async function renderGlobalHoldingsMap(gruposArr) {
       return acc + (isNaN(inv) ? 0 : inv);
     }, 0);
     
+    // (NOVO) Obter mapa global de setores para as holdings com fallback inteligente
+    const acoesSnap = await getDocs(collection(db, "acoesDividendos"));
+    const tickerSectorMap = new Map();
+    const nameSectorMap = new Map();
+    
+    acoesSnap.forEach(doc => {
+      const d = doc.data();
+      const sector = normalizeSector(d);
+      if (d.ticker) tickerSectorMap.set(cleanTicker(d.ticker), sector);
+      if (d.nome) nameSectorMap.set(d.nome.toUpperCase(), sector);
+    });
+
+    // Fallback para gigantes do mercado (comum em ETFs) que podem estar ausentes ou com nomes diferentes
+    const FALLBACK_SECTORS = {
+      "AAPL": "Tecnologia", "MSFT": "Tecnologia", "NVDA": "Tecnologia", "AVGO": "Tecnologia", "ASML": "Tecnologia",
+      "AMZN": "Consumo Discricionário", "TSLA": "Consumo Discricionário", "HD": "Consumo Discricionário",
+      "GOOGL": "Serviços de Comunicação", "GOOG": "Serviços de Comunicação", "META": "Serviços de Comunicação", "NFLX": "Serviços de Comunicação", "DIS": "Serviços de Comunicação",
+      "BRK.B": "Financeiro", "BRK-B": "Financeiro", "JPM": "Financeiro", "V": "Financeiro", "MA": "Financeiro", "BAC": "Financeiro", "WFC": "Financeiro",
+      "LLY": "Saúde", "UNH": "Saúde", "NVO": "Saúde", "JNJ": "Saúde", "PG": "Consumo Defensivo", "KO": "Consumo Defensivo", "PEP": "Consumo Defensivo",
+      "XOM": "Energia", "CVX": "Energia", "SHEL": "Energia", "TTE": "Energia"
+    };
+
     const aggregated = new Map();
     console.log(`📡 [HoldingsMap] Total Investido: ${totalInvestido.toFixed(2)}€. Processando ${gruposArr.length} ativos...`);
 
@@ -2835,21 +2857,35 @@ async function renderGlobalHoldingsMap(gruposArr) {
         data.holdings.forEach(h => {
           const symbol = h.symbol || h.ticker || h.name || "Unknown";
           let hWeight = Number(h.weight) || Number(h.Weight) || 0;
-          // Normalizar recursivamente para fração (0-1)
-          while (Math.abs(hWeight) > 1.0001) hWeight /= 100;
+          // Normalizar recursivamente para fração (0-1) - com trava de segurança
+          let safety = 0;
+          while (isFinite(hWeight) && Math.abs(hWeight) > 1.0001 && safety < 10) {
+            hWeight /= 100;
+            safety++;
+          }
           
           const contrib = hWeight * weightInPortfolio;
 
           if (aggregated.has(symbol)) {
             const ext = aggregated.get(symbol);
             ext.weight += contrib;
-            ext.etfs.push({ ticker: cleanT, weightInEtf: hWeight, totalContrib: contrib });
+            ext.etfs.push({ 
+              ticker: cleanT, 
+              weightInEtf: hWeight, 
+              totalContrib: contrib,
+              etfSector: g.setor // Guardar setor do ETF para fallback
+            });
           } else {
             aggregated.set(symbol, {
               name: h.name || symbol,
               symbol,
               weight: contrib,
-              etfs: [{ ticker: cleanT, weightInEtf: hWeight, totalContrib: contrib }]
+              etfs: [{ 
+                ticker: cleanT, 
+                weightInEtf: hWeight, 
+                totalContrib: contrib,
+                etfSector: g.setor 
+              }]
             });
           }
         });
@@ -2865,18 +2901,74 @@ async function renderGlobalHoldingsMap(gruposArr) {
       return;
     }
 
-    const chartData = Array.from(aggregated.values())
-      .filter(h => h.weight > 0)
-      .sort((a, b) => b.weight - a.weight)
-      .map(h => ({
+    // Agrupar por Setor para o Treemap
+    const groupedBySector = new Map();
+    aggregated.forEach(h => {
+      const cleanT = cleanTicker(h.symbol);
+      const upperN = String(h.name || "").toUpperCase();
+      
+      // Lógica de descoberta de setor:
+      // 1. Ticker exact match na DB
+      // 2. Fallback manual para gigantes
+      // 3. Nome exact match na DB
+      // 4. Match parcial por nome (se o nome na DB estiver contido no nome da holding)
+      let sector = tickerSectorMap.get(cleanT);
+      if (!sector) sector = FALLBACK_SECTORS[cleanT];
+      if (!sector) sector = nameSectorMap.get(upperN);
+      if (!sector) {
+        // Busca parcial por nome
+        for (const [dbName, dbSector] of nameSectorMap.entries()) {
+          if (upperN.includes(dbName) || dbName.includes(upperN)) {
+            sector = dbSector;
+            break;
+          }
+        }
+      }
+      
+      // SEGUNDO FALLBACK: Pelo ETF de origem (Regras do Utilizador)
+      if (!sector || sector === "Financeiro & Outros" || sector === "Outros") {
+        // Pegar o ETF que mais contribui para esta holding
+        const mainEtf = h.etfs.reduce((prev, curr) => (prev.totalContrib > curr.totalContrib) ? prev : curr);
+        const eS = String(mainEtf.etfSector || "").toUpperCase();
+        
+        if (eS.includes("ENERGIA")) sector = "Energia";
+        else if (eS.includes("TECNOLOGIA") || eS.includes("ITECH")) sector = "Tecnologia";
+        else if (eS.includes("MATERIAIS") || eS.includes("MATERIAS")) sector = "Materias Primas";
+        else if (eS.includes("FINANCEIRO") || eS.includes("FINANÇAS")) sector = "Finanças";
+        else if (eS.includes("EMERGENTES")) sector = "Paises Emergentes";
+        else if (eS.includes("MUNDIAL") || eS.includes("MULT") || eS.includes("MIX")) sector = "Big CAP";
+      }
+      
+      sector = sector || "Big CAP"; // Default final para holdings de ETFs
+      
+      if (!groupedBySector.has(sector)) {
+        groupedBySector.set(sector, {
+          name: sector,
+          value: 0,
+          children: []
+        });
+      }
+      const group = groupedBySector.get(sector);
+      const val = h.weight * 100;
+      group.value += val;
+      group.children.push({
         name: h.symbol,
-        value: h.weight * 100, // Agora h.weight é fração (0-1), então value é 0-100
         fullName: h.name,
+        value: val,
         etfs: h.etfs
-      }));
+      });
+    });
+
+    // (OPCIONAL) Fundir setores muito pequenos em "Outros" para melhorar a legibilidade
+    // Se um setor tiver menos de 1% do total consolidado, podemos movê-lo
+    // Mas por agora vamos manter todos e ordenar por relevância.
+
+    const chartData = Array.from(groupedBySector.values())
+      .filter(g => g.value > 0)
+      .sort((a, b) => b.value - a.value);
 
     loadingEl.classList.add("hidden");
-    initTreemap(container, chartData, "Global Portfolio");
+    initTreemap(container, chartData, "Global Portfolio", true);
 
   } catch (err) {
     console.error("💥 [HoldingsMap] Erro Fatal:", err);
@@ -2925,7 +3017,11 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
     const chartData = data.holdings
       .map(h => {
         let w = Number(h.weight) || Number(h.Weight) || 0;
-        while (Math.abs(w) > 1.0001) w /= 100; // Normalizar para fração
+        let safety = 0;
+        while (isFinite(w) && Math.abs(w) > 1.0001 && safety < 10) {
+          w /= 100; // Normalizar para fração
+          safety++;
+        }
         return {
           name: h.symbol || h.ticker || h.name || "??",
           value: w * 100, // 0-100
@@ -2945,17 +3041,40 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
   }
 }
 
-function initTreemap(container, chartData, contextTitle) {
+function initTreemap(container, chartData, contextTitle, isAlreadyGrouped = false) {
   const treemap = new Treemap(container.id, {
     groupHeaderHeight: 25,
     padding: 2,
     width: container.clientWidth || 1000
   });
 
-  // Encontrar o peso máximo para nivelar as cores (Fasquia do Verde)
-  const maxWeight = Math.max(...chartData.map(item => item.value)) || 1;
+  // Encontrar o peso máximo para nivelar as cores
+  let allLeafs = [];
+  if (isAlreadyGrouped) {
+    chartData.forEach(g => allLeafs.push(...g.children));
+  } else {
+    allLeafs = chartData;
+  }
+  const maxWeight = Math.max(...allLeafs.map(item => item.value)) || 1;
 
-  const formattedData = [{
+  const formattedData = isAlreadyGrouped ? chartData.map(group => ({
+    ...group,
+    children: group.children.map(item => {
+      const ratio = item.value / maxWeight;
+      const colorVal = 0.45 + (ratio * 0.55);
+      return {
+        ...item,
+        colorValue: colorVal,
+        growth: item.value / 100,
+        meta: {
+          ticker: item.name,
+          fullName: item.fullName,
+          etfs: item.etfs,
+          weight: item.value
+        }
+      };
+    })
+  })) : [{
     name: contextTitle,
     value: chartData.reduce((sum, item) => sum + item.value, 0),
     children: chartData.map(item => {

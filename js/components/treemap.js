@@ -44,6 +44,7 @@ export class Treemap {
     const renderH = height - this.options.safetyMargin;
 
     const totalArea = renderW * renderH;
+    if (totalArea <= 0 || renderW <= 0 || renderH <= 0) return;
     const dataWithArea = data.map((item) => ({
       ...item,
       area: (item.value / totalValue) * totalArea,
@@ -60,8 +61,8 @@ export class Treemap {
   }
 
   process(items, row, s, x, y, w, h, svg, isGroup) {
-    if (items.length === 0) {
-      this.layoutRow(row, s, x, y, w, h, svg, isGroup);
+    if (w <= 1 || h <= 1 || items.length === 0) {
+      if (row.length > 0) this.layoutRow(row, s, x, y, w, h, svg, isGroup);
       return;
     }
     const nextItem = items[0];
@@ -197,19 +198,21 @@ export class Treemap {
         const childH = ih - headH;
         const childArea = childW * childH;
         const childTotalValue = item.children.reduce((s, c) => s + c.value, 0);
-        const childrenWithArea = item.children.map((c) => ({
-          ...c,
-          area: (c.value / childTotalValue) * childArea,
-        }));
-        this.squarify(
-          childrenWithArea,
-          ix,
-          iy + headH,
-          childW,
-          childH,
-          svg,
-          false,
-        );
+        if (childTotalValue > 0 && childArea > 0) {
+          const childrenWithArea = item.children.map((c) => ({
+            ...c,
+            area: ((c.value || 0) / childTotalValue) * childArea,
+          }));
+          this.squarify(
+            childrenWithArea,
+            ix,
+            iy + headH,
+            childW,
+            childH,
+            svg,
+            false,
+          );
+        }
       }
     } else {
       // ASSET
