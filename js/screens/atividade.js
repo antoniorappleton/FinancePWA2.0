@@ -2834,7 +2834,10 @@ async function renderGlobalHoldingsMap(gruposArr) {
         console.log(`✅ [HoldingsMap] Match encontrado: ${cleanT} <-> ${match.ticker}`);
         data.holdings.forEach(h => {
           const symbol = h.symbol || h.ticker || h.name || "Unknown";
-          const hWeight = Number(h.weight) || Number(h.Weight) || 0;
+          let hWeight = Number(h.weight) || Number(h.Weight) || 0;
+          // Normalizar recursivamente para fração (0-1)
+          while (Math.abs(hWeight) > 1.0001) hWeight /= 100;
+          
           const contrib = hWeight * weightInPortfolio;
 
           if (aggregated.has(symbol)) {
@@ -2867,7 +2870,7 @@ async function renderGlobalHoldingsMap(gruposArr) {
       .sort((a, b) => b.weight - a.weight)
       .map(h => ({
         name: h.symbol,
-        value: h.weight * 100,
+        value: h.weight * 100, // Agora h.weight é fração (0-1), então value é 0-100
         fullName: h.name,
         etfs: h.etfs
       }));
@@ -2920,11 +2923,15 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
     }
 
     const chartData = data.holdings
-      .map(h => ({
-        name: h.symbol || h.ticker || h.name || "??",
-        value: (Number(h.weight) || Number(h.Weight) || 0) * 100,
-        fullName: h.name || h.symbol
-      }))
+      .map(h => {
+        let w = Number(h.weight) || Number(h.Weight) || 0;
+        while (Math.abs(w) > 1.0001) w /= 100; // Normalizar para fração
+        return {
+          name: h.symbol || h.ticker || h.name || "??",
+          value: w * 100, // 0-100
+          fullName: h.name || h.symbol
+        };
+      })
       .filter(h => h.value > 0)
       .sort((a, b) => b.value - a.value);
 
