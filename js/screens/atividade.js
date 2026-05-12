@@ -1952,7 +1952,7 @@ function showPortfolioHelp(force = false) {
     const safeProgress = Math.min(100, Math.max(0, lucroProgress));
     const progressColor = lucroAtual >= objetivoFin ? "var(--success)" : (lucroAtual > 0 ? "#22c55e" : "#ef4444");
 
-    const assetType = getAssetType(g.ticker, info, g);
+    const assetType = getAssetType(g.ticker, { ...info, ...g });
     let typeLabel = "AÇÃO";
     let typeColor = "var(--primary)";
     let typeIcon = "fa-briefcase";

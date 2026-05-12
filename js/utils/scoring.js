@@ -234,8 +234,10 @@ export function parseSma(sma, currentPrice) {
 export function getAssetType(ticker, acao) {
   const t = String(ticker || "").toUpperCase();
   const n = String(acao?.nome || "").toUpperCase();
+  const s = String(acao?.setor || acao?.sector || acao?.Setor || acao?.Sector || "").toUpperCase();
+  
   if (["BTC", "ETH", "SOL", "DOT", "ADA"].includes(t) || n.includes("BITCOIN") || n.includes("ETHEREUM")) return "crypto";
-  if (n.includes("ETF") || n.includes("UCITS") || n.includes("VANGUARD") || n.includes("ISHARES") || n.includes("LYXOR") || n.includes("AMUNDI")) return "etf";
+  if (n.includes("ETF") || n.includes("UCITS") || n.includes("VANGUARD") || n.includes("ISHARES") || n.includes("LYXOR") || n.includes("AMUNDI") || s.includes("ETF")) return "etf";
   return "stock";
 }
 
