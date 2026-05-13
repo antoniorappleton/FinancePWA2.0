@@ -1865,9 +1865,20 @@ function showPortfolioHelp(force = false) {
       }
       if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
 
-      // --- CÁLCULO DE COBERTURA ESTRATÉGICA (Task 3 - Percentagem Global) ---
-      const coreTarget = (window._dynamicStrategyGlobals.CORE || 0.65) * 100;
-      const satTarget = (window._dynamicStrategyGlobals.SATELLITE || 0.35) * 100;
+      // --- CÁLCULO DE COBERTURA ESTRATÉGICA (Task 3 - Dinâmico por Ativo) ---
+      let totalCoreTarget = 0;
+      let totalSatTarget = 0;
+
+      // 1. Calcular alvos baseados na soma do que o utilizador definiu para cada ticker
+      for (const tk in dynTickers) {
+        const d = dynTickers[tk];
+        if (d.category === "CORE") totalCoreTarget += (d.target || 0);
+        if (d.category === "SATELLITE") totalSatTarget += (d.target || 0);
+      }
+
+      // Se não houver alvos definidos por ticker, usamos os globais como fallback
+      if (totalCoreTarget === 0) totalCoreTarget = (window._dynamicStrategyGlobals.CORE || 0.65) * 100;
+      if (totalSatTarget === 0) totalSatTarget = (window._dynamicStrategyGlobals.SATELLITE || 0.35) * 100;
       
       const coreTotal = estrategiaMap.get("CORE") || 0;
       const satTotal = estrategiaMap.get("SATELLITE") || 0;
@@ -1883,20 +1894,21 @@ function showPortfolioHelp(force = false) {
       
       if (elAC) {
         let gaps = [];
-        if (coreCurrent < coreTarget - 1) gaps.push(`Core (-${(coreTarget - coreCurrent).toFixed(0)}%)`);
-        if (satCurrent < satTarget - 1) gaps.push(`Satélite (-${(satTarget - satCurrent).toFixed(0)}%)`);
+        // Comparamos o atual com a soma dos alvos definidos
+        if (coreCurrent < totalCoreTarget - 0.5) gaps.push(`Core (-${(totalCoreTarget - coreCurrent).toFixed(0)}%)`);
+        if (satCurrent < totalSatTarget - 0.5) gaps.push(`Satélite (-${(totalSatTarget - satCurrent).toFixed(0)}%)`);
         
         if (gaps.length > 0) {
           elAC.textContent = `Falta alocar: ${gaps.join(" e ")}`;
           elAC.style.color = "#ef4444";
         } else if (totalCategorizado < 99) {
-          elAC.textContent = `${(100 - totalCategorizado).toFixed(0)}% do capital fora da estratégia`;
+          elAC.textContent = `${(100 - totalCategorizado).toFixed(0)}% do capital sem categoria`;
           elAC.style.color = "#f59e0b";
         } else {
-          elAC.textContent = "Alocação ideal atingida (100%)";
+          elAC.textContent = "Estratégia 100% alocada";
           elAC.style.color = "#22c55e";
         }
-        elAC.title = `Atual: Core ${coreCurrent.toFixed(1)}% / Sat ${satCurrent.toFixed(1)}% | Alvo: ${coreTarget}% / ${satTarget}%`;
+        elAC.title = `Atual: Core ${coreCurrent.toFixed(1)}% / Sat ${satCurrent.toFixed(1)}% | Alvo Definido: ${totalCoreTarget.toFixed(0)}% / ${totalSatTarget.toFixed(0)}%`;
       }
 
       // 2.3) Timeline
