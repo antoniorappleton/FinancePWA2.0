@@ -140,6 +140,15 @@ function getStrategicInfo(ticker, nome) {
   return null;
 }
 
+function getDynStrat(tk, nm) {
+  const dynTickers = window._dynamicStrategyTickers || {};
+  if (dynTickers[tk]) {
+    if (dynTickers[tk].category === "NONE" || dynTickers[tk].category === null) return null;
+    return { category: dynTickers[tk].category, target: (dynTickers[tk].target || 0) / 100 };
+  }
+  return getStrategicInfo(tk, nm);
+}
+
 // ===============================
 // Helpers
 // ===============================
@@ -792,6 +801,99 @@ window.openDetails = async function(ticker) {
     bgBadge.style.backgroundColor = `${esforcoColor}15`;
   }
 
+  const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
+
+  // MÉTRICAS SECUNDÁRIAS (Task 1)
+  const yPct = isFiniteNum(g._yCur) ? (g._yCur * 100).toFixed(2) + "%" : "—";
+  if ($("#detYield")) $("#detYield").textContent = yPct;
+  if ($("#detPE")) $("#detPE").textContent = isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—";
+  
+  const risk = precoAtual - stopTec;
+  const reward = tpObjetivo - precoAtual;
+  if ($("#detRR")) $("#detRR").textContent = (risk > 0 && reward > 0) ? `1:${(reward / risk).toFixed(1)}` : "—";
+  if ($("#detSMA50")) $("#detSMA50").textContent = formatSmaDelta(g._sma50, precoAtual);
+  if ($("#detSMA200")) $("#detSMA200").textContent = formatSmaDelta(s200, precoAtual);
+
+  // 🎯 Estratégia do Ativo (As textboxes que desapareceram)
+  const detStratDiv = document.getElementById("detStrategyDiv");
+  if (detStratDiv) {
+    const sInfo = getDynStrat(g.ticker, g.nome);
+    const cat = sInfo ? sInfo.category : "NONE";
+    const tgt = sInfo ? (sInfo.target * 100) : 0;
+
+    detStratDiv.innerHTML = `
+      <div style="background: rgba(var(--primary-rgb), 0.05); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 10px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-bullseye"></i> DEFINIÇÃO ESTRATÉGICA
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="display: block; font-size: 0.65rem; color: var(--muted-foreground); margin-bottom: 4px;">CATEGORIA</label>
+            <select id="detInpStratCat" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--input); font-size: 0.8rem; color: var(--foreground);">
+              <option value="NONE" ${cat === "NONE" ? "selected" : ""}>Nenhuma</option>
+              <option value="CORE" ${cat === "CORE" ? "selected" : ""}>Core</option>
+              <option value="SATELLITE" ${cat === "SATELLITE" ? "selected" : ""}>Satélite</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.65rem; color: var(--muted-foreground); margin-bottom: 4px;">ALVO (%)</label>
+            <input type="number" id="detInpStratTarget" value="${tgt}" step="0.1" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--input); font-size: 0.8rem; color: var(--foreground);">
+          </div>
+        </div>
+        <button id="detBtnSaveStrat" class="btn premium" style="width: 100%; margin-top: 10px; font-size: 0.75rem; padding: 6px;">
+          <i class="fas fa-save"></i> Guardar Definição
+        </button>
+      </div>
+    `;
+
+    document.getElementById("detBtnSaveStrat").onclick = async () => {
+      const newCat = document.getElementById("detInpStratCat").value;
+      const newTgt = parseFloat(document.getElementById("detInpStratTarget").value) || 0;
+      
+      try {
+        const stratRef = doc(db, "config", "strategy");
+        const snap = await getDoc(stratRef);
+        const currentStrat = snap.exists() ? snap.data() : {};
+        const tickers = currentStrat.tickers || {};
+        
+        if (newCat === "NONE") {
+          delete tickers[g.ticker];
+        } else {
+          tickers[g.ticker] = { category: newCat, target: newTgt };
+        }
+        
+        await setDoc(stratRef, { ...currentStrat, tickers }, { merge: true });
+        showToast("Estratégia atualizada!");
+      } catch (err) {
+        console.error(err);
+        showToast("Erro ao guardar estratégia.", "error");
+      }
+    };
+  }
+
+  // 🛡️ Simulação de Crises
+  const detCrisisDiv = document.getElementById("detCrisisSim");
+  if (detCrisisDiv) {
+    let crisisHTML = `
+      <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--muted-foreground); margin-bottom: 10px;">Simulação de Crises (Histórico)</div>
+        <div style="display: grid; gap: 8px;">
+    `;
+    
+    CRISES_HISTORY.slice(0, 6).forEach(c => {
+      const dropPrice = precoAtual * (1 - c.drop / 100);
+      crisisHTML += `
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; padding: 6px 0; border-bottom: 1px dashed var(--border);">
+          <span style="color: var(--muted-foreground);">${c.name}</span>
+          <strong style="color: #ef4444;">${fmtEUR.format(dropPrice)}</strong>
+        </div>
+      `;
+    });
+    
+    crisisHTML += `</div></div>`;
+    detCrisisDiv.innerHTML = crisisHTML;
+  }
+
   $(`#detKpiCapital`).textContent = fmtEUR.format(g.investido || 0);
   $(`#detKpiUpside`).textContent = upsideP > 0 ? `+${upsideP.toFixed(1)}%` : `${upsideP.toFixed(1)}%`;
   $(`#detKpiTP`).textContent = tpObjetivo > 0 ? fmtEUR.format(tpObjetivo) : "—";
@@ -813,7 +915,6 @@ window.openDetails = async function(ticker) {
   });
   $(`#detPlanSaida`).innerHTML = saidaHTML;
 
-  const stopTec = s200 ? s200 * 0.95 : precoMedio * 0.9;
   $(`#detBarStop`).textContent  = fmtEUR.format(stopTec);
   $(`#detBarPreco`).textContent = fmtEUR.format(precoAtual);
   $(`#detBarAlvo`).textContent  = fmtEUR.format(tpObjetivo);
@@ -1453,14 +1554,6 @@ function showPortfolioHelp(force = false) {
       window._dynamicStrategyGlobals = { CORE: dynCoreTotal, SATELLITE: dynSatTotal };
       window._dynamicStrategyTickers = dynTickers;
 
-      const getDynStrat = (tk, nm) => {
-        if (dynTickers && dynTickers[tk]) {
-          if (dynTickers[tk].category === "NONE" || dynTickers[tk].category === null) return null;
-          return { category: dynTickers[tk].category, target: (dynTickers[tk].target || 0) / 100 };
-        }
-        return getStrategicInfo(tk, nm);
-      };
-
       const infoMap = new Map();
       aSnap.forEach((d) => {
         const x = d.data();
@@ -1759,8 +1852,52 @@ function showPortfolioHelp(force = false) {
       if (elLA) elLA.textContent = `Acumulado: ${fmtEUR.format(lucroTotal)}`;
       if (elRA) elRA.textContent = fmtEUR.format(rendimentoAnual);
       if (elRP) elRP.textContent = totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
-      if (elEX) elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
+      if (elEX) {
+        elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
+        const elEXC = document.getElementById("prtExpSMA200Comment");
+        if (elEXC) {
+          if (expSMA200Pct >= 80) elEXC.textContent = "Tendência de alta forte (Bullish). Mercado muito saudável.";
+          else if (expSMA200Pct >= 50) elEXC.textContent = "Tendência positiva. Maioria dos ativos em crescimento.";
+          else if (expSMA200Pct >= 20) elEXC.textContent = "Cuidado: Mercado em transição ou zona de incerteza.";
+          else elEXC.textContent = "Baixa severa (Bearish). Risco elevado ou oportunidade de fundo.";
+          elEXC.style.color = expSMA200Pct >= 50 ? "#22c55e" : (expSMA200Pct >= 20 ? "#f59e0b" : "#ef4444");
+        }
+      }
       if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
+
+      // --- CÁLCULO DE COBERTURA ESTRATÉGICA (Task 3 - Percentagem Global) ---
+      const coreTarget = (window._dynamicStrategyGlobals.CORE || 0.65) * 100;
+      const satTarget = (window._dynamicStrategyGlobals.SATELLITE || 0.35) * 100;
+      
+      const coreTotal = estrategiaMap.get("CORE") || 0;
+      const satTotal = estrategiaMap.get("SATELLITE") || 0;
+      
+      const coreCurrent = totalInvestido > 0 ? (coreTotal / totalInvestido) * 100 : 0;
+      const satCurrent = totalInvestido > 0 ? (satTotal / totalInvestido) * 100 : 0;
+      const totalCategorizado = coreCurrent + satCurrent;
+
+      const elAT = document.getElementById("prtAllocTotal");
+      const elAC = document.getElementById("prtAllocComment");
+      
+      if (elAT) elAT.textContent = `${totalCategorizado.toFixed(0)}%`;
+      
+      if (elAC) {
+        let gaps = [];
+        if (coreCurrent < coreTarget - 1) gaps.push(`Core (-${(coreTarget - coreCurrent).toFixed(0)}%)`);
+        if (satCurrent < satTarget - 1) gaps.push(`Satélite (-${(satTarget - satCurrent).toFixed(0)}%)`);
+        
+        if (gaps.length > 0) {
+          elAC.textContent = `Falta alocar: ${gaps.join(" e ")}`;
+          elAC.style.color = "#ef4444";
+        } else if (totalCategorizado < 99) {
+          elAC.textContent = `${(100 - totalCategorizado).toFixed(0)}% do capital fora da estratégia`;
+          elAC.style.color = "#f59e0b";
+        } else {
+          elAC.textContent = "Alocação ideal atingida (100%)";
+          elAC.style.color = "#22c55e";
+        }
+        elAC.title = `Atual: Core ${coreCurrent.toFixed(1)}% / Sat ${satCurrent.toFixed(1)}% | Alvo: ${coreTarget}% / ${satTarget}%`;
+      }
 
       // 2.3) Timeline
       movimentosAsc.sort((a, b) => a.date - b.date);

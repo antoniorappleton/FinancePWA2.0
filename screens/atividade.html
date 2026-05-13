@@ -62,17 +62,29 @@
         <div>
           <p class="label">Exposição acima da SMA200</p>
           <p class="value" id="prtExpSMA200">0%</p>
+          <p id="prtExpSMA200Comment" class="subvalue muted" style="font-size: 0.7rem; margin-top: 4px; font-weight: 600;">A aguardar dados...</p>
         </div>
         <div class="icon-box"><i class="fas fa-trending-up"></i></div>
+      </div>
+    </div>
+
+    <div class="card info">
+      <div class="card-content">
+        <div>
+          <p class="label">Cobertura da Estratégia</p>
+          <p class="value" id="prtAllocTotal">0%</p>
+          <p id="prtAllocComment" class="subvalue muted" style="font-size: 0.7rem; margin-top: 4px;">Indefinido</p>
+        </div>
+        <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
       </div>
     </div>
 
     <div class="card info" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.03);">
       <div class="card-content">
         <div>
-          <p class="label">Necessidade de Reforço</p>
+          <p class="label">Reforço Necessário (€)</p>
           <p class="value" id="prtWarChest">€0,00</p>
-          <p class="subvalue muted">Gap para atingir alvos estratégicos</p>
+          <p class="subvalue muted">Capital para atingir 100% dos alvos</p>
         </div>
         <div class="icon-box" style="color: #ef4444; background: rgba(239, 68, 68, 0.08);"><i class="fas fa-bullseye"></i></div>
       </div>
@@ -145,6 +157,8 @@
           <option value="REFORÇAR">REFORÇAR</option>
           <option value="COMPRAR">COMPRAR</option>
           <option value="ESPERAR">ESPERAR</option>
+          <option value="MONITORIZAR">MONITORIZAR</option>
+          <option value="MANTER">MANTER</option>
           <option value="REDUZIR">REDUZIR</option>
           <option value="VENDER">VENDER</option>
         </select>
