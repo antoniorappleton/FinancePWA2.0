@@ -2650,66 +2650,100 @@ body.auth-screen .form-grid {
 
 /* --- Ajustes Mobile (Responsiveness) --- */
 @media (max-width: 600px) {
+  .asset-card {
+    margin-left: -5px;
+    margin-right: -5px;
+    border-radius: 12px;
+  }
+
+  .asset-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .asset-header-clickable {
     padding: 12px 14px;
-    gap: 10px;
+    gap: 8px;
   }
   
   .asset-ticker-symbol {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     letter-spacing: -0.5px;
   }
   
   .asset-name {
-    font-size: 0.68rem;
-    max-width: 100px;
+    font-size: 0.7rem;
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .asset-price {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
   }
   
   .asset-change {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  .asset-header-actions {
+    display: flex !important;
+    width: 100%;
+    justify-content: flex-end !important;
+    padding: 8px 14px !important;
+    gap: 12px !important;
+    background: rgba(0,0,0,0.02);
+    border-top: 1px solid var(--border) !important;
+    margin-top: 0 !important;
   }
 
   .asset-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    padding: 12px;
+    padding: 12px 14px;
   }
 
   .metric-label {
-    font-size: 0.58rem;
+    font-size: 0.6rem;
   }
 
   .metric-value {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
   }
 
   .asset-actions {
-    padding: 10px;
-    gap: 6px;
-    flex-wrap: wrap;
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+    background: rgba(var(--muted), 0.08) !important;
   }
   
   .asset-actions .btn {
-    height: 38px;
-    font-size: 0.72rem;
-    padding: 0 8px;
-    border-radius: 8px;
+    height: 42px !important;
+    font-size: 0.78rem !important;
+    padding: 0 10px !important;
+    margin: 0 !important;
+  }
+  
+  .asset-actions .btn-primary {
+    grid-column: span 3 !important;
+  }
+  
+  .asset-actions .btn-secondary {
+    grid-column: span 3 !important;
   }
   
   .asset-actions .btn-icon {
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
+    grid-column: span 2 !important;
+    width: 100% !important;
   }
 
   /* Detail Modal Mobile Adjustments */
   .activity-detail-dialog {
-    width: 95vw !important;
-    max-height: 90vh;
+    width: 96vw !important;
+    max-height: 92vh;
     margin: 0 auto;
   }
 
@@ -2726,6 +2760,7 @@ body.auth-screen .form-grid {
   }
 }
 
+/* Desktop default for actions */
 .asset-actions {
   padding: 14px 20px;
   display: flex;
@@ -2748,7 +2783,6 @@ body.auth-screen .form-grid {
   border-radius: 10px;
 }
 
-/* Limit buttons on PC */
 .asset-actions .btn-primary {
   flex: 0 1 180px;
 }
@@ -2758,41 +2792,6 @@ body.auth-screen .form-grid {
 .asset-actions .btn-icon {
   flex: 0 0 40px;
   padding: 0;
-}
-
-@media (max-width: 600px) {
-  .asset-metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
-    padding: 14px 16px;
-  }
-  
-  .asset-header {
-    padding: 16px;
-  }
-  
-  .asset-ticker-symbol {
-    font-size: 1.15rem;
-  }
-  
-  .asset-name {
-    max-width: 120px;
-  }
-  
-  .asset-actions {
-    padding: 12px 14px;
-    flex-wrap: wrap;
-    justify-content: stretch;
-  }
-  
-  .asset-actions .btn {
-    flex: 1 1 calc(50% - 5px);
-    max-width: none;
-    font-size: 0.8rem;
-  }
-  
-  .asset-actions .btn-icon {
-    flex: 1 1 calc(25% - 10px);
-  }
 }
 
 /* Floating Help Button */

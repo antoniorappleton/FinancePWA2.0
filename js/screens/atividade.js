@@ -951,6 +951,32 @@ window.openDetails = async function(ticker) {
   const elRef = $("#detNiveisReforco");
   if (elRef) elRef.innerHTML = refHTML;
 
+  // 📉 Reforço Estratégico (vs PM)
+  const elBlocoPM = $("#detBlocoReforcoPM");
+  if (elBlocoPM) {
+    if (precoMedio > 0) {
+      elBlocoPM.style.display = "block";
+      const reforcosPM = [
+        { label: "no PM",   pct: 1.00, acao: "Manter PM",    montante: 100 },
+        { label: "-5% PM",  pct: 0.95, acao: "Baixar PM",    montante: 150 },
+        { label: "-10% PM", pct: 0.90, acao: "Reforço Forte", montante: 250 },
+      ];
+      let refPMHTML = "";
+      reforcosPM.forEach(r => {
+        const pr = precoMedio * r.pct;
+        const units = r.montante / (pr || 1);
+        refPMHTML += `<div style="display:grid;grid-template-columns:1fr 1.5fr 1.5fr;padding:10px 12px;font-size:0.8rem;border-bottom:1px solid var(--border);align-items:center;">` +
+          `<div style="font-weight:800;color:#f59e0b;">${r.label}</div>` +
+          `<div style="font-family:monospace;">${fmtEUR.format(pr)}<span style="display:block;font-size:0.65rem;color:var(--muted-foreground);">${fmtEUR.format(r.montante)} = ~${units.toFixed(2)} un.</span></div>` +
+          `<div style="font-weight:700;color:var(--muted-foreground);font-size:0.75rem;text-transform:uppercase;">${r.acao}</div></div>`;
+      });
+      const elRefPM = $("#detNiveisReforcoPM");
+      if (elRefPM) elRefPM.innerHTML = refPMHTML;
+    } else {
+      elBlocoPM.style.display = "none";
+    }
+  }
+
   // 🔄 Simular Nova Compra
   const cenarios = [
     { label: "Investir 75€ agora", valor: 75 },
@@ -2219,7 +2245,7 @@ function showPortfolioHelp(force = false) {
           </div>
         </div>
 
-        <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+        <div class="asset-header-actions" style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
           ${assetType === "etf" ? `
             <button class="btn ghost btn-icon holdings-map-trigger" data-holdings-ticker="${g.ticker}" data-holdings-name="${g.nome}" title="Mapa de Holdings" style="color: #8b5cf6;">
               <i class="fas fa-th" style="font-size: 0.9rem;"></i>
