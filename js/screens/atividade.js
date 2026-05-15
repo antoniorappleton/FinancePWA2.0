@@ -2291,7 +2291,10 @@ function showPortfolioHelp(force = false) {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
           <div>
              <div style="font-size: 0.6rem; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.5px;">Ativo no Portfólio</div>
-             <div style="font-size: 0.9rem; font-weight: 800;">${currentW.toFixed(1)}% <span style="font-size: 0.65rem; font-weight: 500; color: var(--muted-foreground);">/ ${targetW.toFixed(1)}% Alvo</span></div>
+             <div style="font-size: 0.9rem; font-weight: 800;">
+               ${currentW.toFixed(1)}% <span style="font-size: 0.65rem; font-weight: 500; color: var(--muted-foreground);">/ ${targetW.toFixed(1)}% Alvo</span>
+               ${currentW < targetW ? `<span style="display:block; font-size: 0.65rem; color: #ef4444; font-weight: 700; margin-top: 2px;">Faltam ~${((g._strategicNeed || 0) / (precoAtual || 1)).toFixed(2)} un.</span>` : ""}
+             </div>
           </div>
           <div style="text-align: right;">
              <div style="font-size: 0.6rem; text-transform: uppercase; color: var(--muted-foreground); letter-spacing: 0.5px;">Peso Categoria (${sInfo.category})</div>
