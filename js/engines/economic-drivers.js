@@ -39,8 +39,8 @@ const DRIVERS = {
   resilience_scarcity: {
     name: "Resource Scarcity",
     icon: "🌍",
-    sectors: ["Materiais", "Energia"],
-    keywords: ["mining", "oil", "gas", "rare earth", "commodity"]
+    sectors: ["Materiais", "Energia", "Commodities"],
+    keywords: ["mining", "oil", "gas", "rare earth", "commodity", "commodities"]
   }
 };
 

@@ -285,6 +285,7 @@ function buildHeaderFilters() {
       const cur = headerFilterState.get(c.key) || "";
       let opts = '<option value="">Todos</option>';
       const uniq = new Set(ALL_ROWS.map((r) => r[c.key]).filter(Boolean));
+      if (c.key === "setor") uniq.add("Commodities");
       [...uniq].sort().forEach((v) => {
         const selected = v === cur ? ' selected' : '';
         opts += `<option value="${v}"${selected}>${v}</option>`;
@@ -459,6 +460,18 @@ function renderDonut(elId, dataMap) {
     el.parentElement?.classList.add("muted");
     return null;
   }
+  const sectorColors = {
+    "Tecnologia": "#4F46E5",
+    "Finanças": "#3B82F6",
+    "Saúde": "#EF4444",
+    "Energia": "#22C55E",
+    "Consumo": "#F59E0B",
+    "Commodities": "#d97706",
+    "Materiais": "#84CC16",
+    "Imobiliário": "#EC4899",
+    "Utilities": "#06B6D4"
+  };
+
   return new Chart(el, {
     type: "doughnut",
     data: {
@@ -466,7 +479,7 @@ function renderDonut(elId, dataMap) {
       datasets: [
         {
           data,
-          backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
+          backgroundColor: labels.map((label, i) => sectorColors[label] || PALETTE[i % PALETTE.length]),
           borderWidth: 1,
         },
       ],
@@ -1129,6 +1142,7 @@ function populateFilters() {
     if (r.setor) setSet.add(r.setor);
     if (r.mercado) merSet.add(r.mercado);
   });
+  setSet.add("Commodities");
   const addOpts = (sel, values) => {
     const cur = sel.value;
     sel.innerHTML =

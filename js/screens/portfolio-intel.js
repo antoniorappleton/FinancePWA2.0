@@ -83,7 +83,7 @@ async function runFullAnalysis() {
       aggregated[t].quantidade += p.quantidade;
       aggregated[t].valAtual += p.valAtual;
     }
-    const portfolio = Object.values(aggregated);
+    const portfolio = Object.values(aggregated).filter(p => p.quantidade > 0);
     const totalValue = portfolio.reduce((s, p) => s + p.valAtual, 0);
 
     // ── 2. Run all structural engines ──

@@ -44,6 +44,17 @@ export function scoreAssetV2(asset, styleMultipliers = null) {
     W.valuation *= 0.7;
     W.momentum  *= 1.2;
     W.risk      *= 1.5;
+  } else if (category === "Commodity") {
+    // Commodities/Physical metals don't have P/E or ROIC.
+    // They are scored primarily on Momentum and Risk/Hedge value.
+    W.quality   = 0.10;
+    W.valuation = 0.10;
+    W.momentum  = 0.40;
+    W.risk      = 0.40;
+    
+    // Neutralize missing fundamental scores
+    if (quality.score < 10 || isNaN(quality.score)) quality.score = 50;
+    if (valuation.score < 10 || isNaN(valuation.score)) valuation.score = 50;
   }
 
   // ── 3. Apply user style multipliers ──

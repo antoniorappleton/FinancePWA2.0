@@ -77,6 +77,12 @@ const DNA_TEMPLATES = [
     name: "Tech-Dominant Growth",
     emoji: "💻",
     match: (f, t) => t.themes?.ai_infrastructure?.exposure > 20 || t.themes?.semiconductors?.exposure > 20
+  },
+  {
+    id: "resource_scarcity",
+    name: "Resource & Commodities",
+    emoji: "💎",
+    match: (f, t) => t.themes?.resource_scarcity?.exposure > 25
   }
 ];
 

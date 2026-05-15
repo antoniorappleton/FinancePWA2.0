@@ -6,7 +6,7 @@
 // "PE 30 em software ≠ PE 30 em bancos"
 // ═══════════════════════════════════════════════════════════════════
 
-import { safeMetric, clamp, isValid } from "../utils/normalize.js";
+import { safeMetric, clamp, isValid, getAssetCategory } from "../utils/normalize.js";
 
 // ── Sector-relative PE ranges ──
 // { median, cheap, expensive } — where cheap is a good score
@@ -152,6 +152,15 @@ function scorePriceBook(asset) {
  */
 export function valuationScore(asset) {
   if (!asset) return { score: 50, classification: "Unknown", breakdown: {} };
+
+  const category = getAssetCategory(asset);
+  if (category === "Commodity") {
+    return {
+      score: 50,
+      classification: "Intrinsic Value / Hedge",
+      breakdown: { commodity: true }
+    };
+  }
 
   const sectorBounds = getSectorPE(asset);
 

@@ -12,6 +12,7 @@ const SECTOR_CORR = {
   "Industriais":       { "Tecnologia": 0.45, "Saúde": 0.25, "Financeiros": 0.55, "Energia": 0.45, "Consumo Cíclico": 0.6, "Consumo Defensivo": 0.35, "Industriais": 1.0, "Materiais": 0.6, "Imobiliário": 0.4 },
   "Materiais":         { "Tecnologia": 0.25, "Saúde": 0.1, "Financeiros": 0.45, "Energia": 0.65, "Consumo Cíclico": 0.45, "Consumo Defensivo": 0.2, "Industriais": 0.6, "Materiais": 1.0, "Imobiliário": 0.35 },
   "Imobiliário":       { "Tecnologia": 0.1, "Saúde": 0.15, "Financeiros": 0.65, "Energia": 0.15, "Consumo Cíclico": 0.4, "Consumo Defensivo": 0.3, "Industriais": 0.4, "Materiais": 0.35, "Imobiliário": 1.0 },
+  "Commodities":       { "Tecnologia": 0.1, "Saúde": 0.1, "Financeiros": 0.45, "Energia": 0.65, "Consumo Cíclico": 0.45, "Consumo Defensivo": 0.2, "Industriais": 0.6, "Materiais": 0.8, "Imobiliário": 0.35 },
   "Múltiplos Setores": { "Tecnologia": 0.4, "Saúde": 0.4, "Financeiros": 0.4, "Energia": 0.3, "Consumo Cíclico": 0.4, "Consumo Defensivo": 0.4, "Industriais": 0.4, "Materiais": 0.3, "Imobiliário": 0.3, "Múltiplos Setores": 1.0 }
 };
 
@@ -22,6 +23,7 @@ const SECTOR_ALIASES = {
   "Consumer Defensive": "Consumo Defensivo", "Industrials": "Industriais",
   "Basic Materials": "Materiais", "Real Estate": "Imobiliário",
   "Communication Services": "Tecnologia", "Utilities": "Consumo Defensivo",
+  "Commodities": "Commodities",
   "ETF": "Múltiplos Setores", "Multi-Sector": "Múltiplos Setores"
 };
 
@@ -47,6 +49,10 @@ function pairCorrelation(assetA, assetB) {
   if (catA === "Broad Market ETF" || catB === "Broad Market ETF") {
     baseMultiplier = 0.55; 
     if (catA === "Broad Market ETF" && catB === "Broad Market ETF") baseMultiplier = 0.9;
+  } else if (catA === "Commodity" || catB === "Commodity") {
+    // Commodities (Gold, Silver) typically have low correlation with equities
+    baseMultiplier = 0.3;
+    if (catA === "Commodity" && catB === "Commodity") baseMultiplier = 0.8;
   }
 
   const sA = normalizeSector(assetA.mkt || assetA);

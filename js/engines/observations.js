@@ -107,6 +107,12 @@ export function generateAssetObservations(asset, engines, temporal = null) {
     obs.push({ type: "positive", msg: `Perfil de risco muito estável — adequado para posição CORE.`, priority: 5 });
   }
 
+  // ── Sector-specific observations ──
+  const sector = String(asset.setor || asset.sector || "").toLowerCase();
+  if (sector === "commodities") {
+    obs.push({ type: "neutral", msg: `${ticker}: Exposição a Commodities — proteção estrutural contra inflação e escassez de recursos.`, priority: 8 });
+  }
+
   // Sort by priority (highest first)
   obs.sort((a, b) => b.priority - a.priority);
 

@@ -279,6 +279,18 @@ function renderSetorDoughnut(map) {
     el.getContext("2d").clearRect(0, 0, el.width, el.height);
     return;
   }
+  const sectorColors = {
+    "Tecnologia": "#4F46E5",
+    "Finanças": "#3B82F6",
+    "Saúde": "#EF4444",
+    "Energia": "#22C55E",
+    "Consumo": "#F59E0B",
+    "Commodities": "#d97706", // Dedicated Golden/Brown for Commodities
+    "Materiais": "#84CC16",
+    "Imobiliário": "#EC4899",
+    "Utilities": "#06B6D4"
+  };
+
   window.__chSetores = new Chart(el, {
     type: "doughnut",
     data: {
@@ -286,7 +298,7 @@ function renderSetorDoughnut(map) {
       datasets: [
         {
           data,
-          backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]),
+          backgroundColor: labels.map((label, i) => sectorColors[label] || PALETTE[i % PALETTE.length]),
           borderWidth: 1,
         },
       ],
@@ -2079,7 +2091,8 @@ function showPortfolioHelp(force = false) {
             "Finanças",
             "Saúde",
             "Energia",
-            "Consumo"
+            "Consumo",
+            "Commodities"
           ].filter(s => s && s !== "—")),
         ].sort();
 

@@ -206,6 +206,15 @@ export function qualityScore(asset) {
     };
   }
 
+  if (category === "Commodity") {
+    return {
+      score: 50,
+      classification: "Physical Asset Grade",
+      confidence: Math.round(confidenceScore(asset) * 100),
+      breakdown: { commodity: true }
+    };
+  }
+
   const profile = getSectorProfile(asset);
   const roic     = scoreROIC(asset, profile);
   const margins  = scoreMargins(asset, profile);

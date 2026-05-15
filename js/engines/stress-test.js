@@ -17,7 +17,7 @@ const SCENARIOS = {
     sectorDrops: {
       "Tecnologia": -0.28, "Saúde": -0.15, "Financeiros": -0.38,
       "Energia": -0.55, "Consumo Cíclico": -0.35, "Consumo Defensivo": -0.12,
-      "Industriais": -0.35, "Materiais": -0.30, "Imobiliário": -0.30
+      "Industriais": -0.35, "Materiais": -0.30, "Imobiliário": -0.30, "Commodities": -0.25
     },
     defaultDrop: -0.34
   },
@@ -28,7 +28,7 @@ const SCENARIOS = {
     sectorDrops: {
       "Tecnologia": -0.52, "Saúde": -0.35, "Financeiros": -0.72,
       "Energia": -0.48, "Consumo Cíclico": -0.55, "Consumo Defensivo": -0.22,
-      "Industriais": -0.50, "Materiais": -0.55, "Imobiliário": -0.65
+      "Industriais": -0.50, "Materiais": -0.55, "Imobiliário": -0.65, "Commodities": -0.40
     },
     defaultDrop: -0.56
   },
@@ -39,7 +39,7 @@ const SCENARIOS = {
     sectorDrops: {
       "Tecnologia": -0.78, "Saúde": -0.30, "Financeiros": -0.25,
       "Energia": -0.15, "Consumo Cíclico": -0.40, "Consumo Defensivo": -0.10,
-      "Industriais": -0.35, "Materiais": -0.20, "Imobiliário": -0.10
+      "Industriais": -0.35, "Materiais": -0.20, "Imobiliário": -0.10, "Commodities": -0.10
     },
     defaultDrop: -0.49
   },
@@ -50,7 +50,7 @@ const SCENARIOS = {
     sectorDrops: {
       "Tecnologia": -0.33, "Saúde": -0.12, "Financeiros": -0.18,
       "Energia": 0.15, "Consumo Cíclico": -0.30, "Consumo Defensivo": -0.05,
-      "Industriais": -0.15, "Materiais": -0.10, "Imobiliário": -0.28
+      "Industriais": -0.15, "Materiais": -0.10, "Imobiliário": -0.28, "Commodities": 0.25
     },
     defaultDrop: -0.24
   },
@@ -61,7 +61,7 @@ const SCENARIOS = {
     sectorDrops: {
       "Tecnologia": -0.45, "Saúde": -0.15, "Financeiros": -0.15,
       "Energia": 0.05, "Consumo Cíclico": -0.25, "Consumo Defensivo": -0.05,
-      "Industriais": -0.20, "Materiais": -0.10, "Imobiliário": -0.12
+      "Industriais": -0.20, "Materiais": -0.10, "Imobiliário": -0.12, "Commodities": 0.05
     },
     defaultDrop: -0.25
   },
@@ -72,7 +72,7 @@ const SCENARIOS = {
     sectorDrops: {
       "Tecnologia": -0.15, "Saúde": -0.08, "Financeiros": -0.20,
       "Energia": -0.35, "Consumo Cíclico": -0.25, "Consumo Defensivo": -0.10,
-      "Industriais": -0.30, "Materiais": -0.25, "Imobiliário": -0.15
+      "Industriais": -0.30, "Materiais": -0.25, "Imobiliário": -0.15, "Commodities": -0.20
     },
     defaultDrop: -0.20
   },
@@ -83,7 +83,7 @@ const SCENARIOS = {
     sectorDrops: {
       "Tecnologia": -0.40, "Saúde": -0.20, "Financeiros": -0.50,
       "Energia": -0.45, "Consumo Cíclico": -0.45, "Consumo Defensivo": -0.15,
-      "Industriais": -0.40, "Materiais": -0.40, "Imobiliário": -0.45
+      "Industriais": -0.40, "Materiais": -0.40, "Imobiliário": -0.45, "Commodities": -0.30
     },
     defaultDrop: -0.40
   }
@@ -95,7 +95,8 @@ const SECTOR_ALIASES = {
   "Energy": "Energia", "Consumer Cyclical": "Consumo Cíclico",
   "Consumer Defensive": "Consumo Defensivo", "Industrials": "Industriais",
   "Basic Materials": "Materiais", "Real Estate": "Imobiliário",
-  "Communication Services": "Tecnologia", "Utilities": "Consumo Defensivo"
+  "Communication Services": "Tecnologia", "Utilities": "Consumo Defensivo",
+  "Commodities": "Commodities"
 };
 
 function normSector(s) {

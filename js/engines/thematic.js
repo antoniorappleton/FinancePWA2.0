@@ -47,8 +47,8 @@ const THEMES = {
   resource_scarcity: {
     name: "Resource Scarcity & Materials",
     icon: "💎",
-    tickers: new Set(["BHP", "RIO", "VALE", "FCX", "NEM", "GOLD", "WPM", "LIN", "APD", "CTVA"]),
-    keywords: ["mining", "mineração", "commodities", "agriculture", "scarcity", "water", "rare earth"]
+    tickers: new Set(["BHP", "RIO", "VALE", "FCX", "NEM", "GOLD", "WPM", "LIN", "APD", "CTVA", "PDBC", "DBC", "GSG", "XME"]),
+    keywords: ["mining", "mineração", "commodities", "commodity", "agriculture", "scarcity", "water", "rare earth", "commodities"]
   }
 };
 
@@ -94,6 +94,12 @@ export function classifyAssetThemes(asset) {
   const combined = `${nome} ${sector}`;
   
   const themes = [];
+
+  // 0. Explicit Sector or Category Match for Resource Scarcity
+  const category = getAssetCategory(asset);
+  if (sector === "commodities" || category === "Commodity") {
+    themes.push({ key: "resource_scarcity", name: THEMES.resource_scarcity.name, icon: THEMES.resource_scarcity.icon, confidence: 100 });
+  }
 
   // 1. Direct Rule-based detection
   for (const [key, theme] of Object.entries(THEMES)) {

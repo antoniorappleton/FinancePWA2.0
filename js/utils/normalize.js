@@ -154,7 +154,8 @@ export const HEALTHY_LIMITS = {
   "Single Stock":     0.10, // 10% max
   "Speculative Asset": 0.05, // 5% max
   "Satellite Asset":  0.08,
-  "Crypto":           0.05
+  "Crypto":           0.05,
+  "Commodity":        0.12  // 12% max for physical assets/ETC
 };
 
 /**
@@ -166,6 +167,12 @@ export function getAssetCategory(asset) {
   const name = String(asset.nome || asset.name || "").toLowerCase();
   const sector = String(asset.setor || asset.sector || "").toLowerCase();
   
+  // ── 0. Commodities & Physical Assets (ETCs / Physical Metals) ──
+  const commTickers = new Set(["VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"]);
+  if (commTickers.has(ticker) || sector.includes("commodit") || name.includes("physical") || name.includes("silver") || name.includes("gold") || name.includes("copper") || name.includes("platinum")) {
+    return "Commodity";
+  }
+
   // ── 1. Broad Market ETFs (Diversified Core) ──
   const broadTickers = new Set(["VWCE", "VOO", "SPY", "IWDA", "VTI", "VT", "VEU", "VXUS", "VHYL", "VWRL", "IWVL", "SWDA"]);
   if (broadTickers.has(ticker)) return "Broad Market ETF";
