@@ -2925,9 +2925,15 @@ function wireHoldingsMapEvents() {
         const cleanT = cleanTicker(ticker).toUpperCase();
         const snap = await getDocs(collection(db, "etfHoldings"));
         let existingData = null;
+        let exactMatch = false;
         snap.forEach(d => {
           const t = String(d.data().ticker || d.id).toUpperCase();
-          if (t === cleanT || t.split('.')[0] === cleanT.split('.')[0]) existingData = d.data();
+          if (t === cleanT) {
+            existingData = d.data();
+            exactMatch = true;
+          } else if (!exactMatch && t.split('.')[0] === cleanT.split('.')[0]) {
+            existingData = d.data();
+          }
         });
 
         if (existingData && existingData.holdings) {
@@ -2954,12 +2960,15 @@ function wireHoldingsMapEvents() {
 
     try {
       lines.forEach(line => {
-        const parts = line.split(",").map(p => p.trim());
+        const parts = line.split(",");
         if (parts.length >= 3) {
+          const weightStr = parts.pop().trim();
+          const symbol = parts.pop().trim();
+          const name = parts.join(",").trim();
           holdings.push({
-            name: parts[0],
-            symbol: parts[1],
-            weight: parseFloat(parts[2].replace(",", "."))
+            name: name,
+            symbol: symbol,
+            weight: parseFloat(weightStr.replace(",", "."))
           });
         }
       });
@@ -3015,9 +3024,15 @@ function wireHoldingsMapEvents() {
       const cleanT = cleanTicker(ticker).toUpperCase();
       const snap = await getDocs(collection(db, "etfHoldings"));
       let existingData = null;
+      let exactMatch = false;
       snap.forEach(d => {
         const t = String(d.data().ticker || d.id).toUpperCase();
-        if (t === cleanT || t.split('.')[0] === cleanT.split('.')[0]) existingData = d.data();
+        if (t === cleanT) {
+          existingData = d.data();
+          exactMatch = true;
+        } else if (!exactMatch && t.split('.')[0] === cleanT.split('.')[0]) {
+          existingData = d.data();
+        }
       });
 
       if (existingData && existingData.holdings) {
