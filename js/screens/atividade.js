@@ -3278,12 +3278,14 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
     const cleanT = cleanTicker(ticker).toUpperCase();
     const allHoldingsSnap = await getDocs(collection(db, "etfHoldings"));
     let data = null;
-    
+    let exactMatch = false;
     allHoldingsSnap.forEach(doc => {
       const d = doc.data();
       const t = String(d.ticker || doc.id).toUpperCase();
-      // Match flexível para individual também
-      if (t === cleanT || t.startsWith(cleanT) || t.split('.')[0] === cleanT.split('.')[0]) {
+      if (t === cleanT) {
+        data = d;
+        exactMatch = true;
+      } else if (!exactMatch && (t.startsWith(cleanT) || t.split('.')[0] === cleanT.split('.')[0])) {
         data = d;
       }
     });
