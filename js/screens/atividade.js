@@ -1408,6 +1408,26 @@ function wireAtividadeListeners() {
       }
     }
 
+    // 1.3 Asset Profile Edit (NOVO)
+    const profTrigger = e.target.closest(".profile-edit-trigger");
+    if (profTrigger) {
+      e.stopPropagation();
+      const ticker = profTrigger.getAttribute("data-profile-ticker");
+      const g = byTickerGlobal?.get(ticker);
+      if (g) {
+        const profModal = document.getElementById("assetProfileModal");
+        if (profModal) {
+          document.getElementById("profTicker").value = g.ticker;
+          document.getElementById("profNome").value = g.nome || "";
+          document.getElementById("profSetor").value = g.setor === "—" ? "" : g.setor;
+          document.getElementById("profMercado").value = g.mercado === "—" ? "" : g.mercado;
+          document.getElementById("profObjetivo").value = g.objetivo || "";
+          document.getElementById("profLink").value = g.link || "";
+          profModal.classList.remove("hidden");
+        }
+      }
+    }
+
     // 2. Collapse per card -> Abrir Detalhes
     const t = e.target.closest("[data-toggle-card]");
     if (t) {
@@ -2508,13 +2528,14 @@ function showPortfolioHelp(force = false) {
           Vender
         </button>
 
-        <button class="btn ghost btn-icon" 
-                onclick="${g.link ? `window.open('${g.link}', '_blank')` : `document.querySelector('[data-edit=\\'${g.lastDocId}\\']').click()`}" 
-                title="${g.link ? 'Abrir link externo' : 'Adicionar link'}">
+        <button class="btn ghost btn-icon ${g.link ? "" : "profile-edit-trigger"}" 
+                data-profile-ticker="${g.ticker}"
+                onclick="${g.link ? `window.open('${g.link}', '_blank')` : ""}" 
+                title="${g.link ? "Abrir link externo" : "Adicionar link"}">
           <i class="fas ${g.link ? "fa-link" : "fa-plus"}"></i>
         </button>
 
-        <button class="btn ghost btn-icon" data-edit="${g.lastDocId}" data-edit-ticker="${g.ticker}" title="Editar movimento">
+        <button class="btn ghost btn-icon profile-edit-trigger" data-profile-ticker="${g.ticker}" title="Editar perfil do ativo">
           <i class="fas fa-edit"></i>
         </button>
 

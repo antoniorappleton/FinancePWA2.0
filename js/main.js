@@ -47,30 +47,53 @@ window.navigateTo = navigateTo;
 
 // Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 APPFinance v2.3.5");
+  console.log("🚀 APPFinance v2.3.5 (Dev mode SW bypass enabled)");
   navigateTo("auth");
   initGlobalHelp();
 
-  // Registo do Service Worker para PWA
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js")
-      .then((reg) => {
-        console.log("[PWA] Service Worker Registado.");
-        reg.onupdatefound = () => {
-          const installingWorker = reg.installing;
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === "installed") {
-              if (navigator.serviceWorker.controller) {
-                console.log("[PWA] Nova versão disponível.");
-                if (confirm("Nova versão disponível! Deseja atualizar agora?")) {
-                  window.location.reload();
+  // Se estivermos em ambiente local (127.0.0.1 ou localhost), limpamos agressivamente
+  // qualquer Service Worker e Cache para evitar colisões entre PWAs locais.
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister().then((success) => {
+            if (success) console.log("🛠️ [Dev] Service Worker antigo anulado com sucesso!");
+          });
+        }
+      });
+    }
+    if ("caches" in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => {
+          caches.delete(key).then(() => {
+            console.log(`🛠️ [Dev] Cache "${key}" eliminado com sucesso!`);
+          });
+        });
+      });
+    }
+  } else {
+    // Registo do Service Worker para PWA (Apenas em Produção)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js")
+        .then((reg) => {
+          console.log("[PWA] Service Worker Registado.");
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === "installed") {
+                if (navigator.serviceWorker.controller) {
+                  console.log("[PWA] Nova versão disponível.");
+                  if (confirm("Nova versão disponível! Deseja atualizar agora?")) {
+                    window.location.reload();
+                  }
                 }
               }
-            }
+            };
           };
-        };
-      })
-      .catch((err) => console.error("[PWA] Falha no registo do SW:", err));
+        })
+        .catch((err) => console.error("[PWA] Falha no registo do SW:", err));
+    }
   }
 });
 
