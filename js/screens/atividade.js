@@ -1220,12 +1220,20 @@ function wireQuickActions(gruposArr) {
   const calcCusto = () => {
     const p = parseFloat(fPreco?.value || 0);
     const q = parseFloat(fQtd?.value || 0);
+    const incluirComissao = !!document.getElementById("pfComissao")?.checked;
+    const tipo = (tipoSel?.value || "compra").toLowerCase();
+    
     const custoResumo = document.getElementById("pfCustoResumo");
     const custoTotal = document.getElementById("pfCustoTotal");
     if (!custoResumo || !custoTotal) return;
     if (p > 0 && q > 0) {
+      let baseCost = p * q;
+      if (incluirComissao) {
+         if (tipo === "compra") baseCost += 1;
+         else if (tipo === "venda") baseCost = Math.max(0, baseCost - 1);
+      }
       const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
-      custoTotal.textContent = fmtEUR.format(p * q);
+      custoTotal.textContent = fmtEUR.format(baseCost);
       custoResumo.style.display = "flex";
     } else {
       custoResumo.style.display = "none";
@@ -1233,6 +1241,8 @@ function wireQuickActions(gruposArr) {
   };
   fPreco?.addEventListener("input", calcCusto);
   fQtd?.addEventListener("input", calcCusto);
+  document.getElementById("pfComissao")?.addEventListener("change", calcCusto);
+  tipoSel?.addEventListener("change", calcCusto);
 
   window.closeModalAtividade = closeModal;
   function closeModal() {
@@ -1282,6 +1292,7 @@ function wireQuickActions(gruposArr) {
     const obj = parseFloat(fObj?.value || 0);
     const lnk = fLink?.value.trim() || "";
     const vendaTotal = !!vendaTot?.checked;
+    const incluirComissao = !!document.getElementById("pfComissao")?.checked;
     const docId = (document.getElementById("pfDocId")?.value || "").trim();
 
     try {
@@ -1300,14 +1311,25 @@ function wireQuickActions(gruposArr) {
           qtdEfetiva = Math.abs(pos);
           if (!(qtdEfetiva > 0)) { alert("Não há posição para fechar."); return; }
         }
-        if (!ticker || !nome || qtdEfetiva <= 0 || preco <= 0) {
+
+        let precoFinal = preco;
+        if (incluirComissao && qtdEfetiva > 0) {
+          const comissaoUnit = 1 / qtdEfetiva;
+          if (tipo === "compra") {
+            precoFinal = preco + comissaoUnit;
+          } else if (tipo === "venda") {
+            precoFinal = Math.max(0, preco - comissaoUnit);
+          }
+        }
+
+        if (!ticker || !nome || qtdEfetiva <= 0 || precoFinal <= 0) {
           alert("Preenche os campos obrigatórios.");
           return;
         }
         await addDoc(collection(db, "ativos"), {
           tipoAcao: tipo, nome, ticker, setor, mercado: merc,
           quantidade: tipo === "venda" ? -qtdEfetiva : qtdEfetiva,
-          precoCompra: preco, objetivoFinanceiro: obj, linkExterno: lnk,
+          precoCompra: precoFinal, objetivoFinanceiro: obj, linkExterno: lnk,
           dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : serverTimestamp()
         });
       }
