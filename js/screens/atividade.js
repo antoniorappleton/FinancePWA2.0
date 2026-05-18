@@ -939,9 +939,21 @@ window.openDetails = async function(ticker) {
 
   if (bBuy)  bBuy.onclick  = () => { detModalEl.classList.add("hidden"); window.openActionModal?.("compra", g.ticker); };
   if (bSell) bSell.onclick = () => { detModalEl.classList.add("hidden"); window.openActionModal?.("venda", g.ticker); };
-  if (bEdit) bEdit.onclick = () => { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); };
+  if (bEdit) bEdit.onclick = () => { 
+    detModalEl.classList.add("hidden"); 
+    const profModal = document.getElementById("assetProfileModal");
+    if (profModal) {
+      document.getElementById("profTicker").value = g.ticker;
+      document.getElementById("profNome").value = g.nome || "";
+      document.getElementById("profSetor").value = g.setor === "—" ? "" : g.setor;
+      document.getElementById("profMercado").value = g.mercado === "—" ? "" : g.mercado;
+      document.getElementById("profObjetivo").value = g.objetivo || "";
+      document.getElementById("profLink").value = g.link || "";
+      profModal.classList.remove("hidden");
+    }
+  };
   if (bLink) {
-    bLink.onclick = () => { if (g.link) window.open(g.link, "_blank"); else { detModalEl.classList.add("hidden"); document.querySelector(`[data-edit="${g.lastDocId}"]`)?.click(); } };
+    bLink.onclick = () => { if (g.link) window.open(g.link, "_blank"); else { bEdit.click(); } };
     bLink.className = `btn ghost ${g.link ? "" : "muted"}`;
   }
 
@@ -1452,6 +1464,56 @@ function wireAtividadeListeners() {
   });
 }
 
+function wireAssetProfileModal() {
+  const modal = document.getElementById("assetProfileModal");
+  if (!modal || modal.__wired) return;
+  modal.__wired = true;
+
+  const closeBtn = document.getElementById("profClose");
+  const cancelBtn = document.getElementById("profCancel");
+  const form = document.getElementById("profForm");
+
+  const close = () => {
+    modal.classList.add("hidden");
+    form.reset();
+  };
+
+  closeBtn?.addEventListener("click", close);
+  cancelBtn?.addEventListener("click", close);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const ticker = document.getElementById("profTicker")?.value.trim().toUpperCase();
+    if (!ticker) return;
+
+    const nome = document.getElementById("profNome")?.value.trim() || "";
+    const setor = document.getElementById("profSetor")?.value.trim() || "";
+    const mercado = document.getElementById("profMercado")?.value.trim() || "";
+    const objetivo = parseFloat(document.getElementById("profObjetivo")?.value || 0);
+    const link = document.getElementById("profLink")?.value.trim() || "";
+
+    try {
+      const q = query(collection(db, "ativos"), where("ticker", "==", ticker));
+      const snap = await getDocs(q);
+      const promises = [];
+      snap.forEach((d) => {
+        promises.push(updateDoc(doc(db, "ativos", d.id), {
+          nome, setor, mercado,
+          objetivoFinanceiro: objetivo,
+          linkExterno: link
+        }));
+      });
+      await Promise.all(promises);
+      close();
+    } catch (err) {
+      console.error("Erro ao atualizar perfil do ativo:", err);
+    }
+  });
+}
+
 // ===============================
 // Ajuda (popup)
 // ===============================
@@ -1530,6 +1592,7 @@ function showPortfolioHelp(force = false) {
     showPortfolioHelp();
     wireInvestPlanner();
     wireAtividadeListeners();
+    wireAssetProfileModal();
     
     // Wire Modal Detalhes (X e fora)
     const detModal = document.getElementById("activityDetailModal");

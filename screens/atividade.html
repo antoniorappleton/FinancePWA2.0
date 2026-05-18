@@ -476,6 +476,77 @@
   </div>
 </div>
 
+<!-- ======== Modal de Edição de Perfil do Ativo ======== -->
+<div id="assetProfileModal" class="modal hidden">
+  <div class="modal-dialog pf-add-dialog">
+    <div class="modal-header" style="padding: 16px 20px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 1rem;">
+          <i class="fas fa-pen-to-square"></i>
+        </div>
+        <div>
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 800;">Editar Perfil do Ativo</h3>
+          <p id="profSubtitle" style="margin: 0; font-size: 0.72rem; color: var(--muted-foreground);">Atualizar dados gerais do ativo</p>
+        </div>
+      </div>
+      <button id="profClose" class="icon-btn" style="font-size: 1.2rem; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--border); background: transparent;">✖</button>
+    </div>
+
+    <form id="profForm">
+      <div class="modal-body pf-form-body">
+        <input type="hidden" id="profTickerId" />
+
+        <div class="pf-form-section">
+          <div class="pf-form-section-title">
+            <i class="fas fa-tag"></i> Identificação Global
+          </div>
+          <div class="pf-form-grid">
+            <div class="pf-field pf-field--full">
+              <label class="pf-label" for="profNome">Nome do Ativo</label>
+              <input id="profNome" type="text" class="pf-input" placeholder="Ex: STOXX Europe 600" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label" for="profTicker">Ticker</label>
+              <input id="profTicker" type="text" class="pf-input pf-ticker-input" readonly style="background: rgba(0,0,0,0.05); color: var(--muted-foreground); cursor: not-allowed;" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label" for="profSetor">Setor</label>
+              <input id="profSetor" type="text" class="pf-input" list="setoresList" placeholder="Ex: Tecnologia" />
+            </div>
+            <div class="pf-field pf-field--full">
+              <label class="pf-label" for="profMercado">Mercado</label>
+              <input id="profMercado" type="text" class="pf-input" list="mercadosList" placeholder="Ex: Euronext, Xetra..." />
+            </div>
+          </div>
+        </div>
+
+        <div class="pf-form-section">
+          <div class="pf-form-section-title">
+            <i class="fas fa-sliders-h"></i> Configurações Globais
+          </div>
+          <div class="pf-form-grid">
+            <div class="pf-field">
+              <label class="pf-label" for="profObjetivo">Objetivo de Lucro (€)</label>
+              <input id="profObjetivo" type="number" class="pf-input" step="0.01" placeholder="0.00" min="0" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label" for="profLink">Link Externo</label>
+              <input id="profLink" type="url" class="pf-input" placeholder="https://..." />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="padding: 14px 20px; border-top: 1px solid var(--border); gap: 10px;">
+        <button type="button" id="profCancel" class="btn outline" style="flex: 1; margin-top: 0;">Cancelar</button>
+        <button type="submit" id="profSave" class="btn premium" style="flex: 2; margin-top: 0; font-weight: 800; background: #10b981; border-color: #10b981;">
+          <i class="fas fa-check"></i> Atualizar Perfil
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="pfAddModal" class="modal hidden">
   <div class="modal-dialog pf-add-dialog">
     <div class="modal-header" style="padding: 16px 20px;">
