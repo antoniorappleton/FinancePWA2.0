@@ -1661,29 +1661,57 @@ function showPortfolioHelp(force = false) {
           anyObjSet: false,
           lastDate: null,
           lastDocId: null,
+          lots: [],
         };
 
         if (safeQtd > 0) {
-          const totalAntes = g.qtd * g.custoMedio;
-          const totalCompra = safeQtd * safePreco;
-          const novaQtd = g.qtd + safeQtd;
-          g.custoMedio = novaQtd > 0 ? (totalAntes + totalCompra) / novaQtd : 0;
-          g.qtd = novaQtd;
+          g.lots.push({ qty: safeQtd, preco: safePreco });
+          g.qtd += safeQtd;
         } else if (safeQtd < 0) {
           const sellQtd = Math.abs(safeQtd);
           if (sellQtd > g.qtd) {
             console.warn(`⚠️ Venda de ${ticker} (${sellQtd}) excede posição atual (${g.qtd.toFixed(2)})`);
           }
-          const effectiveSell = Math.min(sellQtd, g.qtd);
-          if (effectiveSell > 0) {
-            const lucro = (safePreco - g.custoMedio) * effectiveSell;
+          let remainingToSell = Math.min(sellQtd, g.qtd);
+          let custoBaseVenda = 0;
+          let efetivaVenda = 0;
+
+          while (remainingToSell > 0 && g.lots.length > 0) {
+            let lot = g.lots[0];
+            if (lot.qty <= remainingToSell) {
+              custoBaseVenda += lot.qty * lot.preco;
+              efetivaVenda += lot.qty;
+              remainingToSell -= lot.qty;
+              g.lots.shift();
+            } else {
+              custoBaseVenda += remainingToSell * lot.preco;
+              efetivaVenda += remainingToSell;
+              lot.qty -= remainingToSell;
+              remainingToSell = 0;
+            }
+          }
+          if (efetivaVenda > 0) {
+            const lucro = (safePreco * efetivaVenda) - custoBaseVenda;
             g.realizado += lucro;
           }
           g.qtd -= sellQtd;
           if (g.qtd <= 0) {
             g.qtd = 0;
-            g.custoMedio = 0;
+            g.lots = [];
           }
+        }
+
+        // Recalcular custoMedio baseado nos lotes restantes (FIFO)
+        if (g.lots.length > 0) {
+           let tc = 0;
+           let tq = 0;
+           for (let lot of g.lots) {
+             tc += lot.qty * lot.preco;
+             tq += lot.qty;
+           }
+           g.custoMedio = tq > 0 ? tc / tq : 0;
+        } else {
+           g.custoMedio = 0;
         }
 
         g.investido = g.qtd * g.custoMedio;
