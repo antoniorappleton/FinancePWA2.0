@@ -182,12 +182,13 @@ export function getAssetCategory(asset) {
   }
 
   // ── 2. Specialized ETFs ──
-  if (sector.includes("etf") || name.includes("etf")) {
-    const thematicKeywords = ["ai", "robotics", "automation", "cyber", "clean energy", "semiconductor", "cloud", "blockchain", "space", "quantum", "defense", "lithium", "battery", "water", "aging", "tech", "digital"];
+  const thematicTickers = new Set(["QDVE", "IITU", "SMH", "SOXX", "ROBO", "NUKL", "URNM", "GRID", "VVMX", "WCLD", "ESPO", "QDVF", "QDVK"]);
+  if (thematicTickers.has(ticker) || sector.includes("etf") || name.includes("etf")) {
+    const thematicKeywords = ["ai", "robotics", "automation", "cyber", "clean energy", "semiconductor", "cloud", "blockchain", "space", "quantum", "defense", "lithium", "battery", "water", "aging", "tech", "digital", "grid"];
     const cryptoKeywords = ["crypto", "bitcoin", "ethereum", "blockchain"];
     
     if (cryptoKeywords.some(k => name.includes(k))) return "Speculative Asset";
-    if (thematicKeywords.some(k => name.includes(k) || ticker.includes(k))) return "Thematic ETF";
+    if (thematicKeywords.some(k => name.includes(k) || ticker.toLowerCase().includes(k))) return "Thematic ETF";
     
     // Check if it's a specific sector (Tech, Finance, etc)
     if (sector.includes("tech") || sector.includes("finan") || sector.includes("ener") || sector.includes("health") || sector.includes("utilit")) {
