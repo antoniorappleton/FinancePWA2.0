@@ -1593,6 +1593,7 @@ function showPortfolioHelp(force = false) {
   let _lastStrategySnap = null;
   let _currentTotalInvested = 0;
   let _currentGruposArr = [];
+  let _currentAcoesDataMap = new Map();
 
   window._dynamicStrategyGlobals = { CORE: 0.65, SATELLITE: 0.35 };
   window._dynamicStrategyTickers = {};
@@ -1610,7 +1611,7 @@ function showPortfolioHelp(force = false) {
     // Registrar ajuda e plano
     wirePortfolioHelpModal();
     showPortfolioHelp();
-    wireInvestPlanner();
+    wireInvPlan();
     wireAtividadeListeners();
     wireAssetProfileModal();
     
@@ -1917,6 +1918,7 @@ function showPortfolioHelp(force = false) {
       const totalInvestido = abertos.reduce((a, g) => a + (g.investido || 0), 0);
       _currentTotalInvested = totalInvestido;
       _currentGruposArr = gruposArr;
+      _currentAcoesDataMap = infoMap;
 
       // (NOVO) Cálculo da distribuição estratégica e por ativo
       const estrategiaMap = new Map();
@@ -2283,7 +2285,6 @@ function showPortfolioHelp(force = false) {
       wirePortfolioHelpModal();
       // Atualizar a referência dos dados para o mapa global
       window._currentGruposArr = gruposArr; 
-      wireInvPlan(gruposArr, infoMap);
     } catch (e) {
       console.error("Erro ao processar atividade:", e);
     }
@@ -2698,167 +2699,25 @@ function showPortfolioHelp(force = false) {
   // ==========================================
   // 🚀 Planeador de Investimento IA (DCA)
   // ==========================================
-  function wireInvestPlanner() {
-    const modal = document.getElementById("invPlanModal");
-    const btnOpen = document.getElementById("btnOpenInvPlan");
-    const btnClose = document.getElementById("invPlanClose");
-    const btnCalc = document.getElementById("btnCalcInvPlan");
-    const assetListCont = document.getElementById("invPlanAssetsList");
-    const btnSelectAll = document.getElementById("btnInvSelectAll");
-    const inpStrat = document.getElementById("inpInvStrat");
-
-    if (!modal || modal.__wired) return;
-    modal.__wired = true;
-
-    btnOpen?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      modal.classList.remove("hidden");
-      populateAssets();
-    });
-
-    btnClose?.addEventListener("click", () => {
-      modal.classList.add("hidden");
-    });
-
-    function populateAssets() {
-      if (!assetListCont) return;
-      assetListCont.innerHTML = "";
-      const targetsWithGoal = _currentGruposArr.filter(g => g._strategy && g._strategy.target > 0);
-      targetsWithGoal.forEach(g => {
-        const label = document.createElement("label");
-        label.className = "inv-asset-label";
-        label.dataset.category = g._strategy.category;
-        label.innerHTML = `<input type="checkbox" class="inv-asset-check" value="${g.ticker}" checked> <span>${g.ticker}</span>`;
-        assetListCont.appendChild(label);
-      });
-    }
-
-    btnSelectAll?.addEventListener("click", () => {
-      const checks = assetListCont.querySelectorAll(".inv-asset-check");
-      const anyUnchecked = Array.from(checks).some(c => !c.checked);
-      checks.forEach(c => { c.checked = anyUnchecked; });
-    });
-
-    inpStrat?.addEventListener("change", (e) => {
-      const val = e.target.value;
-      const checks = assetListCont.querySelectorAll(".inv-asset-check");
-      checks.forEach(c => {
-        const cat = c.closest("label").dataset.category;
-        c.checked = (val === "ALL") ? true : (cat === val);
-      });
-    });
-
-    btnCalc?.addEventListener("click", () => {
-      const tAmt = parseFloat(document.getElementById("inpInvTotal").value);
-      const mons = parseInt(document.getElementById("inpInvMonths").value);
-      const freq = parseFloat(document.getElementById("inpInvFreq").value);
-      const checks = assetListCont.querySelectorAll(".inv-asset-check:checked");
-      const tickers = Array.from(checks).map(c => c.value);
-
-      if (isNaN(tAmt) || tAmt <= 0) { alert("Insira um montante válido."); return; }
-      if (tickers.length === 0) { alert("Selecione pelo menos um ativo."); return; }
-
-      const totalP = Math.max(1, Math.round(mons * freq));
-      const perP = tAmt / totalP;
-
-      const resAmt = document.getElementById("resInvPerPeriod");
-      const resTot = document.getElementById("resInvTotalPeriods");
-      const resBox = document.getElementById("invPlanResult");
-
-      if (resAmt) resAmt.textContent = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(perP);
-      if (resTot) resTot.textContent = totalP;
-      if (resBox) resBox.style.display = "block";
-
-      renderDCAPlan(perP, tickers);
-    });
-
-    modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
-    document.addEventListener("keydown", (e) => {
-      if (!modal.classList.contains("hidden") && e.key === "Escape") modal.classList.add("hidden");
-    });
-  }
-
-  function renderDCAPlan(amtPerPeriod, selectedTickers) {
-    const tbody = document.getElementById("invPlanTableBody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
-    const targets = _currentGruposArr
-      .filter(g => selectedTickers.includes(g.ticker))
-      .map(g => {
-        const s = g._strategy;
-        return { 
-          ticker: g.ticker, 
-          category: s.category,
-          targetPct: s.target,
-          currentVal: g.qtd * (g.precoAtual || 0),
-          preco: g.precoAtual || 0
-        };
-      })
-      .filter(x => x !== null);
-
-    if (targets.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='4' style='padding:20px; text-align:center; color:var(--muted-foreground);'>Nenhum ativo com meta estratégica definida em 'Definições'.</td></tr>";
-      return;
-    }
-
-    const totalValNow = _currentTotalInvested;
-    
-    // Calcular "Peso Atual"
-    let plan = targets.map(t => {
-      const currentWeight = totalValNow > 0 ? t.currentVal / totalValNow : 0;
-      const shortfall = t.targetPct - currentWeight;
-      return { ...t, currentWeight, shortfall };
-    });
-
-    // Ordenar: Primeiro CORE, depois por Shortfall (quem está mais longe da meta)
-    plan.sort((a, b) => {
-      if (a.category !== b.category) {
-        return a.category === "CORE" ? -1 : 1;
-      }
-      return b.shortfall - a.shortfall;
-    });
-
-    // Distribuir o montante do período
-    // Usamos uma lógica de reequilíbrio: priorizar quem está underweight (shortfall > 0)
-    const underweight = plan.filter(p => p.shortfall > 0);
-    const useList = underweight.length > 0 ? underweight : plan;
-    const sumTargets = useList.reduce((acc, p) => acc + p.targetPct, 0);
-
-    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
-
-    useList.forEach(p => {
-      const weightInPlan = p.targetPct / (sumTargets || 1);
-      const allocatedAmt = amtPerPeriod * weightInPlan;
-      if (allocatedAmt < 0.01) return;
-
-      const tr = document.createElement("tr");
-      tr.style.borderBottom = "1px solid var(--border)";
-      tr.innerHTML = `
-        <td style="padding: 10px 4px;"><strong>${p.ticker}</strong></td>
-        <td style="padding: 10px 4px;"><span class="strategy-badge strategy-badge--${p.category.toLowerCase()}" style="font-size:0.6rem; padding: 2px 6px;">${p.category}</span></td>
-        <td style="padding: 10px 4px; text-align: right;">${(p.targetPct * 100).toFixed(1)}%</td>
-        <td style="padding: 10px 4px; text-align: right; font-weight: 700; color: #8b5cf6;">${fmtEUR.format(allocatedAmt)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
 // ===============================
-// Plano de Investimento IA - Integração com Capital Manager
+// Plano de Investimento IA - Integração com Capital Manager e DCA
 // ===============================
-async function wireInvPlan(lastAtivosArr, acoesDataMap) {
+async function wireInvPlan() {
   const btnOpen = document.getElementById("btnOpenInvPlan");
   const modal = document.getElementById("invPlanModal");
   const btnClose = document.getElementById("invPlanClose");
   const btnCalc = document.getElementById("btnCalcInvPlan");
   const inpTotal = document.getElementById("inpInvTotal");
-
   const btnSelectAll = document.getElementById("btnInvSelectAll");
+  const inpStrat = document.getElementById("inpInvStrat");
+  const assetListCont = document.getElementById("invPlanAssetsList");
 
   if (!btnOpen || !modal) return;
+  if (modal.__wired) return;
+  modal.__wired = true;
 
-  btnOpen.addEventListener("click", async () => {
+  btnOpen.addEventListener("click", async (e) => {
+    e.stopPropagation();
     modal.classList.remove("hidden");
     
     // Carregar recomendação do CapitalManager
@@ -2866,8 +2725,8 @@ async function wireInvPlan(lastAtivosArr, acoesDataMap) {
       const snapConfig = await getDoc(doc(db, "config", "strategy"));
       if (snapConfig.exists()) {
         const config = snapConfig.data();
-        const positions = lastAtivosArr.map(g => ({ ticker: g.ticker, ...g }));
-        const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap);
+        const positions = _currentGruposArr.map(g => ({ ticker: g.ticker, ...g }));
+        const state = CapitalManager.calculatePortfolioState(positions, _currentAcoesDataMap);
         const smartDca = CapitalManager.getSmartDCA(config.monthlyBase || 0, state);
         const recommendation = CapitalManager.getWarChestRecommendation(state, config.availableCash || 0);
 
@@ -2894,16 +2753,26 @@ async function wireInvPlan(lastAtivosArr, acoesDataMap) {
       console.warn("Erro ao carregar estratégia para Plano IA:", err);
     }
 
-    renderInvPlanAssets(lastAtivosArr);
+    renderInvPlanAssets(_currentGruposArr);
   });
 
   btnSelectAll?.addEventListener("click", () => {
-    const checks = document.querySelectorAll(".inv-asset-check");
+    const checks = assetListCont.querySelectorAll(".inv-asset-check");
     const anyUnchecked = Array.from(checks).some(c => !c.checked);
-    checks.forEach(c => c.checked = anyUnchecked);
+    checks.forEach(c => { c.checked = anyUnchecked; });
+  });
+
+  inpStrat?.addEventListener("change", (e) => {
+    const val = e.target.value;
+    const checks = assetListCont.querySelectorAll(".inv-asset-check");
+    checks.forEach(c => {
+      const cat = c.closest("label").dataset.category;
+      c.checked = (val === "ALL") ? true : (cat === val);
+    });
   });
 
   btnClose.addEventListener("click", () => modal.classList.add("hidden"));
+
   btnCalc.addEventListener("click", () => {
     const total = parseFloat(inpTotal.value) || 0;
     const months = parseInt(document.getElementById("inpInvMonths").value) || 1;
@@ -2911,19 +2780,28 @@ async function wireInvPlan(lastAtivosArr, acoesDataMap) {
     const strat = document.getElementById("inpInvStrat").value;
     
     // Obter selecionados
-    const checks = document.querySelectorAll(".inv-asset-check:checked");
+    const checks = assetListCont.querySelectorAll(".inv-asset-check:checked");
     const selectedTickers = Array.from(checks).map(c => c.value);
     
-    generateInvPlan(total, months, freq, strat, selectedTickers, lastAtivosArr, acoesDataMap);
+    generateInvPlan(total, months, freq, strat, selectedTickers, _currentGruposArr, _currentAcoesDataMap);
+  });
+
+  modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
+  document.addEventListener("keydown", (e) => {
+    if (!modal.classList.contains("hidden") && e.key === "Escape") modal.classList.add("hidden");
   });
 }
 
 function renderInvPlanAssets(ativos) {
   const container = document.getElementById("invPlanAssetsList");
   if (!container) return;
+  
+  // Filter only assets that currently compose the portfolio (quantity > 0)
+  const ativosEmCarteira = ativos.filter(a => Number.isFinite(a.qtd) && a.qtd > 0);
+  
   // Começam desmarcados para permitir que a lógica de "Estratégia" funcione por omissão
-  container.innerHTML = ativos.map(a => `
-    <label style="display: flex; align-items: center; gap: 4px; background: var(--card); padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; border: 1px solid var(--border); cursor: pointer;">
+  container.innerHTML = ativosEmCarteira.map(a => `
+    <label style="display: flex; align-items: center; gap: 4px; background: var(--card); padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; border: 1px solid var(--border); cursor: pointer;" data-category="${a._strategy?.category || 'SATELLITE'}">
       <input type="checkbox" class="inv-asset-check" value="${a.ticker}">
       <span>${a.ticker}</span>
     </label>
@@ -2945,10 +2823,11 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
   let pool = [];
   if (selectedTickers.length > 0) {
     // Obedecer estritamente aos selecionados manualmente
-    pool = ativos.filter(a => selectedTickers.includes(a.ticker));
+    pool = ativos.filter(a => selectedTickers.includes(a.ticker) && Number.isFinite(a.qtd) && a.qtd > 0);
   } else {
-    // Obedecer ao filtro de categoria (CORE/SAT/ALL)
+    // Obedecer ao filtro de categoria (CORE/SAT/ALL) e apenas ativos no portfólio
     pool = ativos.filter(a => {
+      if (!(Number.isFinite(a.qtd) && a.qtd > 0)) return false;
       const cat = (a._strategy && a._strategy.category) ? a._strategy.category : "NONE";
       if (strategy === "ALL") return true;
       return cat === strategy;

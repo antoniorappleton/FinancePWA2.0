@@ -22,8 +22,10 @@ export function navigateTo(screen) {
       // Voltar ao topo
       window.scrollTo(0, 0);
 
-      // Importar JS específico do screen (se existir)
-      import(`./screens/${screen}.js`)
+      // Importar JS específico do screen (se existir) (com cache-buster em dev)
+      const isDev = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      const buster = isDev ? `?v=${Date.now()}` : "";
+      import(`./screens/${screen}.js${buster}`)
         .then((module) => {
           if (typeof module.initScreen === "function") {
             module.initScreen();
