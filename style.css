@@ -3709,4 +3709,38 @@ body.auth-screen .form-grid {
     font-size: 0.85rem;
   }
 }
+
+/* ---------- Capital Calculator Styles ---------- */
+#panel-capital .form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+#panel-capital .form-grid select,
+#panel-capital .form-grid input {
+  font-weight: normal;
+  margin-top: 0.2rem;
+}
+
+#panel-capital .alert-box {
+  transition: transform 0.2s ease;
+}
+
+#panel-capital .alert-box:hover {
+  transform: translateY(-1px);
+}
+
+#panel-capital .tabela-comparativa th {
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+#panel-capital .tabela-comparativa td,
+#panel-capital .tabela-comparativa th {
+  padding: 10px 8px;
+}
 

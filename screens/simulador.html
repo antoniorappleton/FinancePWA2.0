@@ -18,6 +18,9 @@
       <button class="btn dark full" data-target="panel-tp2">
         Calcular TP2
       </button>
+      <button class="btn dark full" data-target="panel-capital">
+        Capital Necessário
+      </button>
       <button class="btn dark full" data-target="panel-top10">
         TOP 10 para Investir
       </button>
@@ -134,6 +137,94 @@
         </div>
 
         <div id="resultadoTP2" class="resultado-popup"></div>
+      </div>
+
+      <!-- PAINEL: CAPITAL NECESSÁRIO -->
+      <div id="panel-capital" class="panel">
+        <h3>💰 Calcular Capital Necessário</h3>
+        <p class="subtitle">Calcula o investimento inicial necessário para atingir o lucro desejado.</p>
+
+        <div class="form-grid">
+          <label>
+            Nome / Ticker
+            <input type="text" id="capTicker" placeholder="Ex: AAPL" />
+          </label>
+          <label>
+            Preço Atual (€)
+            <input type="number" id="capPrecoAtual" placeholder="Ex: 150" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            TP1 (Preço-Alvo Principal €)
+            <input type="number" id="capTP1" placeholder="Ex: 200" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            TP2 (Preço-Alvo Alternativo € - Opcional)
+            <input type="number" id="capTP2" placeholder="Ex: 220" min="0" step="0.01" />
+          </label>
+          <label>
+            Lucro Desejado (€)
+            <input type="number" id="capLucroDesejado" placeholder="Ex: 10000" min="1" step="1" required />
+          </label>
+          <label>
+            Horizonte (Anos)
+            <input type="number" id="capAnos" value="1" min="0" step="1" />
+          </label>
+          <label>
+            Horizonte (Meses)
+            <input type="number" id="capMeses" value="0" min="0" max="11" step="1" />
+          </label>
+          <label>
+            Frequência Dividendos
+            <select id="capFreqDiv">
+              <option value="12">Mensal</option>
+              <option value="4">Trimestral</option>
+              <option value="2">Semestral</option>
+              <option value="1" selected>Anual</option>
+            </select>
+          </label>
+          <label>
+            Tipo de Dividendo
+            <select id="capTipoDiv">
+              <option value="valor" selected>Valor por Ação (€/ano)</option>
+              <option value="yield">Yield Anual (%)</option>
+            </select>
+          </label>
+          <label>
+            Valor do Dividendo
+            <input type="number" id="capValorDiv" placeholder="Ex: 3.50 ou 4.5" min="0" step="0.01" value="0" />
+          </label>
+        </div>
+
+        <div class="actions-row" style="align-items:center;">
+          <label style="display:flex; gap:.5rem; align-items:center;">
+            <input type="checkbox" id="capReinvestir" />
+            <span>Reinvestir dividendos</span>
+          </label>
+        </div>
+
+        <div class="quick-buttons">
+          <span>Preset Lucro:</span>
+          <button class="btn ghost" data-cap-quick="1000">💶 1.000</button>
+          <button class="btn ghost" data-cap-quick="5000">💶 5.000</button>
+          <button class="btn ghost" data-cap-quick="10000">💶 10.000</button>
+          <button class="btn ghost" data-cap-quick="25000">💶 25.000</button>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn premium" id="btnCalcularCapital">Calcular Capital</button>
+          <button class="btn outline" id="btnLimparCapital">Limpar</button>
+        </div>
+
+        <!-- Resultados -->
+        <div id="resultadoCapital" style="margin-top: 1.5rem; display: none;"></div>
+
+        <!-- Gráfico -->
+        <div id="graficoCapitalWrapper" style="display:none; margin-top: 1.5rem;" class="card">
+          <h3>Evolução Estimada do Investimento</h3>
+          <div class="chart-wrap">
+            <canvas id="graficoCapital"></canvas>
+          </div>
+        </div>
       </div>
 
       <!-- PAINEL: TOP 10 -->

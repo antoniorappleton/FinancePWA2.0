@@ -21,6 +21,7 @@ let simulacoes = [];
 let grafico = null;
 let chSimSetores = null;
 let chSimAtivos = null;
+let graficoCapital = null;
 let _currentTop10Result = null;
 let _currentTop10Opts = null;
 let _unsubGuardadas = null;
@@ -1014,6 +1015,453 @@ async function distribuirInvestimento(opts) {
 }
 
 /* =========================
+   SIMULADOR DE CAPITAL NECESSÁRIO
+   ========================= */
+
+function simularCenarioCapital(p0, pTarget, years, freq, isYield, divVal, reinvest) {
+  let g = 0;
+  if (years > 0 && pTarget > 0 && p0 > 0) {
+    g = Math.pow(pTarget / p0, 1 / years) - 1;
+  }
+  
+  const nPayments = Math.max(1, Math.floor(years * freq));
+  const timeStep = years / nPayments;
+  
+  let shares = 1.0;
+  let accumulatedCash = 0.0;
+  let history = [];
+  
+  history.push({
+    t: 0,
+    price: p0,
+    shares: shares,
+    stockValue: p0,
+    cashValue: 0,
+    totalValue: p0,
+    divReceivedCum: 0
+  });
+  
+  let divReceivedCum = 0;
+  
+  for (let k = 1; k <= nPayments; k++) {
+    const t = k * timeStep;
+    const price = p0 * Math.pow(1 + g, t);
+    
+    let d = 0;
+    if (isYield) {
+      d = price * (divVal / 100) * timeStep;
+    } else {
+      d = divVal * timeStep;
+    }
+    
+    const divReceived = shares * d;
+    divReceivedCum += divReceived;
+    
+    if (reinvest) {
+      shares += divReceived / price;
+    } else {
+      accumulatedCash += divReceived;
+    }
+    
+    const stockValue = shares * price;
+    const totalValue = stockValue + accumulatedCash;
+    
+    history.push({
+      t: t,
+      price: price,
+      shares: shares,
+      stockValue: stockValue,
+      cashValue: accumulatedCash,
+      totalValue: totalValue,
+      divReceivedCum: divReceivedCum
+    });
+  }
+  
+  const finalPrice = pTarget;
+  const finalShares = shares;
+  const finalCashValue = accumulatedCash;
+  const finalTotalValue = finalShares * finalPrice + finalCashValue;
+  
+  const returnPerShare = finalTotalValue - p0;
+  const returnPerEuro = returnPerShare / p0;
+  
+  return {
+    returnPerEuro,
+    history,
+    finalPrice,
+    finalShares,
+    finalCashValue,
+    finalTotalValue,
+    divReceivedCum,
+    g
+  };
+}
+
+function calcularCapitalNecessario() {
+  const ticker = document.getElementById("capTicker")?.value?.trim() || "Ativo";
+  const p0 = toNumber(document.getElementById("capPrecoAtual")?.value);
+  const tp1 = toNumber(document.getElementById("capTP1")?.value);
+  const tp2 = toNumber(document.getElementById("capTP2")?.value);
+  const lucroDesejado = toNumber(document.getElementById("capLucroDesejado")?.value);
+  const anosInput = toNumber(document.getElementById("capAnos")?.value);
+  const mesesInput = toNumber(document.getElementById("capMeses")?.value);
+  const freq = toNumber(document.getElementById("capFreqDiv")?.value);
+  const tipoDiv = document.getElementById("capTipoDiv")?.value || "valor";
+  const valorDiv = toNumber(document.getElementById("capValorDiv")?.value);
+  const reinvestir = document.getElementById("capReinvestir")?.checked || false;
+
+  const out = document.getElementById("resultadoCapital");
+  if (!out) return;
+
+  // Validations
+  if (p0 <= 0) {
+    alert("O preço atual deve ser superior a zero!");
+    return;
+  }
+  if (tp1 <= 0) {
+    alert("O preço-alvo TP1 deve ser superior a zero!");
+    return;
+  }
+  if (lucroDesejado <= 0) {
+    alert("O lucro desejado deve ser superior a zero!");
+    return;
+  }
+  
+  const totalMonths = anosInput * 12 + mesesInput;
+  if (totalMonths <= 0) {
+    alert("O horizonte temporal (Anos/Meses) deve ser superior a zero!");
+    return;
+  }
+
+  const years = totalMonths / 12;
+
+  // Scenario 1 (TP1)
+  const res1 = simularCenarioCapital(p0, tp1, years, freq, tipoDiv === "yield", valorDiv, reinvestir);
+
+  if (res1.returnPerEuro <= 0) {
+    out.style.display = "block";
+    out.innerHTML = `
+      <div class="card" style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05); padding: 1rem;">
+        <h4 style="color: #ef4444; margin: 0 0 0.5rem;">⚠️ Sem Retorno Positivo</h4>
+        <p style="margin: 0;">Com as condições definidas para o TP1 (TP1 de ${euro(tp1)} vs Preço Atual de ${euro(p0)} e dividendos), o investimento não gera lucro positivo ou desvaloriza. Ajuste os preços-alvo ou dividendos.</p>
+      </div>
+    `;
+    if (graficoCapital) {
+      graficoCapital.destroy();
+      graficoCapital = null;
+    }
+    document.getElementById("graficoCapitalWrapper").style.display = "none";
+    return;
+  }
+
+  const C_1 = lucroDesejado / res1.returnPerEuro;
+  const N_shares_1 = C_1 / p0;
+
+  // Smart Alerts
+  const alerts = [];
+  const cagr1 = res1.g * 100;
+  if (cagr1 > 35) {
+    alerts.push({
+      type: "warning",
+      title: "Preço-Alvo TP1 Altamente Otimista",
+      text: `O crescimento anual composto (CAGR) necessário de <strong>${cagr1.toFixed(1)}%</strong> é muito superior à média histórica do mercado (~8-10%). Certifique-se de que este otimismo é fundamentado.`
+    });
+  }
+
+  let yieldAnn = 0;
+  if (tipoDiv === "yield") {
+    yieldAnn = valorDiv;
+  } else if (p0 > 0) {
+    yieldAnn = (valorDiv / p0) * 100;
+  }
+  if (yieldAnn > 12) {
+    alerts.push({
+      type: "warning",
+      title: "Dividend Yield Excessivo",
+      text: `Uma rentabilidade de dividendos de <strong>${yieldAnn.toFixed(1)}%</strong> é invulgarmente alta e pode sinalizar uma armadilha de dividendos (dividend trap) ou insustentabilidade.`
+    });
+  }
+
+  if (totalMonths < 12) {
+    alerts.push({
+      type: "info",
+      title: "Horizonte Curto",
+      text: `Um horizonte temporal de apenas ${totalMonths} meses é muito suscetível à volatilidade de curto prazo. Investimentos em ações beneficiam tipicamente de horizontes mais longos (3+ anos).`
+    });
+  }
+
+  if (C_1 > 100000) {
+    alerts.push({
+      type: "info",
+      title: "Exigência de Capital Elevada",
+      text: `Para atingir o lucro de <strong>${euro(lucroDesejado)}</strong> nas condições de TP1, necessita de investir um capital inicial considerável de <strong>${euro(C_1)}</strong>.`
+    });
+  }
+
+  if (res1.returnPerEuro < 0.1) {
+    alerts.push({
+      type: "warning",
+      title: "Eficiência de Capital Baixa",
+      text: `Para ganhar <strong>${euro(lucroDesejado)}</strong>, precisa de imobilizar <strong>${euro(C_1)}</strong> (retorno total de apenas <strong>${(res1.returnPerEuro * 100).toFixed(1)}%</strong>). Considere ativos com maior potencial de valorização.`
+    });
+  }
+
+  // Setup main results HTML
+  let html = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+      <div class="card" style="border-left: 4px solid var(--primary); padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
+        <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted-foreground); font-weight: 600;">Capital Necessário (TP1)</span>
+        <span style="font-size: 2rem; font-weight: 800; color: var(--primary); margin: 0.25rem 0;">${euro(C_1)}</span>
+        <span class="muted">Para acumular um lucro de <strong>${euro(lucroDesejado)}</strong>.</span>
+      </div>
+
+      <div class="card" style="padding: 1.25rem;">
+        <h4 style="margin: 0 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Detalhes do Cenário TP1 (${ticker})</h4>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.4rem;">
+          <span class="muted">Ações Iniciais:</span>
+          <strong>${N_shares_1.toFixed(2)} ações</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.4rem;">
+          <span class="muted">Valorização de Preço:</span>
+          <strong>${euro((tp1 - p0) * N_shares_1)} (+${((tp1 - p0)/p0 * 100).toFixed(1)}%)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.4rem;">
+          <span class="muted">Dividendos Acumulados:</span>
+          <strong>${euro(res1.divReceivedCum * N_shares_1)}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.4rem;">
+          <span class="muted">Retorno % Total:</span>
+          <strong class="up">+${(res1.returnPerEuro * 100).toFixed(2)}%</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; border-top: 1px dashed var(--border); padding-top: 0.4rem;">
+          <span>Valor Final Projetado:</span>
+          <span>${euro(C_1 + lucroDesejado)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Scenario 2 (TP2) comparison if filled
+  let hasValidTP2 = false;
+  let res2 = null;
+  let C_2 = 0;
+  let N_shares_2 = 0;
+  if (tp2 > 0) {
+    res2 = simularCenarioCapital(p0, tp2, years, freq, tipoDiv === "yield", valorDiv, reinvestir);
+    if (res2.returnPerEuro > 0) {
+      hasValidTP2 = true;
+      C_2 = lucroDesejado / res2.returnPerEuro;
+      N_shares_2 = C_2 / p0;
+
+      const diffCap = C_2 - C_1;
+      const diffCapPct = (diffCap / C_1) * 100;
+      const diffRetorno = (res2.returnPerEuro - res1.returnPerEuro) * 100;
+
+      html += `
+        <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+          <h4 style="margin: 0 0 1rem; color: var(--foreground); display: flex; align-items: center; gap: 0.5rem;">
+            <span>📊 Comparação Cenário TP1 vs Cenário TP2</span>
+          </h4>
+          <div class="tabela-scroll-wrapper">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border);">
+                  <th style="padding: 8px 4px;">Métrica</th>
+                  <th style="padding: 8px 4px;">Cenário TP1 (${euro(tp1)})</th>
+                  <th style="padding: 8px 4px;">Cenário TP2 (${euro(tp2)})</th>
+                  <th style="padding: 8px 4px; text-align: right;">Diferença</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 8px 4px;"><strong>Capital Necessário</strong></td>
+                  <td style="padding: 8px 4px;">${euro(C_1)}</td>
+                  <td style="padding: 8px 4px;">${euro(C_2)}</td>
+                  <td style="padding: 8px 4px; text-align: right;" class="${C_2 < C_1 ? 'up' : 'down'}">
+                    <strong>${C_2 < C_1 ? '-' : '+'}${euro(Math.abs(diffCap))}</strong> (${diffCapPct.toFixed(1)}%)
+                  </td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 8px 4px;"><strong>Ações Necessárias</strong></td>
+                  <td style="padding: 8px 4px;">${N_shares_1.toFixed(2)}</td>
+                  <td style="padding: 8px 4px;">${N_shares_2.toFixed(2)}</td>
+                  <td style="padding: 8px 4px; text-align: right;">
+                    <strong>${(N_shares_2 - N_shares_1).toFixed(2)} ações</strong>
+                  </td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 8px 4px;"><strong>Retorno % Total</strong></td>
+                  <td style="padding: 8px 4px;">+${(res1.returnPerEuro * 100).toFixed(2)}%</td>
+                  <td style="padding: 8px 4px;">+${(res2.returnPerEuro * 100).toFixed(2)}%</td>
+                  <td style="padding: 8px 4px; text-align: right;" class="${res2.returnPerEuro > res1.returnPerEuro ? 'up' : 'down'}">
+                    <strong>${diffRetorno >= 0 ? '+' : ''}${diffRetorno.toFixed(2)}%</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 4px;"><strong>CAGR Requerido</strong></td>
+                  <td style="padding: 8px 4px;">${(res1.g * 100).toFixed(2)}%</td>
+                  <td style="padding: 8px 4px;">${(res2.g * 100).toFixed(2)}%</td>
+                  <td style="padding: 8px 4px; text-align: right;">
+                    <strong>${(res2.g * 100 - res1.g * 100) >= 0 ? '+' : ''}${(res2.g * 100 - res1.g * 100).toFixed(2)}%</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 1rem; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-align: center; background: rgba(59, 130, 246, 0.05); color: var(--primary);">
+            ${
+              C_1 === C_2 ? "Os dois cenários de preços-alvo são idênticos." :
+              C_2 < C_1 ? `💡 Cenário TP2 é mais eficiente: Requer menos <strong>${euro(C_1 - C_2)}</strong> (${Math.abs(diffCapPct).toFixed(1)}% poupado) para atingir os mesmos ${euro(lucroDesejado)}.` :
+              `💡 Cenário TP1 é mais eficiente: Requer menos <strong>${euro(C_2 - C_1)}</strong> (${Math.abs(diffCapPct).toFixed(1)}% poupado) para atingir os mesmos ${euro(lucroDesejado)}.`
+            }
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Add Smart Alerts
+  if (alerts.length > 0) {
+    html += `
+      <div class="smart-alerts" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+        <h4 style="margin: 0 0 0.75rem; color: var(--foreground);">⚠️ Alertas Inteligentes</h4>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          ${alerts.map(a => {
+            const isWarning = a.type === "warning";
+            const borderCol = isWarning ? "#eab308" : "#3b82f6";
+            const bgCol = isWarning ? "rgba(234, 179, 8, 0.05)" : "rgba(59, 130, 246, 0.05)";
+            const textCol = isWarning ? "#a16207" : "#1d4ed8";
+            return `
+              <div style="border-left: 4px solid ${borderCol}; background: ${bgCol}; color: ${textCol}; padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; line-height: 1.4;">
+                <strong>${a.title}:</strong> ${a.text}
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  out.innerHTML = html;
+  out.style.display = "block";
+
+  // Chart Rendering
+  const canvas = document.getElementById("graficoCapital");
+  if (canvas) {
+    if (graficoCapital) graficoCapital.destroy();
+    document.getElementById("graficoCapitalWrapper").style.display = "block";
+    const ctx = canvas.getContext("2d");
+
+    // Labels for the steps
+    const labels = res1.history.map(h => {
+      const yr = Math.floor(h.t);
+      const mo = Math.round((h.t - yr) * 12);
+      if (yr > 0 && mo > 0) return `${yr}a ${mo}m`;
+      if (yr > 0) return `${yr}a`;
+      return `${mo}m`;
+    });
+
+    if (hasValidTP2 && res2) {
+      // Comparison chart: 2 lines
+      const dataTP1 = res1.history.map(h => h.totalValue * N_shares_1);
+      const dataTP2 = res2.history.map(h => h.totalValue * N_shares_2);
+
+      graficoCapital = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: `Total TP1 (Investimento: ${euro(C_1)})`,
+              data: dataTP1,
+              borderColor: "#3b82f6",
+              backgroundColor: "rgba(59, 130, 246, 0.05)",
+              borderWidth: 2,
+              fill: false,
+              tension: 0.1
+            },
+            {
+              label: `Total TP2 (Investimento: ${euro(C_2)})`,
+              data: dataTP2,
+              borderColor: "#10b981",
+              backgroundColor: "rgba(16, 185, 129, 0.05)",
+              borderWidth: 2,
+              fill: false,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom" }
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: (value) => euro(value)
+              }
+            }
+          }
+        }
+      });
+    } else {
+      // Single scenario: stacked bar chart showing components
+      const dataCapital = res1.history.map(() => C_1);
+      const dataValorizacao = res1.history.map(h => Math.max(0, h.totalValue * N_shares_1 - C_1 - h.divReceivedCum * N_shares_1));
+      const dataDividends = res1.history.map(h => h.divReceivedCum * N_shares_1);
+
+      graficoCapital = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Capital Inicial",
+              data: dataCapital,
+              backgroundColor: "rgba(59, 130, 246, 0.7)",
+              borderColor: "#3b82f6",
+              borderWidth: 1
+            },
+            {
+              label: "Valorização do Ativo",
+              data: dataValorizacao,
+              backgroundColor: "rgba(245, 158, 11, 0.7)",
+              borderColor: "#f59e0b",
+              borderWidth: 1
+            },
+            {
+              label: "Dividendos Acumulados",
+              data: dataDividends,
+              backgroundColor: "rgba(16, 185, 129, 0.7)",
+              borderColor: "#10b981",
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom" }
+          },
+          scales: {
+            x: { stacked: true },
+            y: {
+              stacked: true,
+              ticks: {
+                callback: (value) => euro(value)
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+}
+
+/* =========================
    EMAIL (mailto)
    ========================= */
 function enviarEmailResumo() {
@@ -1233,5 +1681,46 @@ export function initScreen() {
     if (chkUsarTotal) chkUsarTotal.checked = true;
     if (chkAcoesCompletas) chkAcoesCompletas.checked = false;
     if (box) box.innerHTML = "";
+  });
+
+  // === CAPITAL NECESSÁRIO ===
+  document.getElementById("btnCalcularCapital")?.addEventListener("click", calcularCapitalNecessario);
+
+  document.getElementById("btnLimparCapital")?.addEventListener("click", () => {
+    ["capTicker", "capPrecoAtual", "capTP1", "capTP2", "capLucroDesejado", "capValorDiv"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    const capAnos = document.getElementById("capAnos");
+    if (capAnos) capAnos.value = "1";
+    const capMeses = document.getElementById("capMeses");
+    if (capMeses) capMeses.value = "0";
+    const capFreq = document.getElementById("capFreqDiv");
+    if (capFreq) capFreq.value = "1";
+    const capTipo = document.getElementById("capTipoDiv");
+    if (capTipo) capTipo.value = "valor";
+    const capReinvest = document.getElementById("capReinvestir");
+    if (capReinvest) capReinvest.checked = false;
+
+    const out = document.getElementById("resultadoCapital");
+    if (out) {
+      out.innerHTML = "";
+      out.style.display = "none";
+    }
+    if (graficoCapital) {
+      graficoCapital.destroy();
+      graficoCapital = null;
+    }
+    const wrapper = document.getElementById("graficoCapitalWrapper");
+    if (wrapper) wrapper.style.display = "none";
+  });
+
+  // Presets para Lucro Desejado
+  document.querySelectorAll("[data-cap-quick]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const val = btn.getAttribute("data-cap-quick");
+      const el = document.getElementById("capLucroDesejado");
+      if (el) el.value = val;
+    });
   });
 }
