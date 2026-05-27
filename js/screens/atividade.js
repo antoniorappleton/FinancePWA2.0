@@ -2835,35 +2835,87 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
   }
 
   if (pool.length === 0) {
-    tableBody.innerHTML = "<tr><td colspan='4' style='padding:20px; text-align:center; color:var(--muted-foreground);'>Nenhum ativo selecionado ou encontrado para esta estratégia.</td></tr>";
+    tableBody.innerHTML = "<tr><td colspan='3' style='padding:20px; text-align:center; color:var(--muted-foreground);'>Nenhum ativo selecionado ou encontrado para esta estratégia.</td></tr>";
     resultDiv.style.display = "block";
     return;
   }
 
-  // 2. Calcular Pesos Baseados nos Targets Estratégicos
-  let sumTargets = 0;
-  const itemsWithTarget = pool.map(p => {
-    // Se não tiver target definido, assume um peso mínimo para não ser ignorado
-    const target = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
-    sumTargets += target;
-    return { ...p, target };
+  // Obter o método de distribuição selecionado
+  const method = document.getElementById("inpInvMethod")?.value || "GAP";
+
+  // 2. Calcular Fatores de Ponderação (Gaps vs. Targets)
+  const poolWithFactors = pool.map(p => {
+    let factor = 0;
+    if (method === "GAP") {
+      // Usar a necessidade estratégica (gap em euros até atingir o target)
+      factor = p._strategicNeed > 0 ? p._strategicNeed : 0;
+    } else {
+      // Usar a alocação estratégica alvo (target)
+      factor = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
+    }
+    return { ...p, factor };
   });
 
-  // 3. Gerar Plano com Pesos Normalizados
+  // Calcular soma total dos fatores
+  let sumFactors = poolWithFactors.reduce((acc, p) => acc + p.factor, 0);
+
+  // Se a soma for zero (ex: método GAP selecionado mas todos os ativos selecionados já atingiram ou excederam o target),
+  // reverte-se automaticamente para a proporção dos targets estáticos.
+  let isFallback = false;
+  if (sumFactors === 0) {
+    isFallback = true;
+    poolWithFactors.forEach(p => {
+      p.factor = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
+    });
+    sumFactors = poolWithFactors.reduce((acc, p) => acc + p.factor, 0);
+  }
+
+  // Gerir aviso visual de Fallback
+  const existingWarning = resultDiv.querySelector(".inv-plan-warning");
+  if (existingWarning) existingWarning.remove();
+  
+  if (isFallback && method === "GAP") {
+    const warning = document.createElement("div");
+    warning.className = "inv-plan-warning";
+    warning.style.fontSize = "0.7rem";
+    warning.style.color = "#ef4444";
+    warning.style.background = "rgba(239, 68, 68, 0.08)";
+    warning.style.padding = "8px";
+    warning.style.borderRadius = "6px";
+    warning.style.border = "1px dashed rgba(239, 68, 68, 0.3)";
+    warning.style.marginBottom = "12px";
+    warning.innerHTML = `💡 <strong>Info:</strong> Todos os ativos selecionados estão com alocação ideal. O capital foi distribuído proporcionalmente aos targets originais.`;
+    resultDiv.prepend(warning);
+  }
+
+  // 3. Gerar Plano com Pesos Normalizados e Est. Unidades
   const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
   
-  tableBody.innerHTML = itemsWithTarget
-    .sort((a, b) => b.target - a.target)
+  tableBody.innerHTML = poolWithFactors
+    .sort((a, b) => b.factor - a.factor)
     .map(p => {
-      const normalizedWeight = p.target / sumTargets;
+      const normalizedWeight = p.factor / sumFactors;
       const allocated = perPeriod * normalizedWeight;
+      const preco = p.precoAtual || 0;
+      const units = preco > 0 ? (allocated / preco) : 0;
       
       return `
         <tr style="border-bottom: 1px solid var(--border);">
-          <td style="padding: 10px 4px;"><strong>${p.ticker}</strong></td>
-          <td style="padding: 10px 4px;"><span class="strategy-badge strategy-badge--${(p._strategy?.category || 'none').toLowerCase()}" style="font-size:0.6rem; padding: 2px 6px;">${p._strategy?.category || 'SAT'}</span></td>
-          <td style="padding: 10px 4px; text-align: right;">${(normalizedWeight * 100).toFixed(1)}%</td>
-          <td style="padding: 10px 4px; text-align: right; font-weight: 700; color: #8b5cf6;">${fmtEUR.format(allocated)}</td>
+          <td style="padding: 8px 4px;">
+            <strong>${p.ticker}</strong>
+            <div style="font-size: 0.65rem; color: var(--muted-foreground); margin-top: 2px;">
+              ${p._strategy?.category || 'SAT'} • ${preco > 0 ? fmtEUR.format(preco) : '—'}
+            </div>
+          </td>
+          <td style="padding: 8px 4px; text-align: right; font-weight: 500;">
+            ${(normalizedWeight * 100).toFixed(1)}%
+          </td>
+          <td style="padding: 8px 4px; text-align: right; font-weight: 700; color: #8b5cf6;">
+            ${fmtEUR.format(allocated)}
+            <div style="font-size: 0.65rem; color: var(--success); font-weight: 700; margin-top: 2px;">
+              ${units > 0 ? `~${units.toFixed(2)} un.` : '—'}
+            </div>
+          </td>
         </tr>
       `;
     }).join("");

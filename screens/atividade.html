@@ -876,6 +876,14 @@
         </div>
 
         <div class="filter-group">
+          <label style="font-size: 0.8rem; font-weight: 700;">Método de Distribuição</label>
+          <select id="inpInvMethod" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+            <option value="GAP" selected>Equilibrar Carteira (Priorizar Gaps/Défices em €)</option>
+            <option value="TARGET">Estratégica Estática (Proporcional aos Targets %)</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
           <label style="font-size: 0.8rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
             Selecionar Ativos
             <span id="btnInvSelectAll" style="color: #8b5cf6; cursor: pointer; font-size: 0.65rem;">Todos / Nenhum</span>
@@ -907,16 +915,15 @@
             <thead style="position: sticky; top: 0; background: var(--background); z-index: 1;">
               <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground);">
                 <th style="padding: 8px 4px; text-align: left;">Ativo</th>
-                <th style="padding: 8px 4px; text-align: left;">Cat.</th>
-                <th style="padding: 8px 4px; text-align: right;">Meta%</th>
-                <th style="padding: 8px 4px; text-align: right;">Aporte/Per.</th>
+                <th style="padding: 8px 4px; text-align: right;">Peso %</th>
+                <th style="padding: 8px 4px; text-align: right;">Aporte / Qtd Est.</th>
               </tr>
             </thead>
             <tbody id="invPlanTableBody"></tbody>
           </table>
         </div>
         <p style="font-size: 0.65rem; color: var(--muted-foreground); margin-top: 12px; line-height: 1.4;">
-          * O plano prioriza ativos que estão abaixo da sua meta de alocação estratégica e considera o custo atual de mercado.
+          * O plano prioriza ativos que estão abaixo da sua meta de alocação estratégica e considera o preço atual de mercado para estimar as unidades a adquirir.
         </p>
       </div>
     </div>
