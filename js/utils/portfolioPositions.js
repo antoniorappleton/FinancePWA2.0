@@ -194,12 +194,11 @@ export function aggregatePortfolioPositions(snapshot) {
     const netQty = netQtyByTicker.get(ticker) || 0;
 
     // Active/closed status usually follows the true net quantity. When old
-    // inconsistent oversells exist, a later buy should still reopen the asset
-    // (JEDI); a latest sell should close it (NUKL).
-    const latestMovementIsBuy = group.lastMovementQty > 0;
+    // inconsistent oversells exist, trust the FIFO remainder instead; otherwise
+    // a legitimate partial sale after a later buy can incorrectly close JEDI.
     const shouldClose =
       netQty <= EPSILON &&
-      (!group.hasOversoldMovement || !latestMovementIsBuy);
+      !group.hasOversoldMovement;
 
     if (shouldClose) {
       group.qtd = 0;

@@ -49,7 +49,7 @@ window.navigateTo = navigateTo;
 
 // Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 APPFinance v2.4.12 (Dev mode SW bypass enabled)");
+  console.log("🚀 APPFinance v2.4.13 (Dev mode SW bypass enabled)");
   navigateTo("auth");
   initGlobalHelp();
 
