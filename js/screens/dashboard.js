@@ -24,6 +24,7 @@ import { toNumStrict } from "../utils/num.js";
 import { Treemap } from "../components/treemap.js";
 import { canonicalTicker } from "../utils/normalize.js";
 import * as CapitalManager from "../utils/capitalManager.js";
+import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 
 let lastAtivosSnap = null;
 let lastAcoesSnap = null;
@@ -76,86 +77,23 @@ export async function initScreen() {
       }
     });
 
-    // Agrupar ativos por TICKER — Seguindo a lógica de Média Ponderada
-    const agrupadoPorTicker = new Map();
-
-    // Processar cronologicamente para calcular o lucro realizado corretamente
-    const movimentosArr = [];
-    lastAtivosSnap.forEach((doc) => {
-      const d = doc.data();
-      const dt =
-        d.dataCompra && typeof d.dataCompra.toDate === "function"
-          ? d.dataCompra.toDate()
-          : new Date(0);
-      movimentosArr.push({ ...d, id: doc.id, date: dt });
-    });
-    movimentosArr.sort((a, b) => a.date - b.date);
-
-    movimentosArr.forEach((a) => {
-      const ticker = cleanTicker(a.ticker);
-      if (!ticker) return;
-
-      const g = agrupadoPorTicker.get(ticker) || {
-        quantidade: 0,
-        custoMedio: 0,
-        investimento: 0,
-        realizado: 0,
-        objetivoFinanceiro: 0,
-        objetivoDefinido: false,
-      };
-
-      const q = parseFloat(a.quantidade || 0);
-      const p = parseFloat(a.precoCompra || 0);
-      const obj = parseFloat(a.objetivoFinanceiro || 0);
-
-      if (q > 0) {
-        // Compra: atualiza custo médio
-        const totalAntes = g.quantidade * g.custoMedio;
-        const totalCompra = q * p;
-        const novaQtd = g.quantidade + q;
-        g.custoMedio = novaQtd > 0 ? (totalAntes + totalCompra) / novaQtd : 0;
-        g.quantidade = novaQtd;
-      } else if (q < 0) {
-        // Venda: realiza lucro com base no custo médio
-        const sellQtd = Math.abs(q);
-        if (sellQtd > g.quantidade) {
-          console.warn(`⚠️ Venda de ${ticker} (${sellQtd}) excede posição atual (${g.quantidade.toFixed(2)})`);
-        }
-        const effectiveSell = Math.min(sellQtd, g.quantidade);
-        if (effectiveSell > 0) {
-          const lucroVenda = (p - g.custoMedio) * effectiveSell;
-          g.realizado += lucroVenda;
-        }
-        g.quantidade -= sellQtd;
-        if (g.quantidade <= 0) {
-          g.quantidade = 0;
-          g.custoMedio = 0;
-        }
-      }
-
-      g.investimento = g.quantidade * g.custoMedio;
-
-      if (!g.objetivoDefinido && obj > 0) {
-        g.objetivoFinanceiro = obj;
-        g.objetivoDefinido = true;
-      }
-      agrupadoPorTicker.set(ticker, g);
-    });
+    // Agrupar ativos por TICKER usando a mesma lógica FIFO do screen Portfólio
+    const { groups: agrupadoPorTicker } = aggregatePortfolioPositions(lastAtivosSnap);
 
     let totalObjetivos = 0;
     agrupadoPorTicker.forEach((g, ticker) => {
       const precoAtual = valorAtualMap.get(ticker) || 0;
-      const valorMercadoAtual = g.quantidade * precoAtual;
-      const lucroNaoRealizado = valorMercadoAtual - g.investimento;
+      const valorMercadoAtual = g.qtd * precoAtual;
+      const lucroNaoRealizado = valorMercadoAtual - g.investido;
 
-      totalInvestido += g.investimento;
+      totalInvestido += g.investido;
       lucroNaoRealizadoTotal += lucroNaoRealizado;
       lucroRealizadoTotal += g.realizado;
 
-      if (g.objetivoDefinido && g.quantidade > 0) {
+      if (g.anyObjSet && g.qtd > 0) {
         totalObjetivos++;
-        objetivoFinanceiroTotal += g.objetivoFinanceiro;
-        if (lucroNaoRealizado + g.realizado >= g.objetivoFinanceiro)
+        objetivoFinanceiroTotal += g.objetivo;
+        if (lucroNaoRealizado + g.realizado >= g.objetivo)
           objetivosAtingidos++;
       }
     });
@@ -206,7 +144,7 @@ export async function initScreen() {
         totalInvestido > 0 ? `${retorno.toFixed(1)}%` : "---";
     if (posicoesEl)
       posicoesEl.textContent = Array.from(agrupadoPorTicker.values()).filter(
-        (g) => g.quantidade > 0,
+        (g) => g.qtd > 0,
       ).length;
     if (objetivosEl)
       objetivosEl.textContent = `${objetivosAtingidos}/${totalObjetivos}`;

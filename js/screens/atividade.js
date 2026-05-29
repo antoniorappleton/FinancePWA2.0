@@ -26,6 +26,7 @@ import {
 import { parseSma, getAssetType, canon, cleanTicker, normalizeSector } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 import { Treemap } from "../components/treemap.js";
+import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 
 // ===============================
 // Carregar Chart.js on-demand
@@ -1704,140 +1705,10 @@ function showPortfolioHelp(force = false) {
         if (x.ticker) infoMap.set(cleanTicker(x.ticker), x);
       });
 
-      const grupos = new Map();
-      const movimentosAsc = [];
-
-      snap.forEach((docu) => {
-        const d = docu.data();
-        const dt =
-          d.dataCompra && typeof d.dataCompra.toDate === "function"
-            ? d.dataCompra.toDate()
-            : null;
-
-        const tickerRaw = String(d.ticker || "").toUpperCase();
-        if (!tickerRaw) return;
-        const ticker = cleanTicker(tickerRaw);
-
-        const qtd = toNumStrict(d.quantidade);
-        const preco = toNumStrict(d.precoCompra);
-        const safeQtd = Number.isFinite(qtd) ? qtd : 0;
-        const safePreco = Number.isFinite(preco) ? preco : 0;
-
-        const g = grupos.get(ticker) || {
-          ticker,
-          nome: d.nome || ticker,
-          setor: (() => {
-            const sRaw = d.setor || d.sector || d.Setor || d.Sector || d.industry || d.Industry || d.indústria || d.Indústria || d.segmento || d.segment || "";
-            let s = canon(sRaw);
-            if (!s && String(d.ticker).includes(":")) {
-              const p = String(d.ticker).split(":")[0].trim();
-              if (p.length > 2) s = canon(p);
-            }
-            return s || "—";
-          })(),
-          mercado: canon(d.mercado || d.market || d.Market || "") || "—",
-          qtd: 0,
-          custoMedio: 0,
-          investido: 0,
-          realizado: 0,
-          objetivo: 0,
-          link: "",
-          anyObjSet: false,
-          lastDate: null,
-          lastDocId: null,
-          lots: [],
-        };
-
-        if (safeQtd > 0) {
-          g.lots.push({ qty: safeQtd, preco: safePreco });
-          g.qtd += safeQtd;
-        } else if (safeQtd < 0) {
-          const sellQtd = Math.abs(safeQtd);
-          if (sellQtd > g.qtd) {
-            console.warn(`⚠️ Venda de ${ticker} (${sellQtd}) excede posição atual (${g.qtd.toFixed(2)})`);
-          }
-          let remainingToSell = Math.min(sellQtd, g.qtd);
-          let custoBaseVenda = 0;
-          let efetivaVenda = 0;
-
-          while (remainingToSell > 0 && g.lots.length > 0) {
-            let lot = g.lots[0];
-            if (lot.qty <= remainingToSell) {
-              custoBaseVenda += lot.qty * lot.preco;
-              efetivaVenda += lot.qty;
-              remainingToSell -= lot.qty;
-              g.lots.shift();
-            } else {
-              custoBaseVenda += remainingToSell * lot.preco;
-              efetivaVenda += remainingToSell;
-              lot.qty -= remainingToSell;
-              remainingToSell = 0;
-            }
-          }
-          if (efetivaVenda > 0) {
-            const lucro = (safePreco * efetivaVenda) - custoBaseVenda;
-            g.realizado += lucro;
-          }
-          g.qtd -= sellQtd;
-          if (g.qtd <= 0) {
-            g.qtd = 0;
-            g.lots = [];
-          }
-        }
-
-        // Recalcular custoMedio baseado nos lotes restantes (FIFO)
-        if (g.lots.length > 0) {
-           let tc = 0;
-           let tq = 0;
-           for (let lot of g.lots) {
-             tc += lot.qty * lot.preco;
-             tq += lot.qty;
-           }
-           g.custoMedio = tq > 0 ? tc / tq : 0;
-        } else {
-           g.custoMedio = 0;
-        }
-
-        g.investido = g.qtd * g.custoMedio;
-        const obj = toNumStrict(d.objetivoFinanceiro);
-        if (!g.anyObjSet && Number.isFinite(obj) && obj > 0) {
-          g.objetivo = obj;
-          if (d.linkExterno) g.link = d.linkExterno;
-          g.anyObjSet = true;
-        } else if (d.linkExterno && !g.link) {
-          g.link = d.linkExterno;
-        }
-
-        if (!g.lastDate || (dt && dt > g.lastDate)) {
-          g.lastDate = dt;
-          g.lastDocId = docu.id;
-        }
-
-        g.nome = d.nome || g.nome;
-        g.setor = (() => {
-          const sRaw = d.setor || d.sector || d.Setor || d.Sector || d.industry || d.Industry || d.indústria || d.Indústria || d.segmento || d.segment || g.setor || "";
-          let s = canon(sRaw);
-          if ((!s || s === "—") && String(d.ticker).includes(":")) {
-            const p = String(d.ticker).split(":")[0].trim();
-            if (p.length > 2) s = canon(p);
-          }
-          return s || "—";
-        })();
-        g.mercado = canon(d.mercado || d.market || d.Market || g.mercado) || "—";
-
-        grupos.set(ticker, g);
-        movimentosAsc.push({
-          date: dt || new Date(0),
-          ticker,
-          qtd: safeQtd,
-          preco: safePreco,
-          id: docu.id,
-        });
-      });
-
+      const portfolioAggregation = aggregatePortfolioPositions(snap);
+      const gruposArr = portfolioAggregation.groupsArr;
+      const movimentosAsc = portfolioAggregation.movimentosAsc;
       _allMovimentos = movimentosAsc;
-
-      const gruposArr = Array.from(grupos.values());
       const fmtEUR = new Intl.NumberFormat("pt-PT", {
         style: "currency",
         currency: "EUR",
