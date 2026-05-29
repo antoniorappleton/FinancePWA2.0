@@ -100,7 +100,10 @@ export function aggregatePortfolioPositions(snapshot) {
       lastDocId: null,
       lots: [],
       hasOversoldMovement: false,
+      lastMovementQty: 0,
     };
+
+    g.lastMovementQty = safeQtd;
 
     if (safeQtd > 0) {
       g.lots.push({ qty: safeQtd, preco: safePreco });
@@ -190,10 +193,15 @@ export function aggregatePortfolioPositions(snapshot) {
   for (const [ticker, group] of groups.entries()) {
     const netQty = netQtyByTicker.get(ticker) || 0;
 
-    // Active/closed status follows the true net quantity across all movements.
-    // FIFO order is useful for cost basis, but bad/missing dates must not keep
-    // a fully sold position such as NUKL visible as active.
-    if (netQty <= EPSILON && !group.hasOversoldMovement) {
+    // Active/closed status usually follows the true net quantity. When old
+    // inconsistent oversells exist, a later buy should still reopen the asset
+    // (JEDI); a latest sell should close it (NUKL).
+    const latestMovementIsBuy = group.lastMovementQty > 0;
+    const shouldClose =
+      netQty <= EPSILON &&
+      (!group.hasOversoldMovement || !latestMovementIsBuy);
+
+    if (shouldClose) {
       group.qtd = 0;
       group.investido = 0;
       group.custoMedio = 0;
@@ -201,7 +209,7 @@ export function aggregatePortfolioPositions(snapshot) {
       continue;
     }
 
-    if (netQty > EPSILON && !group.hasOversoldMovement && Math.abs(group.qtd - netQty) > EPSILON) {
+    if (netQty > EPSILON && Math.abs(group.qtd - netQty) > EPSILON) {
       group.qtd = netQty;
 
       let remaining = netQty;
