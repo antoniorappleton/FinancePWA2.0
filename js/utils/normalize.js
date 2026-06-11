@@ -129,18 +129,23 @@ export function safePercent(asset, ...keys) {
 export function canonicalTicker(ticker) {
   if (!ticker) return "";
   let t = String(ticker).toUpperCase().trim();
-  
-  // Remove exchange suffixes: .DE, .AS, .LS, .US, :EUR, :USD
-  t = t.split(".")[0].split(":")[0];
+
+  // Normalize exchange/currency notations:
+  // "XETR:DAVV" -> "DAVV"; "DAVV:FRA:EUR" -> "DAVV"; "VWCE.DE" -> "VWCE".
+  if (t.includes(":")) {
+    const parts = t.split(":").filter(Boolean);
+    const currencyCodes = new Set(["EUR", "USD", "GBP", "CHF"]);
+    t = parts.length >= 3 && currencyCodes.has(parts.at(-1)) ? parts[0] : parts.at(-1);
+  }
+  t = t.split(".")[0];
 
   // Alias Mapping (Deduplication)
   const ALIASES = {
-    "QDVF": "QDVE", // iShares S&P 500 Info Tech (different listings)
-    "QDVK": "QDVE",
-    "IS0D": "IS3N", // Emerging Markets variations
     "IWVL": "IWVL", // World Value
     "VUSA": "VOO",  // S&P 500
-    "VUSA:LS": "VOO"
+    "VUSA:LS": "VOO",
+    "DAPP": "DAVV",
+    "DAGB": "DAVV"
   };
 
   return ALIASES[t] || t;
@@ -270,4 +275,3 @@ export function isValid(v) {
   if (s === "" || NA_STRINGS.has(s)) return false;
   return true;
 }
-

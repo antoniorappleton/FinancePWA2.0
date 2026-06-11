@@ -277,8 +277,13 @@ export function canon(s) {
 
 export function cleanTicker(t) {
   const s = String(t || "");
-  if (s.includes(":")) return s.split(":").pop().toUpperCase();
-  return s.toUpperCase();
+  const up = s.toUpperCase().trim();
+  if (up.includes(":")) {
+    const parts = up.split(":").filter(Boolean);
+    const currencyCodes = new Set(["EUR", "USD", "GBP", "CHF"]);
+    return parts.length >= 3 && currencyCodes.has(parts.at(-1)) ? parts[0] : parts.at(-1);
+  }
+  return up;
 }
 
 export function normalizeSector(d) {
