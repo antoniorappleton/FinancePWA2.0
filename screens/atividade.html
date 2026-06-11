@@ -257,12 +257,127 @@
     opacity: 0.7;
     transform: scale(1.2);
   }
+
+  #activityDetailModal .activity-detail-dialog {
+    width: min(90vw, 1440px);
+    height: 90vh;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #activityDetailModal .activity-detail-header,
+  #activityDetailModal .activity-detail-footer {
+    flex: 0 0 auto;
+  }
+
+  #activityDetailModal .activity-detail-body {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
+    gap: 14px;
+    align-content: start;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px !important;
+  }
+
+  #activityDetailModal .activity-detail-body > * {
+    margin-bottom: 0 !important;
+  }
+
+  #activityDetailModal #detDecisaoSistema,
+  #activityDetailModal .det-kpi-strip,
+  #activityDetailModal .det-priority-history,
+  #activityDetailModal .det-priority-secondary {
+    grid-column: 1 / -1;
+  }
+
+  #activityDetailModal #detDecisaoSistema {
+    margin-bottom: 2px !important;
+  }
+
+  #activityDetailModal .det-kpi-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  #activityDetailModal .det-priority-sell,
+  #activityDetailModal .det-priority-sim,
+  #activityDetailModal .det-priority-recovery {
+    grid-column: 1;
+  }
+
+  #activityDetailModal .det-priority-buy,
+  #activityDetailModal .det-priority-pm,
+  #activityDetailModal .det-priority-reserve {
+    grid-column: 2;
+  }
+
+  #activityDetailModal .det-priority-sell {
+    grid-row: span 2;
+  }
+
+  #activityDetailModal .det-priority-history table {
+    min-width: 640px;
+  }
+
+  @media (max-width: 600px) {
+    #activityDetailModal .activity-detail-dialog {
+      width: 96vw;
+      height: 92vh;
+      max-height: 92vh;
+    }
+
+    #activityDetailModal .activity-detail-body {
+      grid-template-columns: 1fr;
+      padding: 10px !important;
+    }
+
+    #activityDetailModal .det-priority-sell,
+    #activityDetailModal .det-priority-sim,
+    #activityDetailModal .det-priority-recovery,
+    #activityDetailModal .det-priority-buy,
+    #activityDetailModal .det-priority-pm,
+    #activityDetailModal .det-priority-reserve {
+      grid-column: 1;
+    }
+
+    #activityDetailModal .det-kpi-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (min-width: 601px) and (max-width: 900px) {
+    #activityDetailModal .activity-detail-dialog {
+      width: 94vw;
+      height: 90vh;
+      max-height: 90vh;
+    }
+
+    #activityDetailModal .activity-detail-body {
+      grid-template-columns: 1fr;
+      padding: 12px !important;
+    }
+
+    #activityDetailModal .det-priority-sell,
+    #activityDetailModal .det-priority-sim,
+    #activityDetailModal .det-priority-recovery,
+    #activityDetailModal .det-priority-buy,
+    #activityDetailModal .det-priority-pm,
+    #activityDetailModal .det-priority-reserve {
+      grid-column: 1;
+    }
+
+    #activityDetailModal .det-kpi-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
 </style>
 
 <!-- ======== Modal de Detalhes do Ativo (Estratégico) ======== -->
 <div id="activityDetailModal" class="modal hidden">
   <div class="modal-dialog activity-detail-dialog">
-    <div class="modal-header" style="flex-direction: column; align-items: flex-start; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 12px; position: relative;">
+    <div class="modal-header activity-detail-header" style="flex-direction: column; align-items: flex-start; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 12px; position: relative;">
       <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
         <div style="display: flex; align-items: center; gap: 12px">
           <div id="detEstadoBadge" style="padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; border: 1px solid;"></div>
@@ -287,7 +402,7 @@
       </div>
     </div>
 
-    <div class="modal-body help-body" style="padding: 16px; background: var(--background);">
+    <div class="modal-body help-body activity-detail-body" style="padding: 16px; background: var(--background);">
 
       <!-- BLOCO 0 — DECISAO DO SISTEMA -->
       <div id="detDecisaoSistema" style="margin-bottom: 16px; padding: 14px 16px; border-radius: 12px; border: 2px solid; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
@@ -300,7 +415,7 @@
       </div>
 
       <!-- BLOCO 1 — ESTADO DO ATIVO (quick KPIs) -->
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
+      <div class="det-kpi-strip" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
         <div class="det-kpi">
           <div class="det-kpi-label">Investido</div>
           <div class="det-kpi-value" id="detKpiCapital">€0</div>
@@ -320,7 +435,7 @@
       </div>
 
       <!-- BLOCO 2 — PLANO DE SAIDA (Multi-TP) -->
-      <div class="det-block det-block--green" style="margin-bottom: 14px;">
+      <div class="det-block det-block--green det-priority-sell" style="margin-bottom: 14px;">
         <div class="det-block-title">🎯 Estratégia de Venda (Lucro)</div>
         <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1fr; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); padding: 0 10px 6px;">
           <div>Nível</div><div>Preço</div><div>Ação</div><div style="text-align:right;">% Posição</div>
@@ -330,7 +445,7 @@
       </div>
 
       <!-- BLOCO 3 — PLANO DE QUEDA (Reforços) -->
-      <div class="det-block det-block--red" style="margin-bottom: 14px;">
+      <div class="det-block det-block--red det-priority-buy" style="margin-bottom: 14px;">
         <div class="det-block-title">📉 Estratégia de Compra (Se cair)</div>
         <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); padding: 0 10px 6px;">
           <div>Queda</div><div>Preço</div><div>Ação</div>
@@ -339,7 +454,7 @@
       </div>
 
       <!-- BLOCO 3.1 — REFORÇO ESTRATÉGICO (VS PM) -->
-      <div id="detBlocoReforcoPM" class="det-block det-block--amber" style="margin-bottom: 14px;">
+      <div id="detBlocoReforcoPM" class="det-block det-block--amber det-priority-pm" style="margin-bottom: 14px;">
         <div class="det-block-title">📉 Reforço Estratégico (vs PM)</div>
         <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); padding: 0 10px 6px;">
           <div>Dist. PM</div><div>Preço</div><div>Ação</div>
@@ -348,20 +463,20 @@
       </div>
 
       <!-- BLOCO 4 — REFORCO INTELIGENTE -->
-      <div class="det-block" style="margin-bottom: 14px;">
+      <div class="det-block det-priority-sim" style="margin-bottom: 14px;">
         <div class="det-block-title">🔄 Simular Nova Compra</div>
         <div id="detCenariosNovos" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
 
       <!-- BLOCO 5 — WAR CHEST -->
-      <div class="det-block det-block--amber" style="margin-bottom: 14px;">
+      <div class="det-block det-block--amber det-priority-reserve" style="margin-bottom: 14px;">
         <div class="det-block-title">💰 Reserva p/ Oportunidades (War Chest)</div>
         <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">Dinheiro guardado para comprar ativos quando o preço estiver atrativo.</div>
         <div id="detWarChestTable" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"></div>
       </div>
 
       <!-- BLOCO 6 — RECUPERACAO DE PERDAS (so se prejuizo) -->
-      <div id="detRecuperacaoBloco" class="det-block det-block--danger" style="display: none; margin-bottom: 14px;">
+      <div id="detRecuperacaoBloco" class="det-block det-block--danger det-priority-recovery" style="display: none; margin-bottom: 14px;">
         <div class="det-block-title">🛡️ Plano de Recuperação</div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
            <div>
@@ -380,7 +495,7 @@
       </div>
 
       <!-- BLOCO 8 — HISTÓRICO DE MOVIMENTOS -->
-      <div class="det-block" style="margin-bottom: 14px;">
+      <div class="det-block det-priority-history" style="margin-bottom: 14px;">
         <div class="det-block-title">📜 Histórico de Movimentos</div>
         <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
           <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
@@ -401,7 +516,7 @@
       </div>
 
       <!-- BLOCO 7 — METRICAS SECUNDARIAS (colapsavel) -->
-      <details style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+      <details class="det-priority-secondary" style="background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
          <summary style="font-weight: 700; font-size: 0.85rem; cursor: pointer; color: var(--muted-foreground); outline: none;">Métricas Secundárias &amp; Estratégia</summary>
          <div style="margin-top: 16px;">
            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.8rem;">
@@ -434,7 +549,7 @@
       </details>
     </div>
 
-    <div class="modal-footer" style="padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+    <div class="modal-footer activity-detail-footer" style="padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
       <button id="detBtnBuy" class="btn premium" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <i class="fas fa-plus-circle"></i> Comprar
       </button>
