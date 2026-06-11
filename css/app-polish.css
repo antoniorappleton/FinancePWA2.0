@@ -1,0 +1,477 @@
+/* APPFinance visual polish layer
+   Loaded after style.css to modernize the interface without touching app logic. */
+
+:root {
+  --background: #f6f7f9;
+  --foreground: #17202a;
+  --card: #ffffff;
+  --card-foreground: #17202a;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --muted: #eef2f4;
+  --muted-foreground: #64717d;
+  --border: #dce3e8;
+  --radius: 8px;
+  --shadow-card: 0 12px 30px rgba(17, 24, 39, 0.08);
+  --shadow-soft: 0 1px 2px rgba(17, 24, 39, 0.06), 0 14px 40px rgba(17, 24, 39, 0.08);
+  --accent-blue: #2563eb;
+  --accent-green: #16a34a;
+  --accent-amber: #d97706;
+  --accent-red: #dc2626;
+  --surface-raised: rgba(255, 255, 255, 0.92);
+  --focus-ring: rgba(15, 118, 110, 0.18);
+  --transition: 160ms ease;
+}
+
+[data-theme="dark"] {
+  --background: #0f1419;
+  --foreground: #e7edf2;
+  --card: #171d23;
+  --card-foreground: #e7edf2;
+  --primary: #5eead4;
+  --primary-foreground: #062522;
+  --muted: #202832;
+  --muted-foreground: #a7b2bd;
+  --border: rgba(231, 237, 242, 0.12);
+  --shadow-card: 0 18px 45px rgba(0, 0, 0, 0.32);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.28), 0 18px 45px rgba(0, 0, 0, 0.32);
+  --surface-raised: rgba(23, 29, 35, 0.94);
+  --focus-ring: rgba(94, 234, 212, 0.18);
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(15, 118, 110, 0.05), transparent 260px),
+    var(--background);
+  color: var(--foreground);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+[data-theme="dark"] body {
+  background:
+    linear-gradient(180deg, rgba(94, 234, 212, 0.06), transparent 260px),
+    var(--background);
+}
+
+#screenContainer {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.page,
+.dashboard,
+.atividade-completa,
+.sim-layout {
+  padding: 24px;
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(220, 227, 232, 0.78);
+  box-shadow: none;
+  backdrop-filter: blur(18px);
+  min-height: 68px;
+  padding: 10px 22px;
+}
+
+[data-theme="dark"] .app-header {
+  background: rgba(15, 20, 25, 0.84);
+  border-bottom-color: var(--border);
+}
+
+.app-header h1 {
+  font-size: clamp(1.05rem, 2vw, 1.45rem);
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.header-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  padding: 3px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08);
+}
+
+.dashboard-header,
+.page > h1:first-child,
+.page > h2:first-child {
+  margin-bottom: 20px;
+}
+
+.dashboard-title,
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subtitle,
+.muted,
+.subvalue,
+.label {
+  color: var(--muted-foreground) !important;
+}
+
+.label,
+.det-kpi-label,
+.pf-form-section-title,
+.help-section-title {
+  letter-spacing: 0.04em;
+}
+
+.card,
+.panel,
+.asset-card,
+.report-card,
+.help-card,
+.det-block,
+.goal-selected,
+.goal-params,
+.pf-add-dialog,
+.modal-dialog,
+.modal-content,
+.table-responsive,
+.chart-card,
+.kpi {
+  border-radius: 8px !important;
+}
+
+.card,
+.panel,
+.asset-card,
+.report-card,
+.help-card,
+.goal-selected,
+.goal-params {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.card,
+.asset-card {
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.card:hover,
+.asset-card:hover,
+.help-card:hover,
+.report-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--border)) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.metrics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.metrics-grid .card {
+  min-height: 132px;
+  padding: 18px;
+}
+
+.value,
+.metric-value,
+.det-kpi-value,
+.kpi-value {
+  color: var(--foreground);
+  font-weight: 850;
+}
+
+.icon-box,
+.asset-allocation-badge,
+.strategy-badge,
+.tag {
+  border-radius: 8px !important;
+}
+
+.icon-box {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 118, 110, 0.1) !important;
+  color: var(--primary);
+}
+
+.card.success .icon-box,
+.metric-item--positive .metric-icon {
+  background: rgba(22, 163, 74, 0.12) !important;
+  color: var(--accent-green);
+}
+
+.card.info .icon-box {
+  background: rgba(37, 99, 235, 0.1) !important;
+  color: var(--accent-blue);
+}
+
+.card.warning .icon-box,
+.det-block--amber {
+  background: rgba(217, 119, 6, 0.08) !important;
+}
+
+.btn,
+button,
+.chip,
+.icon-btn,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.btn,
+.chip,
+.icon-btn {
+  border-radius: 8px !important;
+}
+
+.btn {
+  min-height: 40px;
+  border: 1px solid transparent;
+  font-weight: 750;
+  letter-spacing: 0;
+  box-shadow: none !important;
+  transition: transform var(--transition), background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.btn:hover,
+.chip:hover,
+.icon-btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn.premium,
+.btn.dark,
+.asset-actions .btn-primary,
+#btnDashBuy {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-color: var(--primary) !important;
+}
+
+.btn.outline,
+.btn.ghost,
+.asset-actions .btn-secondary {
+  background: transparent !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.btn.outline:hover,
+.btn.ghost:hover,
+.asset-actions .btn-secondary:hover {
+  background: color-mix(in srgb, var(--primary) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary) 44%, var(--border)) !important;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground) !important;
+  background: var(--muted) !important;
+}
+
+input,
+select,
+textarea,
+.pf-input {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.pf-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px var(--focus-ring) !important;
+  outline: none !important;
+}
+
+.footer-nav {
+  left: 50%;
+  right: auto;
+  bottom: 14px;
+  width: min(760px, calc(100vw - 24px));
+  transform: translateX(-50%);
+  padding: 8px;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+[data-theme="dark"] .footer-nav {
+  background: rgba(15, 20, 25, 0.9);
+}
+
+.footer-nav button {
+  min-height: 48px;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.footer-nav button:hover,
+.footer-nav button:focus-visible {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--foreground);
+}
+
+.footer-nav button i {
+  color: var(--primary);
+}
+
+.modal {
+  background: rgba(15, 20, 25, 0.5) !important;
+  backdrop-filter: blur(8px);
+}
+
+.modal-dialog,
+.modal-content {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22) !important;
+}
+
+.modal-header,
+.modal-footer {
+  background: color-mix(in srgb, var(--card) 92%, var(--muted)) !important;
+  border-color: var(--border) !important;
+}
+
+.modal-body {
+  background: var(--background) !important;
+}
+
+.analysis-toolbar,
+.actions-row,
+.asset-actions,
+.modal-toolbar {
+  gap: 10px;
+}
+
+.table-responsive,
+.table-scroll,
+.tabela-scroll-wrapper {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+table,
+.analysis-table,
+.fine-table {
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+thead th,
+.analysis-table thead th,
+.fine-table thead th {
+  background: color-mix(in srgb, var(--card) 82%, var(--muted)) !important;
+  color: var(--muted-foreground) !important;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+tbody tr:hover,
+.analysis-table tbody tr:hover,
+.fine-table tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 6%, transparent) !important;
+}
+
+.asset-card {
+  overflow: hidden;
+}
+
+.asset-header {
+  background: color-mix(in srgb, var(--card) 86%, var(--muted));
+  border-bottom: 1px solid var(--border);
+}
+
+.asset-metrics-grid,
+.metric-item,
+.det-kpi {
+  border-color: var(--border) !important;
+}
+
+.det-block {
+  box-shadow: none !important;
+  background: var(--card) !important;
+}
+
+.det-block--green {
+  background: rgba(22, 163, 74, 0.06) !important;
+}
+
+.det-block--red,
+.det-block--danger {
+  background: rgba(220, 38, 38, 0.06) !important;
+}
+
+.det-block--amber {
+  background: rgba(217, 119, 6, 0.07) !important;
+}
+
+.toast {
+  border-radius: 8px;
+  background: #17202a;
+  box-shadow: var(--shadow-soft);
+}
+
+@media (max-width: 768px) {
+  .page,
+  .dashboard,
+  .atividade-completa,
+  .sim-layout {
+    padding: 16px;
+  }
+
+  #screenContainer {
+    max-width: none;
+  }
+
+  .app-header {
+    min-height: 58px;
+    padding: 8px 14px;
+  }
+
+  .footer-nav {
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    padding: 6px;
+  }
+
+  .footer-nav button {
+    min-height: 44px;
+    font-size: 11px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
