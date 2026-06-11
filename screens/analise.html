@@ -114,15 +114,26 @@
       <div>
         <h3 style="margin: 0; color: var(--primary)">🏆 Top Portfolio Picks</h3>
         <p class="muted" style="margin: 0; font-size: 0.9rem">
-          Top 12 tickers by score | RSI buy signals & reinforcement levels
+          Top 12 por score composto, tendencia e niveis dinamicos
         </p>
       </div>
-      <span id="cardsCount" class="muted" style="font-size: 0.85rem"
-        >0 cards</span
-      >
+      <div class="cards-actions">
+        <span class="cards-filter-label">Categoria</span>
+        <div class="card-filter-toggle" aria-label="Filtrar Top 12 por tipo de ativo">
+          <button type="button" class="active" data-card-filter="stock">Acoes</button>
+          <button type="button" data-card-filter="etf">ETFs</button>
+        </div>
+        <button type="button" id="cardsClearFilters" class="cards-clear-filters">Limpar filtros</button>
+        <span id="cardsCount" class="muted" style="font-size: 0.85rem"
+          >0 cards</span
+        >
+      </div>
     </div>
-    <div id="portfolioCardsGrid" class="portfolio-cards-grid">
-      <!-- Cards dynamically populated by JS -->
+    <div class="portfolio-cards-layout">
+      <div id="portfolioCardsGrid" class="portfolio-cards-grid">
+        <!-- Cards dynamically populated by JS -->
+      </div>
+      <aside id="portfolioSectorFilters" class="card-sector-filters" aria-label="Filtrar Top 12 por setor"></aside>
     </div>
   </div>
 
@@ -389,9 +400,9 @@
               <th
                 data-sort="buyZone"
                 class="sortable tt sticky-price sticky-price-4"
-                data-tt="Zona de compra: Verde se RSI < 40 (oversold)"
+                data-tt="Sinal tecnico composto: tendencia, momentum, RSI e medias moveis."
               >
-                Buy?
+                Sinal
               </th>
             </tr>
           </thead>
@@ -1239,17 +1250,90 @@
   --card-gap: 12px;
 }
 
+.portfolio-cards-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  align-items: start;
+  gap: 14px;
+}
+
 .portfolio-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--card-gap);
   padding: 0;
 }
 
+.card-sector-filters {
+  position: sticky;
+  top: 74px;
+  display: grid;
+  gap: 6px;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--card, #fff);
+}
+
+.sector-filter-title {
+  color: var(--muted-foreground, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.card-sector-filters button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--foreground, #111827);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.2;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.card-sector-filters button span {
+  color: var(--muted-foreground, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.card-sector-filters button:hover {
+  background: var(--muted, #f8fafc);
+}
+
+.card-sector-filters button.active {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: rgba(var(--primary-rgb), 0.28);
+  color: var(--primary, #4f46e5);
+}
+
 @media (max-width: 768px) {
+  .portfolio-cards-layout {
+    grid-template-columns: 1fr;
+  }
+
   .portfolio-cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     --card-gap: 8px;
+  }
+
+  .card-sector-filters {
+    position: static;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    max-height: none;
   }
 }
 
@@ -1341,6 +1425,66 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), #1a1a1a);
 }
 
+.cards-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cards-filter-label {
+  color: var(--muted-foreground, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.card-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--muted, #f8fafc);
+  gap: 2px;
+}
+
+.card-filter-toggle button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground, #6b7280);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+  min-width: 58px;
+  padding: 5px 9px;
+}
+
+.card-filter-toggle button.active {
+  background: var(--primary, #4f46e5);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+
+.cards-clear-filters {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--card, #fff);
+  color: var(--muted-foreground, #6b7280);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 10px;
+}
+
+.cards-clear-filters:hover {
+  border-color: var(--primary, #4f46e5);
+  color: var(--primary, #4f46e5);
+}
+
 .buy-badge {
   padding: 4px 8px;
   border-radius: 20px;
@@ -1361,6 +1505,45 @@
 
 .buy-badge.buy-red {
   background: #fecaca;
+  color: #991b1b;
+}
+
+.technical-signal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 104px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.technical-breakout,
+.technical-bullish {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.technical-pullback {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.technical-neutral {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.technical-weak {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.technical-downtrend {
+  background: #fee2e2;
   color: #991b1b;
 }
 

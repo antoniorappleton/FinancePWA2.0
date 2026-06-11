@@ -35,7 +35,9 @@ import {
   anualPreferido,
   parseSma,
   cleanTicker,
+  getAssetType,
 } from "../utils/scoring.js";
+import { technicalSignal } from "../engines/technical-signal.js";
 import { INDICATOR_INFO } from "../utils/indicator-info.js";
 import { repairFirestoreData } from "../utils/maintenance.js";
 
@@ -204,6 +206,9 @@ const updateSelCount = () => {
 
 let sortKey = null;
 let sortDir = "desc";
+let cardAssetFilter = "stock";
+let cardSectorFilter = "all";
+let lastCardRows = [];
 
 /* =========================================================
    Header Filters (column-level quick filters)
@@ -388,7 +393,7 @@ const SORT_ACCESSORS = {
   preco: (r) => r.precoAtual || 0,
   minus35: (r) => r.minus35pct || 0,
   minus5: (r) => r.minus5pct || 0,
-  buyZone: (r) => (Number.isFinite(r.rsi_14) ? r.rsi_14 : 100),
+  buyZone: (r) => (Number.isFinite(r.technicalScore) ? r.technicalScore : -Infinity),
   yield24: (r) => (Number.isFinite(r.yield24) ? r.yield24 : -Infinity),
   divPer: (r) => (Number.isFinite(r.divPer) ? r.divPer : -Infinity),
   divAnual: (r) => (Number.isFinite(r.divAnual) ? r.divAnual : -Infinity),
@@ -407,7 +412,7 @@ const SORT_ACCESSORS = {
   preco: (r) => r.precoAtual || 0,
   minus35: (r) => r.minus35pct || 0,
   minus5: (r) => r.minus5pct || 0,
-  buyZone: (r) => (Number.isFinite(r.rsi_14) ? -r.rsi_14 : Infinity), // RSI baixo = buy alto
+  buyZone: (r) => (Number.isFinite(r.technicalScore) ? r.technicalScore : -Infinity),
   delta50: (r) => (Number.isFinite(r.delta50) ? r.delta50 : -Infinity),
   delta200: (r) => (Number.isFinite(r.delta200) ? r.delta200 : -Infinity),
   g1w: (r) => (Number.isFinite(r.g1w) ? r.g1w : -Infinity),
@@ -654,44 +659,43 @@ function renderPortfolioCards(rows) {
   const grid = document.getElementById('portfolioCardsGrid');
   const countEl = document.getElementById('cardsCount');
   if (!grid || !countEl) return;
+  lastCardRows = rows;
+  wireCardFilterButtons();
+
+  const filteredRows = rows.filter((r) => {
+    if (cardAssetFilter === "etf") return r.assetType === "etf";
+    return r.assetType === "stock";
+  });
+  renderCardSectorFilters(filteredRows);
+
+  const sectorRows = cardSectorFilter === "all"
+    ? filteredRows
+    : filteredRows.filter((r) => String(r.setor || "—") === cardSectorFilter);
 
   // Top 12 by portfolioScore
-  const top12 = [...rows]
+  const top12 = [...sectorRows]
     .filter(r => r.portfolioScore > 0)
     .sort((a, b) => b.portfolioScore - a.portfolioScore)
     .slice(0, 12);
 
   if (!top12.length) {
+    const label = cardAssetFilter === "etf" ? "ETFs" : "acoes";
+    const sectorLabel = cardSectorFilter === "all" ? "" : ` no setor ${cardSectorFilter}`;
     grid.innerHTML = `
       <div class="cards-empty">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
         </svg>
-        <p>No portfolio picks available (apply filters or check data).</p>
+        <p>Sem Top 12 de ${label}${sectorLabel} para os filtros atuais.</p>
       </div>`;
     countEl.textContent = '0 cards';
     return;
   }
 
-  // QDVF Example (hardcoded - insert as first if exists, else top)
-  const qdvfExample = {
-    ticker: 'QDVF',
-    nome: 'Invesco Quantitative Energy ETF',
-    setor: 'Energy',
-    precoAtual: 10.92,
-    rsi_14: 28,
-    yield: 4.2,
-    divAnual: 0.46,
-    portfolioScore: 0.85, // high score
-    avgPrice: 11.09, // example avg buy price
-    qty: 20, // example position size
-  };
+  const displayRows = top12;
 
-  const displayRows = top12.some(r => r.ticker === 'QDVF') 
-    ? top12 
-    : [qdvfExample, ...top12.slice(0, 10)];
-
-  countEl.textContent = `${displayRows.length} cards`;
+  const suffix = cardSectorFilter === "all" ? "" : ` · ${cardSectorFilter}`;
+  countEl.textContent = `${displayRows.length} ${cardAssetFilter === "etf" ? "ETFs" : "acoes"}${suffix}`;
 
   grid.innerHTML = displayRows.map(r => renderSingleCard(r)).join('');
 
@@ -705,12 +709,88 @@ function renderPortfolioCards(rows) {
   });
 }
 
+function wireCardFilterButtons() {
+  document.querySelectorAll("[data-card-filter]").forEach((btn) => {
+    const filter = btn.getAttribute("data-card-filter");
+    btn.classList.toggle("active", filter === cardAssetFilter);
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      cardAssetFilter = filter || "stock";
+      renderPortfolioCards(lastCardRows);
+    });
+  });
+}
+
+function resetAnalysisFilters() {
+  const setValue = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  };
+
+  setValue("anlSearch", "");
+  setValue("anlSetor", "");
+  setValue("anlMercado", "");
+  setValue("anlPeriodo", "");
+  headerFilterState.clear();
+  cardAssetFilter = "stock";
+  cardSectorFilter = "all";
+  sortKey = null;
+  sortDir = "desc";
+  buildHeaderFilters();
+  applyFilters();
+}
+
+function renderCardSectorFilters(rows) {
+  const panel = document.getElementById("portfolioSectorFilters");
+  if (!panel) return;
+  const esc = (value) => String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+  const counts = new Map();
+  rows.forEach((r) => {
+    const setor = String(r.setor || "—").trim() || "—";
+    counts.set(setor, (counts.get(setor) || 0) + 1);
+  });
+
+  const sectors = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt"))
+    .slice(0, 14);
+
+  if (cardSectorFilter !== "all" && !counts.has(cardSectorFilter)) {
+    cardSectorFilter = "all";
+  }
+
+  panel.innerHTML = `
+    <div class="sector-filter-title">Setores</div>
+    <button type="button" class="${cardSectorFilter === "all" ? "active" : ""}" data-card-sector="all">
+      Todos <span>${rows.length}</span>
+    </button>
+    ${sectors.map(([sector, count]) => `
+      <button type="button" class="${cardSectorFilter === sector ? "active" : ""}" data-card-sector="${encodeURIComponent(sector)}">
+        ${esc(sector)} <span>${count}</span>
+      </button>
+    `).join("")}
+  `;
+
+  panel.querySelectorAll("[data-card-sector]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const raw = btn.getAttribute("data-card-sector") || "all";
+      cardSectorFilter = raw === "all" ? "all" : decodeURIComponent(raw);
+      renderPortfolioCards(lastCardRows);
+    });
+  });
+}
+
 function renderSingleCard(r) {
   const { ticker, nome, setor, precoAtual, rsi_14, yield: yld, divAnual, portfolioScore, avgPrice = null, qty = null } = r;
+  const technical = r.technical || technicalSignal(r);
   
-  // Drop levels
-  const p35 = precoAtual * 0.965;
-  const p5 = precoAtual * 0.95;
+  const p35 = technical.support1 || precoAtual * 0.965;
+  const p5 = technical.support2 || precoAtual * 0.95;
   
   // Recovery Simulator (user example style)
   let recoveryHTML = '';
@@ -740,10 +820,6 @@ function renderSingleCard(r) {
       </div>`;
   }
 
-  // RSI Buy Badge
-  const rsiBadgeClass = rsi_14 < 40 ? 'buy-green' : rsi_14 < 50 ? 'buy-yellow' : 'buy-red';
-  const rsiBadgeText = rsi_14 < 40 ? '🟢 BUY RSI' : rsi_14 < 50 ? '🟡 WAIT' : '🔴 HOLD';
-
   return `
     <div class="portfolio-card" data-ticker="${ticker}">
       <div class="card-ticker">${ticker}</div>
@@ -763,8 +839,8 @@ function renderSingleCard(r) {
           <span class="metric-value">${yld ? yld.toFixed(1) + '%' : '—'}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label">RSI:</span>
-          <span class="metric-value buy-badge ${rsiBadgeClass}">${rsiBadgeText}</span>
+          <span class="metric-label">Tecnico:</span>
+          <span class="metric-value ${technical.className}" title="${technical.tooltip || ''}">${technical.label} ${technical.score}</span>
         </div>
       </div>
       
@@ -845,6 +921,7 @@ function renderTable(rows) {
       const y24 = Number.isFinite(r.yield24) ? r.yield24 : null;
       const divPerTxt = r.divPer > 0 ? fmtEUR(r.divPer) : "—";
       const divAnualTxt = r.divAnual > 0 ? fmtEUR(r.divAnual) : "—";
+      const technical = r.technical || technicalSignal(r);
 
       const badgeGeneric = (v, anchors, invert = false) => {
         if (!Number.isFinite(v) || v === 0)
@@ -912,10 +989,8 @@ function renderTable(rows) {
           </span>
         </td>
         <td class="sticky-price sticky-price-4">
-          <span class="buy-badge ${
-            r.rsi_14 < 40 ? "buy-green" : r.rsi_14 < 50 ? "buy-yellow" : "buy-red"
-          }">
-            ${r.rsi_14 < 40 ? "BUY" : r.rsi_14 < 50 ? "WAIT" : "HOLD"}
+          <span class="${technical.className}" title="${technical.tooltip || ""}">
+            ${technical.label} ${technical.score}
           </span>
         </td>
       </tr>`;
@@ -969,7 +1044,7 @@ function fetchAcoes() {
       const scoreResult = calculateLucroMaximoScore(d, '1m');
       const score = scoreResult.score || 0;
 
-      rows.push({
+      const row = {
         ticker,
         nome: d.nome || ticker,
         setor: (() => {
@@ -1059,11 +1134,7 @@ function fetchAcoes() {
         current_ratio: Number(d.current_ratio || 0),
         debt_eq: Number(d.debt_eq || 0),
         rsi_14: Number(d.rsi_14 || 0),
-        buyZone: (() => {
-          const rsi = Number(d.rsi_14 || 0);
-          if (!rsi) return "—";
-          return rsi < 40 ? "BUY" : rsi < 50 ? "WAIT" : "HOLD";
-        })(),
+        buyZone: "",
         forward_p_e: Number(d.forward_p_e || 0),
         gross_margin: Number(d.gross_margin || 0),
         oper_margin: Number(d.oper_margin || 0),
@@ -1082,7 +1153,16 @@ function fetchAcoes() {
         eps_grow_5y: Number(d.eps_grow_5y || 0),
         vol_week: Number(d.vol_week || 0),
         vol_month: Number(d.vol_month || 0),
-      });
+      };
+
+      row.assetType = getAssetType(row.ticker, row);
+      row.technical = technicalSignal({ ...d, ...row });
+      row.technicalScore = row.technical.score;
+      row.buyZone = row.technical.label;
+      row.minus35pct = row.technical.support1;
+      row.minus5pct = row.technical.support2;
+
+      rows.push(row);
     });
     ALL_ROWS = rows;
 
@@ -2675,13 +2755,8 @@ export async function initScreen() {
   document
     .getElementById("anlPeriodo")
     ?.addEventListener("change", applyFilters);
-  document.getElementById("anlReset")?.addEventListener("click", () => {
-    document.getElementById("anlSearch").value = "";
-    document.getElementById("anlSetor").value = "";
-    document.getElementById("anlMercado").value = "";
-    document.getElementById("anlPeriodo").value = "";
-    applyFilters();
-  });
+  document.getElementById("anlReset")?.addEventListener("click", resetAnalysisFilters);
+  document.getElementById("cardsClearFilters")?.addEventListener("click", resetAnalysisFilters);
 
   // Selecionar todos (da lista filtrada)
   document.getElementById("anlSelectAll")?.addEventListener("change", (e) => {
