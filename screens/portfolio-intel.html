@@ -24,6 +24,37 @@
   <!-- RESULTS (hidden until analysis runs) -->
   <div id="piResults" class="hidden">
 
+    <!-- ENTRY PLANNER -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-content" style="display:block;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+          <div>
+            <h3 style="margin:0 0 4px 0; font-size:0.95rem;">Plano de Entrada por Peso</h3>
+            <div class="muted" style="font-size:0.8rem;">Base da carteira: <strong id="piEntryBaseValue">0,00 €</strong></div>
+            <div id="piEntrySimulationNote" class="muted" style="font-size:0.75rem; margin-top:4px;"></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span id="piEntryCount" class="muted" style="font-size:0.8rem;">0 selecionado(s)</span>
+            <button id="piEntryReset" class="btn outline" type="button" style="padding:8px 10px;">
+              <i class="fas fa-rotate-left"></i> Limpar
+            </button>
+          </div>
+        </div>
+
+        <div class="pi-entry-layout">
+          <div>
+            <input id="piEntrySearch" class="input" type="search" placeholder="Pesquisar ticker ou nome..." autocomplete="off">
+            <div id="piEntryAssetList" class="pi-entry-list">
+              <div class="muted" style="padding:12px;">Executa a análise para carregar ações com preço disponível.</div>
+            </div>
+          </div>
+          <div id="piEntrySelected" class="pi-entry-selected">
+            <div class="pi-entry-empty">Seleciona uma ou mais ações para simular a avaliação IA com novos pesos.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── ROW 1: DNA + Health + Resilience ── -->
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:12px; margin-bottom:16px;">
 
@@ -216,4 +247,119 @@
 .corr-heatmap { border-collapse: collapse; font-size: 0.7rem; }
 .corr-heatmap th, .corr-heatmap td { padding: 4px 6px; text-align: center; border: 1px solid var(--border); min-width: 38px; }
 .corr-heatmap th { background: var(--muted); font-weight: 700; position: sticky; top: 0; }
+
+.pi-entry-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 12px;
+}
+.pi-entry-list {
+  margin-top: 8px;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+}
+.pi-entry-option {
+  display: grid;
+  grid-template-columns: 22px 72px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.pi-entry-option:last-child { border-bottom: 0; }
+.pi-entry-option:hover { background: rgba(var(--primary-rgb),0.05); }
+.pi-entry-ticker { font-weight: 800; font-size: 0.85rem; }
+.pi-entry-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+.pi-entry-meta {
+  grid-column: 3;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.pi-entry-selected { display: grid; gap: 10px; align-content: start; }
+.pi-entry-empty {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+.pi-entry-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--background);
+}
+.pi-entry-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.pi-entry-card-title { font-weight: 900; font-size: 1rem; }
+.pi-entry-weight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.pi-entry-weight input {
+  width: 74px;
+  padding: 7px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  font-weight: 800;
+}
+.pi-entry-stats {
+  display: flex;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  margin-bottom: 10px;
+}
+.pi-entry-scenarios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px,1fr));
+  gap: 8px;
+}
+.pi-entry-scenario {
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--muted);
+  font-size: 0.78rem;
+}
+.pi-entry-scenario-label {
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+.pi-entry-price { font-weight: 900; margin: 3px 0; }
+
+@media (max-width: 820px) {
+  .pi-entry-layout { grid-template-columns: 1fr; }
+  .pi-entry-list { max-height: 260px; }
+}
+@media (max-width: 520px) {
+  .pi-entry-scenarios { grid-template-columns: 1fr; }
+  .pi-entry-option { grid-template-columns: 22px 64px 1fr; }
+}
+
 </style>

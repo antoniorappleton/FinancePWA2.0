@@ -16,15 +16,31 @@ import { analyzeETFOverlap } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
 import { canonicalTicker, confidenceScore } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
+import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 
 const db = getFirestore(app);
+const readAssetPrice = (asset) =>
+  Number(asset?.valorStock || asset?.price || asset?.preco || asset?.precoAtual || 0);
+
+const entryPlannerState = {
+  assets: [],
+  basePortfolio: [],
+  baseTotalValue: 0,
+  selected: new Map(),
+  hasLoaded: false,
+  rerunTimer: null,
+  isRunning: false
+};
 
 export async function initScreen() {
   const btn = document.getElementById("piRunAnalysis");
   btn?.addEventListener("click", runFullAnalysis);
+  bindEntryPlannerEvents();
 }
 
 async function runFullAnalysis() {
+  if (entryPlannerState.isRunning) return;
+  entryPlannerState.isRunning = true;
   const loading = document.getElementById("piLoading");
   const results = document.getElementById("piResults");
   loading?.classList.remove("hidden");
@@ -53,38 +69,30 @@ async function runFullAnalysis() {
     const strategy = stratSnap.exists() ? stratSnap.data() : {};
     const styleMult = styleToMultipliers(strategy.styleAlloc);
 
-    // Build enriched portfolio with Canonical Deduplication
-    const rawPortfolio = [];
-    ativosSnap.forEach(docu => {
-      const d = docu.data();
-      const rawTicker = cleanTicker(d.ticker);
+    // Build enriched portfolio with the same FIFO source of truth used by the Portfolio screen.
+    const { openPositions } = aggregatePortfolioPositions(ativosSnap);
+    const basePortfolio = openPositions.map(p => {
+      const rawTicker = cleanTicker(p.ticker);
       const ct = canonicalTicker(rawTicker);
       const mkt = acoesMap.get(ct) || acoesMap.get(rawTicker) || {};
-      
-      const precoAtual = Number(mkt.valorStock || mkt.price || mkt.preco || 0);
-      rawPortfolio.push({
-        ticker: rawTicker,
+      const precoAtual = readAssetPrice(mkt);
+      return {
+        ticker: ct,
         canonical: ct,
-        nome: d.nome || mkt.nome || rawTicker,
-        quantidade: d.quantidade || 0,
-        precoMedio: d.precoMedio || 0,
+        nome: p.nome || mkt.nome || rawTicker,
+        quantidade: Number(p.qtd || 0),
+        precoMedio: Number(p.custoMedio || 0),
         precoAtual,
-        valAtual: (d.quantidade || 0) * precoAtual,
+        valAtual: Number(p.qtd || 0) * precoAtual,
         mkt
-      });
-    });
+      };
+    }).filter(p => p.quantidade > 0);
+    const baseTotalValue = basePortfolio.reduce((s, p) => s + p.valAtual, 0);
+    renderEntryPlanner(buildEntryPlannerAssets(acoesMap, basePortfolio), basePortfolio, baseTotalValue);
 
-    const aggregated = {};
-    for (const p of rawPortfolio) {
-      const t = p.canonical;
-      if (!aggregated[t]) {
-        aggregated[t] = { ...p, ticker: t, quantidade: 0, valAtual: 0 };
-      }
-      aggregated[t].quantidade += p.quantidade;
-      aggregated[t].valAtual += p.valAtual;
-    }
-    const portfolio = Object.values(aggregated).filter(p => p.quantidade > 0);
+    const portfolio = applyEntrySimulation(basePortfolio, acoesMap, baseTotalValue);
     const totalValue = portfolio.reduce((s, p) => s + p.valAtual, 0);
+    renderEntrySimulationNote(baseTotalValue, totalValue);
 
     // ── 2. Run all structural engines ──
     const assetScores = [];
@@ -126,11 +134,14 @@ async function runFullAnalysis() {
 
     loading?.classList.add("hidden");
     results?.classList.remove("hidden");
+    entryPlannerState.hasLoaded = true;
 
   } catch (err) {
     console.error("Portfolio Intel error:", err);
     loading?.classList.add("hidden");
     if (window.showToast) window.showToast("Erro na análise: " + err.message);
+  } finally {
+    entryPlannerState.isRunning = false;
   }
 }
 
@@ -383,3 +394,271 @@ function renderRebalance(rebalance) {
   `).join("");
 }
 
+function bindEntryPlannerEvents() {
+  const search = document.getElementById("piEntrySearch");
+  const reset = document.getElementById("piEntryReset");
+  const list = document.getElementById("piEntryAssetList");
+  const selected = document.getElementById("piEntrySelected");
+
+  search?.addEventListener("input", () => renderEntryAssetList());
+  reset?.addEventListener("click", () => {
+    entryPlannerState.selected.clear();
+    if (search) search.value = "";
+    renderEntryAssetList();
+    renderEntrySelectedAssets();
+    scheduleAnalysisRerun();
+  });
+
+  list?.addEventListener("change", (event) => {
+    const input = event.target;
+    if (!input?.matches?.("[data-entry-ticker]")) return;
+    const ticker = input.dataset.entryTicker;
+    if (input.checked) {
+      const asset = entryPlannerState.assets.find(a => a.ticker === ticker);
+      const currentWeight = getCurrentWeight(asset);
+      entryPlannerState.selected.set(ticker, Math.max(1, Math.ceil(currentWeight + 1)));
+    } else {
+      entryPlannerState.selected.delete(ticker);
+    }
+    renderEntryAssetList();
+    renderEntrySelectedAssets();
+    scheduleAnalysisRerun();
+  });
+
+  selected?.addEventListener("change", (event) => {
+    const input = event.target;
+    if (!input?.matches?.("[data-entry-weight]")) return;
+    const ticker = input.dataset.entryWeight;
+    entryPlannerState.selected.set(ticker, Math.max(0, Number(input.value || 0)));
+    renderEntrySelectedAssets();
+    scheduleAnalysisRerun();
+  });
+}
+
+function buildEntryPlannerAssets(acoesMap, portfolio) {
+  const positionMap = new Map(portfolio.map(p => [p.ticker, p]));
+  const assets = [];
+
+  for (const [ticker, mkt] of acoesMap.entries()) {
+    const price = readAssetPrice(mkt);
+    if (!(price > 0)) continue;
+    const position = positionMap.get(ticker);
+    assets.push({
+      ticker,
+      nome: mkt.nome || mkt.name || position?.nome || ticker,
+      price,
+      mkt,
+      position
+    });
+  }
+
+  return assets.sort((a, b) => {
+    const aHeld = a.position ? 0 : 1;
+    const bHeld = b.position ? 0 : 1;
+    if (aHeld !== bHeld) return aHeld - bHeld;
+    return a.ticker.localeCompare(b.ticker);
+  });
+}
+
+function renderEntryPlanner(assets, basePortfolio, baseTotalValue) {
+  entryPlannerState.assets = assets;
+  entryPlannerState.basePortfolio = basePortfolio;
+  entryPlannerState.baseTotalValue = baseTotalValue;
+
+  for (const ticker of Array.from(entryPlannerState.selected.keys())) {
+    if (!assets.some(a => a.ticker === ticker)) entryPlannerState.selected.delete(ticker);
+  }
+
+  const base = document.getElementById("piEntryBaseValue");
+  if (base) base.textContent = fmtEUR(baseTotalValue);
+  renderEntryAssetList();
+  renderEntrySelectedAssets();
+}
+
+function renderEntryAssetList() {
+  const container = document.getElementById("piEntryAssetList");
+  const count = document.getElementById("piEntryCount");
+  if (!container) return;
+
+  const query = String(document.getElementById("piEntrySearch")?.value || "").trim().toUpperCase();
+  const visible = entryPlannerState.assets
+    .filter(a => !query || a.ticker.includes(query) || String(a.nome || "").toUpperCase().includes(query))
+    .slice(0, query ? 120 : 48);
+
+  if (count) count.textContent = `${entryPlannerState.selected.size} selecionado(s)`;
+
+  if (!entryPlannerState.assets.length) {
+    container.innerHTML = `<div class="muted" style="padding:12px;">Executa a análise para carregar ações com preço disponível.</div>`;
+    return;
+  }
+
+  container.innerHTML = visible.map(asset => {
+    const checked = entryPlannerState.selected.has(asset.ticker) ? "checked" : "";
+    const currentWeight = getCurrentWeight(asset);
+    return `
+      <label class="pi-entry-option">
+        <input type="checkbox" data-entry-ticker="${escapeHtml(asset.ticker)}" ${checked}>
+        <span class="pi-entry-ticker">${escapeHtml(asset.ticker)}</span>
+        <span class="pi-entry-name">${escapeHtml(asset.nome || asset.ticker)}</span>
+        <span class="pi-entry-meta">${fmtEUR(asset.price)}${currentWeight > 0 ? ` · ${fmtPct(currentWeight)} atual` : ""}</span>
+      </label>
+    `;
+  }).join("") || `<div class="muted" style="padding:12px;">Nenhum ativo encontrado.</div>`;
+}
+
+function renderEntrySelectedAssets() {
+  const container = document.getElementById("piEntrySelected");
+  if (!container) return;
+
+  if (!entryPlannerState.selected.size) {
+    container.innerHTML = `<div class="pi-entry-empty">Seleciona uma ou mais ações para simular a avaliação IA com novos pesos.</div>`;
+    return;
+  }
+
+  const selectedAssets = Array.from(entryPlannerState.selected.entries())
+    .map(([ticker, targetWeight]) => {
+      const asset = entryPlannerState.assets.find(a => a.ticker === ticker);
+      return asset ? { asset, targetWeight } : null;
+    })
+    .filter(Boolean);
+
+  container.innerHTML = selectedAssets.map(({ asset, targetWeight }) => renderEntryPlanCard(asset, targetWeight)).join("");
+}
+
+function renderEntryPlanCard(asset, targetWeight) {
+  const currentQty = Number(asset.position?.quantidade || 0);
+  const currentAvg = Number(asset.position?.precoMedio || 0);
+  const currentValue = currentQty * asset.price;
+  const targetValue = entryPlannerState.baseTotalValue * (Number(targetWeight || 0) / 100);
+  const amountToBuy = Math.max(0, targetValue - currentValue);
+  const scenarios = [
+    { label: "Atual", price: asset.price },
+    { label: "-5%", price: asset.price * 0.95 },
+    { label: "-10%", price: asset.price * 0.90 }
+  ];
+
+  return `
+    <div class="pi-entry-card">
+      <div class="pi-entry-card-head">
+        <div>
+          <div class="pi-entry-card-title">${escapeHtml(asset.ticker)}</div>
+          <div class="muted">${escapeHtml(asset.nome || asset.ticker)}</div>
+        </div>
+        <label class="pi-entry-weight">
+          <span>Peso alvo</span>
+          <input type="number" min="0" max="100" step="0.5" data-entry-weight="${escapeHtml(asset.ticker)}" value="${Number(targetWeight || 0)}">
+          <span>%</span>
+        </label>
+      </div>
+      <div class="pi-entry-stats">
+        <span>Atual: <strong>${fmtEUR(currentValue)}</strong> (${fmtPct(getCurrentWeight(asset))})</span>
+        <span>Alvo: <strong>${fmtEUR(targetValue)}</strong></span>
+        <span>Reforço: <strong>${fmtEUR(amountToBuy)}</strong></span>
+      </div>
+      <div class="pi-entry-scenarios">
+        ${scenarios.map(s => renderEntryScenario(s, amountToBuy, currentQty, currentAvg)).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderEntryScenario(scenario, amountToBuy, currentQty, currentAvg) {
+  const unitsExact = scenario.price > 0 ? amountToBuy / scenario.price : 0;
+  const unitsWhole = Math.floor(unitsExact);
+  const invested = unitsWhole * scenario.price;
+  const newQty = currentQty + unitsWhole;
+  const newAvg = newQty > 0
+    ? ((currentQty * currentAvg) + invested) / newQty
+    : scenario.price;
+
+  return `
+    <div class="pi-entry-scenario">
+      <div class="pi-entry-scenario-label">${scenario.label}</div>
+      <div class="pi-entry-price">${fmtEUR(scenario.price)}</div>
+      <div><strong>${unitsWhole.toLocaleString("pt-PT")}</strong> ações</div>
+      <div class="muted">${unitsExact.toFixed(2)} un. teóricas</div>
+      <div class="muted">PM: ${fmtEUR(newAvg)}</div>
+    </div>
+  `;
+}
+
+function applyEntrySimulation(basePortfolio, acoesMap, baseTotalValue) {
+  const simulated = basePortfolio.map(p => ({ ...p, mkt: { ...p.mkt } }));
+
+  for (const [ticker, targetWeight] of entryPlannerState.selected.entries()) {
+    const targetValue = baseTotalValue * (Number(targetWeight || 0) / 100);
+    if (!(targetValue > 0)) continue;
+
+    const existing = simulated.find(p => p.ticker === ticker);
+    const asset = entryPlannerState.assets.find(a => a.ticker === ticker);
+    const mkt = asset?.mkt || acoesMap.get(ticker) || {};
+    const price = readAssetPrice(mkt);
+    if (!(price > 0)) continue;
+
+    if (existing) {
+      const amountToBuy = Math.max(0, targetValue - existing.valAtual);
+      if (!(amountToBuy > 0)) continue;
+      const qtyToBuy = amountToBuy / price;
+      const previousCost = existing.quantidade * (existing.precoMedio || price);
+      existing.quantidade += qtyToBuy;
+      existing.valAtual += amountToBuy;
+      existing.precoMedio = existing.quantidade > 0
+        ? (previousCost + amountToBuy) / existing.quantidade
+        : price;
+      existing.simulated = true;
+    } else {
+      simulated.push({
+        ticker,
+        canonical: ticker,
+        nome: mkt.nome || mkt.name || ticker,
+        quantidade: targetValue / price,
+        precoMedio: price,
+        precoAtual: price,
+        valAtual: targetValue,
+        mkt,
+        simulated: true
+      });
+    }
+  }
+
+  return simulated.filter(p => p.quantidade > 0 && p.valAtual > 0);
+}
+
+function renderEntrySimulationNote(baseTotalValue, simulatedTotalValue) {
+  const note = document.getElementById("piEntrySimulationNote");
+  if (!note) return;
+  const added = Math.max(0, simulatedTotalValue - baseTotalValue);
+  note.textContent = added > 0
+    ? `Avaliação IA simulada com +${fmtEUR(added)} em novos reforços.`
+    : "Avaliação IA com a carteira atual.";
+}
+
+function scheduleAnalysisRerun() {
+  if (!entryPlannerState.hasLoaded) return;
+  clearTimeout(entryPlannerState.rerunTimer);
+  entryPlannerState.rerunTimer = setTimeout(() => runFullAnalysis(), 350);
+}
+
+function getCurrentWeight(asset) {
+  if (!asset || !(entryPlannerState.baseTotalValue > 0)) return 0;
+  const value = Number(asset.position?.valAtual || asset.position?.quantidade * asset.price || 0);
+  return (value / entryPlannerState.baseTotalValue) * 100;
+}
+
+function fmtEUR(value) {
+  return Number(value || 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+}
+
+function fmtPct(value) {
+  return `${Number(value || 0).toLocaleString("pt-PT", { maximumFractionDigits: 1 })}%`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[ch]));
+}
