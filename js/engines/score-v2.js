@@ -79,8 +79,12 @@ export function scoreAssetV2(asset, styleMultipliers = null, regime = "high_rate
     (risk.score      * W.risk);
 
   // ── 5. Confidence Adjustment ──
-  // If confidence is low, pull score towards 50 to avoid false signals
-  const finalScore = Math.round(weighted * conf + 50 * (1 - conf));
+  // Softer shrinkage: even low-confidence assets retain 40% of their scored weight.
+  // Rationale: missing data ≠ bad asset — just uncertain. Broad Market ETFs carry
+  // inherent diversification value not captured in missing TER/holdings fields.
+  const prior = category === "Broad Market ETF" ? 65 : category.includes("ETF") ? 58 : 50;
+  const adjConf = 0.4 + conf * 0.6;
+  const finalScore = Math.round(weighted * adjConf + prior * (1 - adjConf));
 
   // ── Letter grade ──
   let grade;
