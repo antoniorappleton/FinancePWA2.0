@@ -3,25 +3,17 @@ import { momentumScore } from "./momentum.js";
 import { valuationScore } from "./valuation.js";
 import { riskScore } from "./risk.js";
 import { confidenceScore, clamp, getAssetCategory } from "../utils/normalize.js";
+import { applyRegimeWeights } from "./macro.js";
 
-/**
- * MACRO REGIME WEIGHTS
- * Adjusts factor importance based on economic cycle.
- * Current: "Higher for Longer" / Mid-cycle Transition
- */
-const REGIME_WEIGHTS = {
-  high_rates: { quality: 0.35, momentum: 0.15, valuation: 0.30, risk: 0.20 },
-  inflation:  { quality: 0.25, momentum: 0.20, valuation: 0.35, risk: 0.20 },
-  expansion:  { quality: 0.20, momentum: 0.40, valuation: 0.20, risk: 0.20 },
-  recession:  { quality: 0.40, momentum: 0.10, valuation: 0.20, risk: 0.30 }
-};
-
-const CURRENT_REGIME = "high_rates"; // DEFAULT
+// Quality-First philosophy: Quality + Valuation always dominate Momentum
+// Momentum is a noisy, volatile signal — useful but never the primary driver
+const BASE_WEIGHTS = { quality: 0.35, momentum: 0.15, valuation: 0.30, risk: 0.20 };
+const MAX_MOMENTUM_WEIGHT = 0.25; // Cap: even in risk-on regimes, momentum ≤ 25%
 
 /**
  * Calculate the comprehensive V2 score for a single asset.
  */
-export function scoreAssetV2(asset, styleMultipliers = null) {
+export function scoreAssetV2(asset, styleMultipliers = null, regime = "high_rates") {
   if (!asset) return { finalScore: 50, grade: "C", confidence: 0, engines: {}, signals: [], warnings: [], observations: [] };
 
   const category = getAssetCategory(asset);
@@ -34,8 +26,16 @@ export function scoreAssetV2(asset, styleMultipliers = null) {
   const risk      = riskScore(asset);
   const conf      = confidenceScore(asset);
 
-  // ── 1. Base weights from Regime ──
-  const W = { ...REGIME_WEIGHTS[CURRENT_REGIME] };
+  // ── 1. Regime-adjusted weights (Quality + Valuation always > Momentum) ──
+  const W = applyRegimeWeights(BASE_WEIGHTS, regime);
+  if (W.momentum > MAX_MOMENTUM_WEIGHT) {
+    const excess = W.momentum - MAX_MOMENTUM_WEIGHT;
+    W.momentum = MAX_MOMENTUM_WEIGHT;
+    W.quality += excess * 0.6;
+    W.valuation += excess * 0.4;
+    const s = W.quality + W.momentum + W.valuation + W.risk;
+    W.quality /= s; W.momentum /= s; W.valuation /= s; W.risk /= s;
+  }
 
   // ── 2. Apply Asset-Class Adjustments ──
   if (isETF) {

@@ -14,7 +14,7 @@ import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
 import { analyzeETFOverlap } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
-import { canonicalTicker, confidenceScore } from "../utils/normalize.js";
+import { canonicalTicker, confidenceScore, getAssetCategory } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 
@@ -68,6 +68,7 @@ async function runFullAnalysis() {
 
     const strategy = stratSnap.exists() ? stratSnap.data() : {};
     const styleMult = styleToMultipliers(strategy.styleAlloc);
+    const regime = strategy.macroRegime || "high_rates";
 
     // Build enriched portfolio with the same FIFO source of truth used by the Portfolio screen.
     const { openPositions } = aggregatePortfolioPositions(ativosSnap);
@@ -97,12 +98,20 @@ async function runFullAnalysis() {
     // ── 2. Run all structural engines ──
     const assetScores = [];
     for (const p of portfolio) {
-      const v2 = scoreAssetV2(p.mkt, styleMult);
+      const v2 = scoreAssetV2(p.mkt, styleMult, regime);
       p.score = v2.finalScore;
       p.v2 = v2;
       assetScores.push({ ...p, v2 });
     }
     assetScores.sort((a, b) => b.v2.finalScore - a.v2.finalScore);
+
+    // Score all available assets so grades appear in Entry Planner selection list
+    for (const ea of entryPlannerState.assets) {
+      const v2 = scoreAssetV2(ea.mkt, styleMult, regime);
+      ea.grade = v2.grade;
+      ea.finalScore = v2.finalScore;
+    }
+    renderEntryAssetList();
 
     const corr = correlationMatrix(portfolio);
     const factors = portfolioFactors(portfolio, totalValue);
@@ -495,12 +504,16 @@ function renderEntryAssetList() {
   container.innerHTML = visible.map(asset => {
     const checked = entryPlannerState.selected.has(asset.ticker) ? "checked" : "";
     const currentWeight = getCurrentWeight(asset);
+    const gc = asset.grade?.startsWith("A") ? "#22c55e" : asset.grade?.startsWith("B") ? "#3b82f6" : asset.grade?.startsWith("C") ? "#eab308" : asset.grade?.startsWith("D") ? "#f97316" : "#ef4444";
+    const gradeBadge = asset.grade
+      ? `<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.65rem;font-weight:800;color:white;background:${gc};">${asset.grade}</span> `
+      : "";
     return `
       <label class="pi-entry-option">
         <input type="checkbox" data-entry-ticker="${escapeHtml(asset.ticker)}" ${checked}>
         <span class="pi-entry-ticker">${escapeHtml(asset.ticker)}</span>
         <span class="pi-entry-name">${escapeHtml(asset.nome || asset.ticker)}</span>
-        <span class="pi-entry-meta">${fmtEUR(asset.price)}${currentWeight > 0 ? ` · ${fmtPct(currentWeight)} atual` : ""}</span>
+        <span class="pi-entry-meta">${gradeBadge}${fmtEUR(asset.price)}${currentWeight > 0 ? ` · ${fmtPct(currentWeight)} atual` : ""}</span>
       </label>
     `;
   }).join("") || `<div class="muted" style="padding:12px;">Nenhum ativo encontrado.</div>`;
@@ -522,7 +535,12 @@ function renderEntrySelectedAssets() {
     })
     .filter(Boolean);
 
-  container.innerHTML = selectedAssets.map(({ asset, targetWeight }) => renderEntryPlanCard(asset, targetWeight)).join("");
+  const totalWeight = Array.from(entryPlannerState.selected.values()).reduce((s, w) => s + Number(w), 0);
+  const weightWarn = totalWeight > 100
+    ? `<div class="pi-obs warning" style="margin-bottom:10px;">⚠️ Soma dos pesos selecionados: ${totalWeight.toFixed(1)}% — excede 100%. Capital simulado além da carteira base.</div>`
+    : "";
+
+  container.innerHTML = weightWarn + selectedAssets.map(({ asset, targetWeight }) => renderEntryPlanCard(asset, targetWeight)).join("");
 }
 
 function renderEntryPlanCard(asset, targetWeight) {
@@ -531,6 +549,31 @@ function renderEntryPlanCard(asset, targetWeight) {
   const currentValue = currentQty * asset.price;
   const targetValue = entryPlannerState.baseTotalValue * (Number(targetWeight || 0) / 100);
   const amountToBuy = Math.max(0, targetValue - currentValue);
+
+  // Sizing rule checks
+  const mktData = asset.mkt || {};
+  const cat = getAssetCategory(mktData);
+  const isETF = cat.includes("ETF");
+  const maxPct = isETF ? 25 : 10;
+  const tw = Number(targetWeight || 0);
+  const sizeWarnings = [];
+  if (tw > maxPct) {
+    sizeWarnings.push(`Peso de ${tw}% acima do recomendado de ${maxPct}% para ${isETF ? "ETF" : "ação individual"}.`);
+  }
+  const sector = mktData.setor || mktData.sector || "";
+  if (!isETF && sector && entryPlannerState.baseTotalValue > 0) {
+    const sectorCurrent = entryPlannerState.basePortfolio
+      .filter(p => (p.mkt?.setor || p.mkt?.sector || "") === sector)
+      .reduce((s, p) => s + p.valAtual, 0);
+    const projSectorPct = ((sectorCurrent + targetValue) / entryPlannerState.baseTotalValue) * 100;
+    if (projSectorPct > 30) {
+      sizeWarnings.push(`Setor "${sector}" projetado em ${projSectorPct.toFixed(0)}% — limite 30%.`);
+    }
+  }
+  const sizeWarningHtml = sizeWarnings.map(w =>
+    `<div style="padding:5px 10px;border-radius:5px;background:rgba(239,68,68,0.08);border-left:3px solid #ef4444;font-size:0.75rem;color:#ef4444;font-weight:600;margin-bottom:6px;">⚠️ ${w}</div>`
+  ).join("");
+
   const scenarios = [
     { label: "Atual", price: asset.price },
     { label: "-5%", price: asset.price * 0.95 },
@@ -538,7 +581,7 @@ function renderEntryPlanCard(asset, targetWeight) {
   ];
 
   return `
-    <div class="pi-entry-card">
+    <div class="pi-entry-card"${sizeWarnings.length ? ' style="border-color:#ef4444;"' : ''}>
       <div class="pi-entry-card-head">
         <div>
           <div class="pi-entry-card-title">${escapeHtml(asset.ticker)}</div>
@@ -550,6 +593,7 @@ function renderEntryPlanCard(asset, targetWeight) {
           <span>%</span>
         </label>
       </div>
+      ${sizeWarningHtml}
       <div class="pi-entry-stats">
         <span>Atual: <strong>${fmtEUR(currentValue)}</strong> (${fmtPct(getCurrentWeight(asset))})</span>
         <span>Alvo: <strong>${fmtEUR(targetValue)}</strong></span>
