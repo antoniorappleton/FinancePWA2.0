@@ -440,7 +440,92 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
    ATIVIDADE RECENTE (FILTRADA) + EXPAND/COLAPSE
    ========================= */
 let atividadesCache = []; // guarda todos os objetos processados
+let atividadesSummaryCache = new Map();
 let atividadesExpandido = false; // estado de expansão
+
+function calcularPnlVendasPorTicker(movimentos) {
+  const tickerMap = new Map();
+
+  movimentos.forEach((mov) => {
+    const list = tickerMap.get(mov.ticker) || [];
+    list.push(mov);
+    tickerMap.set(mov.ticker, list);
+  });
+
+  const summaryByTicker = new Map();
+
+  tickerMap.forEach((list, ticker) => {
+    list.sort((a, b) => {
+      const diff = (a.data?.getTime() || 0) - (b.data?.getTime() || 0);
+      if (diff !== 0) return diff;
+      const aIsBuy = a.quantidade > 0 ? 0 : 1;
+      const bIsBuy = b.quantidade > 0 ? 0 : 1;
+      if (aIsBuy !== bIsBuy) return aIsBuy - bIsBuy;
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
+
+    const lots = [];
+    let totalRealizado = 0;
+    let totalCustoBase = 0;
+    let totalVenda = 0;
+
+    list.forEach((mov) => {
+      const qty = Number(mov.quantidade) || 0;
+      const preco = Number(mov.preco) || 0;
+      if (qty > 0) {
+        lots.push({ qty, preco });
+        return;
+      }
+
+      if (qty >= 0) return;
+
+      let remaining = Math.abs(qty);
+      let custoBase = 0;
+      let vendido = 0;
+
+      while (remaining > 0 && lots.length > 0) {
+        const lot = lots[0];
+        if (lot.qty <= remaining) {
+          custoBase += lot.qty * lot.preco;
+          vendido += lot.qty;
+          remaining -= lot.qty;
+          lots.shift();
+        } else {
+          custoBase += remaining * lot.preco;
+          vendido += remaining;
+          lot.qty -= remaining;
+          remaining = 0;
+        }
+      }
+
+      const vendaTotal = Math.abs(qty) * preco;
+      const pnl = vendaTotal - custoBase;
+      const pct = custoBase > 0 ? (pnl / custoBase) * 100 : null;
+
+      mov.pnlEUR = pnl;
+      mov.pnlPct = pct;
+      mov.pnlCustoBase = custoBase;
+      mov.pnlVendaTotal = vendaTotal;
+
+      totalRealizado += pnl;
+      totalCustoBase += custoBase;
+      totalVenda += vendaTotal;
+    });
+
+    if (totalCustoBase > 0 || totalVenda > 0) {
+      const avgPct = totalCustoBase > 0 ? (totalRealizado / totalCustoBase) * 100 : (totalRealizado / totalVenda) * 100;
+      summaryByTicker.set(ticker, {
+        ticker,
+        totalRealizado,
+        totalCustoBase,
+        totalVenda,
+        avgPct,
+      });
+    }
+  });
+
+  return summaryByTicker;
+}
 
 async function carregarAtividadeRecenteSimplificada(snapAtivos) {
   const cont = document.getElementById("atividadeRecente");
@@ -479,6 +564,8 @@ async function carregarAtividadeRecenteSimplificada(snapAtivos) {
       });
     });
 
+    const summaryFull = calcularPnlVendasPorTicker(movimentos);
+
     // Popular dropdown de períodos se estiver vazio
     const hPeriodo = document.getElementById("histFltPeriodo");
     if (hPeriodo && hPeriodo.options.length <= 1) {
@@ -504,6 +591,10 @@ async function carregarAtividadeRecenteSimplificada(snapAtivos) {
     }
 
     atividadesCache = filtered;
+    const tickersAtivos = new Set(filtered.map((m) => m.ticker));
+    atividadesSummaryCache = new Map(
+      [...summaryFull].filter(([ticker]) => tickersAtivos.has(ticker)),
+    );
     
     // Render: 2 ou tudo
     renderAtividades(cont, atividadesExpandido ? filtered.length : 2);
@@ -525,13 +616,47 @@ function renderAtividades(cont, limitItems) {
   const fmtDate = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const itemsToShow = list.slice(0, limitItems);
-  const html = itemsToShow.map((m) => {
-    const isVenda = m.tipo === "venda";
-    const badgeClass = isVenda ? "tag venda" : "tag compra";
-    const icon = isVenda ? "📉" : "🛒";
-    const dateStr = m.data ? fmtDate.format(m.data) : "N/A";
+  const summaryLines = [];
+  const fmtDateOnly = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-    return `
+  const uniqueTickers = [...new Set(list.map((m) => m.ticker))].slice(0, 5);
+  uniqueTickers.forEach((ticker) => {
+    const summary = atividadesSummaryCache.get(ticker);
+    if (!summary) return;
+    const pctLabel = Number.isFinite(summary.avgPct)
+      ? `${summary.avgPct.toFixed(1)}%`
+      : "—";
+    summaryLines.push(`
+      <div style="display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--border);">
+        <div>
+          <strong>${ticker}</strong>
+          <div class="muted" style="font-size:0.75rem;">Vendido: ${fmtEUR.format(summary.totalVenda)} • Custo base: ${fmtEUR.format(summary.totalCustoBase)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:700; color:${summary.totalRealizado >= 0 ? "var(--success)" : "var(--error)"};">${fmtEUR.format(summary.totalRealizado)}</div>
+          <div class="muted" style="font-size:0.75rem;">${pctLabel}</div>
+        </div>
+      </div>
+    `);
+  });
+
+  const summaryHtml = summaryLines.length
+    ? `<div style="margin-bottom: 12px; padding: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px;"><strong>Resumo P/L por ticker</strong>${summaryLines.join("")}</div>`
+    : "";
+
+  const html = `${summaryHtml}${itemsToShow
+    .map((m) => {
+      const isVenda = m.tipo === "venda";
+      const badgeClass = isVenda ? "tag venda" : "tag compra";
+      const icon = isVenda ? "📉" : "🛒";
+      const dateStr = m.data ? fmtDate.format(m.data) : "N/A";
+      const pnlLabel = isVenda
+        ? m.pnlEUR !== undefined
+          ? `${fmtEUR.format(m.pnlEUR)} (${Number.isFinite(m.pnlPct) ? m.pnlPct.toFixed(1) + "%" : "—"})`
+          : ""
+        : "";
+
+      return `
       <div class="activity-item" style="border-bottom: 1px solid var(--border); padding: 10px 0; background: transparent; border-left: 0; border-right: 0; border-top: 0; border-radius: 0; margin-bottom: 0;">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <div style="display: flex; align-items: center; gap: 10px;">
@@ -549,11 +674,13 @@ function renderAtividades(cont, limitItems) {
               ${m.quantidade > 0 ? "+" : ""}${m.quantidade.toFixed(2).replace(/\.?0+$/, "")}
             </p>
             <p class="muted" style="margin: 0; font-size: 0.7rem;">${fmtEUR.format(m.preco)}</p>
+            ${pnlLabel ? `<p class="muted" style="margin: 0; font-size: 0.7rem;">${pnlLabel}</p>` : ""}
           </div>
         </div>
       </div>
     `;
-  }).join("");
+    })
+    .join("")}`;
 
   cont.innerHTML = html;
 
