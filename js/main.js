@@ -80,6 +80,16 @@ document.addEventListener("DOMContentLoaded", () => {
       navigator.serviceWorker.register("./service-worker.js")
         .then((reg) => {
           console.log("[PWA] Service Worker Registado.");
+          const swUpdateKey = "swUpdateCounter";
+          const currentCount = Number(localStorage.getItem(swUpdateKey) || 0) + 1;
+          if (currentCount >= 3) {
+            localStorage.setItem(swUpdateKey, "0");
+            console.log("[PWA] Verificação periódica de SW após 3 carregamentos.");
+            reg.update();
+          } else {
+            localStorage.setItem(swUpdateKey, String(currentCount));
+          }
+
           reg.onupdatefound = () => {
             const installingWorker = reg.installing;
             installingWorker.onstatechange = () => {

@@ -598,16 +598,13 @@ function mesesPagamento(periodicidade, mesTipicoIdx) {
 function renderHeatmap(rows) {
   const container = document.getElementById("anlHeatmapScroll");
   const grid = document.getElementById("anlHeatmapGrid");
+  const summary = document.getElementById("anlHeatmapSummary");
   if (!container || !grid) return;
 
-  // 1. Header Row
-  let html = `<div class="cell header-cell sticky-col">Ativo</div>`;
-  mesesPT.forEach((m) => {
-    html += `<div class="cell header-cell">${m.slice(0, 3)}</div>`;
-  });
+  const paymentRows = rows.filter((r) => perPayment(r) > 0);
+  const monthBuckets = Array.from({ length: 12 }, () => []);
 
-  // 2. Thresholds for coloring (4 levels)
-  const perPayments = rows
+  const perPayments = paymentRows
     .map((r) => perPayment(r))
     .filter((v) => v > 0)
     .sort((a, b) => a - b);
@@ -615,8 +612,7 @@ function renderHeatmap(rows) {
   const q2 = percentile(perPayments, 0.5) || 0.02;
   const q3 = percentile(perPayments, 0.75) || 0.03;
 
-  // 3. Data Rows
-  rows.forEach((r) => {
+  paymentRows.forEach((r) => {
     const per = String(r.periodicidade || "n/A");
     const idxMes = mesToIdx.get(String(r.mes || "")) ?? NaN;
     const meses = mesesPagamento(per, idxMes);
@@ -630,26 +626,77 @@ function renderHeatmap(rows) {
       else klass = "pay-4";
     }
 
-    const tickerNome = `${r.ticker}${r.nome ? ` <span class="muted" style="font-size:0.75rem; margin-left:4px;">— ${r.nome}</span>` : ""}`;
-    html += `<div class="cell sticky-col" title="${r.ticker} — ${r.nome || ""}"><strong>${r.ticker}</strong></div>`;
+    let sizeClass = "size-sm";
+    if (perPay > q3) sizeClass = "size-xl";
+    else if (perPay > q2) sizeClass = "size-lg";
+    else if (perPay > q1) sizeClass = "size-md";
 
-    for (let m = 0; m < 12; m++) {
-      if (!meses.includes(m)) {
-        html += `<div class="cell"></div>`;
-        continue;
-      }
-      const tt = `${r.ticker} • ${mesesPT[m]} • ~${fmtEUR(perPay)}`;
-      html += `<div class="cell tt ${klass}" data-tt="${tt}">${perPay ? fmtEUR(perPay) : ""}</div>`;
-    }
+    const amountLabel = perPay ? fmtEUR(perPay) : "—";
+    const allMonths = meses.map((m) => mesesPT[m]).join(", ");
+    const titleLines = [
+      r.ticker,
+      r.nome ? `${r.nome}` : null,
+      `Frequência: ${per}`,
+      perPay ? `Pagamento típico: ${amountLabel}` : null,
+      allMonths ? `Meses típicos: ${allMonths}` : null,
+    ]
+      .filter(Boolean)
+      .join(" • ");
+
+    meses.forEach((mes) => {
+      monthBuckets[mes].push({
+        ticker: r.ticker,
+        nome: r.nome,
+        per,
+        perPay,
+        klass,
+        sizeClass,
+        title: titleLines,
+      });
+    });
   });
 
-  grid.innerHTML = html;
+  if (summary) {
+    if (!paymentRows.length) {
+      summary.textContent = "Nenhum ativo com dividendos definidos para os próximos 12 meses.";
+    } else {
+      const avgPay =
+        paymentRows.reduce((acc, r) => acc + perPayment(r), 0) /
+        paymentRows.length;
+      const monthCounts = monthBuckets.map((bucket) => bucket.length);
+      const minCount = Math.min(...monthCounts);
+      const maxCount = Math.max(...monthCounts);
 
-  // 4. Initial Scroll to December
-  setTimeout(() => {
-    const maxX = container.scrollWidth - container.clientWidth;
-    if (maxX > 0) container.scrollLeft = maxX;
-  }, 0);
+      summary.innerHTML = `
+        <span><strong>${paymentRows.length}</strong> ativos com pagamento típico</span>
+        <span>Média por pagamento: <strong>${fmtEUR(avgPay)}</strong></span>
+        <span>Pagamentos/mês: <strong>${minCount}</strong>–<strong>${maxCount}</strong></span>
+      `;
+    }
+  }
+
+  const rowsHtml = monthBuckets
+    .map((bucket, monthIndex) => {
+      const bubbles = bucket
+        .sort((a, b) => b.perPay - a.perPay)
+        .map(
+          (item) =>
+            `<div class="dividend-bubble ${item.klass} ${item.sizeClass}" title="${item.title}"><span class="ticker">${item.ticker}</span></div>`,
+        )
+        .join("");
+
+      return `
+        <div class="month-row">
+          <div class="month-label">${mesesPT[monthIndex]}</div>
+          <div class="month-bubbles">
+            ${bubbles || '<span class="month-empty">Nenhum pagamento previsto</span>'}
+          </div>
+        </div>`;
+    })
+    .join("");
+
+  grid.innerHTML = rowsHtml;
+  container.scrollTop = 0;
 }
 
 /* =========================================================

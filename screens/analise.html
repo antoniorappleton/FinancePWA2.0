@@ -141,51 +141,36 @@
   <div class="card" style="margin-top: 12px">
     <div class="card-content" style="display: block">
       <div class="dividend-header">
-        <h3 style="margin: 0">Calendário de Dividendos (12 meses)</h3>
-        <div class="muted" style="font-size: 0.9rem">
-          Células preenchidas indicam meses típicos de pagamento; valor ≈
-          <strong>pagamento médio por ação (24m)</strong>
+        <div>
+          <h3 style="margin: 0">Calendário de Dividendos (12 meses)</h3>
+          <div class="muted dividend-description" style="font-size: 0.9rem">
+            Células preenchidas indicam meses típicos de pagamento; valor ≈
+            <strong>pagamento médio por ação (24m)</strong>
+          </div>
         </div>
+        <div id="anlHeatmapSummary" class="dividend-summary muted"></div>
       </div>
 
       <div id="anlHeatmapScroll" class="dividend-heatmap-container">
-        <div id="anlHeatmapGrid" class="dividend-heatmap-grid">
-          <!-- Header e Linhas são gerados via JS no mesmo grid -->
-        </div>
+        <div id="anlHeatmapGrid" class="dividend-heatmap-grid"></div>
       </div>
 
-      <div class="legend" style="margin-top: 6px">
-        <span style="font-size: 0.85rem; margin-right: 8px"
-          >Intensidade do dividendo:</span
-        >
+      <div class="legend" style="margin-top: 12px">
+        <span class="legend-label">Cor + tamanho = valor do dividendo</span>
         <div class="legend-item">
-          <div
-            class="legend-box level-1"
-            style="
-              background: rgba(16, 185, 129, 0.1);
-              border: 1px solid var(--border);
-            "
-          ></div>
-          Baixa
+          <div class="legend-box level-1"></div>
+          Baixo
         </div>
         <div class="legend-item">
-          <div
-            class="legend-box level-2"
-            style="background: rgba(16, 185, 129, 0.3)"
-          ></div>
+          <div class="legend-box level-2"></div>
+          Médio
         </div>
         <div class="legend-item">
-          <div
-            class="legend-box level-3"
-            style="background: rgba(16, 185, 129, 0.55)"
-          ></div>
+          <div class="legend-box level-3"></div>
         </div>
         <div class="legend-item">
-          <div
-            class="legend-box level-4"
-            style="background: rgba(16, 185, 129, 0.8)"
-          ></div>
-          Alta
+          <div class="legend-box level-4"></div>
+          Alto
         </div>
       </div>
     </div>
@@ -743,125 +728,307 @@
 
 .dividend-header {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  gap: 16px;
+  align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.dividend-description {
+  color: var(--muted, #6b7280);
+  max-width: 600px;
+}
+
+.dividend-summary {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 0.92rem;
+  color: var(--muted, #6b7280);
+}
+
+.dividend-summary span {
+  display: inline-flex;
+  gap: 0.35rem;
 }
 
 .legend {
-  margin-top: 6px;
+  margin-top: 12px;
   display: flex;
-  gap: 12px;
+  gap: 18px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.legend-label {
+  font-size: 0.92rem;
+  color: var(--muted, #6b7280);
+  min-width: 160px;
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  color: var(--muted, #6b7280);
 }
 
 .legend-box {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
   display: inline-block;
+  border: 1px solid rgba(107, 114, 128, 0.15);
 }
 
-.legend-box.weak {
-  background: rgba(34, 197, 94, 0.18);
+.legend-box.level-1 {
+  background: rgba(16, 185, 129, 0.18);
 }
 
-.legend-box.med {
-  background: rgba(34, 197, 94, 0.38);
+.legend-box.level-2 {
+  background: rgba(16, 185, 129, 0.35);
 }
 
-.legend-box.strong {
-  background: rgba(34, 197, 94, 0.58);
+.legend-box.level-3 {
+  background: rgba(16, 185, 129, 0.55);
+}
+
+.legend-box.level-4 {
+  background: rgba(16, 185, 129, 0.85);
 }
 
 .dividend-heatmap-container {
   border: 1px solid var(--border, #e5e7eb);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: auto;
-  max-height: 500px;
+  max-height: 520px;
   position: relative;
+  background: var(--card, #fff);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
 }
 
 .dividend-heatmap-grid {
-  display: grid;
-  grid-template-columns: 80px repeat(12, minmax(80px, 1fr));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px;
 }
 
-.dividend-heatmap-grid .cell {
-  padding: 10px 12px;
-  border-right: 1px solid var(--border, #e5e7eb);
+.month-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border, #e5e7eb);
-  background: var(--card, #fff);
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
+}
+
+.month-row:last-child {
+  border-bottom: none;
+}
+
+.month-label {
+  font-weight: 700;
+  color: var(--text, #111827);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   font-size: 0.9rem;
+  min-width: 140px;
+  padding-top: 4px;
+}
+
+.month-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 72px;
+}
+
+.month-empty {
+  color: var(--muted, #6b7280);
+  font-size: 0.92rem;
+}
+
+.dividend-heatmap-grid .dividend-bubble {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  font-weight: 700;
+  padding: 0.35rem;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+
+.dividend-heatmap-grid .dividend-bubble:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);
+}
+
+.dividend-heatmap-grid .dividend-bubble .ticker {
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.dividend-heatmap-grid .dividend-bubble {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  font-weight: 700;
+  padding: 0.35rem;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+
+.dividend-heatmap-grid .dividend-bubble:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.16);
+}
+
+.dividend-heatmap-grid .dividend-bubble .ticker {
+  display: inline-block;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.dividend-heatmap-grid .dividend-bubble.size-sm {
+  width: 48px;
+  height: 48px;
+}
+
+.dividend-heatmap-grid .dividend-bubble.size-md {
+  width: 56px;
+  height: 56px;
+}
+
+.dividend-heatmap-grid .dividend-bubble.size-lg {
+  width: 66px;
+  height: 66px;
+}
+
+.dividend-heatmap-grid .dividend-bubble.size-xl {
+  width: 76px;
+  height: 76px;
+}
+
+.dividend-heatmap-grid .dividend-bubble.pay-1 {
+  background: rgba(220, 252, 231, 0.95);
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.dividend-heatmap-grid .dividend-bubble.pay-2 {
+  background: rgba(167, 243, 208, 0.95);
+  color: #14532d;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.dividend-heatmap-grid .dividend-bubble.pay-3 {
+  background: rgba(74, 222, 128, 0.95);
+  color: #0f5132;
+  border: 1px solid rgba(34, 197, 94, 0.55);
+}
+
+.dividend-heatmap-grid .dividend-bubble.pay-4 {
+  background: #047857;
+  color: #ffffff;
+  border: 1px solid rgba(4, 120, 87, 0.8);
+}
+
+.dividend-heatmap-grid .cell.ticker-cell strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.dividend-heatmap-grid .cell.ticker-cell .company-name {
+  color: var(--muted, #6b7280);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.dividend-heatmap-grid .cell.ticker-cell .meta {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--muted, #6b7280);
+}
+
+.dividend-heatmap-grid .cell.ticker-cell .badge {
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text, #111827);
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
 }
 
 .dividend-heatmap-grid .header-cell {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background: var(--muted-bg, #f9fafb);
-  font-weight: bold;
-  border-bottom: 2px solid var(--border, #e5e7eb);
+  z-index: 15;
+  background: var(--muted-bg, #f8fafc);
+  font-weight: 700;
+  color: var(--text, #111827);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  justify-content: center;
+}
+
+.dividend-heatmap-grid .header-cell.sticky-col {
+  background: var(--muted-bg, #f8fafc);
 }
 
 .dividend-heatmap-grid .sticky-col {
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 10;
   background: var(--card, #fff);
-  border-right: 2px solid var(--border, #e5e7eb);
+  border-right: 1px solid var(--border, #e5e7eb);
 }
 
-.dividend-heatmap-grid .header-cell.sticky-col {
-  z-index: 15;
-  background: var(--muted-bg, #f9fafb);
-}
-
-[data-theme="dark"] .dividend-heatmap-grid .cell {
-  background: #111;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .dividend-heatmap-grid .header-cell {
-  background: #1a1a1a;
-}
-
-[data-theme="dark"] .dividend-heatmap-grid .sticky-col {
-  background: #111;
-}
-
-[data-theme="dark"] .dividend-heatmap-grid .header-cell.sticky-col {
-  background: #1a1a1a;
+.dividend-heatmap-grid .footer-cell {
+  background: var(--muted-bg, #f8fafc);
+  font-weight: 600;
+  color: var(--text, #111827);
 }
 
 .dividend-heatmap-grid .cell.pay-1 {
-  background: rgba(16, 185, 129, 0.18) !important;
+  background: rgba(16, 185, 129, 0.16);
 }
 
 .dividend-heatmap-grid .cell.pay-2 {
-  background: rgba(16, 185, 129, 0.35) !important;
+  background: rgba(16, 185, 129, 0.35);
 }
 
 .dividend-heatmap-grid .cell.pay-3 {
-  background: rgba(16, 185, 129, 0.55) !important;
+  background: rgba(16, 185, 129, 0.58);
 }
 
 .dividend-heatmap-grid .cell.pay-4 {
-  background: rgba(16, 185, 129, 0.85) !important;
-  color: #fff !important;
-  font-weight: 600 !important;
+  background: rgba(16, 185, 129, 0.9);
+  color: #fff;
+  font-weight: 600;
+}
+
+.dividend-heatmap-grid .cell:not(.header-cell):not(.footer-cell):hover {
+  filter: brightness(0.98);
 }
 
 .tt {
