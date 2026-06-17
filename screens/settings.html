@@ -212,6 +212,217 @@
     border: 2px solid white;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
+
+  .glossary-hero {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb, 0,0,0), 0.06), transparent 70%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+  }
+
+  .glossary-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 10px;
+  }
+
+  .glossary-hero h2 {
+    margin: 0 0 8px;
+    font-size: 1.45rem;
+    line-height: 1.15;
+  }
+
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .glossary-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .glossary-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--foreground);
+  }
+
+  .glossary-section-title i {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(var(--primary-rgb, 0,0,0), 0.06);
+    color: var(--primary);
+  }
+
+  .glossary-group {
+    margin-top: 16px;
+  }
+
+  .glossary-group:first-of-type {
+    margin-top: 0;
+  }
+
+  .glossary-group-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .glossary-group-label::before {
+    content: "";
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.45;
+  }
+
+  .glossary-term {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: rgba(var(--primary-rgb, 0,0,0), 0.02);
+  }
+
+  .glossary-term-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 7px;
+  }
+
+  .glossary-term-name {
+    font-weight: 800;
+    font-size: 0.9rem;
+  }
+
+  .glossary-term-full {
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    margin-top: 2px;
+  }
+
+  .glossary-pill {
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    background: var(--background);
+  }
+
+  .glossary-copy {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .glossary-bench {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .bench-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: var(--background);
+    border: 1px solid var(--border);
+  }
+
+  .bench-chip::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .bench-chip.ok { color: var(--success, #22c55e); }
+  .bench-chip.warn { color: #f59e0b; }
+  .bench-chip.danger { color: var(--destructive, #ef4444); }
+
+  .glossary-traps,
+  .glossary-framework {
+    display: grid;
+    gap: 10px;
+  }
+
+  .trap-item,
+  .framework-step {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px;
+    background: var(--background);
+  }
+
+  .trap-item strong,
+  .framework-step strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.82rem;
+  }
+
+  .framework-step span {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    margin-right: 8px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  @media (max-width: 600px) {
+    .glossary-hero {
+      padding: 18px;
+    }
+
+    .glossary-term-head {
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
 </style>
 
 <div class="page" data-screen-title="Configurações">
@@ -230,6 +441,9 @@
       </button>
       <button class="tab-btn" data-tab="tab-relatorios">
         <i class="fas fa-file-contract"></i> Relatórios
+      </button>
+      <button class="tab-btn" data-tab="tab-glossario">
+        <i class="fas fa-book-open"></i> Glossário
       </button>
     </div>
 
@@ -793,6 +1007,271 @@
               <span>Analytics</span>
               <label class="switch"><input type="checkbox" id="cfgAnalytics" /><span class="slider"></span></label>
             </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: GLOSSÁRIO -->
+    <div id="tab-glossario" class="settings-section">
+      <div class="glossary-hero">
+        <div class="glossary-eyebrow">
+          <i class="fas fa-scale-balanced"></i>
+          Referência de análise
+        </div>
+        <h2>Métricas que realmente importam</h2>
+        <p class="muted" style="max-width: 620px; margin: 0;">
+          Guia rápido para interpretar ações, ETFs e riscos de carteira com critérios consistentes.
+          Usa-o como checklist antes de comprares, reforçares ou venderes uma posição.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="glossary-panel">
+          <h3 class="glossary-section-title">
+            <i class="fas fa-chart-line"></i>
+            Ações
+          </h3>
+
+          <div class="glossary-group">
+            <div class="glossary-group-label">Qualidade do negócio</div>
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">ROIC</div>
+                  <div class="glossary-term-full">Return on Invested Capital</div>
+                </div>
+                <span class="glossary-pill">Qualidade</span>
+              </div>
+              <div class="glossary-copy">Mede quanto a empresa gera por cada euro investido no negócio. Persistente e alto sugere moat real; é menos distorcido por dívida do que o ROE.</div>
+              <div class="glossary-bench">
+                <span class="bench-chip ok">&gt;15% excelente</span>
+                <span class="bench-chip warn">8-15% aceitável</span>
+                <span class="bench-chip danger">&lt;8% fraco</span>
+              </div>
+            </div>
+
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">Margem Operacional</div>
+                  <div class="glossary-term-full">EBIT / Receita</div>
+                </div>
+                <span class="glossary-pill">Qualidade</span>
+              </div>
+              <div class="glossary-copy">Mostra quanto sobra depois dos custos operacionais. Alta e estável indica poder de preço; em expansão indica melhoria operacional.</div>
+              <div class="glossary-bench">
+                <span class="bench-chip ok">&gt;20% premium</span>
+                <span class="bench-chip warn">10-20% normal</span>
+                <span class="bench-chip danger">&lt;5% commodity</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-group-label">Cash flow e valuation</div>
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">FCF Yield</div>
+                  <div class="glossary-term-full">Free Cash Flow / Market Cap</div>
+                </div>
+                <span class="glossary-pill">Valuation</span>
+              </div>
+              <div class="glossary-copy">Compara o cash livre gerado com o preço pago. Ajuda a validar se o lucro contabilístico se transforma em dinheiro real.</div>
+              <div class="glossary-bench">
+                <span class="bench-chip ok">&gt;5% atrativo</span>
+                <span class="bench-chip warn">2-5% razoável</span>
+                <span class="bench-chip danger">&lt;2% caro</span>
+              </div>
+            </div>
+
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">EV / EBITDA</div>
+                  <div class="glossary-term-full">Enterprise Value / EBITDA</div>
+                </div>
+                <span class="glossary-pill">Valuation</span>
+              </div>
+              <div class="glossary-copy">Útil para comparar empresas com estruturas de dívida, impostos e amortizações diferentes. É uma referência comum em análise profissional.</div>
+              <div class="glossary-bench">
+                <span class="bench-chip ok">&lt;10x potencial</span>
+                <span class="bench-chip warn">10-20x normal</span>
+                <span class="bench-chip danger">&gt;30x exigente</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-group-label">Crescimento e risco</div>
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">Revenue Growth</div>
+                  <div class="glossary-term-full">Crescimento da receita YoY / CAGR</div>
+                </div>
+                <span class="glossary-pill">Crescimento</span>
+              </div>
+              <div class="glossary-copy">O CAGR a 3-5 anos separa tendência de ruído. Confirma se a receita é recorrente, pontual ou dependente de ciclos.</div>
+            </div>
+
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">Net Debt / EBITDA</div>
+                  <div class="glossary-term-full">Dívida líquida / EBITDA</div>
+                </div>
+                <span class="glossary-pill">Risco</span>
+              </div>
+              <div class="glossary-copy">Quantos anos de EBITDA seriam necessários para pagar a dívida líquida. Cíclicas e utilities toleram mais; growth deve estar mais leve.</div>
+              <div class="glossary-bench">
+                <span class="bench-chip ok">&lt;1,5x forte</span>
+                <span class="bench-chip warn">1,5-3x aceitável</span>
+                <span class="bench-chip danger">&gt;4x frágil</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glossary-panel">
+          <h3 class="glossary-section-title">
+            <i class="fas fa-layer-group"></i>
+            ETFs
+          </h3>
+
+          <div class="glossary-group">
+            <div class="glossary-group-label">Custos e estrutura</div>
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">TER + Tracking Difference</div>
+                  <div class="glossary-term-full">Custo declarado + custo real face ao índice</div>
+                </div>
+                <span class="glossary-pill">Custo</span>
+              </div>
+              <div class="glossary-copy">O TER é o custo anunciado. A tracking difference mostra o efeito real na performance, incluindo execução, retenções e lending.</div>
+            </div>
+
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">Índice Seguido</div>
+                  <div class="glossary-term-full">Regras que definem o que o ETF compra</div>
+                </div>
+                <span class="glossary-pill">Estrutura</span>
+              </div>
+              <div class="glossary-copy">Verifica metodologia, rebalanceamento, ponderação por market cap ou equal weight e critérios ESG. Nomes parecidos podem esconder índices diferentes.</div>
+            </div>
+
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">Domicílio + Acc/Dist</div>
+                  <div class="glossary-term-full">País do fundo + política de dividendos</div>
+                </div>
+                <span class="glossary-pill">Fiscalidade</span>
+              </div>
+              <div class="glossary-copy">Para investidor PT, ETFs UCITS domiciliados na Irlanda e acumulativos costumam ser fiscalmente eficientes, sobretudo com exposição aos EUA.</div>
+            </div>
+          </div>
+
+          <div class="glossary-group">
+            <div class="glossary-group-label">Liquidez e exposição real</div>
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">AUM + Bid-Ask Spread</div>
+                  <div class="glossary-term-full">Tamanho do fundo + custo de entrar/sair</div>
+                </div>
+                <span class="glossary-pill">Liquidez</span>
+              </div>
+              <div class="glossary-copy">AUM pequeno aumenta risco de encerramento e spreads largos. O spread é um custo escondido em cada reforço ou venda.</div>
+              <div class="glossary-bench">
+                <span class="bench-chip ok">&gt;1B€ sólido</span>
+                <span class="bench-chip warn">100M-1B€ ok</span>
+                <span class="bench-chip danger">&lt;100M€ risco</span>
+              </div>
+            </div>
+
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">Peso Top 10 Holdings</div>
+                  <div class="glossary-term-full">Concentração nas maiores posições</div>
+                </div>
+                <span class="glossary-pill">Exposição</span>
+              </div>
+              <div class="glossary-copy">Número de holdings não chega. Um ETF com 500 posições e top 10 a 60% pode ser menos diversificado do que parece.</div>
+              <div class="glossary-bench">
+                <span class="bench-chip ok">&lt;25% disperso</span>
+                <span class="bench-chip warn">25-40% moderado</span>
+                <span class="bench-chip danger">&gt;40% concentrado</span>
+              </div>
+            </div>
+
+            <div class="glossary-term">
+              <div class="glossary-term-head">
+                <div>
+                  <div class="glossary-term-name">Correlação com a Carteira</div>
+                  <div class="glossary-term-full">Diversificação real em stress</div>
+                </div>
+                <span class="glossary-pill">Risco</span>
+              </div>
+              <div class="glossary-copy">Dois ETFs com nomes diferentes podem cair juntos em crash. Mede a correlação em downturn, não apenas em mercado normal.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="glossary-panel">
+          <h3 class="glossary-section-title">
+            <i class="fas fa-triangle-exclamation"></i>
+            Métricas que enganam isoladas
+          </h3>
+          <div class="glossary-traps">
+            <div class="trap-item">
+              <strong>P/E baixo</strong>
+              <div class="glossary-copy">Pode ser oportunidade ou armadilha de valor. Confirma ROIC, dívida e crescimento antes de concluir.</div>
+            </div>
+            <div class="trap-item">
+              <strong>Dividend Yield alto</strong>
+              <div class="glossary-copy">Yield elevado com payout insustentável é risco, não qualidade. Verifica sempre FCF e payout ratio.</div>
+            </div>
+            <div class="trap-item">
+              <strong>Muitas holdings no ETF</strong>
+              <div class="glossary-copy">Quantidade não garante diversificação. Olha para top 10, país, setor e sobreposição com o teu core.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glossary-panel">
+          <h3 class="glossary-section-title">
+            <i class="fas fa-route"></i>
+            Framework em 5 blocos
+          </h3>
+          <div class="glossary-framework">
+            <div class="framework-step">
+              <strong><span>1</span>Qualidade</strong>
+              <div class="glossary-copy">ROIC, margens, FCF e estabilidade histórica.</div>
+            </div>
+            <div class="framework-step">
+              <strong><span>2</span>Valuation</strong>
+              <div class="glossary-copy">EV/EBITDA, FCF Yield, P/E forward e comparação setorial.</div>
+            </div>
+            <div class="framework-step">
+              <strong><span>3</span>Solidez</strong>
+              <div class="glossary-copy">Dívida, cobertura de juros, liquidez e qualidade do lucro.</div>
+            </div>
+            <div class="framework-step">
+              <strong><span>4</span>Crescimento</strong>
+              <div class="glossary-copy">Receita, EPS, CAPEX produtivo e espaço de mercado.</div>
+            </div>
+            <div class="framework-step">
+              <strong><span>5</span>Risco</strong>
+              <div class="glossary-copy">Beta, drawdown, correlação e concentração.</div>
+            </div>
           </div>
         </div>
       </div>
