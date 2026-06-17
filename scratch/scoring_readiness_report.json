@@ -1,0 +1,6994 @@
+{
+  "generatedAt": "2026-06-17T15:06:49.904Z",
+  "threshold": 0.6,
+  "summary": {
+    "total": 125,
+    "avgCoverage": 47,
+    "byType": {
+      "crypto": 7,
+      "etf": 41,
+      "stock": 77
+    },
+    "byMode": {
+      "crypto:scoreV2": 3,
+      "crypto:legacy": 4,
+      "etf:legacy": 41,
+      "stock:scoreV2": 26,
+      "stock:legacy": 51
+    }
+  },
+  "ready": [
+    {
+      "id": "BTC",
+      "ticker": "BTC",
+      "nome": "Bitcoin",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 73,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "ETH",
+      "ticker": "ETH",
+      "nome": "Ethereum",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 73,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "XRP",
+      "ticker": "XRP",
+      "nome": "XRP",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 73,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "AAPL",
+      "ticker": "AAPL",
+      "nome": "Apple Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "AMT",
+      "ticker": "AMT",
+      "nome": "American Tower Corporation",
+      "setor": "Imobiliário",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "ASML",
+      "ticker": "ASML",
+      "nome": "ASML Holding NV",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "BAC",
+      "ticker": "BAC",
+      "nome": "Bank of America Corp",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "C",
+      "ticker": "C",
+      "nome": "Citigroup",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "CVX",
+      "ticker": "CVX",
+      "nome": "Chevron Corp",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "GOOGL",
+      "ticker": "GOOGL",
+      "nome": "Alphabet Inc Class A",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "KO",
+      "ticker": "KO",
+      "nome": "Coca-Cola Co",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "LMT",
+      "ticker": "LMT",
+      "nome": "Lockheed Martin Corp",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "META",
+      "ticker": "META",
+      "nome": "Meta Platforms Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "MSFT",
+      "ticker": "MSFT",
+      "nome": "Microsoft Corp",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NEM",
+      "ticker": "NEM",
+      "nome": "Newmont Corporation",
+      "setor": "Mineração (Ouro)",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NOC",
+      "ticker": "NOC",
+      "nome": "Northrop Grumman Corp",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NVDA",
+      "ticker": "NVDA",
+      "nome": "NVIDIA Corp",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "PEP",
+      "ticker": "PEP",
+      "nome": "PepsiCo Inc",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "TTE",
+      "ticker": "TTE",
+      "nome": "TotalEnergies SE",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "URI",
+      "ticker": "URI",
+      "nome": "United Rentals Inc",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "V",
+      "ticker": "V",
+      "nome": "Visa Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "VZ",
+      "ticker": "VZ",
+      "nome": "Verizon Communications Inc",
+      "setor": "Telecomunicações",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "AXP",
+      "ticker": "AXP",
+      "nome": "American Express Co",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "ev_ebitda",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "CORT",
+      "ticker": "CORT",
+      "nome": "Corcept Therapeutics Inc",
+      "setor": "Materiais",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "MO",
+      "ticker": "MO",
+      "nome": "Altria Group Inc",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 25,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NDAQ",
+      "ticker": "NDAQ",
+      "nome": "Nasdaq Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NVO",
+      "ticker": "NVO",
+      "nome": "Novo Nordisk A/S",
+      "setor": "Saúde",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "peg",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "PFE",
+      "ticker": "PFE",
+      "nome": "Pfizer Inc",
+      "setor": "Saúde",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "peg",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "XOM",
+      "ticker": "XOM",
+      "nome": "Exxon Mobil Corp",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    }
+  ],
+  "legacy": [
+    {
+      "id": "SOL",
+      "ticker": "SOL",
+      "nome": "Solana",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 60,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "sma50",
+        "rsi",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "ADA",
+      "ticker": "ADA",
+      "nome": "Cardano",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 53,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 22
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "sma50",
+        "sma200",
+        "rsi",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "DOGE",
+      "ticker": "DOGE",
+      "nome": "Dogecoin",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 53,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 22
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "sma50",
+        "sma200",
+        "rsi",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "AVAX",
+      "ticker": "AVAX",
+      "nome": "Avax SA",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 40,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0
+      },
+      "missingCore": [
+        "priceChange_1w",
+        "priceChange_1m",
+        "priceChange_1y",
+        "sma50",
+        "sma200",
+        "rsi",
+        "above_sma50",
+        "above_sma200"
+      ]
+    },
+    {
+      "id": "EXSA",
+      "ticker": "EXSA",
+      "nome": "STOXX Europe 600 EUR (Dist)",
+      "setor": "ETF Mercado Europeu",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 70,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QDVE",
+      "ticker": "QDVE",
+      "nome": "S&P 500 Information Technology Sector",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 70,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VWCE",
+      "ticker": "VWCE",
+      "nome": "Vanguard FTSE All-World UCITS ETF (USD) Accumulating",
+      "setor": "ETF Mundial",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 70,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "EUNN",
+      "ticker": "EUNN",
+      "nome": "Core MSCI Japan IMI",
+      "setor": "ETF Mercado Asiatico",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "GRID",
+      "ticker": "GRID",
+      "nome": "NASDAQ® Clean Edge® Smart Grid Infrastructure",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IS0D",
+      "ticker": "IS0D",
+      "nome": "iShares Oil & Gas Exploration",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IU5C",
+      "ticker": "IU5C",
+      "nome": "S&P 500 Communication Service Sector",
+      "setor": "ETF Setor Comunicações",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "NUKL",
+      "ticker": "NUKL",
+      "nome": "VanEck ETFs-Uran.Nuclear",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QDVF",
+      "ticker": "QDVF",
+      "nome": "iShares S&P 500 Energy Sector",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QDVK",
+      "ticker": "QDVK",
+      "nome": "S&P 500 Consumer Ciclycal Sector",
+      "setor": "ETF Consumo Ciclico",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VVMX",
+      "ticker": "VVMX",
+      "nome": "VanEck Rare Earth and Strategic Metals",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "2B7D",
+      "ticker": "2B7D",
+      "nome": "S&P 500 Consumer Defensive Sector",
+      "setor": "ETF Consumo Defensivo",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 78,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w"
+      ]
+    },
+    {
+      "id": "IS3N",
+      "ticker": "IS3N",
+      "nome": "iShares Core MSCI Emerging Markets IMI UCITS ETF (Acc)",
+      "setor": "ETF Países Emergentes",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 78,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "sma50"
+      ]
+    },
+    {
+      "id": "IXC",
+      "ticker": "IXC",
+      "nome": "iShares Global Energy ETF",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "bidAskSpread",
+        "yield",
+        "above_sma50"
+      ]
+    },
+    {
+      "id": "XDWF",
+      "ticker": "XDWF",
+      "nome": "MSCI World Financials",
+      "setor": "ETF Finanças",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "rsi",
+        "above_sma50"
+      ]
+    },
+    {
+      "id": "XETR_VVMX",
+      "ticker": "XETR_VVMX",
+      "nome": "VanEck Rare Earth and Strategic Metals",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 89,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "OIH",
+      "ticker": "OIH",
+      "nome": "VanEck Oil Services ETF",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 52,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "EUNK",
+      "ticker": "EUNK",
+      "nome": "iShares Core MSCI Europe UCITS ETF EUR (Acc)",
+      "setor": "ETF Multiplos setores",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 48,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "sma50",
+        "sma200"
+      ]
+    },
+    {
+      "id": "DAVV",
+      "ticker": "DAVV",
+      "nome": "VanEck Crypto& Blockchain Innovators",
+      "setor": "ETF Blockchain Innovators",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield",
+        "sma50"
+      ]
+    },
+    {
+      "id": "IUIT",
+      "ticker": "IUIT",
+      "nome": "iShares S&P 500 Information Technology Sector UCITS ETF USD (Acc)",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 22,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "LON_JEDI",
+      "ticker": "LON:JEDI",
+      "nome": "VanEck Space Innovators USD (Acc)",
+      "setor": "ETF Tecnologia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LON_XDWF",
+      "ticker": "LON:XDWF",
+      "nome": "iShares MSCI Europe Financials ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IYG",
+      "ticker": "IYG",
+      "nome": "iShares U.S. Financial Services ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IYM",
+      "ticker": "IYM",
+      "nome": "iShares U.S. Basic Materials ETF",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "KBWB",
+      "ticker": "KBWB",
+      "nome": "Invesco KBW Bank ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "OPEN",
+      "ticker": "OPEN",
+      "nome": "iShares Inclusion and Diversity UCITS ETF",
+      "setor": "Imobiliário",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "2B76",
+      "ticker": "2B76",
+      "nome": "iShares Automation & Robotics",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LON_G2X",
+      "ticker": "LON:G2X",
+      "nome": "VanEck Gold Miners ETF",
+      "setor": "ETF Mineração (Ouro)",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LSE_VZLC",
+      "ticker": "LSE:VZLC",
+      "nome": "WisdomTree Physical Silver",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LYM9_FRA_EUR",
+      "ticker": "LYM9:FRA:EUR",
+      "nome": "Amundi MSCI New Energy",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LYP6",
+      "ticker": "LYP6",
+      "nome": "STOXX Europe 600 EUR (Dist)",
+      "setor": "ETF Mercado Europeu",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "SEC0",
+      "ticker": "SEC0",
+      "nome": "iShares MSCI Global Semiconductors",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VUAA",
+      "ticker": "VUAA",
+      "nome": "Vanguard S&P 500 UCITS ETF USD Accumulation",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "XDW0",
+      "ticker": "XDW0",
+      "nome": "MSCI World Energy",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "BIT_SMEA",
+      "ticker": "BIT:SMEA",
+      "nome": "iShares Core MSCI Europe UCITS ETF EUR (Acc)",
+      "setor": "ETF Multiplo",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 67,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "ESIF",
+      "ticker": "ESIF",
+      "nome": "iShares MSCI Europe Financials Sector UCITS ETF",
+      "setor": "",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 0,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "G2X",
+      "ticker": "G2X",
+      "nome": "VanEck Gold Miners UCITS ETF USD A",
+      "setor": "",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 0,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "QQQ",
+      "ticker": "QQQ",
+      "nome": "Invesco QQQ Trust",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VGK",
+      "ticker": "VGK",
+      "nome": "Vanguard FTSE Europe ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "EQQB",
+      "ticker": "EQQB",
+      "nome": "nvesco EQQQ Nasdaq-100",
+      "setor": "ETF Tecnologia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 26,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QUTM",
+      "ticker": "QUTM",
+      "nome": "VanEck Quantum Computing",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 26,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "F",
+      "ticker": "F",
+      "nome": "Ford Motor Co",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 59,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "SAN",
+      "ticker": "SAN",
+      "nome": "Banco Santander, S.a",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 59,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 50,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "AMD",
+      "ticker": "AMD",
+      "nome": "Advanced Micro Devices Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 56,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 20
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "AXON",
+      "ticker": "AXON",
+      "nome": "Axon Enterprise Inc",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "DRH",
+      "ticker": "DRH",
+      "nome": "DroneShield Ltd",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "valuation": 50,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "peg",
+        "ev_ebitda",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "GFS",
+      "ticker": "GFS",
+      "nome": "Globalfoundries Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "TSLA",
+      "ticker": "TSLA",
+      "nome": "Tesla Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "WBD",
+      "ticker": "WBD",
+      "nome": "Warner Brothers Co",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 51,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 33,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "MSTR",
+      "ticker": "MSTR",
+      "nome": "MicroStrategy Inc Class A",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 44,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 33,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth"
+      ]
+    },
+    {
+      "id": "PLD",
+      "ticker": "PLD",
+      "nome": "Prologis Inc",
+      "setor": "Imobiliário",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 44,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "BLK",
+      "ticker": "BLK",
+      "nome": "BlackRock Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "COR",
+      "ticker": "COR",
+      "nome": "Corpus Resources PLC",
+      "setor": "Materiais",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "MA",
+      "ticker": "MA",
+      "nome": "Mastercard Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "VRT",
+      "ticker": "VRT",
+      "nome": "Vertiv Holdings Co",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 33,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow",
+        "revenueGrowth"
+      ]
+    },
+    {
+      "id": "BBDC",
+      "ticker": "BBDC",
+      "nome": "Barings BDC Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 50,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "peg",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "ELI_SON",
+      "ticker": "ELI:SON",
+      "nome": "Sonae SGPS SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 33,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow",
+        "revenueGrowth"
+      ]
+    },
+    {
+      "id": "SO",
+      "ticker": "SO",
+      "nome": "Southern Co",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 50,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "SPCX",
+      "ticker": "SPCX",
+      "nome": "Space Exploration Technologies Corp",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 33,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow"
+      ]
+    },
+    {
+      "id": "UNH",
+      "ticker": "UNH",
+      "nome": "UnitedHealth Group Inc",
+      "setor": "Saúde",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 20
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "BMW",
+      "ticker": "BMW",
+      "nome": "Bayerische Motoren Werke AG",
+      "setor": "Automóvel",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BNP",
+      "ticker": "BNP",
+      "nome": "BNP Paribas SA",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "D",
+      "ticker": "D",
+      "nome": "Dominion Energy",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "O",
+      "ticker": "O",
+      "nome": "Realty Income",
+      "setor": "Imobiliário",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 17,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow"
+      ]
+    },
+    {
+      "id": "RHM",
+      "ticker": "RHM",
+      "nome": "Rheinmetall AG",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 17,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "CEG",
+      "ticker": "CEG",
+      "nome": "Constellation Energy Corporation",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "EDP",
+      "ticker": "EDP",
+      "nome": "Edp SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "EDPR",
+      "ticker": "EDPR",
+      "nome": "EDP Renováveis",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ETN",
+      "ticker": "ETN",
+      "nome": "Eaton Corporation",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "ETR_MBG",
+      "ticker": "ETR:MBG",
+      "nome": "Mercedes Benz Group ADR",
+      "setor": "Automóvel",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "GALP",
+      "ticker": "GALP",
+      "nome": "Galp Energia SGPS SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "IBE",
+      "ticker": "IBE",
+      "nome": "Iberdrola SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "IBS",
+      "ticker": "IBS",
+      "nome": "Ibersol SGPS SA",
+      "setor": "Consumo Cíclico",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "LON_VOD",
+      "ticker": "LON:VOD",
+      "nome": "Vodafone Group plc",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "NESN",
+      "ticker": "NESN",
+      "nome": "Nestle SA",
+      "setor": "Alimentação",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "NOS",
+      "ticker": "NOS",
+      "nome": "NOS SGPS SA",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "VOW3",
+      "ticker": "VOW3",
+      "nome": "VOLKSWAGEN GROUP Common Stock",
+      "setor": "Automóvel",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BIT_ENEL",
+      "ticker": "BIT:ENEL",
+      "nome": "Enel S.p.A. Ordinary Shares",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BIT_STLAM",
+      "ticker": "BIT:STLAM",
+      "nome": "Stellantis NV",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BRK_B",
+      "ticker": "BRK.B",
+      "nome": "Berkshire Hathaway Inc Class B",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_BCP",
+      "ticker": "ELI:BCP",
+      "nome": "Banco Comercial Portugues SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_CTT",
+      "ticker": "ELI:CTT",
+      "nome": "CTT Correios de Portugal SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_EGL",
+      "ticker": "ELI:EGL",
+      "nome": "Mota Engil SGPS SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_JMT",
+      "ticker": "ELI:JMT",
+      "nome": "Jerónimo Martins SGPS",
+      "setor": "Consumo Cíclico",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "EPA_CS",
+      "ticker": "EPA:CS",
+      "nome": "Axa SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "EPA_SU",
+      "ticker": "EPA:SU",
+      "nome": "Schneider Electric",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "RENE",
+      "ticker": "RENE",
+      "nome": "REN Redes Energeticas nacionais SGPS SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "FRAS3",
+      "ticker": "FRAS3",
+      "nome": "Frasle Mobility SA",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "GZUR",
+      "ticker": "GZUR",
+      "nome": "WisdomTree Physical Swiss Gold",
+      "setor": "Ouro",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "REN",
+      "ticker": "REN",
+      "nome": "Renta Corporacion Real Estate SA",
+      "setor": "Infraestruturas / Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "VZLC",
+      "ticker": "VZLC",
+      "nome": "WisdomTree Physical Silver",
+      "setor": "Commodities",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "OD7G",
+      "ticker": "OD7G",
+      "nome": "OD7G",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 12,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 0,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "id": "BTC",
+      "ticker": "BTC",
+      "nome": "Bitcoin",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 73,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "ETH",
+      "ticker": "ETH",
+      "nome": "Ethereum",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 73,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "XRP",
+      "ticker": "XRP",
+      "nome": "XRP",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 73,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "SOL",
+      "ticker": "SOL",
+      "nome": "Solana",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 60,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "sma50",
+        "rsi",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "ADA",
+      "ticker": "ADA",
+      "nome": "Cardano",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 53,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 22
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "sma50",
+        "sma200",
+        "rsi",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "DOGE",
+      "ticker": "DOGE",
+      "nome": "Dogecoin",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 53,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 22
+      },
+      "missingCore": [
+        "priceChange_1y",
+        "sma50",
+        "sma200",
+        "rsi",
+        "above_sma50",
+        "above_sma200",
+        "golden_cross"
+      ]
+    },
+    {
+      "id": "AVAX",
+      "ticker": "AVAX",
+      "nome": "Avax SA",
+      "setor": "Criptomoedas",
+      "assetType": "crypto",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 40,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0
+      },
+      "missingCore": [
+        "priceChange_1w",
+        "priceChange_1m",
+        "priceChange_1y",
+        "sma50",
+        "sma200",
+        "rsi",
+        "above_sma50",
+        "above_sma200"
+      ]
+    },
+    {
+      "id": "EXSA",
+      "ticker": "EXSA",
+      "nome": "STOXX Europe 600 EUR (Dist)",
+      "setor": "ETF Mercado Europeu",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 70,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QDVE",
+      "ticker": "QDVE",
+      "nome": "S&P 500 Information Technology Sector",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 70,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VWCE",
+      "ticker": "VWCE",
+      "nome": "Vanguard FTSE All-World UCITS ETF (USD) Accumulating",
+      "setor": "ETF Mundial",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 70,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "EUNN",
+      "ticker": "EUNN",
+      "nome": "Core MSCI Japan IMI",
+      "setor": "ETF Mercado Asiatico",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "GRID",
+      "ticker": "GRID",
+      "nome": "NASDAQ® Clean Edge® Smart Grid Infrastructure",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IS0D",
+      "ticker": "IS0D",
+      "nome": "iShares Oil & Gas Exploration",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IU5C",
+      "ticker": "IU5C",
+      "nome": "S&P 500 Communication Service Sector",
+      "setor": "ETF Setor Comunicações",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "NUKL",
+      "ticker": "NUKL",
+      "nome": "VanEck ETFs-Uran.Nuclear",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QDVF",
+      "ticker": "QDVF",
+      "nome": "iShares S&P 500 Energy Sector",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QDVK",
+      "ticker": "QDVK",
+      "nome": "S&P 500 Consumer Ciclycal Sector",
+      "setor": "ETF Consumo Ciclico",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VVMX",
+      "ticker": "VVMX",
+      "nome": "VanEck Rare Earth and Strategic Metals",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 65,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "2B7D",
+      "ticker": "2B7D",
+      "nome": "S&P 500 Consumer Defensive Sector",
+      "setor": "ETF Consumo Defensivo",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 78,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w"
+      ]
+    },
+    {
+      "id": "IS3N",
+      "ticker": "IS3N",
+      "nome": "iShares Core MSCI Emerging Markets IMI UCITS ETF (Acc)",
+      "setor": "ETF Países Emergentes",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 78,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "sma50"
+      ]
+    },
+    {
+      "id": "IXC",
+      "ticker": "IXC",
+      "nome": "iShares Global Energy ETF",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "bidAskSpread",
+        "yield",
+        "above_sma50"
+      ]
+    },
+    {
+      "id": "XDWF",
+      "ticker": "XDWF",
+      "nome": "MSCI World Financials",
+      "setor": "ETF Finanças",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "rsi",
+        "above_sma50"
+      ]
+    },
+    {
+      "id": "XETR_VVMX",
+      "ticker": "XETR_VVMX",
+      "nome": "VanEck Rare Earth and Strategic Metals",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 57,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 89,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "OIH",
+      "ticker": "OIH",
+      "nome": "VanEck Oil Services ETF",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 52,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "EUNK",
+      "ticker": "EUNK",
+      "nome": "iShares Core MSCI Europe UCITS ETF EUR (Acc)",
+      "setor": "ETF Multiplos setores",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 48,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "sma50",
+        "sma200"
+      ]
+    },
+    {
+      "id": "DAVV",
+      "ticker": "DAVV",
+      "nome": "VanEck Crypto& Blockchain Innovators",
+      "setor": "ETF Blockchain Innovators",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 13
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "marketCap",
+        "bidAskSpread",
+        "yield",
+        "sma50"
+      ]
+    },
+    {
+      "id": "IUIT",
+      "ticker": "IUIT",
+      "nome": "iShares S&P 500 Information Technology Sector UCITS ETF USD (Acc)",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 22,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "LON_JEDI",
+      "ticker": "LON:JEDI",
+      "nome": "VanEck Space Innovators USD (Acc)",
+      "setor": "ETF Tecnologia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LON_XDWF",
+      "ticker": "LON:XDWF",
+      "nome": "iShares MSCI Europe Financials ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 43,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IYG",
+      "ticker": "IYG",
+      "nome": "iShares U.S. Financial Services ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "IYM",
+      "ticker": "IYM",
+      "nome": "iShares U.S. Basic Materials ETF",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "KBWB",
+      "ticker": "KBWB",
+      "nome": "Invesco KBW Bank ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "OPEN",
+      "ticker": "OPEN",
+      "nome": "iShares Inclusion and Diversity UCITS ETF",
+      "setor": "Imobiliário",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "2B76",
+      "ticker": "2B76",
+      "nome": "iShares Automation & Robotics",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LON_G2X",
+      "ticker": "LON:G2X",
+      "nome": "VanEck Gold Miners ETF",
+      "setor": "ETF Mineração (Ouro)",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LSE_VZLC",
+      "ticker": "LSE:VZLC",
+      "nome": "WisdomTree Physical Silver",
+      "setor": "ETF Materiais",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LYM9_FRA_EUR",
+      "ticker": "LYM9:FRA:EUR",
+      "nome": "Amundi MSCI New Energy",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "LYP6",
+      "ticker": "LYP6",
+      "nome": "STOXX Europe 600 EUR (Dist)",
+      "setor": "ETF Mercado Europeu",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "SEC0",
+      "ticker": "SEC0",
+      "nome": "iShares MSCI Global Semiconductors",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VUAA",
+      "ticker": "VUAA",
+      "nome": "Vanguard S&P 500 UCITS ETF USD Accumulation",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "XDW0",
+      "ticker": "XDW0",
+      "nome": "MSCI World Energy",
+      "setor": "ETF Energia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 35,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "BIT_SMEA",
+      "ticker": "BIT:SMEA",
+      "nome": "iShares Core MSCI Europe UCITS ETF EUR (Acc)",
+      "setor": "ETF Multiplo",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 67,
+        "technical": 33,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "ESIF",
+      "ticker": "ESIF",
+      "nome": "iShares MSCI Europe Financials Sector UCITS ETF",
+      "setor": "",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 0,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "G2X",
+      "ticker": "G2X",
+      "nome": "VanEck Gold Miners UCITS ETF USD A",
+      "setor": "",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 0,
+        "etf": 25
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "bidAskSpread",
+        "yield",
+        "priceChange_1w",
+        "priceChange_1m"
+      ]
+    },
+    {
+      "id": "QQQ",
+      "ticker": "QQQ",
+      "nome": "Invesco QQQ Trust",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "VGK",
+      "ticker": "VGK",
+      "nome": "Vanguard FTSE Europe ETF",
+      "setor": "ETF Finance",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 30,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "EQQB",
+      "ticker": "EQQB",
+      "nome": "nvesco EQQQ Nasdaq-100",
+      "setor": "ETF Tecnologia",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 26,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "QUTM",
+      "ticker": "QUTM",
+      "nome": "VanEck Quantum Computing",
+      "setor": "ETF iTech",
+      "assetType": "etf",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 26,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 11,
+        "etf": 0
+      },
+      "missingCore": [
+        "holdings",
+        "holdings_count",
+        "top10Weight",
+        "ter",
+        "isin",
+        "marketCap",
+        "bidAskSpread",
+        "yield"
+      ]
+    },
+    {
+      "id": "AAPL",
+      "ticker": "AAPL",
+      "nome": "Apple Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "AMT",
+      "ticker": "AMT",
+      "nome": "American Tower Corporation",
+      "setor": "Imobiliário",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "ASML",
+      "ticker": "ASML",
+      "nome": "ASML Holding NV",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "BAC",
+      "ticker": "BAC",
+      "nome": "Bank of America Corp",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "C",
+      "ticker": "C",
+      "nome": "Citigroup",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "CVX",
+      "ticker": "CVX",
+      "nome": "Chevron Corp",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "GOOGL",
+      "ticker": "GOOGL",
+      "nome": "Alphabet Inc Class A",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "KO",
+      "ticker": "KO",
+      "nome": "Coca-Cola Co",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "LMT",
+      "ticker": "LMT",
+      "nome": "Lockheed Martin Corp",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "META",
+      "ticker": "META",
+      "nome": "Meta Platforms Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "MSFT",
+      "ticker": "MSFT",
+      "nome": "Microsoft Corp",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NEM",
+      "ticker": "NEM",
+      "nome": "Newmont Corporation",
+      "setor": "Mineração (Ouro)",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NOC",
+      "ticker": "NOC",
+      "nome": "Northrop Grumman Corp",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NVDA",
+      "ticker": "NVDA",
+      "nome": "NVIDIA Corp",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "PEP",
+      "ticker": "PEP",
+      "nome": "PepsiCo Inc",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "TTE",
+      "ticker": "TTE",
+      "nome": "TotalEnergies SE",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "URI",
+      "ticker": "URI",
+      "nome": "United Rentals Inc",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "V",
+      "ticker": "V",
+      "nome": "Visa Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "VZ",
+      "ticker": "VZ",
+      "nome": "Verizon Communications Inc",
+      "setor": "Telecomunicações",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 63,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "AXP",
+      "ticker": "AXP",
+      "nome": "American Express Co",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "ev_ebitda",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "CORT",
+      "ticker": "CORT",
+      "nome": "Corcept Therapeutics Inc",
+      "setor": "Materiais",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "MO",
+      "ticker": "MO",
+      "nome": "Altria Group Inc",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 25,
+        "dividend": 80
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NDAQ",
+      "ticker": "NDAQ",
+      "nome": "Nasdaq Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "NVO",
+      "ticker": "NVO",
+      "nome": "Novo Nordisk A/S",
+      "setor": "Saúde",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "peg",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "PFE",
+      "ticker": "PFE",
+      "nome": "Pfizer Inc",
+      "setor": "Saúde",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "peg",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "XOM",
+      "ticker": "XOM",
+      "nome": "Exxon Mobil Corp",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "scoreV2",
+      "readiness": "ready",
+      "coveragePct": 61,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "F",
+      "ticker": "F",
+      "nome": "Ford Motor Co",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 59,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 67,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt"
+      ]
+    },
+    {
+      "id": "SAN",
+      "ticker": "SAN",
+      "nome": "Banco Santander, S.a",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 59,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 50,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 80
+      },
+      "missingCore": [
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "AMD",
+      "ticker": "AMD",
+      "nome": "Advanced Micro Devices Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 56,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 20
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "AXON",
+      "ticker": "AXON",
+      "nome": "Axon Enterprise Inc",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "DRH",
+      "ticker": "DRH",
+      "nome": "DroneShield Ltd",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 100,
+        "valuation": 50,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "peg",
+        "ev_ebitda",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "GFS",
+      "ticker": "GFS",
+      "nome": "Globalfoundries Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "TSLA",
+      "ticker": "TSLA",
+      "nome": "Tesla Inc",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 54,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 83,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash",
+        "netDebt",
+        "netDebtEbitda"
+      ]
+    },
+    {
+      "id": "WBD",
+      "ticker": "WBD",
+      "nome": "Warner Brothers Co",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 51,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 33,
+        "quality": 29,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "MSTR",
+      "ticker": "MSTR",
+      "nome": "MicroStrategy Inc Class A",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 44,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 67,
+        "valuation": 33,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth"
+      ]
+    },
+    {
+      "id": "PLD",
+      "ticker": "PLD",
+      "nome": "Prologis Inc",
+      "setor": "Imobiliário",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 44,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "BLK",
+      "ticker": "BLK",
+      "nome": "BlackRock Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "COR",
+      "ticker": "COR",
+      "nome": "Corpus Resources PLC",
+      "setor": "Materiais",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "MA",
+      "ticker": "MA",
+      "nome": "Mastercard Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "VRT",
+      "ticker": "VRT",
+      "nome": "Vertiv Holdings Co",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 41,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 33,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow",
+        "revenueGrowth"
+      ]
+    },
+    {
+      "id": "BBDC",
+      "ticker": "BBDC",
+      "nome": "Barings BDC Inc",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 50,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "peg",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "ELI_SON",
+      "ticker": "ELI:SON",
+      "nome": "Sonae SGPS SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 33,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow",
+        "revenueGrowth"
+      ]
+    },
+    {
+      "id": "SO",
+      "ticker": "SO",
+      "nome": "Southern Co",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 50,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt"
+      ]
+    },
+    {
+      "id": "SPCX",
+      "ticker": "SPCX",
+      "nome": "Space Exploration Technologies Corp",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 33,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow"
+      ]
+    },
+    {
+      "id": "UNH",
+      "ticker": "UNH",
+      "nome": "UnitedHealth Group Inc",
+      "setor": "Saúde",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 39,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 11,
+        "valuation": 67,
+        "quality": 14,
+        "risk": 38,
+        "dividend": 20
+      },
+      "missingCore": [
+        "pe",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "freeCashflow",
+        "revenueGrowth",
+        "totalDebt",
+        "totalCash"
+      ]
+    },
+    {
+      "id": "BMW",
+      "ticker": "BMW",
+      "nome": "Bayerische Motoren Werke AG",
+      "setor": "Automóvel",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BNP",
+      "ticker": "BNP",
+      "nome": "BNP Paribas SA",
+      "setor": "Finanças",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "D",
+      "ticker": "D",
+      "nome": "Dominion Energy",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "O",
+      "ticker": "O",
+      "nome": "Realty Income",
+      "setor": "Imobiliário",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 17,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin",
+        "freeCashflow"
+      ]
+    },
+    {
+      "id": "RHM",
+      "ticker": "RHM",
+      "nome": "Rheinmetall AG",
+      "setor": "Defesa",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 37,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 17,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "CEG",
+      "ticker": "CEG",
+      "nome": "Constellation Energy Corporation",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "EDP",
+      "ticker": "EDP",
+      "nome": "Edp SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "EDPR",
+      "ticker": "EDPR",
+      "nome": "EDP Renováveis",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ETN",
+      "ticker": "ETN",
+      "nome": "Eaton Corporation",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 14,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roe",
+        "roa",
+        "roi",
+        "operatingMargin"
+      ]
+    },
+    {
+      "id": "ETR_MBG",
+      "ticker": "ETR:MBG",
+      "nome": "Mercedes Benz Group ADR",
+      "setor": "Automóvel",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "GALP",
+      "ticker": "GALP",
+      "nome": "Galp Energia SGPS SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "IBE",
+      "ticker": "IBE",
+      "nome": "Iberdrola SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "IBS",
+      "ticker": "IBS",
+      "nome": "Ibersol SGPS SA",
+      "setor": "Consumo Cíclico",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "LON_VOD",
+      "ticker": "LON:VOD",
+      "nome": "Vodafone Group plc",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 80
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "NESN",
+      "ticker": "NESN",
+      "nome": "Nestle SA",
+      "setor": "Alimentação",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "NOS",
+      "ticker": "NOS",
+      "nome": "NOS SGPS SA",
+      "setor": "Tecnologia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "VOW3",
+      "ticker": "VOW3",
+      "nome": "VOLKSWAGEN GROUP Common Stock",
+      "setor": "Automóvel",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 34,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BIT_ENEL",
+      "ticker": "BIT:ENEL",
+      "nome": "Enel S.p.A. Ordinary Shares",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BIT_STLAM",
+      "ticker": "BIT:STLAM",
+      "nome": "Stellantis NV",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "BRK_B",
+      "ticker": "BRK.B",
+      "nome": "Berkshire Hathaway Inc Class B",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_BCP",
+      "ticker": "ELI:BCP",
+      "nome": "Banco Comercial Portugues SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_CTT",
+      "ticker": "ELI:CTT",
+      "nome": "CTT Correios de Portugal SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_EGL",
+      "ticker": "ELI:EGL",
+      "nome": "Mota Engil SGPS SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "ELI_JMT",
+      "ticker": "ELI:JMT",
+      "nome": "Jerónimo Martins SGPS",
+      "setor": "Consumo Cíclico",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "EPA_CS",
+      "ticker": "EPA:CS",
+      "nome": "Axa SA",
+      "setor": "Consumo Defensivo",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "EPA_SU",
+      "ticker": "EPA:SU",
+      "nome": "Schneider Electric",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 60
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "RENE",
+      "ticker": "RENE",
+      "nome": "REN Redes Energeticas nacionais SGPS SA",
+      "setor": "Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 32,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 56,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "FRAS3",
+      "ticker": "FRAS3",
+      "nome": "Frasle Mobility SA",
+      "setor": "Indústria",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "GZUR",
+      "ticker": "GZUR",
+      "nome": "WisdomTree Physical Swiss Gold",
+      "setor": "Ouro",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "REN",
+      "ticker": "REN",
+      "nome": "Renta Corporacion Real Estate SA",
+      "setor": "Infraestruturas / Energia",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 100,
+        "technical": 0,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 40
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "VZLC",
+      "ticker": "VZLC",
+      "nome": "WisdomTree Physical Silver",
+      "setor": "Commodities",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 20,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 33,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    },
+    {
+      "id": "OD7G",
+      "ticker": "OD7G",
+      "nome": "OD7G",
+      "setor": "Bens Consumidor",
+      "assetType": "stock",
+      "scoringMode": "legacy",
+      "readiness": "partial",
+      "coveragePct": 12,
+      "groupCoverage": {
+        "common": 83,
+        "technical": 0,
+        "valuation": 0,
+        "quality": 0,
+        "risk": 0,
+        "dividend": 0
+      },
+      "missingCore": [
+        "pe",
+        "forward_pe",
+        "peg",
+        "ev_ebitda",
+        "p_fcf",
+        "fcfYield",
+        "roic",
+        "roe",
+        "roa",
+        "roi"
+      ]
+    }
+  ]
+}

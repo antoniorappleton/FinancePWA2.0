@@ -1,0 +1,61 @@
+name: Weekly scoring readiness audit
+
+on:
+  schedule:
+    - cron: "20 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run scoring readiness audit
+        run: node scratch/audit_scoring_readiness.mjs --write
+
+      - name: Write summary
+        shell: bash
+        run: |
+          node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require("node:fs");
+          const report = JSON.parse(fs.readFileSync("scratch/scoring_readiness_report.json", "utf8"));
+          const byMode = report.summary.byMode || {};
+          const ready = report.ready || [];
+          console.log("## Scoring readiness audit");
+          console.log("");
+          console.log(`Threshold: ${Math.round((report.threshold || 0.6) * 100)}%`);
+          console.log(`Total ativos: ${report.summary.total}`);
+          console.log(`Cobertura media: ${report.summary.avgCoverage}%`);
+          console.log(`Score V2 ready: ${ready.length}`);
+          console.log("");
+          console.log("| Grupo | Ativos |");
+          console.log("| --- | ---: |");
+          for (const [key, value] of Object.entries(byMode)) {
+            console.log(`| ${key} | ${value} |`);
+          }
+          if (ready.length) {
+            console.log("");
+            console.log("### Ativos prontos para V2");
+            for (const row of ready.slice(0, 30)) {
+              console.log(`- ${row.ticker} (${row.assetType}) - ${row.coveragePct}%`);
+            }
+          }
+          NODE
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: scoring-readiness-report
+          path: |
+            scratch/scoring_readiness_report.json
+            scratch/scoring_readiness_report.csv

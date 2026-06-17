@@ -1,5 +1,11 @@
 // js/utils/scoring.js
 
+import { scoreAssetV2 } from "../engines/score-v2.js";
+import { momentumScore } from "../engines/momentum.js";
+import { qualityScore } from "../engines/quality.js";
+import { valuationScore } from "../engines/valuation.js";
+import { riskScore } from "../engines/risk.js";
+
 export function getUserWeights() {
   try {
     const saved = localStorage.getItem("userWeights");
@@ -25,6 +31,76 @@ const INDICATOR_INFO = {
   oper_margin: { min: 0.05, target: 0.15, max: 0.40, inverse: false }
 };
 
+const SCORING_READINESS_THRESHOLD = 0.6;
+
+const READINESS_FIELDS = {
+  common: [
+    ["ticker"],
+    ["nome", "name"],
+    ["valorStock", "price"],
+    ["setor", "sector", "mercado", "market"],
+    ["sources_used", "source_used"],
+    ["lastFullSync", "updatedAt", "ultimaAtu"],
+  ],
+  technical: [
+    ["priceChange_1w", "taxaCrescimento_1semana", "g1w"],
+    ["priceChange_1m", "taxaCrescimento_1mes", "g1m"],
+    ["priceChange_1y", "taxaCrescimento_1ano", "g1y"],
+    ["sma50"],
+    ["sma200"],
+    ["rsi", "rsi_14", "rsi14"],
+    ["above_sma50"],
+    ["above_sma200"],
+    ["golden_cross"],
+  ],
+  stockValuation: [
+    ["pe"],
+    ["forward_pe", "forward_p_e"],
+    ["peg"],
+    ["ev_ebitda", "evEbitda"],
+    ["p_fcf", "priceToFCF"],
+    ["fcfYield"],
+  ],
+  stockQuality: [
+    ["roic"],
+    ["roe"],
+    ["roa"],
+    ["roi"],
+    ["operatingMargin", "oper_margin", "operMargin"],
+    ["freeCashflow"],
+    ["revenueGrowth", "revenue_growth", "salesGrowth"],
+  ],
+  stockRisk: [
+    ["totalDebt"],
+    ["totalCash"],
+    ["netDebt"],
+    ["netDebtEbitda"],
+    ["current_ratio", "currentRatio"],
+    ["debt_eq", "debtEquity"],
+    ["beta"],
+    ["bidAskSpread"],
+  ],
+  dividend: [
+    ["yield"],
+    ["dividendo"],
+    ["dividendoMedio24m"],
+    ["periodicidade"],
+    ["payoutRatio"],
+  ],
+  etf: [
+    ["holdings"],
+    ["holdings_count", "num_holdings"],
+    ["top10Weight"],
+    ["ter", "expense_ratio"],
+    ["isin"],
+    ["marketCap", "fundSize"],
+    ["bidAskSpread"],
+    ["yield"],
+  ],
+};
+
+const EMPTY_STRINGS = new Set(["", "-", "—", "–", "n/a", "na", "#n/a", "nan", "null", "undefined"]);
+
 function toNum(v) {
   if (typeof v === "number") return v;
   if (v === undefined || v === null || v === "") return NaN;
@@ -43,6 +119,61 @@ function toNum(v) {
 function clamp(v, min, max) { 
   const val = Number(v) || 0;
   return Math.max(min, Math.min(max, val)); 
+}
+
+function hasValidValue(v) {
+  if (v === undefined || v === null) return false;
+  if (typeof v === "number") return Number.isFinite(v) && v !== 0;
+  if (typeof v === "boolean") return true;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") return Object.keys(v).length > 0;
+  return !EMPTY_STRINGS.has(String(v).trim().toLowerCase());
+}
+
+function firstValidField(asset, aliases) {
+  return aliases.some((key) => hasValidValue(asset?.[key]));
+}
+
+function coverageFor(asset, groups) {
+  let present = 0;
+  let total = 0;
+  for (const group of groups) {
+    for (const aliases of READINESS_FIELDS[group] || []) {
+      total += 1;
+      if (firstValidField(asset, aliases)) present += 1;
+    }
+  }
+  return { present, total, ratio: total ? present / total : 0 };
+}
+
+export function getScoringReadiness(asset) {
+  const type = getAssetType(asset?.ticker, asset);
+  const common = coverageFor(asset, ["common"]);
+  const technical = coverageFor(asset, ["technical"]);
+  const hasPrice = firstValidField(asset, ["valorStock", "price"]);
+  const hasTicker = firstValidField(asset, ["ticker"]);
+  const hasIdentity = hasTicker && firstValidField(asset, ["nome", "name", "setor", "sector", "mercado", "market"]);
+
+  if (type === "etf") {
+    const etf = coverageFor(asset, ["etf"]);
+    const all = coverageFor(asset, ["common", "technical", "etf"]);
+    const ready = hasPrice && hasIdentity && all.ratio >= SCORING_READINESS_THRESHOLD && etf.ratio >= 0.4;
+    return { type, ready, coverage: all.ratio, groups: { common, technical, etf } };
+  }
+
+  if (type === "crypto") {
+    const all = coverageFor(asset, ["common", "technical"]);
+    const ready = hasPrice && hasIdentity && all.ratio >= SCORING_READINESS_THRESHOLD && technical.ratio >= 0.35;
+    return { type, ready, coverage: all.ratio, groups: { common, technical } };
+  }
+
+  const valuation = coverageFor(asset, ["stockValuation"]);
+  const quality = coverageFor(asset, ["stockQuality"]);
+  const risk = coverageFor(asset, ["stockRisk"]);
+  const dividend = coverageFor(asset, ["dividend"]);
+  const all = coverageFor(asset, ["common", "technical", "stockValuation", "stockQuality", "stockRisk", "dividend"]);
+  const ready = hasPrice && hasIdentity && all.ratio >= SCORING_READINESS_THRESHOLD;
+  return { type, ready, coverage: all.ratio, groups: { common, technical, valuation, quality, risk, dividend } };
 }
 
 function infoToConfig(info) { return { min: info.min, target: info.target, max: info.max, inverse: info.inverse }; }
@@ -193,11 +324,108 @@ export function calculateLucroMaximoScore(acao, period = "1y", customMultipliers
     else if (assetType === "crypto") finalScore = scoreCrypto(acao, metrics);
     else finalScore = scoreStock(acao, metrics, customMultipliers);
 
-    return {
+    const legacyResult = {
       score: Number(finalScore) || 0.5,
       rAnnual,
-      components: metrics
+      components: metrics,
+      mode: "legacy",
+      readiness: getScoringReadiness(acao)
     };
+
+    return applyAdaptiveScoring(acao, legacyResult, customMultipliers);
+  }
+
+  function applyAdaptiveScoring(acao, legacyResult, customMultipliers = null) {
+    const readiness = legacyResult.readiness || getScoringReadiness(acao);
+    let engines = null;
+
+    try {
+      engines = {
+        momentum: momentumScore(acao),
+        quality: qualityScore(acao),
+        valuation: valuationScore(acao),
+        risk: riskScore(acao),
+      };
+
+      if (readiness.ready) {
+        const v2 = scoreAssetV2(acao, v1MultipliersToV2(customMultipliers));
+        return {
+          ...legacyResult,
+          score: clamp((v2.finalScore || 50) / 100, 0, 1),
+          components: v2Components(v2, legacyResult.components),
+          mode: "v2",
+          v2,
+          readiness,
+        };
+      }
+
+      const hybrid = hybridComponents(legacyResult.components, readiness, engines);
+      if (!hybrid.changed) return { ...legacyResult, engines, readiness };
+
+      const score = readiness.type === "etf"
+        ? scoreETF(acao, hybrid.components)
+        : readiness.type === "crypto"
+          ? scoreCrypto(acao, hybrid.components)
+          : scoreStock(acao, hybrid.components, customMultipliers);
+
+      return {
+        ...legacyResult,
+        score,
+        components: hybrid.components,
+        mode: "hybrid",
+        engines,
+        readiness,
+      };
+    } catch (err) {
+      console.warn("[scoring] Adaptive scoring fallback to legacy:", err);
+      return { ...legacyResult, mode: "legacy", engines, readiness };
+    }
+  }
+
+  function v1MultipliersToV2(m) {
+    if (!m) return null;
+    return {
+      momentum: m.R || m.T ? ((m.R || 1) + (m.T || 1)) / 2 : undefined,
+      valuation: m.V,
+      quality: m.E,
+      risk: m.S,
+    };
+  }
+
+  function v2Components(v2, fallback) {
+    const engines = v2?.engines || {};
+    return {
+      R: clamp((engines.momentum?.score ?? fallback.R * 100) / 100, 0, 1),
+      V: clamp((engines.valuation?.score ?? fallback.V * 100) / 100, 0, 1),
+      T: clamp((engines.momentum?.score ?? fallback.T * 100) / 100, 0, 1),
+      D: fallback.D,
+      E: clamp((engines.quality?.score ?? fallback.E * 100) / 100, 0, 1),
+      S: clamp((engines.risk?.score ?? fallback.S * 100) / 100, 0, 1),
+      R_Price: fallback.R_Price,
+    };
+  }
+
+  function hybridComponents(fallback, readiness, engines) {
+    const c = { ...fallback };
+    let changed = false;
+    const groups = readiness.groups || {};
+    const use = (key, value) => {
+      const n = Number(value);
+      if (Number.isFinite(n)) {
+        c[key] = clamp(n / 100, 0, 1);
+        changed = true;
+      }
+    };
+
+    if ((groups.technical?.ratio || 0) >= 0.35) {
+      use("T", engines.momentum?.score);
+      c.R = clamp((c.R * 0.6) + ((engines.momentum?.score || c.R * 100) / 100) * 0.4, 0, 1);
+    }
+    if ((groups.valuation?.ratio || 0) >= 0.45) use("V", engines.valuation?.score);
+    if ((groups.quality?.ratio || 0) >= 0.25) use("E", engines.quality?.score);
+    if ((groups.risk?.ratio || 0) >= 0.25) use("S", engines.risk?.score);
+
+    return { changed, components: c };
   }
 
   function scoreStock(acao, metrics, customMultipliers = null) {
