@@ -1595,6 +1595,14 @@ function showPortfolioHelp(force = false) {
   let _currentTotalInvested = 0;
   let _currentGruposArr = [];
   let _currentAcoesDataMap = new Map();
+  let _invPlanContext = {
+    monthlyBase: 0,
+    availableCash: 0,
+    state: null,
+    smartDca: null,
+    recommendation: null
+  };
+  let _lastInvPlanCopyText = "";
 
   window._dynamicStrategyGlobals = { CORE: 0.65, SATELLITE: 0.35 };
   window._dynamicStrategyTickers = {};
@@ -2579,7 +2587,10 @@ async function wireInvPlan() {
   const btnClose = document.getElementById("invPlanClose");
   const btnCalc = document.getElementById("btnCalcInvPlan");
   const inpTotal = document.getElementById("inpInvTotal");
+  const inpDca = document.getElementById("inpInvDca");
+  const inpCashTarget = document.getElementById("inpInvCashTarget");
   const btnSelectAll = document.getElementById("btnInvSelectAll");
+  const btnCopy = document.getElementById("btnCopyInvPlan");
   const inpStrat = document.getElementById("inpInvStrat");
   const assetListCont = document.getElementById("invPlanAssetsList");
 
@@ -2600,18 +2611,29 @@ async function wireInvPlan() {
         const state = CapitalManager.calculatePortfolioState(positions, _currentAcoesDataMap);
         const smartDca = CapitalManager.getSmartDCA(config.monthlyBase || 0, state);
         const recommendation = CapitalManager.getWarChestRecommendation(state, config.availableCash || 0);
+        _invPlanContext = {
+          monthlyBase: config.monthlyBase || 0,
+          availableCash: config.availableCash || 0,
+          state,
+          smartDca,
+          recommendation
+        };
 
         // Preencher com o valor recomendado (Smart DCA + o que estiver disponível para investir hoje)
-        const suggestedValue = smartDca.adjusted + (recommendation.totalInvestable || 0);
+        const suggestedCashTarget = Math.max(10, Math.min(25, recommendation.percentage || 15));
+        if (config.availableCash > 0) inpTotal.value = Number(config.availableCash).toFixed(0);
+        if (config.monthlyBase > 0 && inpDca) inpDca.value = Number(config.monthlyBase).toFixed(0);
+        if (inpCashTarget) inpCashTarget.value = suggestedCashTarget.toFixed(0);
+        const months = Math.max(1, parseInt(document.getElementById("inpInvMonths")?.value, 10) || 6);
+        const suggestedValue = (Number(inpTotal.value) || 0) + ((Number(inpDca?.value) || 0) * months);
         if (suggestedValue > 0) {
-          inpTotal.value = suggestedValue.toFixed(0);
           
           // Adicionar uma nota visual no modal
           const noteEl = document.createElement("div");
           noteEl.style.fontSize = "0.75rem";
           noteEl.style.color = "var(--success)";
           noteEl.style.marginBottom = "10px";
-          noteEl.innerHTML = `💡 Sugestão IA: <strong>${new Intl.NumberFormat("pt-PT", {style:"currency", currency:"EUR"}).format(suggestedValue)}</strong> (DCA Ajustado + Liquidez Estratégica)`;
+          noteEl.innerHTML = `💡 Estratégia IA: manter <strong>${suggestedCashTarget.toFixed(0)}%</strong> em cash e planear <strong>${new Intl.NumberFormat("pt-PT", {style:"currency", currency:"EUR"}).format(suggestedValue)}</strong> entre caixa e DCA.`;
           
           const body = modal.querySelector(".modal-body");
           const existingNote = body.querySelector(".ia-suggestion-note");
@@ -2645,7 +2667,9 @@ async function wireInvPlan() {
   btnClose.addEventListener("click", () => modal.classList.add("hidden"));
 
   btnCalc.addEventListener("click", () => {
-    const total = parseFloat(inpTotal.value) || 0;
+    const cash = parseFloat(inpTotal.value) || 0;
+    const monthlyDca = parseFloat(document.getElementById("inpInvDca")?.value) || 0;
+    const cashTargetPct = Math.max(0, Math.min(80, parseFloat(document.getElementById("inpInvCashTarget")?.value) || 15));
     const months = parseInt(document.getElementById("inpInvMonths").value) || 1;
     const freq = parseFloat(document.getElementById("inpInvFreq").value) || 1;
     const strat = document.getElementById("inpInvStrat").value;
@@ -2654,7 +2678,30 @@ async function wireInvPlan() {
     const checks = assetListCont.querySelectorAll(".inv-asset-check:checked");
     const selectedTickers = Array.from(checks).map(c => c.value);
     
-    generateInvPlan(total, months, freq, strat, selectedTickers, _currentGruposArr, _currentAcoesDataMap);
+    generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strat, selectedTickers, _currentGruposArr, _currentAcoesDataMap);
+  });
+
+  btnCopy?.addEventListener("click", async () => {
+    if (!_lastInvPlanCopyText) {
+      if (typeof showToast === "function") showToast("Gera primeiro o plano de investimento.", "info");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(_lastInvPlanCopyText);
+      if (typeof showToast === "function") showToast("Plano copiado.", "success");
+    } catch (err) {
+      const temp = document.createElement("textarea");
+      temp.value = _lastInvPlanCopyText;
+      temp.setAttribute("readonly", "");
+      temp.style.position = "fixed";
+      temp.style.left = "-9999px";
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand("copy");
+      temp.remove();
+      if (typeof showToast === "function") showToast("Plano copiado.", "success");
+    }
   });
 
   modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
@@ -2679,15 +2726,30 @@ function renderInvPlanAssets(ativos) {
   `).join("");
 }
 
-function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos, acoesMap) {
+function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy, selectedTickers, ativos, acoesMap) {
   const resultDiv = document.getElementById("invPlanResult");
   const tableBody = document.getElementById("invPlanTableBody");
   if (!resultDiv || !tableBody) return;
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 
   const totalPeriods = Math.max(1, Math.round(months * freq));
-  const perPeriod = total / totalPeriods;
+  const dcaTotal = monthlyDca * months;
+  const currentInvestedValue = ativos
+    .filter(a => Number.isFinite(a.qtd) && a.qtd > 0)
+    .reduce((sum, a) => {
+      const marketValue = (a.precoAtual || 0) * (a.qtd || 0);
+      return sum + (marketValue > 0 ? marketValue : (a.investido || 0));
+    }, 0);
+  const totalResources = cash + dcaTotal;
+  const projectedPortfolioTotal = currentInvestedValue + totalResources;
+  const targetReserveAmount = projectedPortfolioTotal * (cashTargetPct / 100);
+  let reserveAmount = targetReserveAmount;
+  let investableTotal = Math.max(0, totalResources - reserveAmount);
+  const projectedInvestedTotal = currentInvestedValue + investableTotal;
+  let cashToPreserveFromNewCapital = Math.max(0, reserveAmount - cash);
+  let perPeriod = investableTotal / totalPeriods;
 
-  document.getElementById("resInvPerPeriod").textContent = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(perPeriod);
+  document.getElementById("resInvPerPeriod").textContent = fmtEUR.format(perPeriod);
   document.getElementById("resInvTotalPeriods").textContent = totalPeriods.toFixed(0);
 
   // 1. Definir Pool de Ativos
@@ -2713,6 +2775,42 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
 
   // Obter o método de distribuição selecionado
   const method = document.getElementById("inpInvMethod")?.value || "GAP";
+  const projectedGapFor = (p) => {
+    const currentAssetValue = ((p.precoAtual || 0) * (p.qtd || 0)) || (p.investido || 0);
+    const target = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0;
+    return Math.max(0, (projectedInvestedTotal * target) - currentAssetValue);
+  };
+
+  const distributeCapped = (items, totalAmount) => {
+    items.forEach(p => { p._allocatedTotal = 0; });
+    let remaining = totalAmount;
+    let candidates = items.filter(p => p.factor > 0);
+
+    for (let guard = 0; guard < 20 && remaining > 0.0001 && candidates.length > 0; guard++) {
+      const factorSum = candidates.reduce((sum, p) => sum + p.factor, 0);
+      if (factorSum <= 0) break;
+
+      const next = [];
+      let allocatedThisRound = 0;
+
+      candidates.forEach(p => {
+        const desired = remaining * (p.factor / factorSum);
+        const cap = Number.isFinite(p._finalGap) ? Math.max(0, p._finalGap - p._allocatedTotal) : desired;
+        const allocated = Math.min(desired, cap);
+        p._allocatedTotal += allocated;
+        allocatedThisRound += allocated;
+        if (cap - allocated > 0.0001) next.push(p);
+      });
+
+      if (allocatedThisRound <= 0.0001) break;
+      remaining -= allocatedThisRound;
+      candidates = next;
+    }
+
+    items.forEach(p => {
+      p._normalizedWeight = totalAmount > 0 ? p._allocatedTotal / totalAmount : 0;
+    });
+  };
 
   // 2. Calcular Fatores de Ponderação (Gaps vs. Targets)
   const poolWithFactors = pool.map(p => {
@@ -2724,7 +2822,11 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
       // Usar a alocação estratégica alvo (target)
       factor = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
     }
-    return { ...p, factor };
+    const finalGap = projectedGapFor(p);
+    factor = method === "GAP"
+      ? finalGap
+      : (finalGap > 0 ? ((p._strategy && p._strategy.target > 0) ? p._strategy.target : 0) : 0);
+    return { ...p, factor, _finalGap: finalGap };
   });
 
   // Calcular soma total dos fatores
@@ -2734,12 +2836,61 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
   // reverte-se automaticamente para a proporção dos targets estáticos.
   let isFallback = false;
   if (sumFactors === 0) {
+    document.getElementById("resInvPerPeriod").textContent = fmtEUR.format(0);
     isFallback = true;
+    const fallbackAsset = poolWithFactors.find(p => p.ticker === "VWCE")
+      || poolWithFactors
+        .filter(p => p._strategy?.category === "CORE")
+        .sort((a, b) => (b._strategy?.target || 0) - (a._strategy?.target || 0))[0]
+      || null;
     poolWithFactors.forEach(p => {
-      p.factor = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
+      p.factor = fallbackAsset && p.ticker === fallbackAsset.ticker ? 1 : 0;
     });
     sumFactors = poolWithFactors.reduce((acc, p) => acc + p.factor, 0);
   }
+
+  if (sumFactors === 0) {
+    tableBody.innerHTML = "<tr><td colspan='3' style='padding:20px; text-align:center; color:var(--muted-foreground);'>Todos os ativos elegíveis estão acima do target final. Deployment pausado para preservar cash.</td></tr>";
+    renderAnnualDcaPlan({
+      total: 0,
+      cash,
+      monthlyDca,
+      cashTargetPct,
+      dcaTotal,
+      totalResources,
+      projectedPortfolioTotal,
+      currentInvestedValue,
+      targetReserveAmount,
+      cashToPreserveFromNewCapital: totalResources,
+      reserveAmount: totalResources,
+      investableTotal: 0,
+      months,
+      freq,
+      totalPeriods,
+      perPeriod: 0,
+      poolWithFactors,
+      sumFactors,
+      strategy,
+      method,
+      isFallback
+    });
+    resultDiv.style.display = "block";
+    return;
+  }
+
+  const totalGapCapacity = isFallback
+    ? investableTotal
+    : poolWithFactors.reduce((sum, p) => sum + (p._finalGap || 0), 0);
+
+  if (!isFallback && investableTotal > totalGapCapacity) {
+    const excessToCash = investableTotal - totalGapCapacity;
+    investableTotal = totalGapCapacity;
+    reserveAmount += excessToCash;
+    cashToPreserveFromNewCapital += excessToCash;
+  }
+  perPeriod = investableTotal / totalPeriods;
+  distributeCapped(poolWithFactors, investableTotal);
+  document.getElementById("resInvPerPeriod").textContent = fmtEUR.format(perPeriod);
 
   // Gerir aviso visual de Fallback
   const existingWarning = resultDiv.querySelector(".inv-plan-warning");
@@ -2755,18 +2906,17 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
     warning.style.borderRadius = "6px";
     warning.style.border = "1px dashed rgba(239, 68, 68, 0.3)";
     warning.style.marginBottom = "12px";
-    warning.innerHTML = `💡 <strong>Info:</strong> Todos os ativos selecionados estão com alocação ideal. O capital foi distribuído proporcionalmente aos targets originais.`;
+    warning.innerHTML = `💡 <strong>Info:</strong> todos os ativos elegíveis já estavam acima do target final. O fallback conservador direcionou o capital para VWCE/CORE.`;
     resultDiv.prepend(warning);
   }
 
   // 3. Gerar Plano com Pesos Normalizados e Est. Unidades
-  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
   
   tableBody.innerHTML = poolWithFactors
-    .sort((a, b) => b.factor - a.factor)
+    .sort((a, b) => b._allocatedTotal - a._allocatedTotal)
     .map(p => {
-      const normalizedWeight = p.factor / sumFactors;
-      const allocated = perPeriod * normalizedWeight;
+      const normalizedWeight = p._normalizedWeight || 0;
+      const allocated = (p._allocatedTotal || 0) / totalPeriods;
       const preco = p.precoAtual || 0;
       const units = preco > 0 ? (allocated / preco) : 0;
       
@@ -2791,7 +2941,169 @@ function generateInvPlan(total, months, freq, strategy, selectedTickers, ativos,
       `;
     }).join("");
 
+  renderAnnualDcaPlan({
+    total: investableTotal,
+    cash,
+    monthlyDca,
+    cashTargetPct,
+    dcaTotal,
+    totalResources,
+    projectedPortfolioTotal,
+    currentInvestedValue,
+    targetReserveAmount,
+    cashToPreserveFromNewCapital,
+    reserveAmount,
+    investableTotal,
+    months,
+    freq,
+    totalPeriods,
+    perPeriod,
+    poolWithFactors,
+    sumFactors,
+    strategy,
+    method,
+    isFallback
+  });
+
   resultDiv.style.display = "block";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getPlanMonthLabel(offset) {
+  const date = new Date();
+  date.setDate(1);
+  date.setMonth(date.getMonth() + offset);
+  return date.toLocaleDateString("pt-PT", { month: "long", year: "numeric" });
+}
+
+function renderAnnualDcaPlan(plan) {
+  const summary = document.getElementById("invPlanSummaryGrid");
+  const timeline = document.getElementById("invPlanTimeline");
+  const projection = document.getElementById("invPlanProjection");
+  const narrative = document.getElementById("invPlanNarrative");
+  const statusBadge = document.getElementById("invPlanStatusBadge");
+  const reviewLabel = document.getElementById("invPlanReviewLabel");
+  if (!summary || !timeline || !projection) return;
+
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  const ctx = _invPlanContext || {};
+  const monthlyEnvelope = plan.months > 0 ? plan.investableTotal / plan.months : plan.investableTotal;
+  const currentValue = plan.currentInvestedValue ?? _currentGruposArr
+    .filter(g => Number.isFinite(g.qtd) && g.qtd > 0)
+    .reduce((sum, g) => sum + ((g.precoAtual || 0) * (g.qtd || 0)), 0);
+  const reservePct = plan.cashTargetPct || 0;
+  const topTargets = [...plan.poolWithFactors]
+    .sort((a, b) => (b._allocatedTotal || 0) - (a._allocatedTotal || 0))
+    .slice(0, 3)
+    .map(p => p.ticker)
+    .join(" / ") || "ativos selecionados";
+
+  const strategyLabel = plan.strategy === "ALL" ? "Mista" : plan.strategy;
+  const methodLabel = plan.method === "GAP" && !plan.isFallback
+    ? "Gaps finais projetados"
+    : plan.isFallback ? "Fallback VWCE/CORE" : "Proporcional aos targets elegiveis";
+
+  if (narrative) {
+    narrative.textContent = `${fmtEUR.format(plan.cash)} em cash + ${fmtEUR.format(plan.monthlyDca)}/mes de DCA. Reserva minima: ${reservePct.toFixed(0)}% de ${fmtEUR.format(plan.projectedPortfolioTotal)}. Distribui ${fmtEUR.format(plan.investableTotal)}.`;
+  }
+  if (statusBadge) statusBadge.textContent = ctx.state?.label || "DCA";
+  if (reviewLabel) reviewLabel.textContent = plan.months >= 12 ? "Trimestral + anual" : "No fecho";
+
+  const allocationLines = [...plan.poolWithFactors]
+    .sort((a, b) => (b._allocatedTotal || 0) - (a._allocatedTotal || 0))
+    .map(p => {
+      const amount = p._allocatedTotal || 0;
+      const weight = plan.investableTotal > 0 ? amount / plan.investableTotal : 0;
+      return `- ${p.ticker}: ${(weight * 100).toFixed(1)}% | ${fmtEUR.format(amount)}`;
+    });
+
+  summary.innerHTML = [
+    ["Cash inicial", fmtEUR.format(plan.cash)],
+    ["DCA total", fmtEUR.format(plan.dcaTotal)],
+    ["Portfolio final", fmtEUR.format(plan.projectedPortfolioTotal)],
+    ["Reserva minima", `${fmtEUR.format(plan.targetReserveAmount)} (${reservePct.toFixed(0)}%)`],
+    ["Cash final", fmtEUR.format(plan.reserveAmount)],
+    ["A distribuir", fmtEUR.format(plan.investableTotal)],
+    ["Prioridade", escapeHtml(topTargets)]
+  ].map(([label, value]) => `
+    <div class="inv-plan-kpi">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `).join("");
+
+  const monthCopyLines = [];
+  const rows = Array.from({ length: plan.months }, (_, idx) => {
+    const monthNo = idx + 1;
+    const isReview = monthNo % 3 === 0 || monthNo === plan.months;
+    const investedSoFar = monthlyEnvelope * monthNo;
+    const monthTargets = [...plan.poolWithFactors]
+      .sort((a, b) => (b._allocatedTotal || 0) - (a._allocatedTotal || 0))
+      .filter(p => (p._allocatedTotal || 0) > 0)
+      .map(p => {
+        const weight = plan.investableTotal > 0 ? (p._allocatedTotal || 0) / plan.investableTotal : 0;
+        return `${p.ticker} ${fmtEUR.format(monthlyEnvelope * weight)}`;
+      })
+      .join(" + ");
+    monthCopyLines.push(`- ${getPlanMonthLabel(idx)}: ${fmtEUR.format(monthlyEnvelope)} | ${monthTargets || "ativos selecionados"}${isReview ? " | revisão" : ""}`);
+    const reviewText = isReview
+      ? " Revisao: pesos vs targets, cash reserve e desvios acima de 5pp."
+      : "";
+
+    return `
+      <div class="inv-plan-month ${isReview ? "review" : ""}">
+        <div class="inv-plan-month-title">
+          <strong>${escapeHtml(getPlanMonthLabel(idx))}</strong>
+          <span>${fmtEUR.format(monthlyEnvelope)}</span>
+        </div>
+        <p>${monthTargets || "Distribuir pelos ativos selecionados."}${reviewText}</p>
+        <p>Distribuido acumulado: ${fmtEUR.format(investedSoFar)}. Reserva alvo preservada: ${fmtEUR.format(plan.reserveAmount)}</p>
+      </div>
+    `;
+  });
+  timeline.innerHTML = rows.join("");
+
+  _lastInvPlanCopyText = [
+    "Plano de Investimento DCA",
+    "",
+    `Cash inicial: ${fmtEUR.format(plan.cash)}`,
+    `DCA mensal: ${fmtEUR.format(plan.monthlyDca)}`,
+    `Duração: ${plan.months} meses`,
+    `Cash alvo: ${reservePct.toFixed(0)}%`,
+    `Portfolio projetado no fim: ${fmtEUR.format(plan.projectedPortfolioTotal)}`,
+    `Reserva minima alvo: ${fmtEUR.format(plan.targetReserveAmount)}`,
+    `Cash final preservado: ${fmtEUR.format(plan.reserveAmount)}`,
+    `Cash adicional a preservar: ${fmtEUR.format(plan.cashToPreserveFromNewCapital || 0)}`,
+    `Capital a distribuir: ${fmtEUR.format(plan.investableTotal)}`,
+    `Método: ${methodLabel} (${strategyLabel})`,
+    "",
+    "Alocação por ativo:",
+    ...(allocationLines.length ? allocationLines : ["- Sem ativos selecionados"]),
+    "",
+    "Timeline:",
+    ...monthCopyLines
+  ].join("\n");
+
+  const midMonth = Math.max(1, Math.ceil(plan.months / 2));
+  projection.innerHTML = [
+    ["Hoje", fmtEUR.format(currentValue + plan.cash), `Investido + cash inicial`],
+    [`${midMonth} meses`, fmtEUR.format(currentValue + plan.cash + (plan.monthlyDca * midMonth)), "Sem valorizacao de mercado"],
+    [`${plan.months} meses`, fmtEUR.format(plan.projectedPortfolioTotal), `Cash final preservado: ${fmtEUR.format(plan.reserveAmount)}`]
+  ].map(([label, value, sub]) => `
+    <div class="inv-plan-kpi">
+      <span>${label}</span>
+      <strong>${value}</strong>
+      <small>${sub}</small>
+    </div>
+  `).join("");
 }
 
 // ===============================

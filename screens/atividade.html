@@ -948,25 +948,68 @@
     </div>
   </div>
 </div>
+<style>
+#invPlanModal .inv-plan-dialog{width:min(1180px,96vw);max-width:1180px}
+#invPlanModal .inv-plan-body{padding:0;overflow:auto}
+.inv-plan-layout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);min-height:620px}
+.inv-plan-controls{padding:20px;border-right:1px solid var(--border);background:rgba(139,92,246,.04)}
+.inv-plan-result{padding:20px}
+.inv-plan-hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:18px;border:1px solid rgba(139,92,246,.24);border-radius:12px;background:linear-gradient(135deg,rgba(139,92,246,.16),rgba(34,197,94,.08));margin-bottom:14px}
+.inv-plan-hero h4,.inv-plan-timeline-head h4{margin:0;font-size:1rem}
+.inv-plan-hero p{margin:6px 0 0;color:var(--muted-foreground);font-size:.82rem;line-height:1.45}
+.inv-plan-eyebrow{font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-foreground);font-weight:800;margin-bottom:4px}
+.inv-plan-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.inv-plan-status,.inv-plan-timeline-head span{flex:0 0 auto;border:1px solid rgba(139,92,246,.28);background:rgba(139,92,246,.12);color:#8b5cf6;border-radius:999px;padding:5px 10px;font-size:.7rem;font-weight:800}.inv-plan-copy{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid rgba(139,92,246,.28);background:var(--card);color:#8b5cf6;cursor:pointer}.inv-plan-copy:hover{background:rgba(139,92,246,.1)}
+.inv-plan-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.inv-plan-kpi{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--card)}
+.inv-plan-kpi span{display:block;color:var(--muted-foreground);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:5px}
+.inv-plan-kpi strong{display:block;font-size:1rem}
+.inv-plan-result-grid{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(320px,1.1fr);gap:16px;align-items:start}
+.inv-plan-timeline-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+.inv-plan-timeline{position:relative;display:grid;gap:8px;max-height:360px;overflow:auto;padding-left:12px}
+.inv-plan-timeline::before{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:2px;background:rgba(139,92,246,.22)}
+.inv-plan-month{position:relative;border:1px solid var(--border);border-radius:10px;padding:10px 10px 10px 14px;background:var(--card)}
+.inv-plan-month::before{content:"";position:absolute;left:-13px;top:16px;width:10px;height:10px;border-radius:50%;background:#8b5cf6;border:2px solid var(--card)}
+.inv-plan-month.review::before{background:#22c55e}
+.inv-plan-month-title{display:flex;justify-content:space-between;gap:8px;font-weight:800;font-size:.82rem}
+.inv-plan-month-title span{color:#8b5cf6;white-space:nowrap}
+.inv-plan-month p{margin:5px 0 0;color:var(--muted-foreground);font-size:.72rem;line-height:1.35}
+.inv-plan-projection{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.inv-plan-projection .inv-plan-kpi{text-align:center}
+@media(max-width:900px){.inv-plan-layout,.inv-plan-result-grid{grid-template-columns:1fr}.inv-plan-controls{border-right:0;border-bottom:1px solid var(--border)}.inv-plan-summary-grid,.inv-plan-projection{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.inv-plan-summary-grid,.inv-plan-projection{grid-template-columns:1fr}.inv-plan-hero{flex-direction:column}.inv-plan-actions{width:100%;justify-content:space-between}}
+</style>
 <!-- ======== Modal Planeador de Investimento (DCA Inteligente) ======== -->
 <div id="invPlanModal" class="modal hidden">
-  <div class="modal-dialog" style="max-width: 500px;">
+  <div class="modal-dialog inv-plan-dialog">
     <div class="modal-header">
       <h3 style="display: flex; align-items: center; gap: 10px;">
         <i class="fas fa-magic" style="color: #8b5cf6;"></i> Plano de Investimento IA
       </h3>
       <button id="invPlanClose" class="icon-btn">✖</button>
     </div>
-    <div class="modal-body" style="padding: 20px;">
+    <div class="modal-body inv-plan-body">
+      <div class="inv-plan-layout">
+        <section class="inv-plan-controls">
       <div style="display: grid; gap: 16px; margin-bottom: 24px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="filter-group">
-            <label style="font-size: 0.8rem; font-weight: 700;">Montante Total (€)</label>
-            <input type="number" id="inpInvTotal" placeholder="Ex: 1000" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+            <label style="font-size: 0.8rem; font-weight: 700;">Cash (€ em caixa)</label>
+            <input type="number" id="inpInvTotal" value="2430" placeholder="Ex: 2430" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
           </div>
+          <div class="filter-group">
+            <label style="font-size: 0.8rem; font-weight: 700;">DCA mensal (€)</label>
+            <input type="number" id="inpInvDca" value="550" placeholder="Ex: 550" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="filter-group">
             <label style="font-size: 0.8rem; font-weight: 700;">Duração (Meses)</label>
             <input type="number" id="inpInvMonths" value="6" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+          </div>
+          <div class="filter-group">
+            <label style="font-size: 0.8rem; font-weight: 700;">Cash alvo (%)</label>
+            <input type="number" id="inpInvCashTarget" value="15" min="0" max="80" step="1" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
           </div>
         </div>
         
@@ -1013,7 +1056,29 @@
         Gerar Plano de Investimento
       </button>
 
-      <div id="invPlanResult" style="margin-top: 24px; display: none;">
+        </section>
+
+        <section id="invPlanResult" class="inv-plan-result" style="display: none;">
+        <div class="inv-plan-hero">
+          <div>
+            <div class="inv-plan-eyebrow">// Planeamento DCA</div>
+            <h4>O plano anual segue a estratégia.</h4>
+            <p id="invPlanNarrative">Define o envelope, gera o plano e acompanha aportes, reserva e revisões.</p>
+          </div>
+          <div class="inv-plan-actions">
+            <button type="button" class="inv-plan-copy" id="btnCopyInvPlan" title="Copiar plano" aria-label="Copiar plano">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+            <div class="inv-plan-status" id="invPlanStatusBadge">DCA</div>
+          </div>
+        </div>
+
+        <div id="invPlanSummaryGrid" class="inv-plan-summary-grid"></div>
+        <div class="inv-plan-result-grid">
+          <div>
         <div style="padding: 12px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2); margin-bottom: 16px; font-size: 0.85rem;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Aporte por Período:</span>
@@ -1040,6 +1105,22 @@
         <p style="font-size: 0.65rem; color: var(--muted-foreground); margin-top: 12px; line-height: 1.4;">
           * O plano prioriza ativos que estão abaixo da sua meta de alocação estratégica e considera o preço atual de mercado para estimar as unidades a adquirir.
         </p>
+          </div>
+
+          <div>
+            <div class="inv-plan-timeline-head">
+              <div>
+                <div class="inv-plan-eyebrow">Calendário</div>
+                <h4>Timeline de aportes</h4>
+              </div>
+              <span id="invPlanReviewLabel">Revisões</span>
+            </div>
+            <div id="invPlanTimeline" class="inv-plan-timeline"></div>
+          </div>
+        </div>
+
+        <div id="invPlanProjection" class="inv-plan-projection"></div>
+      </section>
       </div>
     </div>
   </div>
