@@ -2589,6 +2589,7 @@ async function wireInvPlan() {
   const inpTotal = document.getElementById("inpInvTotal");
   const inpDca = document.getElementById("inpInvDca");
   const inpCashTarget = document.getElementById("inpInvCashTarget");
+  const inpAutoSavings = document.getElementById("inpInvAutoSavings");
   const btnSelectAll = document.getElementById("btnInvSelectAll");
   const btnCopy = document.getElementById("btnCopyInvPlan");
   const inpStrat = document.getElementById("inpInvStrat");
@@ -2677,8 +2678,9 @@ async function wireInvPlan() {
     // Obter selecionados
     const checks = assetListCont.querySelectorAll(".inv-asset-check:checked");
     const selectedTickers = Array.from(checks).map(c => c.value);
+    const autoSavingsPlans = parseAutoSavingsPlans(inpAutoSavings?.value || "");
     
-    generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strat, selectedTickers, _currentGruposArr, _currentAcoesDataMap);
+    generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strat, selectedTickers, _currentGruposArr, _currentAcoesDataMap, autoSavingsPlans);
   });
 
   btnCopy?.addEventListener("click", async () => {
@@ -2726,7 +2728,21 @@ function renderInvPlanAssets(ativos) {
   `).join("");
 }
 
-function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy, selectedTickers, ativos, acoesMap) {
+function parseAutoSavingsPlans(value) {
+  return String(value || "")
+    .split(/[,;\n]+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => {
+      const [rawTicker, rawAmount] = part.split(":").map(x => x?.trim());
+      const ticker = cleanTicker(rawTicker || "");
+      const amount = Number(String(rawAmount || "0").replace(",", "."));
+      return ticker && amount > 0 ? { ticker, amount } : null;
+    })
+    .filter(Boolean);
+}
+
+function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy, selectedTickers, ativos, acoesMap, autoSavingsPlans = []) {
   const resultDiv = document.getElementById("invPlanResult");
   const tableBody = document.getElementById("invPlanTableBody");
   if (!resultDiv || !tableBody) return;
@@ -2734,6 +2750,12 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
 
   const totalPeriods = Math.max(1, Math.round(months * freq));
   const dcaTotal = monthlyDca * months;
+  const autoMonthlyTotal = autoSavingsPlans.reduce((sum, p) => sum + p.amount, 0);
+  const autoTotal = autoMonthlyTotal * months;
+  const autoByTicker = new Map();
+  autoSavingsPlans.forEach(p => {
+    autoByTicker.set(p.ticker, (autoByTicker.get(p.ticker) || 0) + (p.amount * months));
+  });
   const currentInvestedValue = ativos
     .filter(a => Number.isFinite(a.qtd) && a.qtd > 0)
     .reduce((sum, a) => {
@@ -2744,8 +2766,8 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
   const projectedPortfolioTotal = currentInvestedValue + totalResources;
   const targetReserveAmount = projectedPortfolioTotal * (cashTargetPct / 100);
   let reserveAmount = targetReserveAmount;
-  let investableTotal = Math.max(0, totalResources - reserveAmount);
-  const projectedInvestedTotal = currentInvestedValue + investableTotal;
+  let investableTotal = Math.max(0, totalResources - reserveAmount - autoTotal);
+  const projectedInvestedTotal = currentInvestedValue + autoTotal + investableTotal;
   let cashToPreserveFromNewCapital = Math.max(0, reserveAmount - cash);
   let perPeriod = investableTotal / totalPeriods;
 
@@ -2776,7 +2798,7 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
   // Obter o método de distribuição selecionado
   const method = document.getElementById("inpInvMethod")?.value || "GAP";
   const projectedGapFor = (p) => {
-    const currentAssetValue = ((p.precoAtual || 0) * (p.qtd || 0)) || (p.investido || 0);
+    const currentAssetValue = (((p.precoAtual || 0) * (p.qtd || 0)) || (p.investido || 0)) + (autoByTicker.get(p.ticker) || 0);
     const target = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0;
     return Math.max(0, (projectedInvestedTotal * target) - currentAssetValue);
   };
@@ -2857,11 +2879,15 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
       monthlyDca,
       cashTargetPct,
       dcaTotal,
+      autoSavingsPlans,
+      autoMonthlyTotal,
+      autoTotal,
       totalResources,
       projectedPortfolioTotal,
       currentInvestedValue,
       targetReserveAmount,
       cashToPreserveFromNewCapital: totalResources,
+      excessCashFromCaps: 0,
       reserveAmount: totalResources,
       investableTotal: 0,
       months,
@@ -2882,8 +2908,10 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
     ? investableTotal
     : poolWithFactors.reduce((sum, p) => sum + (p._finalGap || 0), 0);
 
+  let excessCashFromCaps = 0;
   if (!isFallback && investableTotal > totalGapCapacity) {
     const excessToCash = investableTotal - totalGapCapacity;
+    excessCashFromCaps = excessToCash;
     investableTotal = totalGapCapacity;
     reserveAmount += excessToCash;
     cashToPreserveFromNewCapital += excessToCash;
@@ -2947,11 +2975,15 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
     monthlyDca,
     cashTargetPct,
     dcaTotal,
+    autoSavingsPlans,
+    autoMonthlyTotal,
+    autoTotal,
     totalResources,
     projectedPortfolioTotal,
     currentInvestedValue,
     targetReserveAmount,
     cashToPreserveFromNewCapital,
+    excessCashFromCaps,
     reserveAmount,
     investableTotal,
     months,
@@ -2991,6 +3023,7 @@ function renderAnnualDcaPlan(plan) {
   const narrative = document.getElementById("invPlanNarrative");
   const statusBadge = document.getElementById("invPlanStatusBadge");
   const reviewLabel = document.getElementById("invPlanReviewLabel");
+  const warningsEl = document.getElementById("invPlanWarnings");
   if (!summary || !timeline || !projection) return;
 
   const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -3000,6 +3033,9 @@ function renderAnnualDcaPlan(plan) {
     .filter(g => Number.isFinite(g.qtd) && g.qtd > 0)
     .reduce((sum, g) => sum + ((g.precoAtual || 0) * (g.qtd || 0)), 0);
   const reservePct = plan.cashTargetPct || 0;
+  const autoMonthlyText = (plan.autoSavingsPlans || [])
+    .map(p => `${p.ticker} ${fmtEUR.format(p.amount)}`)
+    .join(" + ");
   const topTargets = [...plan.poolWithFactors]
     .sort((a, b) => (b._allocatedTotal || 0) - (a._allocatedTotal || 0))
     .slice(0, 3)
@@ -3012,7 +3048,7 @@ function renderAnnualDcaPlan(plan) {
     : plan.isFallback ? "Fallback VWCE/CORE" : "Proporcional aos targets elegiveis";
 
   if (narrative) {
-    narrative.textContent = `${fmtEUR.format(plan.cash)} em cash + ${fmtEUR.format(plan.monthlyDca)}/mes de DCA. Reserva minima: ${reservePct.toFixed(0)}% de ${fmtEUR.format(plan.projectedPortfolioTotal)}. Distribui ${fmtEUR.format(plan.investableTotal)}.`;
+    narrative.textContent = `${fmtEUR.format(plan.cash)} em cash + ${fmtEUR.format(plan.monthlyDca)}/mes de DCA. Auto: ${fmtEUR.format(plan.autoMonthlyTotal || 0)}/mes. Manual: ${fmtEUR.format(plan.perPeriod)} por periodo.`;
   }
   if (statusBadge) statusBadge.textContent = ctx.state?.label || "DCA";
   if (reviewLabel) reviewLabel.textContent = plan.months >= 12 ? "Trimestral + anual" : "No fecho";
@@ -3028,9 +3064,11 @@ function renderAnnualDcaPlan(plan) {
   summary.innerHTML = [
     ["Cash inicial", fmtEUR.format(plan.cash)],
     ["DCA total", fmtEUR.format(plan.dcaTotal)],
+    ["Savings auto", `${fmtEUR.format(plan.autoTotal || 0)} (${fmtEUR.format(plan.autoMonthlyTotal || 0)}/mes)`],
     ["Portfolio final", fmtEUR.format(plan.projectedPortfolioTotal)],
     ["Reserva minima", `${fmtEUR.format(plan.targetReserveAmount)} (${reservePct.toFixed(0)}%)`],
     ["Cash final", fmtEUR.format(plan.reserveAmount)],
+    ["Cash extra gaps", fmtEUR.format(plan.excessCashFromCaps || 0)],
     ["A distribuir", fmtEUR.format(plan.investableTotal)],
     ["Prioridade", escapeHtml(topTargets)]
   ].map(([label, value]) => `
@@ -3039,6 +3077,30 @@ function renderAnnualDcaPlan(plan) {
       <strong>${value}</strong>
     </div>
   `).join("");
+
+  const warnings = [];
+  if ((plan.autoTotal || 0) > 0) {
+    warnings.push(`Savings automáticos deduzidos: ${fmtEUR.format(plan.autoTotal)} no período.`);
+  }
+  if ((plan.excessCashFromCaps || 0) > 0) {
+    warnings.push(`${fmtEUR.format(plan.excessCashFromCaps)} ficam em cash porque os gaps/caps elegíveis foram esgotados.`);
+  }
+  const underfed = [...plan.poolWithFactors]
+    .filter(p => ((p._finalGap || 0) - (p._allocatedTotal || 0)) > 1)
+    .sort((a, b) => ((b._finalGap || 0) - (b._allocatedTotal || 0)) - ((a._finalGap || 0) - (a._allocatedTotal || 0)))
+    .slice(0, 3);
+  underfed.forEach(p => {
+    warnings.push(`${p.ticker} ainda fica abaixo do target final em ~${fmtEUR.format((p._finalGap || 0) - (p._allocatedTotal || 0))}.`);
+  });
+  if (warningsEl) {
+    warningsEl.style.display = warnings.length ? "grid" : "none";
+    warningsEl.style.gap = "6px";
+    warningsEl.innerHTML = warnings.map(w => `
+      <div style="font-size:0.72rem; line-height:1.35; color:var(--muted-foreground); border:1px solid var(--border); border-radius:8px; padding:8px 10px; background:rgba(245,158,11,.08);">
+        ${escapeHtml(w)}
+      </div>
+    `).join("");
+  }
 
   const monthCopyLines = [];
   const rows = Array.from({ length: plan.months }, (_, idx) => {
@@ -3053,7 +3115,9 @@ function renderAnnualDcaPlan(plan) {
         return `${p.ticker} ${fmtEUR.format(monthlyEnvelope * weight)}`;
       })
       .join(" + ");
-    monthCopyLines.push(`- ${getPlanMonthLabel(idx)}: ${fmtEUR.format(monthlyEnvelope)} | ${monthTargets || "ativos selecionados"}${isReview ? " | revisão" : ""}`);
+    const autoLine = autoMonthlyText ? `Auto: ${autoMonthlyText}` : "Auto: sem savings definidos";
+    const manualLine = `Manual: ${monthTargets || "sem deployment manual"}`;
+    monthCopyLines.push(`- ${getPlanMonthLabel(idx)}: ${autoLine} | ${manualLine}${isReview ? " | revisão" : ""}`);
     const reviewText = isReview
       ? " Revisao: pesos vs targets, cash reserve e desvios acima de 5pp."
       : "";
@@ -3064,8 +3128,9 @@ function renderAnnualDcaPlan(plan) {
           <strong>${escapeHtml(getPlanMonthLabel(idx))}</strong>
           <span>${fmtEUR.format(monthlyEnvelope)}</span>
         </div>
-        <p>${monthTargets || "Distribuir pelos ativos selecionados."}${reviewText}</p>
-        <p>Distribuido acumulado: ${fmtEUR.format(investedSoFar)}. Reserva alvo preservada: ${fmtEUR.format(plan.reserveAmount)}</p>
+        <p>${autoLine}</p>
+        <p>${manualLine}${reviewText}</p>
+        <p>Manual acumulado: ${fmtEUR.format(investedSoFar)}. Cash final preservado: ${fmtEUR.format(plan.reserveAmount)}</p>
       </div>
     `;
   });
@@ -3076,17 +3141,23 @@ function renderAnnualDcaPlan(plan) {
     "",
     `Cash inicial: ${fmtEUR.format(plan.cash)}`,
     `DCA mensal: ${fmtEUR.format(plan.monthlyDca)}`,
+    `Savings automaticos/mês: ${autoMonthlyText || "sem savings definidos"}`,
+    `Savings automaticos no periodo: ${fmtEUR.format(plan.autoTotal || 0)}`,
     `Duração: ${plan.months} meses`,
     `Cash alvo: ${reservePct.toFixed(0)}%`,
     `Portfolio projetado no fim: ${fmtEUR.format(plan.projectedPortfolioTotal)}`,
     `Reserva minima alvo: ${fmtEUR.format(plan.targetReserveAmount)}`,
     `Cash final preservado: ${fmtEUR.format(plan.reserveAmount)}`,
     `Cash adicional a preservar: ${fmtEUR.format(plan.cashToPreserveFromNewCapital || 0)}`,
-    `Capital a distribuir: ${fmtEUR.format(plan.investableTotal)}`,
+    `Cash extra por falta de gaps/caps: ${fmtEUR.format(plan.excessCashFromCaps || 0)}`,
+    `Capital manual a distribuir: ${fmtEUR.format(plan.investableTotal)}`,
     `Método: ${methodLabel} (${strategyLabel})`,
     "",
     "Alocação por ativo:",
     ...(allocationLines.length ? allocationLines : ["- Sem ativos selecionados"]),
+    "",
+    "Avisos:",
+    ...(warnings.length ? warnings.map(w => `- ${w}`) : ["- Sem avisos"]),
     "",
     "Timeline:",
     ...monthCopyLines

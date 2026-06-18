@@ -1042,6 +1042,12 @@
         </div>
 
         <div class="filter-group">
+          <label style="font-size: 0.8rem; font-weight: 700;">Savings automáticos / mês</label>
+          <input type="text" id="inpInvAutoSavings" value="VWCE:331, IS3N:30, GRID:70" placeholder="VWCE:331, IS3N:30, GRID:70" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
+          <div style="font-size:0.65rem; color:var(--muted-foreground); margin-top:4px;">Deduzidos do DCA antes do plano manual.</div>
+        </div>
+
+        <div class="filter-group">
           <label style="font-size: 0.8rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
             Selecionar Ativos
             <span id="btnInvSelectAll" style="color: #8b5cf6; cursor: pointer; font-size: 0.65rem;">Todos / Nenhum</span>
@@ -1077,11 +1083,12 @@
         </div>
 
         <div id="invPlanSummaryGrid" class="inv-plan-summary-grid"></div>
+        <div id="invPlanWarnings" style="display:none; margin-bottom:14px;"></div>
         <div class="inv-plan-result-grid">
           <div>
         <div style="padding: 12px; background: rgba(139, 92, 246, 0.1); border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2); margin-bottom: 16px; font-size: 0.85rem;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Aporte por Período:</span>
+            <span>Manual por Período:</span>
             <strong id="resInvPerPeriod" style="color: #8b5cf6;">€0,00</strong>
           </div>
           <div style="display: flex; justify-content: space-between;">
@@ -1096,7 +1103,7 @@
               <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground);">
                 <th style="padding: 8px 4px; text-align: left;">Ativo</th>
                 <th style="padding: 8px 4px; text-align: right;">Peso %</th>
-                <th style="padding: 8px 4px; text-align: right;">Aporte / Qtd Est.</th>
+                <th style="padding: 8px 4px; text-align: right;">Manual / Qtd Est.</th>
               </tr>
             </thead>
             <tbody id="invPlanTableBody"></tbody>
