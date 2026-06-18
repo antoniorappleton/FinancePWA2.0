@@ -1,57 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/app-polish.css" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="icons/icon-192.png" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <meta name="theme-color" content="#0f766e" />
+    <title>APPFinance</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="css/app-polish.css" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="icons/icon-192.png" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <meta name="theme-color" content="#0f766e" />
-  <title>APPFinance</title>
-</head>
+  <body class="auth-screen">
+    <!-- HEADER COM TÍTULO E LOGO -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 id="screenTitle"></h1>
+      </div>
+      <div class="header-right">
+        <img src="icons/icon-192.png" alt="Logo" class="header-logo" />
+      </div>
+    </header>
 
-<body class="auth-screen">
-
-  <!-- HEADER COM TÍTULO E LOGO -->
-  <header class="app-header">
-    <div class="header-left">
-      <h1 id="screenTitle"></h1>
+    <div id="screenContainer">A carregar...</div>
+    <footer class="footer-nav">
+      <button onclick="navigateTo('dashboard')">
+        <i class="fas fa-clock"></i><span>Dashboard</span>
+      </button>
+      <button onclick="navigateTo('simulador')">
+        <i class="fas fa-calculator"></i><span>Simulador</span>
+      </button>
+      <button onclick="navigateTo('atividade')">
+        <i class="fas fa-chart-line"></i><span>Portfólio</span>
+      </button>
+      <button onclick="navigateTo('analise')">
+        <i class="fas fa-dollar"></i><span>Mercado</span>
+      </button>
+      <button onclick="navigateTo('settings')">
+        <i class="fas fa-cog"></i><span>Configurações</span>
+      </button>
+    </footer>
+    <div
+      style="
+        position: fixed;
+        bottom: 65px;
+        right: 10px;
+        font-size: 10px;
+        color: var(--muted-foreground);
+        opacity: 0.5;
+        z-index: 1000;
+        pointer-events: none;
+      "
+    >
+      v2.4.15
     </div>
-    <div class="header-right">
-      <img src="icons/icon-192.png" alt="Logo" class="header-logo" />
-    </div>
-  </header>
 
-  <div id="screenContainer">A carregar...</div>
-  <footer class="footer-nav">
-    <button onclick="navigateTo('dashboard')">
-      <i class="fas fa-clock"></i><span>Dashboard</span>
-    </button>
-    <button onclick="navigateTo('simulador')">
-      <i class="fas fa-calculator"></i><span>Simulador</span>
-    </button>
-    <button onclick="navigateTo('atividade')">
-      <i class="fas fa-chart-line"></i><span>Portfólio</span>
-    </button>
-    <button onclick="navigateTo('analise')">
-      <i class="fas fa-dollar"></i><span>Mercado</span>
-    </button>
-    <button onclick="navigateTo('settings')">
-      <i class="fas fa-cog"></i><span>Configurações</span>
-    </button>
-  </footer>
-  <div style="position: fixed; bottom: 65px; right: 10px; font-size: 10px; color: var(--muted-foreground); opacity: 0.5; z-index: 1000; pointer-events: none;">
-    v2.4.14
-  </div>
-
-  <!-- Apenas um script principal (com type="module") -->
-  <script type="module" src="js/main.js"></script>
-</body>
-
+    <!-- Apenas um script principal (com type="module") -->
+    <script type="module" src="js/main.js"></script>
+  </body>
 </html>

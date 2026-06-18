@@ -2,7 +2,7 @@ import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gsta
 import { app } from "../firebase-config.js";
 
 import { scoreAssetV2, styleToMultipliers } from "../engines/score-v2.js";
-import { portfolioFactors } from "../engines/factors.js";
+import { calculateFactors, portfolioFactors } from "../engines/factors.js";
 import { portfolioHealth } from "../engines/portfolio-health.js";
 import { riskContribution, weightVsRiskChart } from "../engines/risk-contrib.js";
 import { correlationMatrix } from "../engines/correlation.js";
@@ -27,6 +27,7 @@ const entryPlannerState = {
   basePortfolio: [],
   baseTotalValue: 0,
   selected: new Map(),
+  universe: "all",
   hasLoaded: false,
   rerunTimer: null,
   isRunning: false
@@ -115,6 +116,9 @@ async function runFullAnalysis() {
 
     const corr = correlationMatrix(portfolio);
     const factors = portfolioFactors(portfolio, totalValue);
+    const baseFactors = entryPlannerState.selected.size
+      ? portfolioFactors(basePortfolio, baseTotalValue)
+      : null;
     const health = portfolioHealth(portfolio, totalValue);
     const riskDecomp = portfolioRiskDecomposition(portfolio, totalValue, corr.avgCorrelation);
     const riskContrib = riskContribution(portfolio, totalValue);
@@ -131,7 +135,7 @@ async function runFullAnalysis() {
     renderDNA(dna);
     renderHealth(health, riskDecomp);
     renderResilience(riskDecomp);
-    renderFactorRadar(factors);
+    renderFactorRadar(factors, baseFactors);
     renderCorrelation(corr);
     renderThematic(themes);
     renderEconomicDrivers(economicDrivers);
@@ -190,32 +194,109 @@ function renderResilience(riskDecomp) {
   el("piResilienceSummary").textContent = summary;
 }
 
-function renderFactorRadar(factors) {
+function renderFactorRadar(factors, baseFactors = null) {
   const ctx = document.getElementById("piFactorRadar");
   if (!ctx || !factors) return;
   const labels = ["Growth", "Value", "Quality", "Momentum", "Defensive", "Cyclical"];
   const data = [factors.growth, factors.value, factors.quality, factors.momentum, factors.defensive, factors.cyclical];
+  const baseData = baseFactors
+    ? [baseFactors.growth, baseFactors.value, baseFactors.quality, baseFactors.momentum, baseFactors.defensive, baseFactors.cyclical]
+    : null;
 
   if (window.piRadarChart) window.piRadarChart.destroy();
   window.piRadarChart = new Chart(ctx, {
     type: "radar",
     data: {
       labels,
-      datasets: [{
-        label: "Fatores (%)",
-        data,
-        backgroundColor: "rgba(99,102,241,0.15)",
-        borderColor: "#6366f1",
-        borderWidth: 2,
-        pointBackgroundColor: "#6366f1"
-      }]
+      datasets: [
+        ...(baseData ? [{
+          label: "Atual",
+          data: baseData,
+          backgroundColor: "rgba(148,163,184,0.08)",
+          borderColor: "#94a3b8",
+          borderWidth: 1,
+          borderDash: [4, 4],
+          pointBackgroundColor: "#94a3b8"
+        }] : []),
+        {
+          label: baseData ? "Simulado" : "Fatores (%)",
+          data,
+          backgroundColor: "rgba(99,102,241,0.15)",
+          borderColor: "#6366f1",
+          borderWidth: 2,
+          pointBackgroundColor: "#6366f1"
+        }
+      ]
     },
     options: {
       responsive: true,
       scales: { r: { min: 0, max: 100, ticks: { display: false }, pointLabels: { font: { size: 11, weight: "bold" } } } },
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: Boolean(baseData), labels: { boxWidth: 10, usePointStyle: true } } }
     }
   });
+  renderFactorExpansionHints(factors);
+}
+
+function renderFactorExpansionHints(factors) {
+  const container = document.getElementById("piFactorHints");
+  if (!container || !factors) return;
+
+  const factorMeta = [
+    { key: "growth", label: "Growth", pt: "crescimento" },
+    { key: "value", label: "Value", pt: "value" },
+    { key: "quality", label: "Quality", pt: "qualidade" },
+    { key: "momentum", label: "Momentum", pt: "momentum" },
+    { key: "defensive", label: "Defensive", pt: "defensivo" },
+    { key: "cyclical", label: "Cyclical", pt: "cíclico" }
+  ];
+  const currentTickers = new Set(entryPlannerState.basePortfolio.map(p => p.ticker));
+  const selectedTickers = new Set(entryPlannerState.selected.keys());
+
+  const weakest = factorMeta
+    .map(meta => ({ ...meta, value: Number(factors[meta.key] || 0) }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 2);
+
+  const hints = weakest
+    .map(meta => {
+      const candidate = findBestFactorCandidate(meta.key, currentTickers, selectedTickers);
+      return candidate ? { meta, candidate } : null;
+    })
+    .filter(Boolean);
+
+  if (!hints.length) {
+    container.innerHTML = `<div class="muted" style="font-size:0.78rem;">Sem dicas adicionais: o universo carregado não tem candidatos claros para estender os fatores menos expressivos.</div>`;
+    return;
+  }
+
+  container.innerHTML = hints.map(({ meta, candidate }) => `
+    <div class="pi-factor-hint">
+      <div>
+      Junta mais <strong>${escapeHtml(meta.pt)}</strong>, p.ex. <strong>${escapeHtml(candidate.ticker)}</strong>
+      <span class="muted">${escapeHtml(candidate.nome || candidate.ticker)} · ${meta.label}: ${candidate.factorScore}/100 · Score IA: ${candidate.finalScore ?? "—"}</span>
+      <span class="muted">Peso sugerido para mexer a teia: ${candidate.suggestedWeight}%</span>
+      </div>
+      <button class="btn outline pi-factor-apply" type="button" data-factor-ticker="${escapeHtml(candidate.ticker)}" data-factor-weight="${candidate.suggestedWeight}">
+        <i class="fas fa-plus"></i> Simular
+      </button>
+    </div>
+  `).join("");
+}
+
+function findBestFactorCandidate(factorKey, currentTickers, selectedTickers) {
+  const ranked = entryPlannerState.assets
+    .filter(asset => !currentTickers.has(asset.ticker) && !selectedTickers.has(asset.ticker))
+    .map(asset => {
+      const factorScore = calculateFactors(asset.mkt || asset)[factorKey] || 0;
+      return { ...asset, factorScore, suggestedWeight: getSuggestedFactorWeight(asset) };
+    })
+    .filter(asset => asset.factorScore >= 45)
+    .sort((a, b) => {
+      if (b.factorScore !== a.factorScore) return b.factorScore - a.factorScore;
+      return (b.finalScore || 0) - (a.finalScore || 0);
+    });
+
+  return ranked[0] || null;
 }
 
 function renderCorrelation(corr) {
@@ -405,11 +486,17 @@ function renderRebalance(rebalance) {
 
 function bindEntryPlannerEvents() {
   const search = document.getElementById("piEntrySearch");
+  const universe = document.getElementById("piEntryUniverse");
   const reset = document.getElementById("piEntryReset");
   const list = document.getElementById("piEntryAssetList");
   const selected = document.getElementById("piEntrySelected");
+  const factorHints = document.getElementById("piFactorHints");
 
   search?.addEventListener("input", () => renderEntryAssetList());
+  universe?.addEventListener("change", () => {
+    entryPlannerState.universe = universe.value || "all";
+    renderEntryAssetList();
+  });
   reset?.addEventListener("click", () => {
     entryPlannerState.selected.clear();
     if (search) search.value = "";
@@ -425,7 +512,8 @@ function bindEntryPlannerEvents() {
     if (input.checked) {
       const asset = entryPlannerState.assets.find(a => a.ticker === ticker);
       const currentWeight = getCurrentWeight(asset);
-      entryPlannerState.selected.set(ticker, Math.max(1, Math.ceil(currentWeight + 1)));
+      const defaultWeight = currentWeight > 0 ? Math.ceil(currentWeight + 2) : getSuggestedFactorWeight(asset);
+      entryPlannerState.selected.set(ticker, defaultWeight);
     } else {
       entryPlannerState.selected.delete(ticker);
     }
@@ -442,6 +530,29 @@ function bindEntryPlannerEvents() {
     renderEntrySelectedAssets();
     scheduleAnalysisRerun();
   });
+
+  selected?.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("[data-entry-remove]");
+    if (!button) return;
+    const ticker = button.dataset.entryRemove;
+    if (!ticker) return;
+    entryPlannerState.selected.delete(ticker);
+    renderEntryAssetList();
+    renderEntrySelectedAssets();
+    scheduleAnalysisRerun();
+  });
+
+  factorHints?.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("[data-factor-ticker]");
+    if (!button) return;
+    const ticker = button.dataset.factorTicker;
+    const weight = Number(button.dataset.factorWeight || 0);
+    if (!ticker || !(weight > 0)) return;
+    entryPlannerState.selected.set(ticker, weight);
+    renderEntryAssetList();
+    renderEntrySelectedAssets();
+    scheduleAnalysisRerun();
+  });
 }
 
 function buildEntryPlannerAssets(acoesMap, portfolio) {
@@ -452,11 +563,17 @@ function buildEntryPlannerAssets(acoesMap, portfolio) {
     const price = readAssetPrice(mkt);
     if (!(price > 0)) continue;
     const position = positionMap.get(ticker);
+    const normalizedMkt = {
+      ...mkt,
+      ticker,
+      nome: mkt.nome || mkt.name || position?.nome || ticker
+    };
     assets.push({
       ticker,
-      nome: mkt.nome || mkt.name || position?.nome || ticker,
+      nome: normalizedMkt.nome,
       price,
-      mkt,
+      sector: normalizeEntrySector(normalizedMkt),
+      mkt: normalizedMkt,
       position
     });
   }
@@ -473,6 +590,8 @@ function renderEntryPlanner(assets, basePortfolio, baseTotalValue) {
   entryPlannerState.assets = assets;
   entryPlannerState.basePortfolio = basePortfolio;
   entryPlannerState.baseTotalValue = baseTotalValue;
+  const universe = document.getElementById("piEntryUniverse");
+  if (universe) universe.value = entryPlannerState.universe;
 
   for (const ticker of Array.from(entryPlannerState.selected.keys())) {
     if (!assets.some(a => a.ticker === ticker)) entryPlannerState.selected.delete(ticker);
@@ -490,7 +609,7 @@ function renderEntryAssetList() {
   if (!container) return;
 
   const query = String(document.getElementById("piEntrySearch")?.value || "").trim().toUpperCase();
-  const visible = entryPlannerState.assets
+  const visible = getVisibleEntryAssets()
     .filter(a => !query || a.ticker.includes(query) || String(a.nome || "").toUpperCase().includes(query))
     .slice(0, query ? 120 : 48);
 
@@ -517,6 +636,40 @@ function renderEntryAssetList() {
       </label>
     `;
   }).join("") || `<div class="muted" style="padding:12px;">Nenhum ativo encontrado.</div>`;
+}
+
+function getVisibleEntryAssets() {
+  const ranked = [...entryPlannerState.assets].sort(compareEntryAssets);
+  if (entryPlannerState.universe === "top-global") {
+    return ranked.slice(0, 3);
+  }
+  if (entryPlannerState.universe !== "top-sector") {
+    return ranked;
+  }
+
+  const bySector = new Map();
+  for (const asset of ranked) {
+    const sector = asset.sector || "Sem setor";
+    if (!bySector.has(sector)) bySector.set(sector, []);
+    bySector.get(sector).push(asset);
+  }
+
+  return Array.from(bySector.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([, assets]) => assets.slice(0, 3));
+}
+
+function compareEntryAssets(a, b) {
+  const aHeld = a.position ? 0 : 1;
+  const bHeld = b.position ? 0 : 1;
+  const aScore = Number.isFinite(a.finalScore) ? a.finalScore : -1;
+  const bScore = Number.isFinite(b.finalScore) ? b.finalScore : -1;
+
+  if (entryPlannerState.universe === "all" && aHeld !== bHeld) return aHeld - bHeld;
+  if (aScore !== bScore) return bScore - aScore;
+  if (a.grade && !b.grade) return -1;
+  if (!a.grade && b.grade) return 1;
+  return a.ticker.localeCompare(b.ticker);
 }
 
 function renderEntrySelectedAssets() {
@@ -584,7 +737,12 @@ function renderEntryPlanCard(asset, targetWeight) {
     <div class="pi-entry-card"${sizeWarnings.length ? ' style="border-color:#ef4444;"' : ''}>
       <div class="pi-entry-card-head">
         <div>
-          <div class="pi-entry-card-title">${escapeHtml(asset.ticker)}</div>
+          <div class="pi-entry-title-row">
+            <div class="pi-entry-card-title">${escapeHtml(asset.ticker)}</div>
+            <button class="pi-entry-remove" type="button" data-entry-remove="${escapeHtml(asset.ticker)}" aria-label="Remover ${escapeHtml(asset.ticker)} da simulação" title="Remover da simulação">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
           <div class="muted">${escapeHtml(asset.nome || asset.ticker)}</div>
         </div>
         <label class="pi-entry-weight">
@@ -635,13 +793,19 @@ function applyEntrySimulation(basePortfolio, acoesMap, baseTotalValue) {
 
     const existing = simulated.find(p => p.ticker === ticker);
     const asset = entryPlannerState.assets.find(a => a.ticker === ticker);
-    const mkt = asset?.mkt || acoesMap.get(ticker) || {};
+    const mkt = {
+      ...(asset?.mkt || acoesMap.get(ticker) || {}),
+      ticker,
+      nome: asset?.nome || asset?.mkt?.nome || asset?.mkt?.name || ticker
+    };
     const price = readAssetPrice(mkt);
     if (!(price > 0)) continue;
 
     if (existing) {
       const amountToBuy = Math.max(0, targetValue - existing.valAtual);
       if (!(amountToBuy > 0)) continue;
+      existing.mkt = { ...mkt };
+      existing.nome = existing.nome || mkt.nome || ticker;
       const qtyToBuy = amountToBuy / price;
       const previousCost = existing.quantidade * (existing.precoMedio || price);
       existing.quantidade += qtyToBuy;
@@ -687,6 +851,17 @@ function getCurrentWeight(asset) {
   if (!asset || !(entryPlannerState.baseTotalValue > 0)) return 0;
   const value = Number(asset.position?.valAtual || asset.position?.quantidade * asset.price || 0);
   return (value / entryPlannerState.baseTotalValue) * 100;
+}
+
+function getSuggestedFactorWeight(asset) {
+  const category = getAssetCategory(asset?.mkt || asset || {});
+  if (category.includes("ETF")) return 12;
+  if (category === "Commodity") return 8;
+  return 8;
+}
+
+function normalizeEntrySector(asset) {
+  return String(asset?.setor || asset?.sector || asset?.Setor || asset?.Sector || "").trim() || "Sem setor";
 }
 
 function fmtEUR(value) {

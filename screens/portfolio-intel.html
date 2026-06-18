@@ -25,7 +25,7 @@
   <div id="piResults" class="hidden">
 
     <!-- ENTRY PLANNER -->
-    <div class="card" style="margin-bottom:16px;">
+    <div class="card pi-section pi-entry-section">
       <div class="card-content" style="display:block;">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
           <div>
@@ -44,6 +44,16 @@
         <div class="pi-entry-layout">
           <div>
             <input id="piEntrySearch" class="input" type="search" placeholder="Pesquisar ticker ou nome..." autocomplete="off">
+            <div class="pi-entry-toolbar">
+              <label class="pi-entry-filter">
+                <span>Universo</span>
+                <select id="piEntryUniverse">
+                  <option value="all">Todas as ações</option>
+                  <option value="top-sector">Top 3 por setor</option>
+                  <option value="top-global">Top 3 geral</option>
+                </select>
+              </label>
+            </div>
             <div id="piEntryAssetList" class="pi-entry-list">
               <div class="muted" style="padding:12px;">Executa a análise para carregar ações com preço disponível.</div>
             </div>
@@ -56,7 +66,7 @@
     </div>
 
     <!-- ── ROW 1: DNA + Health + Resilience ── -->
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:12px; margin-bottom:16px;">
+    <div class="pi-kpi-grid">
 
       <!-- Portfolio DNA -->
       <div class="card" id="piDnaCard">
@@ -95,11 +105,12 @@
     </div>
 
     <!-- ── ROW 2: Factor Radar + Correlation ── -->
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+    <div class="pi-main-grid">
       <div class="card">
         <div class="card-content" style="display:block;">
           <h3 style="margin:0 0 12px 0; font-size:0.95rem;">📊 Exposição por Fatores</h3>
           <canvas id="piFactorRadar" height="260"></canvas>
+          <div id="piFactorHints" class="pi-factor-hints"></div>
         </div>
       </div>
       <div class="card">
@@ -112,55 +123,61 @@
     </div>
 
     <!-- ── ROW 3: Thematic Exposure ── -->
-    <div class="card" style="margin-bottom:16px;">
+    <details class="card pi-section pi-compact-section" open>
+      <summary>Exposição Temática</summary>
       <div class="card-content" style="display:block;">
         <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🌐 Exposição Temática (Megatrends)</h3>
         <div id="piThematicBars" style="display:grid; gap:8px;"></div>
         <div id="piThematicWarnings" class="muted" style="font-size:0.8rem; margin-top:8px;"></div>
       </div>
-    </div>
+    </details>
 
     <!-- ── ROW 4: Stress Test Results ── -->
-    <div class="card" style="margin-bottom:16px;">
+    <details class="card pi-section pi-compact-section" open>
+      <summary>Stress Tests</summary>
       <div class="card-content" style="display:block;">
         <h3 style="margin:0 0 12px 0; font-size:0.95rem;">💥 Stress Tests — Simulação de Crises</h3>
-        <div id="piStressGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:10px;"></div>
+        <div id="piStressGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap:8px;"></div>
       </div>
-    </div>
+    </details>
 
     <!-- ── ROW 5: Weight vs Risk ── -->
-    <div class="card" style="margin-bottom:16px;">
+    <details class="card pi-section pi-compact-section" open>
+      <summary>Peso vs Risco</summary>
       <div class="card-content" style="display:block;">
         <h3 style="margin:0 0 12px 0; font-size:0.95rem;">⚖️ Peso vs Contribuição de Risco</h3>
-        <canvas id="piWeightRiskChart" height="220"></canvas>
+        <canvas id="piWeightRiskChart" height="180"></canvas>
         <div id="piRiskWarnings" class="muted" style="font-size:0.8rem; margin-top:8px;"></div>
       </div>
-    </div>
+    </details>
 
     <!-- ── ROW 6: Asset Scorecards ── -->
-    <div class="card" style="margin-bottom:16px;">
+    <details class="card pi-section pi-compact-section">
+      <summary>Scorecards por Ativo</summary>
       <div class="card-content" style="display:block;">
         <h3 style="margin:0 0 12px 0; font-size:0.95rem;">📋 Scorecards por Ativo (V2 Engine)</h3>
-        <div id="piScorecards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:12px;"></div>
+        <div id="piScorecards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap:8px;"></div>
       </div>
-    </div>
+    </details>
 
     <!-- ── ROW 7: AI Observations ── -->
-    <div class="card" style="margin-bottom:16px; border-left: 3px solid var(--primary);">
+    <details class="card pi-section pi-compact-section" open style="border-left: 3px solid var(--primary);">
+      <summary>Observações AI</summary>
       <div class="card-content" style="display:block;">
         <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🤖 Observações AI</h3>
         <div id="piObservations" style="display:grid; gap:8px;"></div>
       </div>
-    </div>
+    </details>
 
     <!-- ── ROW 8: Rebalancing Suggestions ── -->
-    <div class="card" style="margin-bottom:16px;">
+    <details class="card pi-section pi-compact-section" open>
+      <summary>Sugestões de Rebalanceamento</summary>
       <div class="card-content" style="display:block;">
         <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🔄 Sugestões de Rebalanceamento</h3>
         <div id="piRebalanceSummary" style="font-weight:700; margin-bottom:10px;"></div>
         <div id="piRebalanceActions" style="display:grid; gap:8px;"></div>
       </div>
-    </div>
+    </details>
 
   </div><!-- /piResults -->
 </div>
@@ -168,6 +185,10 @@
 <style>
 /* ── Portfolio Intelligence: Responsive Grid ── */
 @media (max-width: 700px) {
+  .pi-main-grid,
+  .pi-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
   #piResults [style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
@@ -211,6 +232,47 @@
 .pi-obs.caution   { background: rgba(249,115,22,0.08); border-left: 3px solid #f97316; }
 .pi-obs.neutral   { background: rgba(99,102,241,0.08); border-left: 3px solid #6366f1; }
 
+.pi-section { margin-bottom: 10px; }
+.pi-section > .card-content { padding: 12px !important; }
+.pi-entry-section > .card-content { padding: 14px !important; }
+.pi-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pi-kpi-grid .card-content { padding: 12px !important; }
+.pi-kpi-grid [id="piDnaEmoji"] { font-size: 1.7rem !important; margin-bottom: 2px !important; }
+.pi-kpi-grid [id="piHealthScore"],
+.pi-kpi-grid [id="piResilience"] { font-size: 1.9rem !important; }
+.pi-main-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(280px, 1.05fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pi-main-grid .card-content { padding: 12px !important; }
+.pi-compact-section {
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.pi-compact-section > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+.pi-compact-section > summary::-webkit-details-marker { display: none; }
+.pi-compact-section > summary::after {
+  content: "+";
+  float: right;
+  color: var(--muted-foreground);
+}
+.pi-compact-section[open] > summary::after { content: "-"; }
+.pi-compact-section > .card-content h3 { display: none; }
+
 .pi-stress-card { padding: 12px; border-radius: 8px; background: var(--muted); }
 .pi-stress-card .scenario-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
 .pi-stress-card .drop-value { font-size: 1.4rem; font-weight: 900; }
@@ -248,6 +310,31 @@
 .corr-heatmap th, .corr-heatmap td { padding: 4px 6px; text-align: center; border: 1px solid var(--border); min-width: 38px; }
 .corr-heatmap th { background: var(--muted); font-weight: 700; position: sticky; top: 0; }
 
+.pi-factor-hints {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pi-factor-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid #6366f1;
+  border-radius: 8px;
+  background: rgba(var(--primary-rgb),0.04);
+  font-size: 0.8rem;
+}
+.pi-factor-hint strong { font-weight: 900; }
+.pi-factor-hint .muted { display: block; margin-top: 2px; font-size: 0.72rem; }
+.pi-factor-apply {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  font-size: 0.75rem;
+}
+
 .pi-entry-layout {
   display: grid;
   grid-template-columns: minmax(240px, 320px) 1fr;
@@ -260,6 +347,32 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--background);
+}
+.pi-entry-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pi-entry-filter {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.pi-entry-filter select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: none;
 }
 .pi-entry-option {
   display: grid;
@@ -310,7 +423,29 @@
   flex-wrap: wrap;
   margin-bottom: 10px;
 }
+.pi-entry-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .pi-entry-card-title { font-weight: 900; font-size: 1rem; }
+.pi-entry-remove {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.pi-entry-remove:hover {
+  color: #ef4444;
+  border-color: rgba(239,68,68,0.45);
+  background: rgba(239,68,68,0.08);
+}
 .pi-entry-weight {
   display: flex;
   align-items: center;
