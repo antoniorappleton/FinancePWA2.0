@@ -2210,7 +2210,6 @@ function showPortfolioHelp(force = false) {
       renderTop5YieldBar(rowsForYield);
       renderTimeline(timelinePoints);
       renderDividendoCalendario12m(eurosMes);
-      renderBubbleChart(abertos, totalInvestido);
 
       // 3.1) Pré-cálculo de métricas operacionais para filtros/ordenação
       gruposArr.forEach((g) => {
@@ -2274,6 +2273,8 @@ function showPortfolioHelp(force = false) {
         g._distTP =
           precoAtual && tp2 ? Math.abs((tp2 / precoAtual - 1) * 100) : 999;
       });
+
+      renderBubbleChart(abertos, totalInvestido);
 
       // 4) FILTRAGEM E ORDENAÇÃO
       let filtered = gruposArr.filter((g) => Number.isFinite(g.qtd) && g.qtd > 0);
@@ -4170,7 +4171,9 @@ async function renderGeographyWorldMap(container, geoData) {
     return;
   }
 
-  const max = Math.max(...data.map(d => d.value), 1);
+  const minVisibleMapPct = 0.05;
+  const mapData = data.filter(row => Number(row.value || 0) >= minVisibleMapPct);
+  const max = Math.max(...mapData.map(d => d.value), 1);
   container.innerHTML = `
     <div class="holdings-geo-layout">
       <div id="holdingsWorldMap" class="holdings-world-map"></div>
@@ -4200,12 +4203,12 @@ async function renderGeographyWorldMap(container, geoData) {
   const mapEl = document.getElementById("holdingsWorldMap");
   _holdingsGeoChart = window.echarts.init(mapEl);
   _holdingsGeoChart.setOption({
-    backgroundColor: "#0f172a",
+    backgroundColor: "#06111f",
     tooltip: {
       trigger: "item",
       formatter: params => {
         const value = Number(params.value || 0);
-        return `${params.name}<br><strong>${value ? value.toFixed(1) : "0.0"}%</strong> do portfolio`;
+        return `${params.name}<br><strong>${fmtGeoPct(value)}</strong> do portfolio`;
       }
     },
     visualMap: {
@@ -4214,8 +4217,8 @@ async function renderGeographyWorldMap(container, geoData) {
       left: 12,
       bottom: 10,
       text: ["Maior", "Menor"],
-      textStyle: { color: "#cbd5e1" },
-      inRange: { color: ["#1e293b", "#0f766e", "#22c55e"] }
+      textStyle: { color: "#dbeafe" },
+      inRange: { color: ["#2dd4bf", "#22c55e", "#bef264"] }
     },
     series: [{
       name: "Cobertura",
@@ -4223,9 +4226,20 @@ async function renderGeographyWorldMap(container, geoData) {
       map: "world",
       roam: true,
       zoom: 1.08,
-      emphasis: { label: { show: false }, itemStyle: { areaColor: "#38bdf8" } },
-      itemStyle: { borderColor: "#334155", borderWidth: 0.5, areaColor: "#1e293b" },
-      data: data.map(row => ({ name: row.name, value: Number(row.value.toFixed(2)) }))
+      emphasis: {
+        label: { show: false },
+        itemStyle: { areaColor: "#67e8f9", borderColor: "#f8fafc", borderWidth: 1.2 }
+      },
+      itemStyle: {
+        borderColor: "#64748b",
+        borderWidth: 0.65,
+        areaColor: "#253447"
+      },
+      data: mapData.map(row => ({
+        name: row.name,
+        value: Number(row.value.toFixed(2)),
+        itemStyle: { borderColor: "#ecfeff", borderWidth: 1.05 }
+      }))
     }]
   });
 
