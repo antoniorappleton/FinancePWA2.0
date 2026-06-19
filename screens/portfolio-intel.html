@@ -157,6 +157,14 @@
 
     <!-- ── ROW 4: Stress Test Results ── -->
     <details class="card pi-section pi-compact-section" open>
+      <summary>ComposiÃ§Ã£o por Ticker</summary>
+      <div class="card-content" style="display:block;">
+        <h3 style="margin:0 0 12px 0; font-size:0.95rem;">ComposiÃ§Ã£o por Ticker</h3>
+        <div id="piTickerComposition" class="pi-composition-grid"></div>
+      </div>
+    </details>
+
+    <details class="card pi-section pi-compact-section" open>
       <summary>Stress Tests</summary>
       <div class="card-content" style="display:block;">
         <h3 style="margin:0 0 12px 0; font-size:0.95rem;">💥 Stress Tests — Simulação de Crises</h3>
@@ -358,6 +366,75 @@
   font-size: 0.75rem;
 }
 
+.pi-composition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.pi-composition-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--background);
+}
+.pi-composition-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pi-composition-ticker {
+  font-weight: 900;
+  font-size: 0.95rem;
+}
+.pi-composition-source {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(var(--primary-rgb),0.08);
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+.pi-composition-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.pi-composition-group-title {
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 7px;
+}
+.pi-composition-row { margin-bottom: 7px; }
+.pi-composition-row-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+  margin-bottom: 3px;
+}
+.pi-composition-row-label span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pi-composition-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.pi-composition-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #14b8a6, #6366f1);
+}
+
 .pi-entry-layout {
   display: grid;
   grid-template-columns: minmax(240px, 320px) 1fr;
@@ -518,6 +595,7 @@
 @media (max-width: 520px) {
   .pi-entry-scenarios { grid-template-columns: 1fr; }
   .pi-entry-option { grid-template-columns: 22px 64px 1fr; }
+  .pi-composition-columns { grid-template-columns: 1fr; }
 }
 
 </style>

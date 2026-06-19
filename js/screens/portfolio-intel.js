@@ -12,7 +12,7 @@ import { thematicExposure } from "../engines/thematic.js";
 import { portfolioDNA } from "../engines/dna.js";
 import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
-import { analyzeETFOverlap } from "../engines/etf-overlap.js";
+import { analyzeETFOverlap, smartETFAnalysis } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
 import { canonicalTicker, confidenceScore, getAssetCategory } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
@@ -49,10 +49,11 @@ async function runFullAnalysis() {
 
   try {
     // ── 1. Load data ──
-    const [ativosSnap, acoesSnap, stratSnap] = await Promise.all([
+    const [ativosSnap, acoesSnap, stratSnap, etfHoldingsSnap] = await Promise.all([
       getDocs(collection(db, "ativos")),
       getDocs(collection(db, "acoesDividendos")),
-      getDoc(doc(db, "config", "strategy"))
+      getDoc(doc(db, "config", "strategy")),
+      getDocs(collection(db, "etfHoldings"))
     ]);
 
     const acoesMap = new Map();
@@ -68,6 +69,7 @@ async function runFullAnalysis() {
     });
 
     const strategy = stratSnap.exists() ? stratSnap.data() : {};
+    const manualComposition = buildManualCompositionMap(etfHoldingsSnap);
     const styleMult = styleToMultipliers(strategy.styleAlloc);
     const regime = strategy.macroRegime || "high_rates";
 
@@ -138,6 +140,7 @@ async function runFullAnalysis() {
     renderFactorRadar(factors, baseFactors);
     renderCorrelation(corr);
     renderThematic(themes);
+    renderTickerComposition(portfolio, manualComposition);
     renderEconomicDrivers(economicDrivers);
     renderStressTests(stress);
     renderWeightRisk(wrChart, riskContrib);
@@ -346,6 +349,129 @@ function renderThematic(themes) {
       </div>
     </div>
   `).join("");
+}
+
+function buildManualCompositionMap(snapshot) {
+  const map = new Map();
+  snapshot?.forEach(docSnap => {
+    const data = docSnap.data() || {};
+    const ticker = String(data.ticker || docSnap.id || "").toUpperCase();
+    if (!ticker) return;
+    map.set(ticker, data);
+  });
+  return map;
+}
+
+function renderTickerComposition(portfolio, manualComposition) {
+  const container = document.getElementById("piTickerComposition");
+  if (!container) return;
+
+  const totalValue = portfolio.reduce((sum, p) => sum + Number(p.valAtual || 0), 0) || 1;
+  container.innerHTML = portfolio
+    .slice()
+    .sort((a, b) => Number(b.valAtual || 0) - Number(a.valAtual || 0))
+    .map(asset => {
+      const composition = getTickerComposition(asset, manualComposition);
+      const weight = (Number(asset.valAtual || 0) / totalValue) * 100;
+      return `
+        <div class="pi-composition-card">
+          <div class="pi-composition-head">
+            <div>
+              <div class="pi-composition-ticker">${escapeHtml(asset.ticker)}</div>
+              <div class="muted">${escapeHtml(asset.nome || asset.mkt?.nome || asset.ticker)} · ${fmtPct(weight)} do portfÃ³lio</div>
+            </div>
+            <span class="pi-composition-source">${escapeHtml(composition.source)}</span>
+          </div>
+          <div class="pi-composition-columns">
+            ${renderCompositionGroup("Setores", composition.sectors)}
+            ${renderCompositionGroup("Geografia", composition.geography)}
+          </div>
+        </div>
+      `;
+    }).join("") || `<div class="muted">Sem posições abertas para decompor.</div>`;
+}
+
+function getTickerComposition(asset, manualComposition) {
+  const ticker = String(asset?.ticker || "").toUpperCase();
+  const manual = findManualComposition(ticker, manualComposition);
+  const etf = smartETFAnalysis(ticker);
+  const sectors = normalizeComposition(manual?.sectors || manual?.sectorAlloc || etf?.sectors);
+  const geography = normalizeComposition(manual?.geography || manual?.countries || manual?.countryAlloc || etf?.geography);
+  const fallbackSector = normalizeEntrySector(asset?.mkt || asset);
+  const fallbackCountry = inferAssetCountry(asset?.mkt || asset);
+
+  return {
+    source: manual ? "Manual" : etf ? "ETF base" : "Ativo",
+    sectors: sectors.length ? sectors : [{ name: fallbackSector, weight: 100 }],
+    geography: geography.length ? geography : [{ name: fallbackCountry, weight: 100 }]
+  };
+}
+
+function findManualComposition(ticker, manualComposition) {
+  if (!manualComposition?.size) return null;
+  if (manualComposition.has(ticker)) return manualComposition.get(ticker);
+  const base = ticker.split(".")[0];
+  for (const [key, data] of manualComposition.entries()) {
+    const k = String(key || "").toUpperCase();
+    if (k.split(".")[0] === base || k.startsWith(ticker) || ticker.startsWith(k)) return data;
+  }
+  return null;
+}
+
+function normalizeComposition(input) {
+  const rows = Array.isArray(input)
+    ? input.map(item => ({
+        name: item.name || item.label || item.country || item.sector || item.region || item.ticker,
+        weight: item.weight ?? item.value ?? item.percent ?? item.pct
+      }))
+    : Object.entries(input || {}).map(([name, weight]) => ({ name, weight }));
+
+  const normalized = rows
+    .map(row => ({ name: String(row.name || "").trim(), weight: normalizeCompositionWeight(row.weight) }))
+    .filter(row => row.name && row.weight > 0)
+    .sort((a, b) => b.weight - a.weight);
+
+  const total = normalized.reduce((sum, row) => sum + row.weight, 0);
+  if (total > 0 && total <= 1.0001) {
+    normalized.forEach(row => { row.weight *= 100; });
+  }
+  return normalized.slice(0, 8);
+}
+
+function normalizeCompositionWeight(value) {
+  let weight = Number(String(value ?? "").replace(",", "."));
+  if (!Number.isFinite(weight)) return 0;
+  let safety = 0;
+  while (Math.abs(weight) > 100 && safety < 6) {
+    weight /= 100;
+    safety++;
+  }
+  return weight;
+}
+
+function inferAssetCountry(asset) {
+  const raw = asset?.pais || asset?.país || asset?.country || asset?.Country || asset?.mercado || asset?.market || "";
+  return String(raw || "").trim() || "N/D";
+}
+
+function renderCompositionGroup(title, rows) {
+  const top = rows.slice(0, 6);
+  return `
+    <div class="pi-composition-group">
+      <div class="pi-composition-group-title">${title}</div>
+      ${top.map(row => `
+        <div class="pi-composition-row">
+          <div class="pi-composition-row-label">
+            <span>${escapeHtml(row.name)}</span>
+            <strong>${fmtPct(row.weight)}</strong>
+          </div>
+          <div class="pi-composition-track">
+            <div class="pi-composition-fill" style="width:${Math.max(1, Math.min(100, row.weight))}%;"></div>
+          </div>
+        </div>
+      `).join("") || `<div class="muted" style="font-size:0.78rem;">Sem dados.</div>`}
+    </div>
+  `;
 }
 
 function renderEconomicDrivers(drivers) {

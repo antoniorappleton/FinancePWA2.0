@@ -1169,10 +1169,14 @@
         </div>
         <div>
           <h3 id="holdingsMapTitle" style="margin: 0; font-size: 1.1rem;">Mapa Global de Holdings</h3>
-          <p id="holdingsMapSubtitle" style="margin: 0; font-size: 0.75rem; color: var(--muted-foreground);">Distribuição detalhada das empresas subjacentes</p>
+          <p id="holdingsMapSubtitle" style="margin: 0; font-size: 0.75rem; color: var(--muted-foreground);">Distribuicao detalhada das empresas subjacentes</p>
         </div>
       </div>
-      <button id="holdingsMapClose" class="icon-btn" style="margin-left: auto;">✖</button>
+      <div id="holdingsMapViewTabs" class="hidden" style="margin-left:auto; display:flex; gap:6px; background:rgba(15,23,42,0.08); border:1px solid var(--border); border-radius:8px; padding:4px;">
+        <button type="button" class="btn ghost holdings-map-view active" data-map-view="holdings" style="height:28px; margin:0; padding:0 10px; font-size:0.72rem;">Holdings</button>
+        <button type="button" class="btn ghost holdings-map-view" data-map-view="geography" style="height:28px; margin:0; padding:0 10px; font-size:0.72rem;">Geografia</button>
+      </div>
+      <button id="holdingsMapClose" class="icon-btn" style="margin-left: 0;">X</button>
     </div>
     <div class="modal-body" style="padding: 10px; flex: 1; min-height: 0; background: #0f172a; position: relative;">
       <div id="holdingsMapContainer" style="width: 100%; height: 100%;"></div>
@@ -1183,7 +1187,7 @@
         </div>
       </div>
       <div id="holdingsMapEmpty" class="hidden" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-        <p style="color: var(--muted-foreground);">Nenhuma holding encontrada para este critério.</p>
+        <p style="color: var(--muted-foreground);">Nenhuma holding encontrada para este criterio.</p>
       </div>
     </div>
     <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--muted-foreground); display: flex; justify-content: space-between; align-items: center;">
@@ -1193,6 +1197,70 @@
   </div>
 </div>
 <!-- ======== Modal de Edição Manual de Holdings ======== -->
+<style>
+.holdings-map-view.active {
+  background: rgba(139, 92, 246, 0.35) !important;
+  border-color: rgba(167, 139, 250, 0.55) !important;
+}
+.holdings-geo-layout {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 10px;
+}
+.holdings-world-map {
+  min-height: 420px;
+  height: 100%;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.holdings-geo-panel {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.86);
+  color: #e2e8f0;
+}
+.holdings-geo-title {
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-bottom: 10px;
+}
+.holdings-geo-row { margin-bottom: 12px; }
+.holdings-geo-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+}
+.holdings-geo-track {
+  height: 7px;
+  border-radius: 999px;
+  background: #1e293b;
+  overflow: hidden;
+}
+.holdings-geo-track > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #14b8a6, #22c55e);
+}
+.holdings-geo-sources {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+@media (max-width: 760px) {
+  .holdings-geo-layout { grid-template-columns: 1fr; }
+  .holdings-world-map { min-height: 320px; }
+}
+</style>
 <div id="holdingsEditModal" class="modal hidden">
   <div class="modal-dialog" style="max-width: 500px; width: 90vw;">
     <div class="modal-header">
@@ -1206,17 +1274,32 @@
     </div>
     <div class="modal-body">
       <p class="muted" style="font-size: 0.8rem; margin-bottom: 12px;">
-        Insere uma holding por linha no formato:<br>
-        <code style="background: #1e293b; padding: 2px 4px; border-radius: 4px;">NOME, SYMBOL, PESO</code> (ex: Apple, AAPL, 0.05)
+        Insere uma linha por item. Pesos podem ser frações ou percentagens.
       </p>
-      <textarea id="holdingsInput" style="width: 100%; height: 250px; background: #0f172a; color: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical;" placeholder="Apple Inc, AAPL, 0.045&#10;Microsoft, MSFT, 0.035"></textarea>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+        <button type="button" class="btn ghost holdings-edit-tab active" data-holdings-tab="holdings" style="height:30px; font-size:0.75rem;">Holdings</button>
+        <button type="button" class="btn ghost holdings-edit-tab" data-holdings-tab="sectors" style="height:30px; font-size:0.75rem;">Setores</button>
+        <button type="button" class="btn ghost holdings-edit-tab" data-holdings-tab="geography" style="height:30px; font-size:0.75rem;">Geografia</button>
+      </div>
+      <div class="holdings-edit-panel" data-holdings-panel="holdings">
+        <div class="muted" style="font-size:0.75rem; margin-bottom:6px;"><code style="background:#1e293b; padding:2px 4px; border-radius:4px;">NOME, SYMBOL, PESO</code> ex: Apple, AAPL, 0.05</div>
+        <textarea id="holdingsInput" style="width: 100%; height: 170px; background: #0f172a; color: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical;" placeholder="Apple Inc, AAPL, 0.045&#10;Microsoft, MSFT, 0.035"></textarea>
+      </div>
+      <div class="holdings-edit-panel hidden" data-holdings-panel="sectors">
+        <div class="muted" style="font-size:0.75rem; margin-bottom:6px;"><code style="background:#1e293b; padding:2px 4px; border-radius:4px;">SETOR, PESO</code> ex: Tecnologia, 0.62</div>
+        <textarea id="holdingsSectorsInput" style="width: 100%; height: 170px; background: #0f172a; color: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical;" placeholder="Tecnologia, 0.62&#10;Financeiro, 0.14"></textarea>
+      </div>
+      <div class="holdings-edit-panel hidden" data-holdings-panel="geography">
+        <div class="muted" style="font-size:0.75rem; margin-bottom:6px;"><code style="background:#1e293b; padding:2px 4px; border-radius:4px;">PAIS/REGIAO, PESO</code> ex: Estados Unidos, 0.70</div>
+        <textarea id="holdingsGeographyInput" style="width: 100%; height: 170px; background: #0f172a; color: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.85rem; resize: vertical;" placeholder="Estados Unidos, 0.70&#10;Europa, 0.18"></textarea>
+      </div>
       
       <div id="editHoldingsStatus" style="margin-top: 10px; font-size: 0.75rem;"></div>
     </div>
     <div class="modal-footer" style="gap: 10px;">
       <button class="btn ghost" id="holdingsEditCancel">Cancelar</button>
       <button class="btn primary" id="holdingsEditSave" style="background: #10b981;">
-        <i class="fas fa-save" style="margin-right: 6px;"></i> Gravar Holdings
+        <i class="fas fa-save" style="margin-right: 6px;"></i> Gravar Composição
       </button>
     </div>
   </div>
