@@ -27,6 +27,7 @@ import { parseSma, getAssetType, canon, cleanTicker, normalizeSector } from "../
 import * as CapitalManager from "../utils/capitalManager.js";
 import { Treemap } from "../components/treemap.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
+import { checkAlerts, notifyAlert } from "../utils/alerts.js";
 
 // ===============================
 // Carregar Chart.js on-demand
@@ -639,10 +640,165 @@ function renderDividendoCalendario12m(arr) {
   });
 }
 
+/**
+ * XIRR — taxa interna de retorno anualizada com datas irregulares.
+ * cashflows: [{amount: Number, date: Date}]
+ * amount negativo = saída de capital; positivo = entrada (inclui valor atual da carteira no final).
+ * Devolve a taxa como decimal (0.12 = 12%) ou null se não convergir.
+ */
+function computeXIRR(cashflows) {
+  if (!cashflows || cashflows.length < 2) return null;
+  const sorted = [...cashflows].sort((a, b) => a.date - b.date);
+  const t0 = sorted[0].date;
+  const years = sorted.map(c => (c.date - t0) / 31557600000);
+
+  const npv = r => sorted.reduce((s, c, i) => s + c.amount / Math.pow(1 + r, years[i]), 0);
+  const dnpv = r => sorted.reduce((s, c, i) => s - years[i] * c.amount / Math.pow(1 + r, years[i] + 1), 0);
+
+  let r = 0.1;
+  for (let i = 0; i < 200; i++) {
+    const f = npv(r);
+    const df = dnpv(r);
+    if (!isFinite(f) || !isFinite(df) || Math.abs(df) < 1e-12) break;
+    const nr = r - f / df;
+    if (nr <= -1) break;
+    if (Math.abs(nr - r) < 1e-8) { r = nr; break; }
+    r = nr;
+  }
+  return isFinite(r) && r > -1 && r < 100 ? r : null;
+}
+
+function renderBubbleChart(abertos, totalInvestido) {
+  const el = document.getElementById("chartBubble");
+  if (!el) return;
+  if (window.__chBubble) window.__chBubble.destroy();
+
+  const stateColorMap = {
+    "REFORÇAR":    "#ef4444",
+    "COMPRAR":     "#22c55e",
+    "MANTER":      "#3b82f6",
+    "MONITORIZAR": "#3b82f6",
+    "REDUZIR":     "#f59e0b",
+    "VENDER":      "#ef4444",
+    "ESPERAR":     "#64748b",
+  };
+
+  const MIN_R = 6, MAX_R = 28;
+  const maxWeight = totalInvestido > 0
+    ? Math.max(...abertos.map(g => (g.investido || 0) / totalInvestido))
+    : 1;
+
+  const points = abertos
+    .filter(g => g.qtd > 0 && Number.isFinite(g._pLossPct))
+    .map(g => {
+      const w = totalInvestido > 0 ? (g.investido || 0) / totalInvestido : 0;
+      const r = MIN_R + (MAX_R - MIN_R) * Math.sqrt(w / (maxWeight || 1));
+      const sma200 = g._sma200;
+      const pa = g.precoAtual;
+      const yVal = (isFiniteNum(sma200) && isFiniteNum(pa) && sma200 > 0)
+        ? ((pa - sma200) / sma200) * 100
+        : 0;
+      return {
+        x: +(g._pLossPct || 0).toFixed(2),
+        y: +yVal.toFixed(2),
+        r: +r.toFixed(1),
+        ticker: g.ticker,
+        estado: g._estadoOp || "ESPERAR",
+        peso: +(w * 100).toFixed(1),
+        lucro: g.lucroAtual || 0,
+        color: stateColorMap[g._estadoOp] || "#64748b",
+      };
+    });
+
+  if (!points.length) return;
+
+  const grouped = {};
+  points.forEach(p => {
+    const k = p.estado;
+    if (!grouped[k]) grouped[k] = [];
+    grouped[k].push(p);
+  });
+
+  const datasets = Object.entries(grouped).map(([estado, pts]) => ({
+    label: estado,
+    data: pts.map(p => ({ x: p.x, y: p.y, r: p.r, ticker: p.ticker, peso: p.peso, lucro: p.lucro })),
+    backgroundColor: (stateColorMap[estado] || "#64748b") + "99",
+    borderColor: stateColorMap[estado] || "#64748b",
+    borderWidth: 1.5,
+  }));
+
+  const cc = chartColors();
+  window.__chBubble = new Chart(el, {
+    type: "bubble",
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: { display: true, text: "P&L %", color: cc.ticks, font: { size: 11 } },
+          ticks: { color: cc.ticks, callback: v => v + "%" },
+          grid: { color: cc.grid },
+          border: { dash: [4, 4] },
+        },
+        y: {
+          title: { display: true, text: "Δ SMA200 %", color: cc.ticks, font: { size: 11 } },
+          ticks: { color: cc.ticks, callback: v => v + "%" },
+          grid: { color: cc.grid },
+          border: { dash: [4, 4] },
+        },
+      },
+      plugins: {
+        legend: { position: "top", labels: { color: cc.ticks, boxWidth: 10, font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: cc.tooltipBg,
+          titleColor: cc.tooltipFg,
+          bodyColor: cc.tooltipFg,
+          callbacks: {
+            title: ctx => ctx[0]?.raw?.ticker || "",
+            label: ctx => {
+              const d = ctx.raw;
+              const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+              return [
+                ` P&L: ${ctx.parsed.x.toFixed(2)}%  |  Δ SMA200: ${ctx.parsed.y.toFixed(2)}%`,
+                ` Peso: ${d.peso}%  |  Lucro: ${fmtEUR.format(d.lucro)}`,
+              ];
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
 // (NOVO) estado global para evitar duplicar listeners
 let byTickerGlobal = new Map();
 let _allMovimentos = [];
 let _eventsWired = false;
+let _lastPriceUpdateTime = null;
+
+function updatePriceFreshness() {
+  const el = document.getElementById("priceUpdateIndicator");
+  if (!el) return;
+  if (!_lastPriceUpdateTime) {
+    el.innerHTML = `<i class="fas fa-circle" style="font-size:0.45rem;color:#94a3b8;"></i> Sem dados`;
+    return;
+  }
+  const diffMs = Date.now() - _lastPriceUpdateTime;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffH = Math.floor(diffMin / 60);
+  let text, color;
+  if (diffMin < 2)        { text = "Preços: agora";         color = "#22c55e"; }
+  else if (diffMin < 60)  { text = `Preços: há ${diffMin}min`; color = "#22c55e"; }
+  else if (diffH < 6)     { text = `Preços: há ${diffH}h`;  color = "#f59e0b"; }
+  else if (diffH < 24)    { text = `Preços: há ${diffH}h`;  color = "#ef4444"; }
+  else {
+    text = `Preços: ${_lastPriceUpdateTime.toLocaleDateString("pt-PT")}`;
+    color = "#ef4444";
+  }
+  el.innerHTML = `<i class="fas fa-circle" style="font-size:0.45rem;color:${color};"></i> ${text}`;
+  el.title = `Última atualização: ${_lastPriceUpdateTime.toLocaleString("pt-PT")}`;
+}
 
 // Expor globalmente para onclick no HTML
 window.openDetails = async function(ticker) {
@@ -1067,25 +1223,48 @@ function renderMovementHistory(ticker) {
   const corpo = document.getElementById("detHistoricoCorpo");
   if (!corpo) return;
 
+  const g = byTickerGlobal.get(ticker);
+  const precoAtual = g?.precoAtual || null;
+
   const movimentos = (_allMovimentos || [])
     .filter(m => m.ticker === ticker)
     .sort((a, b) => b.date - a.date);
 
   if (movimentos.length === 0) {
-    corpo.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--muted-foreground);">Sem movimentos registados.</td></tr>';
+    corpo.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: var(--muted-foreground);">Sem movimentos registados.</td></tr>';
     return;
   }
 
   const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  const fmtPct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+
   corpo.innerHTML = movimentos.map(m => {
     const isVenda = m.qtd < 0;
-    const tipoLabel = isVenda ? '<span style="color:#ef4444;">Venda</span>' : '<span style="color:#22c55e;">Compra</span>';
+    const absQtd = Math.abs(m.qtd);
+    const custoTotal = absQtd * m.preco;
+    const tipoLabel = isVenda
+      ? '<span style="color:#ef4444;font-weight:700;">Venda</span>'
+      : '<span style="color:#22c55e;font-weight:700;">Compra</span>';
+
+    let plCell = '<td style="padding: 10px; text-align: right; color: var(--muted-foreground);">—</td>';
+    if (!isVenda && precoAtual !== null) {
+      const plEur = (precoAtual - m.preco) * absQtd;
+      const plPct = m.preco > 0 ? ((precoAtual - m.preco) / m.preco) * 100 : 0;
+      const color = plEur >= 0 ? "#22c55e" : "#ef4444";
+      plCell = `<td style="padding: 10px; text-align: right; font-weight: 700; color: ${color};">
+        ${fmtEUR.format(plEur)}<br>
+        <span style="font-size: 0.65rem; opacity: 0.85;">${fmtPct(plPct)}</span>
+      </td>`;
+    }
+
     return `
       <tr style="border-bottom: 1px solid var(--border);">
-        <td style="padding: 10px;">${m.date.toLocaleDateString("pt-PT")}</td>
+        <td style="padding: 10px; white-space: nowrap;">${m.date.toLocaleDateString("pt-PT")}</td>
         <td style="padding: 10px;">${tipoLabel}</td>
-        <td style="padding: 10px; text-align: right; font-weight: 600;">${Math.abs(m.qtd).toFixed(4).replace(/\.?0+$/, "")}</td>
+        <td style="padding: 10px; text-align: right; font-weight: 600;">${absQtd.toFixed(4).replace(/\.?0+$/, "")}</td>
         <td style="padding: 10px; text-align: right;">${fmtEUR.format(m.preco)}</td>
+        <td style="padding: 10px; text-align: right; color: var(--muted-foreground);">${fmtEUR.format(custoTotal)}</td>
+        ${plCell}
         <td style="padding: 10px; text-align: center;">
           <div style="display: flex; gap: 8px; justify-content: center;">
             <button class="btn-history-edit" data-edit-move="${m.id}" style="border:none; background:none; cursor:pointer; color:var(--primary);"><i class="fas fa-edit"></i></button>
@@ -1677,6 +1856,8 @@ function showPortfolioHelp(force = false) {
 
     onSnapshot(collection(db, "acoesDividendos"), (snap) => {
       _lastAcoesSnap = snap;
+      _lastPriceUpdateTime = new Date();
+      updatePriceFreshness();
       handleUpdate();
     });
 
@@ -1904,6 +2085,30 @@ function showPortfolioHelp(force = false) {
       if (elLA) elLA.textContent = `Acumulado: ${fmtEUR.format(lucroTotal)}`;
       if (elRA) elRA.textContent = fmtEUR.format(rendimentoAnual);
       if (elRP) elRP.textContent = totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
+
+      // XIRR — retorno anualizado real (considera timing das compras/vendas)
+      try {
+        const xirrFlows = movimentosAsc.map(m => ({
+          amount: m.qtd > 0 ? -(m.qtd * m.preco) : (Math.abs(m.qtd) * m.preco),
+          date: m.date instanceof Date ? m.date : new Date(m.date),
+        })).filter(f => isFinite(f.amount) && f.date instanceof Date && isFinite(f.date));
+        const totalMktVal = abertos.reduce((s, g) => s + (isFiniteNum(g.precoAtual) ? g.precoAtual * (g.qtd || 0) : (g.investido || 0)), 0);
+        if (totalMktVal > 0 && xirrFlows.length > 0) {
+          xirrFlows.push({ amount: totalMktVal, date: new Date() });
+          const xirrRate = computeXIRR(xirrFlows);
+          const elXIRR = document.getElementById("prtXIRR");
+          if (elXIRR) {
+            if (xirrRate !== null) {
+              const pct = (xirrRate * 100).toFixed(1);
+              elXIRR.textContent = `XIRR: ${xirrRate >= 0 ? "+" : ""}${pct}% a.a.`;
+              elXIRR.style.color = xirrRate >= 0 ? "#22c55e" : "#ef4444";
+            } else {
+              elXIRR.textContent = "XIRR: dados insuficientes";
+              elXIRR.style.color = "";
+            }
+          }
+        }
+      } catch (_) { /* silencioso */ }
       if (elEX) {
         elEX.textContent = `${expSMA200Pct.toFixed(0)}%`;
         const elEXC = document.getElementById("prtExpSMA200Comment");
@@ -2005,6 +2210,7 @@ function showPortfolioHelp(force = false) {
       renderTop5YieldBar(rowsForYield);
       renderTimeline(timelinePoints);
       renderDividendoCalendario12m(eurosMes);
+      renderBubbleChart(abertos, totalInvestido);
 
       // 3.1) Pré-cálculo de métricas operacionais para filtros/ordenação
       gruposArr.forEach((g) => {
@@ -2160,8 +2366,59 @@ function showPortfolioHelp(force = false) {
         finalHtml ||
         `<div class="muted" style="text-align:center; padding: 40px;">Nenhum ativo corresponde aos filtros selecionados.</div>`;
 
+      // 🗂️ Posições Fechadas (P&L Realizado)
+      const fechadasCont = document.getElementById("listaFechadas");
+      if (fechadasCont) {
+        const fechadas = gruposArr.filter(g => (g.qtd || 0) <= 0 && Math.abs(g.realizado || 0) > 0.001);
+        if (fechadas.length > 0) {
+          const totalRealizado = fechadas.reduce((s, g) => s + (g.realizado || 0), 0);
+          const corTotal = totalRealizado >= 0 ? "#22c55e" : "#ef4444";
+          fechadasCont.innerHTML = `
+            <details style="border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+              <summary style="padding: 14px 18px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; list-style: none; background: var(--card);">
+                <span><i class="fas fa-archive" style="color: var(--muted-foreground); margin-right: 8px;"></i>Posições Fechadas <span style="font-weight: 500; color: var(--muted-foreground);">(${fechadas.length})</span></span>
+                <span style="color: ${corTotal}; font-size: 0.9rem;">${totalRealizado >= 0 ? "+" : ""}${fmtEUR.format(totalRealizado)} realizados</span>
+              </summary>
+              <div style="overflow: auto;">
+                <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground); text-align: left; background: var(--card);">
+                      <th style="padding: 10px 14px;">Ticker</th>
+                      <th style="padding: 10px 14px;">Nome</th>
+                      <th style="padding: 10px 14px; text-align: right;">Lucro Realizado</th>
+                      <th style="padding: 10px 14px; text-align: center;">Lotes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${fechadas.sort((a, b) => (b.realizado || 0) - (a.realizado || 0)).map(g => {
+                      const cor = (g.realizado || 0) >= 0 ? "#22c55e" : "#ef4444";
+                      const nLotes = (_allMovimentos || []).filter(m => m.ticker === g.ticker && m.qtd > 0).length;
+                      return `
+                        <tr style="border-bottom: 1px solid var(--border);" onclick="window.openDetails('${g.ticker}')" class="cursor-pointer">
+                          <td style="padding: 10px 14px; font-weight: 800; font-family: monospace;">${g.ticker}</td>
+                          <td style="padding: 10px 14px; color: var(--muted-foreground);">${g.nome}</td>
+                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${(g.realizado || 0) >= 0 ? "+" : ""}${fmtEUR.format(g.realizado || 0)}</td>
+                          <td style="padding: 10px 14px; text-align: center; color: var(--muted-foreground);">${nLotes}</td>
+                        </tr>`;
+                    }).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          `;
+        } else {
+          fechadasCont.innerHTML = "";
+        }
+      }
+
       wireQuickActions(gruposArr);
       wirePortfolioHelpModal();
+
+      // 🔔 Verificar alertas configurados
+      try {
+        const triggered = checkAlerts(gruposArr, infoMap);
+        triggered.forEach(({ alert, message }) => notifyAlert(message, alert.ticker || ""));
+      } catch (_) { /* silencioso */ }
       // Atualizar a referência dos dados para o mapa global
       window._currentGruposArr = gruposArr; 
     } catch (e) {
@@ -2259,6 +2516,7 @@ function showPortfolioHelp(force = false) {
                   <i class="fas ${typeIcon}" style="font-size: 0.55rem;"></i> ${typeLabel}
                 </span>
                 ${sInfo ? `<span class="strategy-badge strategy-badge--${sInfo.category.toLowerCase()}">${sInfo.category}</span>` : ''}
+                <span style="background: ${stateColor}18; color: ${stateColor}; border: 1px solid ${stateColor}35; font-size: 0.6rem; padding: 1px 7px; border-radius: 4px; font-weight: 800; letter-spacing: 0.03em;">${estadoOp}</span>
               </div>
               <span class="asset-name" title="${g.nome}">${g.nome}</span>
             </div>
@@ -2367,9 +2625,15 @@ function showPortfolioHelp(force = false) {
         </div>
         ${assetType !== "crypto" ? `
         <div class="metric-item">
-          <span class="metric-label">Yield</span>
+          <span class="metric-label">Yield (atual)</span>
           <span class="metric-value">${yPct}</span>
         </div>
+        ${isFiniteNum(g._divAnual) && g._divAnual > 0 && precoMedio > 0 ? `
+        <div class="metric-item" title="Yield sobre o preço médio de custo — cresce com o tempo">
+          <span class="metric-label">Yield on Cost</span>
+          <span class="metric-value" style="color:#22c55e;">${((g._divAnual / precoMedio) * 100).toFixed(2)}%</span>
+        </div>
+        ` : ""}
         ` : ""}
         ${assetType === "stock" ? `
         <div class="metric-item">
@@ -2834,20 +3098,25 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
     });
   };
 
-  // 2. Calcular Fatores de Ponderação (Gaps vs. Targets)
+  // 2. Calcular Fatores de Ponderação (Gaps vs. Targets / Value Averaging)
   const poolWithFactors = pool.map(p => {
+    const finalGap = projectedGapFor(p);
     let factor = 0;
     if (method === "GAP") {
-      // Usar a necessidade estratégica (gap em euros até atingir o target)
-      factor = p._strategicNeed > 0 ? p._strategicNeed : 0;
+      factor = finalGap;
+    } else if (method === "VALUE_AVG") {
+      // Value Averaging: fator proporcional ao target mas ponderado pelo gap atual
+      // Quanto maior o gap (ativo mais abaixo do target), maior o peso relativo
+      const target = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
+      const currentMktVal = (p.precoAtual || 0) * (p.qtd || 0) || (p.investido || 0);
+      const midwayTarget = projectedInvestedTotal * target;
+      // VA factor = "quanto falta para o target desta semana" normalizado
+      const vaGap = Math.max(0, midwayTarget - currentMktVal);
+      factor = vaGap > 0 ? vaGap : target * 0.1; // mínimo simbólico
     } else {
-      // Usar a alocação estratégica alvo (target)
-      factor = (p._strategy && p._strategy.target > 0) ? p._strategy.target : 0.01;
+      // TARGET: proporcional ao alvo estratégico
+      factor = (finalGap > 0 && p._strategy?.target > 0) ? p._strategy.target : 0;
     }
-    const finalGap = projectedGapFor(p);
-    factor = method === "GAP"
-      ? finalGap
-      : (finalGap > 0 ? ((p._strategy && p._strategy.target > 0) ? p._strategy.target : 0) : 0);
     return { ...p, factor, _finalGap: finalGap };
   });
 
@@ -2924,7 +3193,7 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
   const existingWarning = resultDiv.querySelector(".inv-plan-warning");
   if (existingWarning) existingWarning.remove();
   
-  if (isFallback && method === "GAP") {
+  if (isFallback && (method === "GAP" || method === "VALUE_AVG")) {
     const warning = document.createElement("div");
     warning.className = "inv-plan-warning";
     warning.style.fontSize = "0.7rem";
@@ -2939,35 +3208,81 @@ function generateInvPlan(cash, monthlyDca, cashTargetPct, months, freq, strategy
   }
 
   // 3. Gerar Plano com Pesos Normalizados e Est. Unidades
-  
-  tableBody.innerHTML = poolWithFactors
-    .sort((a, b) => b._allocatedTotal - a._allocatedTotal)
-    .map(p => {
-      const normalizedWeight = p._normalizedWeight || 0;
-      const allocated = (p._allocatedTotal || 0) / totalPeriods;
+
+  if (method === "VALUE_AVG") {
+    // Value Averaging: tabela de cenários — o que investir conforme queda/subida do mercado
+    const sortedVA = [...poolWithFactors].sort((a, b) => (b._allocatedTotal || 0) - (a._allocatedTotal || 0));
+    tableBody.innerHTML = sortedVA.map(p => {
+      const baseAlloc = (p._allocatedTotal || 0) / totalPeriods;
       const preco = p.precoAtual || 0;
-      const units = preco > 0 ? (allocated / preco) : 0;
-      
+      // VA: em queda de 10% investimos ~120% do base; em subida de 10% investimos ~80% do base
+      const vaDown10 = baseAlloc * 1.20;
+      const vaDown20 = baseAlloc * 1.45;
+      const vaFlat   = baseAlloc;
+      const vaUp10   = baseAlloc * 0.80;
+      const vaUp20   = baseAlloc * 0.55;
+      const units = preco > 0 ? (baseAlloc / preco) : 0;
+      const normalizedWeight = p._normalizedWeight || 0;
       return `
-        <tr style="border-bottom: 1px solid var(--border);">
-          <td style="padding: 8px 4px;">
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 4px;">
             <strong>${p.ticker}</strong>
-            <div style="font-size: 0.65rem; color: var(--muted-foreground); margin-top: 2px;">
-              ${p._strategy?.category || 'SAT'} • ${preco > 0 ? fmtEUR.format(preco) : '—'}
+            <div style="font-size:0.62rem;color:var(--muted-foreground);margin-top:2px;">
+              ${p._strategy?.category || 'SAT'} • ${preco > 0 ? fmtEUR.format(preco) : '—'} • ${(normalizedWeight * 100).toFixed(1)}%
             </div>
           </td>
-          <td style="padding: 8px 4px; text-align: right; font-weight: 500;">
-            ${(normalizedWeight * 100).toFixed(1)}%
+          <td style="padding:8px 4px;text-align:right;font-weight:700;color:#8b5cf6;">
+            ${fmtEUR.format(vaFlat)}
+            <div style="font-size:0.6rem;color:var(--muted-foreground);">~${units > 0 ? units.toFixed(2) : '—'} un.</div>
           </td>
-          <td style="padding: 8px 4px; text-align: right; font-weight: 700; color: #8b5cf6;">
-            ${fmtEUR.format(allocated)}
-            <div style="font-size: 0.65rem; color: var(--success); font-weight: 700; margin-top: 2px;">
-              ${units > 0 ? `~${units.toFixed(2)} un.` : '—'}
-            </div>
+          <td style="padding:8px 4px;text-align:right;font-size:0.72rem;">
+            <span style="color:#ef4444;display:block;">-20%: ${fmtEUR.format(vaDown20)}</span>
+            <span style="color:#f59e0b;display:block;">-10%: ${fmtEUR.format(vaDown10)}</span>
+            <span style="color:#94a3b8;display:block;">+10%: ${fmtEUR.format(vaUp10)}</span>
+            <span style="color:#22c55e;display:block;">+20%: ${fmtEUR.format(vaUp20)}</span>
           </td>
-        </tr>
-      `;
+        </tr>`;
     }).join("");
+    // Cabeçalho da tabela — troca header
+    const thead = tableBody.closest("table")?.querySelector("thead tr");
+    if (thead) thead.innerHTML = `<th style="padding:8px 4px;">Ativo</th><th style="padding:8px 4px;text-align:right;">Base (flat)</th><th style="padding:8px 4px;text-align:right;">VA por cenário/período</th>`;
+    // Nota explicativa
+    const vaNote = document.createElement("div");
+    vaNote.className = "inv-plan-warning";
+    vaNote.style.cssText = "font-size:0.7rem;color:#8b5cf6;background:rgba(139,92,246,0.06);padding:10px;border-radius:6px;border:1px dashed rgba(139,92,246,0.3);margin-bottom:12px;";
+    vaNote.innerHTML = `📐 <strong>Value Averaging:</strong> investe mais quando o ativo cai abaixo do caminho alvo e menos quando sobe acima. Monitoriza mensalmente e ajusta o montante real conforme a cotação na data de compra. O valor "Base (flat)" assume mercado estável.`;
+    resultDiv.prepend(vaNote);
+  } else {
+    const thead = tableBody.closest("table")?.querySelector("thead tr");
+    if (thead) thead.innerHTML = `<th style="padding:8px 4px;">Ativo</th><th style="padding:8px 4px;text-align:right;">% Carteira</th><th style="padding:8px 4px;text-align:right;">Por Período</th>`;
+    tableBody.innerHTML = poolWithFactors
+      .sort((a, b) => b._allocatedTotal - a._allocatedTotal)
+      .map(p => {
+        const normalizedWeight = p._normalizedWeight || 0;
+        const allocated = (p._allocatedTotal || 0) / totalPeriods;
+        const preco = p.precoAtual || 0;
+        const units = preco > 0 ? (allocated / preco) : 0;
+        return `
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 8px 4px;">
+              <strong>${p.ticker}</strong>
+              <div style="font-size: 0.65rem; color: var(--muted-foreground); margin-top: 2px;">
+                ${p._strategy?.category || 'SAT'} • ${preco > 0 ? fmtEUR.format(preco) : '—'}
+              </div>
+            </td>
+            <td style="padding: 8px 4px; text-align: right; font-weight: 500;">
+              ${(normalizedWeight * 100).toFixed(1)}%
+            </td>
+            <td style="padding: 8px 4px; text-align: right; font-weight: 700; color: #8b5cf6;">
+              ${fmtEUR.format(allocated)}
+              <div style="font-size: 0.65rem; color: var(--success); font-weight: 700; margin-top: 2px;">
+                ${units > 0 ? `~${units.toFixed(2)} un.` : '—'}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+  }
 
   renderAnnualDcaPlan({
     total: investableTotal,
@@ -3043,9 +3358,13 @@ function renderAnnualDcaPlan(plan) {
     .join(" / ") || "ativos selecionados";
 
   const strategyLabel = plan.strategy === "ALL" ? "Mista" : plan.strategy;
-  const methodLabel = plan.method === "GAP" && !plan.isFallback
-    ? "Gaps finais projetados"
-    : plan.isFallback ? "Fallback VWCE/CORE" : "Proporcional aos targets elegiveis";
+  const methodLabel = plan.isFallback
+    ? "Fallback VWCE/CORE"
+    : plan.method === "GAP"
+      ? "Gaps finais projetados"
+      : plan.method === "VALUE_AVG"
+        ? "Value Averaging (VA)"
+        : "Proporcional aos targets elegíveis";
 
   if (narrative) {
     narrative.textContent = `${fmtEUR.format(plan.cash)} em cash + ${fmtEUR.format(plan.monthlyDca)}/mes de DCA. Auto: ${fmtEUR.format(plan.autoMonthlyTotal || 0)}/mes. Manual: ${fmtEUR.format(plan.perPeriod)} por periodo.`;

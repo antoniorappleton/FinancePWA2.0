@@ -145,6 +145,10 @@ async function runFullAnalysis() {
     renderObservations(portfolioObs, assetScores);
     renderRebalance(rebalance);
 
+    // Fronteira Eficiente (Markowitz Monte Carlo)
+    const efData = computeEfficientFrontier(portfolio, corr);
+    renderEfficientFrontier(efData);
+
     loading?.classList.add("hidden");
     results?.classList.remove("hidden");
     entryPlannerState.hasLoaded = true;
@@ -482,6 +486,166 @@ function renderRebalance(rebalance) {
       </div>
     </div>
   `).join("");
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📈 FRONTEIRA EFICIENTE (Markowitz — Monte Carlo 3000 portfolios)
+// ══════════════════════════════════════════════════════════════
+
+function computeEfficientFrontier(portfolio, corrObj) {
+  const n = portfolio.length;
+  if (n < 2) return null;
+
+  const RISK_FREE = 0.03;
+
+  const expReturns = portfolio.map(p => {
+    const r = Number(p.mkt?.priceChange_1y ?? p.mkt?.taxaCrescimento_1ano ?? 0);
+    const rn = Math.abs(r) > 1 ? r / 100 : r;
+    return isFinite(rn) ? Math.max(-0.6, Math.min(rn, 1.5)) : 0.06;
+  });
+
+  const vols = portfolio.map(p => {
+    const r = Number(p.mkt?.priceChange_1m ?? 0);
+    const rn = Math.abs(r) > 1 ? r / 100 : r;
+    const av = Math.abs(rn) * Math.sqrt(12);
+    return isFinite(av) && av > 0.01 ? Math.min(av, 1.2) : 0.18;
+  });
+
+  const matrix = corrObj?.matrix || {};
+  const getCorrVal = (i, j) => {
+    if (i === j) return 1;
+    const ti = portfolio[i].ticker, tj = portfolio[j].ticker;
+    const v = matrix[ti]?.[tj] ?? matrix[tj]?.[ti];
+    return isFinite(v) ? v : 0.3;
+  };
+
+  const cov = Array.from({length: n}, (_, i) =>
+    Array.from({length: n}, (_, j) => vols[i] * vols[j] * getCorrVal(i, j))
+  );
+
+  const portVariance = w => {
+    let v = 0;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) v += w[i] * w[j] * cov[i][j];
+    return Math.max(0, v);
+  };
+  const portReturn = w => w.reduce((s, wi, i) => s + wi * expReturns[i], 0);
+  const randWeights = () => {
+    const r = Array.from({length: n}, () => -Math.log(Math.random() + 1e-10));
+    const sum = r.reduce((s, v) => s + v, 0);
+    return r.map(v => v / sum);
+  };
+
+  const M = 3000;
+  const sims = [];
+  for (let k = 0; k < M; k++) {
+    const w = randWeights();
+    const ret = portReturn(w);
+    const vol = Math.sqrt(portVariance(w));
+    sims.push({ ret, vol, sharpe: vol > 0 ? (ret - RISK_FREE) / vol : 0 });
+  }
+
+  const totalVal = portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
+  const curW = portfolio.map(p => (p.valAtual || 0) / (totalVal || 1));
+  const curRet = portReturn(curW);
+  const curVol = Math.sqrt(portVariance(curW));
+  const curSharpe = curVol > 0 ? (curRet - RISK_FREE) / curVol : 0;
+  const best = sims.reduce((b, s) => s.sharpe > b.sharpe ? s : b, sims[0]);
+
+  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio };
+}
+
+function renderEfficientFrontier(data) {
+  const canvas = document.getElementById("piEfficientFrontier");
+  if (!canvas || !data) return;
+  if (window.__piEFChart) window.__piEFChart.destroy();
+
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const tickColor = isDark ? "rgba(255,255,255,.8)" : "rgba(0,0,0,.7)";
+  const gridColor = isDark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)";
+
+  const maxS = Math.max(...data.sims.map(s => s.sharpe));
+  const minS = Math.min(...data.sims.map(s => s.sharpe));
+  const sharpeColor = s => {
+    const t = Math.max(0, Math.min(1, (s - minS) / (maxS - minS + 0.001)));
+    if (t > 0.66) return `rgba(34,197,94,0.55)`;
+    if (t > 0.33) return `rgba(245,158,11,0.55)`;
+    return `rgba(239,68,68,0.45)`;
+  };
+
+  const grouped = { high: [], mid: [], low: [] };
+  data.sims.forEach(s => {
+    const t = (s.sharpe - minS) / (maxS - minS + 0.001);
+    const bucket = t > 0.66 ? 'high' : t > 0.33 ? 'mid' : 'low';
+    grouped[bucket].push({ x: +(s.vol * 100).toFixed(2), y: +(s.ret * 100).toFixed(2) });
+  });
+
+  const fmtPct = v => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
+
+  window.__piEFChart = new Chart(canvas, {
+    type: "scatter",
+    data: {
+      datasets: [
+        { label: "Baixo Sharpe", data: grouped.low,  backgroundColor: "rgba(239,68,68,0.35)",   pointRadius: 2 },
+        { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: "rgba(245,158,11,0.45)",  pointRadius: 2 },
+        { label: "Alto Sharpe",  data: grouped.high, backgroundColor: "rgba(34,197,94,0.55)",   pointRadius: 2 },
+        {
+          label: "★ Carteira Atual",
+          data: [{ x: +(data.curVol * 100).toFixed(2), y: +(data.curRet * 100).toFixed(2) }],
+          backgroundColor: "#8b5cf6",
+          pointRadius: 10,
+          pointStyle: "star",
+        },
+        {
+          label: "◆ Sharpe Máximo",
+          data: [{ x: +(data.best.vol * 100).toFixed(2), y: +(data.best.ret * 100).toFixed(2) }],
+          backgroundColor: "#06b6d4",
+          pointRadius: 9,
+          pointStyle: "rectRot",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: { display: true, text: "Risco — Volatilidade Anualizada (%)", color: tickColor, font: { size: 11 } },
+          ticks: { color: tickColor, callback: v => v + "%" },
+          grid: { color: gridColor },
+        },
+        y: {
+          title: { display: true, text: "Retorno Esperado (%)", color: tickColor, font: { size: 11 } },
+          ticks: { color: tickColor, callback: v => v + "%" },
+          grid: { color: gridColor },
+        },
+      },
+      plugins: {
+        legend: { position: "top", labels: { color: tickColor, boxWidth: 10, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` Risco: ${ctx.parsed.x.toFixed(1)}%  |  Retorno: ${ctx.parsed.y.toFixed(1)}%`,
+          },
+        },
+      },
+    },
+  });
+
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  const metaEl = document.getElementById("piEfficientFrontierMeta");
+  if (metaEl) {
+    const kpi = (label, value, color = "var(--foreground)") => `
+      <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--card);">
+        <div style="font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted-foreground); font-weight:800; margin-bottom:4px;">${label}</div>
+        <div style="font-size:0.95rem; font-weight:800; color:${color};">${value}</div>
+      </div>`;
+    metaEl.innerHTML =
+      kpi("Retorno esperado (atual)", fmtPct(data.curRet), data.curRet >= 0 ? "#22c55e" : "#ef4444") +
+      kpi("Volatilidade (atual)", `${(data.curVol * 100).toFixed(1)}%`) +
+      kpi("Rácio Sharpe (atual)", data.curSharpe.toFixed(2), data.curSharpe >= 1 ? "#22c55e" : data.curSharpe >= 0.5 ? "#f59e0b" : "#ef4444") +
+      kpi("Sharpe máximo simulado", data.best.sharpe.toFixed(2), "#06b6d4") +
+      kpi("Retorno Sharpe max.", fmtPct(data.best.ret), "#06b6d4") +
+      kpi("Vol. Sharpe max.", `${(data.best.vol * 100).toFixed(1)}%`, "#06b6d4");
+  }
 }
 
 function bindEntryPlannerEvents() {

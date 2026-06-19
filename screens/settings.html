@@ -935,6 +935,64 @@
       </div>
     </div>
 
+    <!-- 🔔 ALERTAS DE PORTFÓLIO -->
+    <div class="card" style="margin-top: 16px;">
+      <div class="card-content" style="display:block;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <p class="label" style="margin:0 0 4px;">Alertas de Portfólio</p>
+            <p class="muted" style="font-size:0.75rem; margin:0;">Dispara notificação quando as condições forem atingidas</p>
+          </div>
+          <button id="btnAddAlert" class="btn premium" style="margin:0; padding:8px 14px; font-size:0.78rem; display:flex; align-items:center; gap:6px;">
+            <i class="fas fa-bell-plus"></i> Novo Alerta
+          </button>
+        </div>
+
+        <!-- Formulário novo alerta -->
+        <div id="alertFormWrap" style="display:none; background:rgba(var(--primary-rgb),0.04); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div>
+              <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Ticker</label>
+              <input id="alertTicker" type="text" class="pf-input" placeholder="Ex: AAPL" style="text-transform:uppercase;" />
+            </div>
+            <div>
+              <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Tipo</label>
+              <select id="alertType" class="pf-input">
+                <option value="preco_alvo">Preço alvo (≥)</option>
+                <option value="preco_queda">Preço de queda (≤)</option>
+                <option value="rsi_compra">RSI Sobrevenda (≤)</option>
+                <option value="rsi_venda">RSI Sobrecompra (≥)</option>
+                <option value="alocacao">Desvio de Alocação (%)</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div>
+              <label id="alertValueLabel" style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Valor (€)</label>
+              <input id="alertValue" type="number" class="pf-input" step="0.01" placeholder="0.00" />
+            </div>
+            <div id="alertThresholdWrap" style="display:none;">
+              <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Tolerância (%)</label>
+              <input id="alertThreshold" type="number" class="pf-input" value="5" step="0.5" min="0.5" />
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button id="btnSaveAlert" class="btn premium" style="margin:0; flex:1; font-size:0.78rem;">Guardar Alerta</button>
+            <button id="btnCancelAlert" class="btn ghost" style="margin:0; font-size:0.78rem;">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Lista de alertas ativos -->
+        <div id="alertsList" style="display:grid; gap:8px;">
+          <div class="muted" style="text-align:center; padding:20px; font-size:0.8rem;">Sem alertas configurados.</div>
+        </div>
+
+        <button id="btnRequestNotifPerm" class="btn outline" style="width:100%; margin-top:12px; font-size:0.78rem; display:none;">
+          <i class="fas fa-bell"></i> Ativar Notificações do Browser
+        </button>
+      </div>
+    </div>
+
     <!-- TAB: PREFERÊNCIAS -->
     <div id="tab-interface" class="settings-section">
       <div class="card">

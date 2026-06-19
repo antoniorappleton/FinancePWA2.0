@@ -122,6 +122,29 @@
       </div>
     </div>
 
+    <!-- ── ROW 2.5: Fronteira Eficiente de Markowitz ── -->
+    <div class="card pi-section">
+      <div class="card-content" style="display:block;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+          <div>
+            <h3 style="margin:0 0 4px 0; font-size:0.95rem;">📈 Fronteira Eficiente (Markowitz — Monte Carlo)</h3>
+            <div class="muted" style="font-size:0.78rem;">3 000 carteiras simuladas. X = Risco (vol), Y = Retorno Esperado. Cor = Rácio Sharpe.</div>
+          </div>
+          <div style="display:flex; gap:12px; font-size:0.72rem; align-items:center; flex-wrap:wrap;">
+            <span><span style="color:#22c55e; font-size:0.9rem;">●</span> Alto Sharpe</span>
+            <span><span style="color:#f59e0b; font-size:0.9rem;">●</span> Médio</span>
+            <span><span style="color:#ef4444; font-size:0.9rem;">●</span> Baixo Sharpe</span>
+            <span><span style="color:#8b5cf6; font-weight:900; font-size:1rem;">★</span> Carteira atual</span>
+            <span><span style="color:#06b6d4; font-weight:900; font-size:1rem;">◆</span> Sharpe máximo</span>
+          </div>
+        </div>
+        <div style="height:360px; position:relative;">
+          <canvas id="piEfficientFrontier"></canvas>
+        </div>
+        <div id="piEfficientFrontierMeta" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);"></div>
+      </div>
+    </div>
+
     <!-- ── ROW 3: Thematic Exposure ── -->
     <details class="card pi-section pi-compact-section" open>
       <summary>Exposição Temática</summary>

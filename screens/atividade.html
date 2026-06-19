@@ -1,7 +1,10 @@
 <div class="page" data-screen-title="Portfólio">
   <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
-    <div>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
       <p class="subtitle" style="margin:0;">Todos os ativos em carteira</p>
+      <span id="priceUpdateIndicator" style="font-size: 0.65rem; color: var(--muted-foreground); background: var(--glass-bg); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 5px;">
+        <i class="fas fa-circle" style="font-size: 0.45rem; color: #94a3b8;"></i> A carregar...
+      </span>
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
       <button id="btnOpenGlobalHoldingsMap" class="btn premium" style="margin-top: 0; padding: 0 14px; height: 36px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; border-radius: 20px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
@@ -52,6 +55,7 @@
         <div>
           <p class="label">Retorno global (P/L%)</p>
           <p class="value" id="prtRetorno">0%</p>
+          <p id="prtXIRR" class="subvalue muted" style="font-size: 0.7rem; margin-top: 4px; font-weight: 600;">XIRR: —</p>
         </div>
         <div class="icon-box"><i class="fas fa-chart-line"></i></div>
       </div>
@@ -127,6 +131,22 @@
       <h3>Top 5 por Yield</h3>
       <div class="chart-wrap"><canvas id="chartTop5Yield"></canvas></div>
     </div>
+  </div>
+
+  <!-- ☁️ NUVEM DE POSIÇÕES (Bubble Chart) -->
+  <div class="card" style="margin-top: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+      <h3 style="margin: 0;">Nuvem de Posições — P&amp;L vs Momento Técnico</h3>
+      <span style="font-size: 0.7rem; color: var(--muted-foreground);">Tamanho = peso no portfólio · Cor = sinal de ação</span>
+    </div>
+    <div style="font-size: 0.7rem; color: var(--muted-foreground); margin-bottom: 8px;">
+      <span style="color:#22c55e; font-weight:700;">● COMPRAR/REFORÇAR</span> &nbsp;
+      <span style="color:#3b82f6; font-weight:700;">● MANTER/MONITORIZAR</span> &nbsp;
+      <span style="color:#f59e0b; font-weight:700;">● REDUZIR</span> &nbsp;
+      <span style="color:#ef4444; font-weight:700;">● VENDER</span> &nbsp;
+      <span style="color:#64748b; font-weight:700;">● ESPERAR</span>
+    </div>
+    <div class="chart-wrap" style="height: 340px;"><canvas id="chartBubble"></canvas></div>
   </div>
 
   <!-- 📈 GRÁFICOS (linha 3: Timeline + Calendário Dividendos) -->
@@ -208,6 +228,9 @@
 
   <!-- 🔎 LISTA -->
   <div id="listaAtividades"></div>
+
+  <!-- 🗂️ POSIÇÕES FECHADAS -->
+  <div id="listaFechadas" style="margin-top: 12px;"></div>
 
   <!-- Botão Flutuante de Ajuda -->
   <div id="fabHelp" class="fab-help" title="Interpretar Dados e Estratégia">
@@ -504,12 +527,14 @@
                 <th style="padding: 8px 10px;">Data</th>
                 <th style="padding: 8px 10px;">Tipo</th>
                 <th style="padding: 8px 10px; text-align: right;">Qtd</th>
-                <th style="padding: 8px 10px; text-align: right;">Preço</th>
+                <th style="padding: 8px 10px; text-align: right;">Preço Unit.</th>
+                <th style="padding: 8px 10px; text-align: right;">Custo Total</th>
+                <th style="padding: 8px 10px; text-align: right;">P&amp;L vs Atual</th>
                 <th style="padding: 8px 10px; text-align: center;">Ações</th>
               </tr>
             </thead>
             <tbody id="detHistoricoCorpo">
-              <tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--muted-foreground);">A carregar histórico...</td></tr>
+              <tr><td colspan="7" style="padding: 20px; text-align: center; color: var(--muted-foreground);">A carregar histórico...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1038,6 +1063,7 @@
           <select id="inpInvMethod" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background);">
             <option value="GAP" selected>Equilibrar Carteira (Priorizar Gaps/Défices em €)</option>
             <option value="TARGET">Estratégica Estática (Proporcional aos Targets %)</option>
+            <option value="VALUE_AVG">Value Averaging (VA — Investir mais em quedas)</option>
           </select>
         </div>
 
