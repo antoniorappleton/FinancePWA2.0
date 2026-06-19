@@ -1,4 +1,4 @@
-import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { app } from "../firebase-config.js";
 
 import { scoreAssetV2, styleToMultipliers } from "../engines/score-v2.js";
@@ -140,7 +140,7 @@ async function runFullAnalysis() {
     renderFactorRadar(factors, baseFactors);
     renderCorrelation(corr);
     renderThematic(themes);
-    renderTickerComposition(portfolio, manualComposition);
+    // renderTickerComposition(portfolio, manualComposition); // DESATIVADO: dados bugados com percentagens incorretas
     renderEconomicDrivers(economicDrivers);
     renderStressTests(stress);
     renderWeightRisk(wrChart, riskContrib);
@@ -378,7 +378,7 @@ function renderTickerComposition(portfolio, manualComposition) {
           <div class="pi-composition-head">
             <div>
               <div class="pi-composition-ticker">${escapeHtml(asset.ticker)}</div>
-              <div class="muted">${escapeHtml(asset.nome || asset.mkt?.nome || asset.ticker)} · ${fmtPct(weight)} do portfÃ³lio</div>
+              <div class="muted">${escapeHtml(asset.nome || asset.mkt?.nome || asset.ticker)} · ${fmtPct(weight)} do portfólio</div>
             </div>
             <span class="pi-composition-source">${escapeHtml(composition.source)}</span>
           </div>
@@ -432,9 +432,16 @@ function normalizeComposition(input) {
     .sort((a, b) => b.weight - a.weight);
 
   const total = normalized.reduce((sum, row) => sum + row.weight, 0);
-  if (total > 0 && total <= 1.0001) {
+  
+  // Detecta e corrige valores salvos com erro de divisão múltipla por 100
+  if (total > 0.001 && total <= 0.011) {
+    // Dupla divisão (ex: 65.6 → 0.656 → 0.00656): multiplica por 10000
+    normalized.forEach(row => { row.weight *= 10000; });
+  } else if (total > 0 && total <= 1.0001) {
+    // Simples divisão (ex: 65.6 → 0.656): multiplica por 100
     normalized.forEach(row => { row.weight *= 100; });
   }
+  
   return normalized.slice(0, 8);
 }
 
@@ -618,6 +625,17 @@ function renderRebalance(rebalance) {
 // 📈 FRONTEIRA EFICIENTE (Markowitz — Monte Carlo 3000 portfolios)
 // ══════════════════════════════════════════════════════════════
 
+function capWeights(weights, cap) {
+  let w = [...weights];
+  for (let iter = 0; iter < 200; iter++) {
+    if (!w.some(v => v > cap + 1e-9)) break;
+    w = w.map(v => Math.min(v, cap));
+    const s = w.reduce((a, b) => a + b, 0);
+    w = w.map(v => v / s);
+  }
+  return w;
+}
+
 function computeEfficientFrontier(portfolio, corrObj) {
   const n = portfolio.length;
   if (n < 2) return null;
@@ -663,11 +681,14 @@ function computeEfficientFrontier(portfolio, corrObj) {
 
   const M = 3000;
   const sims = [];
+  let best = { sharpe: -Infinity, weights: null };
   for (let k = 0; k < M; k++) {
     const w = randWeights();
     const ret = portReturn(w);
     const vol = Math.sqrt(portVariance(w));
-    sims.push({ ret, vol, sharpe: vol > 0 ? (ret - RISK_FREE) / vol : 0 });
+    const sharpe = vol > 0 ? (ret - RISK_FREE) / vol : 0;
+    sims.push({ ret, vol, sharpe });
+    if (sharpe > best.sharpe) best = { ret, vol, sharpe, weights: w };
   }
 
   const totalVal = portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
@@ -675,9 +696,8 @@ function computeEfficientFrontier(portfolio, corrObj) {
   const curRet = portReturn(curW);
   const curVol = Math.sqrt(portVariance(curW));
   const curSharpe = curVol > 0 ? (curRet - RISK_FREE) / curVol : 0;
-  const best = sims.reduce((b, s) => s.sharpe > b.sharpe ? s : b, sims[0]);
 
-  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio };
+  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW };
 }
 
 function renderEfficientFrontier(data) {
@@ -704,6 +724,15 @@ function renderEfficientFrontier(data) {
     const bucket = t > 0.66 ? 'high' : t > 0.33 ? 'mid' : 'low';
     grouped[bucket].push({ x: +(s.vol * 100).toFixed(2), y: +(s.ret * 100).toFixed(2) });
   });
+  // Render at most 200 pts per bucket (600 total) — calculation used all 3000
+  const sampleBucket = (arr, max) => {
+    if (arr.length <= max) return arr;
+    const step = arr.length / max;
+    return Array.from({length: max}, (_, i) => arr[Math.floor(i * step)]);
+  };
+  grouped.low  = sampleBucket(grouped.low,  300);
+  grouped.mid  = sampleBucket(grouped.mid,  300);
+  grouped.high = sampleBucket(grouped.high, 300);
 
   const fmtPct = v => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
 
@@ -715,17 +744,30 @@ function renderEfficientFrontier(data) {
         { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: "rgba(245,158,11,0.45)",  pointRadius: 2 },
         { label: "Alto Sharpe",  data: grouped.high, backgroundColor: "rgba(34,197,94,0.55)",   pointRadius: 2 },
         {
+          label: "_halo",
+          data: [{ x: +(data.curVol * 100).toFixed(2), y: +(data.curRet * 100).toFixed(2) }],
+          backgroundColor: "rgba(139,92,246,0.18)",
+          borderColor: "rgba(167,139,250,0.55)",
+          borderWidth: 3,
+          pointRadius: 26,
+          pointStyle: "circle",
+        },
+        {
           label: "★ Carteira Atual",
           data: [{ x: +(data.curVol * 100).toFixed(2), y: +(data.curRet * 100).toFixed(2) }],
           backgroundColor: "#8b5cf6",
-          pointRadius: 10,
+          borderColor: "#ffffff",
+          borderWidth: 2,
+          pointRadius: 16,
           pointStyle: "star",
         },
         {
           label: "◆ Sharpe Máximo",
           data: [{ x: +(data.best.vol * 100).toFixed(2), y: +(data.best.ret * 100).toFixed(2) }],
           backgroundColor: "#06b6d4",
-          pointRadius: 9,
+          borderColor: "#0891b2",
+          borderWidth: 2,
+          pointRadius: 13,
           pointStyle: "rectRot",
         },
       ],
@@ -746,7 +788,7 @@ function renderEfficientFrontier(data) {
         },
       },
       plugins: {
-        legend: { position: "top", labels: { color: tickColor, boxWidth: 10, font: { size: 11 } } },
+        legend: { position: "top", labels: { color: tickColor, boxWidth: 10, font: { size: 11 }, filter: item => !item.text.startsWith("_") } },
         tooltip: {
           callbacks: {
             label: ctx => ` Risco: ${ctx.parsed.x.toFixed(1)}%  |  Retorno: ${ctx.parsed.y.toFixed(1)}%`,
@@ -756,7 +798,6 @@ function renderEfficientFrontier(data) {
     },
   });
 
-  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
   const metaEl = document.getElementById("piEfficientFrontierMeta");
   if (metaEl) {
     const kpi = (label, value, color = "var(--foreground)") => `
@@ -771,6 +812,95 @@ function renderEfficientFrontier(data) {
       kpi("Sharpe máximo simulado", data.best.sharpe.toFixed(2), "#06b6d4") +
       kpi("Retorno Sharpe max.", fmtPct(data.best.ret), "#06b6d4") +
       kpi("Vol. Sharpe max.", `${(data.best.vol * 100).toFixed(1)}%`, "#06b6d4");
+  }
+
+  const actionsEl = document.getElementById("piEFActions");
+  if (actionsEl && data.best.weights && data.curW) {
+    const totalVal = data.portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
+    const CAP = 0.30;
+    const cappedWeights = capWeights(data.best.weights, CAP);
+    const moves = data.portfolio
+      .map((p, i) => ({
+        ticker: p.ticker,
+        nome: p.nome || p.ticker,
+        cur: data.curW[i] * 100,
+        target: cappedWeights[i] * 100,
+        delta: (cappedWeights[i] - data.curW[i]) * 100,
+        curVal: (data.curW[i] || 0) * totalVal,
+        targetVal: (cappedWeights[i] || 0) * totalVal,
+      }))
+      .filter(m => Math.abs(m.delta) >= 0.5)
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+    if (!moves.length) {
+      actionsEl.innerHTML = `<div class="pi-obs positive" style="margin-top:12px;">✅ A carteira atual já está próxima do portfolio de Sharpe máximo. Nenhum ajuste significativo necessário.</div>`;
+    } else {
+      const increase = moves.filter(m => m.delta > 0);
+      const decrease = moves.filter(m => m.delta < 0);
+
+      const renderMove = (m) => {
+        const isUp = m.delta > 0;
+        const icon = isUp ? "📈" : "📉";
+        const verb = isUp ? "Aumenta" : "Reduz";
+        const color = isUp ? "#22c55e" : "#ef4444";
+        const bg = isUp ? "rgba(34,197,94,0.07)" : "rgba(239,68,68,0.07)";
+        const border = isUp ? "#22c55e" : "#ef4444";
+        const sign = isUp ? "+" : "";
+        const amountChange = Math.abs(m.targetVal - m.curVal);
+        const action = isUp
+          ? `Compra ~${fmtEUR(amountChange)} adicionais`
+          : `Vende ~${fmtEUR(amountChange)}`;
+        return `
+          <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; background:${bg}; border-left:3px solid ${border};">
+            <span style="font-size:1.1rem;">${icon}</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:900; font-size:0.88rem;">${verb} <strong>${escapeHtml(m.ticker)}</strong></div>
+              <div class="muted" style="font-size:0.75rem;">${escapeHtml(m.nome)}</div>
+              <div style="font-size:0.78rem; margin-top:3px;">
+                <span style="color:var(--muted-foreground);">${m.cur.toFixed(1)}%</span>
+                <span style="margin:0 4px; color:var(--muted-foreground);">→</span>
+                <span style="font-weight:800; color:${color};">${m.target.toFixed(1)}%</span>
+                <span style="color:${color}; font-weight:700; margin-left:6px;">(${sign}${m.delta.toFixed(1)}pp)</span>
+              </div>
+            </div>
+            <div style="text-align:right; font-size:0.75rem; flex:0 0 auto;">
+              <div style="font-weight:700; color:${color};">${action}</div>
+              <div class="muted">${fmtEUR(m.targetVal)} alvo</div>
+            </div>
+          </div>`;
+      };
+
+      const sharpeGain = data.best.sharpe - data.curSharpe;
+      actionsEl.innerHTML = `
+        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+            <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
+            <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
+            <span class="muted" style="font-size:0.72rem;">Baseado na melhor das 3 000 simulações Monte Carlo</span>
+          </div>
+          ${increase.length ? `
+            <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reforçar</div>
+            <div style="display:grid; gap:6px; margin-bottom:10px;">${increase.map(renderMove).join("")}</div>
+          ` : ""}
+          ${decrease.length ? `
+            <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reduzir</div>
+            <div style="display:grid; gap:6px;">${decrease.map(renderMove).join("")}</div>
+          ` : ""}
+          <div style="margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(245,158,11,0.09); border:1.5px solid #f59e0b; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
+            <div style="font-size:0.8rem; line-height:1.5;">
+              <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
+              <div style="color:var(--foreground);">Retornos estimados a partir de dados históricos do último ano. Cada ativo limitado a <strong>30% máximo</strong>. Resultado varia a cada execução (estocástico). Valida sempre com a tua análise fundamental antes de agir.</div>
+              <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
+                <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
+                Retorno esperado → <code>priceChange_1y</code> (variação de preço no último ano)<br>
+                Volatilidade → <code>priceChange_1m × √12</code> (variação mensal anualizada)<br>
+                Correlações → estimadas por setor · fallback <code>0.30</code> quando insuficientes
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
   }
 }
 
@@ -979,11 +1109,25 @@ function renderEntrySelectedAssets() {
     .filter(Boolean);
 
   const totalWeight = Array.from(entryPlannerState.selected.values()).reduce((s, w) => s + Number(w), 0);
-  const weightWarn = totalWeight > 100
-    ? `<div class="pi-obs warning" style="margin-bottom:10px;">⚠️ Soma dos pesos selecionados: ${totalWeight.toFixed(1)}% — excede 100%. Capital simulado além da carteira base.</div>`
-    : "";
+  const remaining = 100 - totalWeight;
+  const sumState = totalWeight > 100 ? "over" : totalWeight >= 95 ? "full" : "ok";
+  const sumBarColor = sumState === "over" ? "#ef4444" : sumState === "full" ? "#22c55e" : "#6366f1";
+  const sumBarMsg = sumState === "over"
+    ? `⚠ excede 100% — capital simulado além da carteira base`
+    : sumState === "full"
+    ? `✓ alocação completa`
+    : `restam ${remaining.toFixed(1)}% por alocar`;
+  const weightBar = `
+    <div style="padding:8px 12px; border-radius:8px; background:var(--card); border:1.5px solid ${sumBarColor}; display:flex; align-items:center; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+      <span style="font-size:0.75rem; font-weight:700; color:var(--muted-foreground);">Soma dos pesos</span>
+      <strong style="font-size:1.1rem; font-weight:900; color:${sumBarColor};">${totalWeight.toFixed(1)}%</strong>
+      <div style="flex:1; height:6px; border-radius:999px; background:var(--border); overflow:hidden;">
+        <div style="height:100%; border-radius:inherit; background:${sumBarColor}; width:${Math.min(totalWeight, 100)}%; transition:width 0.3s ease;"></div>
+      </div>
+      <span style="font-size:0.72rem; color:${sumBarColor}; font-weight:700; white-space:nowrap;">${sumBarMsg}</span>
+    </div>`;
 
-  container.innerHTML = weightWarn + selectedAssets.map(({ asset, targetWeight }) => renderEntryPlanCard(asset, targetWeight)).join("");
+  container.innerHTML = weightBar + selectedAssets.map(({ asset, targetWeight }) => renderEntryPlanCard(asset, targetWeight)).join("");
 }
 
 function renderEntryPlanCard(asset, targetWeight) {
@@ -1171,3 +1315,38 @@ function escapeHtml(value) {
     "'": "&#039;"
   }[ch]));
 }
+
+// Função de migração para corrigir dados em Firestore com erro de divisão por 100
+// Executar via console: fixCompositionDataInFirestore()
+window.fixCompositionDataInFirestore = async function() {
+  const db = getFirestore(app);
+  const snap = await getDocs(collection(db, "etfHoldings"));
+  let fixCount = 0;
+  
+  for (const docSnap of snap.docs) {
+    const data = docSnap.data() || {};
+    const needsFix = (data.geography || []).some(g => g.weight && g.weight < 0.1);
+    
+    if (needsFix) {
+      const fixed = {
+        ...data,
+        geography: (data.geography || []).map(g => ({
+          ...g,
+          weight: g.weight && g.weight < 0.1 ? g.weight * 10000 : g.weight
+        })),
+        sectors: (data.sectors || []).map(s => ({
+          ...s,
+          weight: s.weight && s.weight < 0.1 ? s.weight * 10000 : s.weight
+        }))
+      };
+      
+      await updateDoc(doc(db, "etfHoldings", docSnap.id), fixed);
+      console.log(`✅ Corrigido: ${docSnap.id}`);
+      fixCount++;
+    }
+  }
+  
+  console.log(`🎉 Migração concluída! ${fixCount} documentos corrigidos.`);
+  return fixCount;
+};
+
