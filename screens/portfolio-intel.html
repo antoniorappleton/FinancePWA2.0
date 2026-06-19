@@ -172,8 +172,12 @@
 
         <!-- CHART -->
         <div style="height:360px; position:relative;">
-          <canvas id="piEfficientFrontier"></canvas>
+          <canvas id="piEfficientFrontier"
+            role="img"
+            aria-label="Fronteira Eficiente — nuvem de 3 000 portfolios simulados por Sharpe (baixo/médio/alto), ponto da carteira actual e portfolio de Sharpe máximo"></canvas>
         </div>
+        <!-- indicator shown when asset dots fall outside the fixed axis range -->
+        <div id="piEFClipWarning" style="display:none; margin-top:6px; font-size:0.72rem; color:var(--muted-foreground); font-style:italic;"></div>
 
         <!-- KPIs (with percentiles p10/p50/p90) -->
         <div id="piEfficientFrontierMeta" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);"></div>

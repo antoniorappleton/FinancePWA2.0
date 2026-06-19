@@ -927,6 +927,30 @@ function renderEfficientFrontier(allData) {
     ticker: p.ticker,
   }));
 
+  // Detect dots that fall outside the fixed axis range (silently clipped by Chart.js)
+  const clippedDots = assetDots.filter(
+    d => d.x < axisXMin || d.x > axisXMax || d.y < axisYMin || d.y > axisYMax
+  );
+  const clipWarnEl = document.getElementById("piEFClipWarning");
+  if (clipWarnEl) {
+    if (clippedDots.length > 0) {
+      const names = clippedDots.map(d => d.ticker).join(", ");
+      clipWarnEl.textContent = `ℹ ${clippedDots.length} activo(s) fora do intervalo visível (não afectam o zoom): ${names}`;
+      clipWarnEl.style.display = "block";
+    } else {
+      clipWarnEl.style.display = "none";
+    }
+  }
+
+  // Update canvas aria-label with live context
+  const _ariaCapStr = data.effectiveWeightCap != null
+    ? `com cap ${(data.effectiveWeightCap * 100).toFixed(0)}%`
+    : 'sem limites';
+  const _ariaWindow = { '6m': '6 meses', '12m': '12 meses', '36m': '36 meses' }[efState.activeWindow] || efState.activeWindow;
+  canvas.setAttribute("aria-label",
+    `Fronteira Eficiente — ${data.sims.length} portfolios simulados, modo ${_ariaCapStr}, janela ${_ariaWindow}. Sharpe máximo: ${data.best.sharpe.toFixed(2)} (vol ${(data.best.vol * 100).toFixed(1)}%, retorno ${(data.best.ret * 100).toFixed(1)}%).`
+  );
+
   window.__piEFChart = new Chart(canvas, {
     type: "scatter",
     data: {
