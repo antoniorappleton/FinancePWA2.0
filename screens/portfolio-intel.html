@@ -125,10 +125,12 @@
     <!-- ── ROW 2.5: Fronteira Eficiente de Markowitz ── -->
     <div class="card pi-section">
       <div class="card-content" style="display:block;">
+
+        <!-- HEADER -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
           <div>
             <h3 style="margin:0 0 4px 0; font-size:0.95rem;">📈 Fronteira Eficiente (Markowitz — Monte Carlo)</h3>
-            <div class="muted" style="font-size:0.78rem;">3 000 carteiras simuladas. X = Risco (vol), Y = Retorno Esperado. Cor = Rácio Sharpe.</div>
+            <div class="muted" style="font-size:0.78rem;">3 000 carteiras simuladas por janela. X = Risco (vol), Y = Retorno Histórico. Cor = Rácio Sharpe.</div>
           </div>
           <div style="display:flex; gap:12px; font-size:0.72rem; align-items:center; flex-wrap:wrap;">
             <span><span style="color:#22c55e; font-size:0.9rem;">●</span> Alto Sharpe</span>
@@ -138,10 +140,53 @@
             <span><span style="color:#06b6d4; font-weight:900; font-size:1rem;">◆</span> Sharpe máximo</span>
           </div>
         </div>
+
+        <!-- MODE BANNER — always visible, never dismissible -->
+        <div id="piEFModeBanner" class="ef-mode-banner ef-mode-capped">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="piEFModeIcon" style="font-size:1.1rem; flex:0 0 auto;">🔒</span>
+            <span id="piEFModeText" style="font-weight:800; font-size:0.85rem;">Modo com limites — máx. 30% por activo</span>
+          </div>
+          <label class="ef-toggle-label" title="Alternar modo de análise">
+            <span style="font-size:0.78rem; color:inherit; opacity:0.8;">Análise livre (sem cap)</span>
+            <div class="ef-toggle-wrap">
+              <input type="checkbox" id="piEFModeToggle">
+              <div class="ef-toggle-track"><div class="ef-toggle-thumb"></div></div>
+            </div>
+          </label>
+        </div>
+
+        <!-- WINDOW TABS -->
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
+          <span style="font-size:0.72rem; color:var(--muted-foreground); font-weight:800; text-transform:uppercase; white-space:nowrap;">Janela histórica:</span>
+          <button class="ef-win-tab" data-ef-window="6m" id="piEFTab6m">6 meses</button>
+          <button class="ef-win-tab active" data-ef-window="12m" id="piEFTab12m">12 meses</button>
+          <button class="ef-win-tab" data-ef-window="36m" id="piEFTab36m">36 meses</button>
+        </div>
+
+        <!-- RETURN SOURCE LABEL -->
+        <div id="piEFReturnLabel" class="ef-return-label"></div>
+
+        <!-- INSUFFICIENT HISTORY WARNINGS -->
+        <div id="piEFHistoryWarnings" style="margin-bottom:6px;"></div>
+
+        <!-- CHART -->
         <div style="height:360px; position:relative;">
           <canvas id="piEfficientFrontier"></canvas>
         </div>
+
+        <!-- KPIs (with percentiles p10/p50/p90) -->
         <div id="piEfficientFrontierMeta" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);"></div>
+
+        <!-- SEED CONTROL -->
+        <div style="display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
+          <span style="font-size:0.72rem; color:var(--muted-foreground); font-weight:800; text-transform:uppercase; white-space:nowrap;">Seed Monte Carlo:</span>
+          <input type="number" id="piEFSeed" placeholder="aleatório" style="width:108px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--background); color:var(--foreground); font-size:0.8rem;">
+          <button id="piEFReseed" class="btn outline" style="padding:5px 12px; font-size:0.75rem;">↺ Nova simulação</button>
+          <span class="muted" style="font-size:0.7rem;">Fixa a seed para comparar "antes/depois" sem variância estocástica.</span>
+        </div>
+
+        <!-- ACTIONS -->
         <div id="piEFActions"></div>
       </div>
     </div>
@@ -589,6 +634,111 @@
   color: var(--muted-foreground);
 }
 .pi-entry-price { font-weight: 900; margin: 3px 0; }
+
+/* ── Efficient Frontier: mode banner ── */
+.ef-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid;
+  margin-bottom: 12px;
+  transition: background 0.25s, border-color 0.25s;
+}
+.ef-mode-capped {
+  background: rgba(34,197,94,0.07);
+  border-color: #22c55e;
+  color: #166534;
+}
+.ef-mode-free {
+  background: rgba(245,158,11,0.1);
+  border-color: #f59e0b;
+  color: #92400e;
+}
+:root[data-theme="dark"] .ef-mode-capped { color: #86efac; }
+:root[data-theme="dark"] .ef-mode-free  { color: #fcd34d; }
+
+/* Toggle */
+.ef-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.ef-toggle-wrap { position: relative; flex: 0 0 auto; }
+.ef-toggle-wrap input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ef-toggle-track {
+  display: block;
+  width: 38px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.18);
+  transition: background 0.2s;
+  position: relative;
+}
+.ef-toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.ef-toggle-wrap input:checked ~ .ef-toggle-track { background: #f59e0b; }
+.ef-toggle-wrap input:checked ~ .ef-toggle-track .ef-toggle-thumb { transform: translateX(18px); }
+
+/* Window tabs */
+.ef-win-tab {
+  padding: 5px 13px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ef-win-tab:hover { background: rgba(var(--primary-rgb),0.08); color: var(--foreground); }
+.ef-win-tab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Return label */
+.ef-return-label {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  margin-bottom: 8px;
+  padding: 7px 11px;
+  background: rgba(var(--primary-rgb),0.05);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary);
+  line-height: 1.5;
+}
+.ef-return-label:empty { display: none; }
+
+/* History warning chips */
+.ef-hist-warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.4);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 4px 4px 0;
+}
+:root[data-theme="dark"] .ef-hist-warn { color: #fcd34d; }
 
 @media (max-width: 820px) {
   .pi-entry-layout { grid-template-columns: 1fr; }

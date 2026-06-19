@@ -37,6 +37,7 @@ export async function initScreen() {
   const btn = document.getElementById("piRunAnalysis");
   btn?.addEventListener("click", runFullAnalysis);
   bindEntryPlannerEvents();
+  bindEFEvents();
 }
 
 async function runFullAnalysis() {
@@ -148,9 +149,10 @@ async function runFullAnalysis() {
     renderObservations(portfolioObs, assetScores);
     renderRebalance(rebalance);
 
-    // Fronteira Eficiente (Markowitz Monte Carlo)
+    // Fronteira Eficiente (Markowitz Monte Carlo — 3 janelas)
     const efData = computeEfficientFrontier(portfolio, corr);
     renderEfficientFrontier(efData);
+    updateEFSeedDisplay();
 
     loading?.classList.add("hidden");
     results?.classList.remove("hidden");
@@ -625,6 +627,56 @@ function renderRebalance(rebalance) {
 // 📈 FRONTEIRA EFICIENTE (Markowitz — Monte Carlo 3000 portfolios)
 // ══════════════════════════════════════════════════════════════
 
+const efState = {
+  mode: 'capped',      // 'capped' | 'free'
+  seed: null,          // null = random each run
+  activeWindow: '12m', // '6m' | '12m' | '36m'
+  data: null           // computed result { '6m': {...}, '12m': {...}, '36m': {...} }
+};
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function efPercentile(sims, p) {
+  const sorted = sims.map(s => s.sharpe).sort((a, b) => a - b);
+  const idx = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+function getWindowReturn(mkt, windowKey) {
+  if (windowKey === '6m') {
+    const r6 = mkt?.priceChange_6m ?? mkt?.priceChange_6M;
+    if (r6 != null) {
+      const rn = Math.abs(r6) > 1 ? r6 / 100 : r6;
+      return { r: Math.pow(1 + rn, 2) - 1, hasData: true, note: null };
+    }
+    const r1m = Number(mkt?.priceChange_1m ?? 0);
+    const rn1m = Math.abs(r1m) > 1 ? r1m / 100 : r1m;
+    return { r: Math.pow(1 + rn1m, 12) - 1, hasData: false, note: '1m anualizado (6m indisponível)' };
+  }
+  if (windowKey === '36m') {
+    const r3 = mkt?.priceChange_3y ?? mkt?.priceChange_36m ?? mkt?.taxaCrescimento_3anos;
+    if (r3 != null) {
+      const rn = Math.abs(r3) > 1 ? r3 / 100 : r3;
+      return { r: Math.pow(1 + rn, 1 / 3) - 1, hasData: true, note: null };
+    }
+    const r1y = Number(mkt?.priceChange_1y ?? mkt?.taxaCrescimento_1ano ?? 0);
+    const rn = Math.abs(r1y) > 1 ? r1y / 100 : r1y;
+    return { r: rn, hasData: false, note: '12m (36m indisponível — aproximação)' };
+  }
+  // 12m default
+  const r1y = Number(mkt?.priceChange_1y ?? mkt?.taxaCrescimento_1ano ?? 0);
+  const rn = Math.abs(r1y) > 1 ? r1y / 100 : r1y;
+  return { r: rn, hasData: true, note: null };
+}
+
 function capWeights(weights, cap) {
   let w = [...weights];
   for (let iter = 0; iter < 200; iter++) {
@@ -636,17 +688,15 @@ function capWeights(weights, cap) {
   return w;
 }
 
-function computeEfficientFrontier(portfolio, corrObj) {
+function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand) {
   const n = portfolio.length;
   if (n < 2) return null;
-
   const RISK_FREE = 0.03;
 
-  const expReturns = portfolio.map(p => {
-    const r = Number(p.mkt?.priceChange_1y ?? p.mkt?.taxaCrescimento_1ano ?? 0);
-    const rn = Math.abs(r) > 1 ? r / 100 : r;
-    return isFinite(rn) ? Math.max(-0.6, Math.min(rn, 1.5)) : 0.06;
-  });
+  const returnData = portfolio.map(p => getWindowReturn(p.mkt, windowKey));
+  const expReturns = returnData.map(d => isFinite(d.r) ? Math.max(-0.6, Math.min(d.r, 1.5)) : 0.06);
+  const shortHistory = returnData.map((d, i) => ({ ticker: portfolio[i].ticker, hasData: d.hasData, note: d.note }))
+    .filter(x => !x.hasData);
 
   const vols = portfolio.map(p => {
     const r = Number(p.mkt?.priceChange_1m ?? 0);
@@ -662,9 +712,8 @@ function computeEfficientFrontier(portfolio, corrObj) {
     const v = matrix[ti]?.[tj] ?? matrix[tj]?.[ti];
     return isFinite(v) ? v : 0.3;
   };
-
-  const cov = Array.from({length: n}, (_, i) =>
-    Array.from({length: n}, (_, j) => vols[i] * vols[j] * getCorrVal(i, j))
+  const cov = Array.from({ length: n }, (_, i) =>
+    Array.from({ length: n }, (_, j) => vols[i] * vols[j] * getCorrVal(i, j))
   );
 
   const portVariance = w => {
@@ -674,7 +723,7 @@ function computeEfficientFrontier(portfolio, corrObj) {
   };
   const portReturn = w => w.reduce((s, wi, i) => s + wi * expReturns[i], 0);
   const randWeights = () => {
-    const r = Array.from({length: n}, () => -Math.log(Math.random() + 1e-10));
+    const r = Array.from({ length: n }, () => -Math.log(rand() + 1e-10));
     const sum = r.reduce((s, v) => s + v, 0);
     return r.map(v => v / sum);
   };
@@ -697,12 +746,73 @@ function computeEfficientFrontier(portfolio, corrObj) {
   const curVol = Math.sqrt(portVariance(curW));
   const curSharpe = curVol > 0 ? (curRet - RISK_FREE) / curVol : 0;
 
-  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW };
+  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW, shortHistory, windowKey };
 }
 
-function renderEfficientFrontier(data) {
+function computeEfficientFrontier(portfolio, corrObj) {
+  const results = {};
+  for (const w of ['6m', '12m', '36m']) {
+    const rand = efState.seed != null
+      ? mulberry32(efState.seed + w.charCodeAt(0) * 7)
+      : Math.random.bind(Math);
+    results[w] = computeEfficientFrontierForWindow(portfolio, corrObj, w, rand);
+  }
+  efState.data = results;
+  return results;
+}
+
+function renderEfficientFrontier(allData) {
+  if (!allData) return;
+  const data = allData[efState.activeWindow];
+  if (!data) return;
+
+  // ── Sync window tab highlight ──
+  document.querySelectorAll("[data-ef-window]").forEach(b =>
+    b.classList.toggle("active", b.dataset.efWindow === efState.activeWindow)
+  );
+
+  // ── Mode banner ──
+  const banner = document.getElementById("piEFModeBanner");
+  const modeIcon = document.getElementById("piEFModeIcon");
+  const modeText = document.getElementById("piEFModeText");
+  if (banner && modeIcon && modeText) {
+    const isFree = efState.mode === 'free';
+    banner.className = `ef-mode-banner ${isFree ? 'ef-mode-free' : 'ef-mode-capped'}`;
+    modeIcon.textContent = isFree ? "⚠️" : "🔒";
+    modeText.textContent = isFree
+      ? "Modo sem limites ACTIVO — sem cap por activo"
+      : "Modo com limites — máx. 30% por activo";
+    const toggle = document.getElementById("piEFModeToggle");
+    if (toggle) toggle.checked = isFree;
+  }
+
+  // ── Return source label ──
+  const labelEl = document.getElementById("piEFReturnLabel");
+  if (labelEl) {
+    const windowLabels = {
+      '6m':  'Retorno Histórico (Janela: 6 meses, anualizado) — baseado em priceChange_6m quando disponível; caso contrário estimado a partir do retorno mensal',
+      '12m': 'Retorno Histórico (Janela: 12 meses) — baseado em priceChange_1y. Nota: retorno passado ≠ expectativa futura.',
+      '36m': 'Retorno Histórico (Janela: 36 meses, anualizado) — baseado em priceChange_3y quando disponível; caso contrário aproximado pelo retorno de 12 meses',
+    };
+    labelEl.textContent = windowLabels[efState.activeWindow] || '';
+  }
+
+  // ── Insufficient history warnings ──
+  const histEl = document.getElementById("piEFHistoryWarnings");
+  if (histEl) {
+    if (data.shortHistory?.length) {
+      histEl.innerHTML = `<div style="margin-bottom:8px; font-size:0.72rem; font-weight:800; text-transform:uppercase; color:var(--muted-foreground);">⚠ Histórico insuficiente para covariância fiável:</div>` +
+        data.shortHistory.map(h =>
+          `<span class="ef-hist-warn">⚠ ${escapeHtml(h.ticker)}: ${escapeHtml(h.note || 'dados indisponíveis')}</span>`
+        ).join('');
+    } else {
+      histEl.innerHTML = '';
+    }
+  }
+
+  // ── Chart ──
   const canvas = document.getElementById("piEfficientFrontier");
-  if (!canvas || !data) return;
+  if (!canvas) return;
   if (window.__piEFChart) window.__piEFChart.destroy();
 
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
@@ -711,12 +821,6 @@ function renderEfficientFrontier(data) {
 
   const maxS = Math.max(...data.sims.map(s => s.sharpe));
   const minS = Math.min(...data.sims.map(s => s.sharpe));
-  const sharpeColor = s => {
-    const t = Math.max(0, Math.min(1, (s - minS) / (maxS - minS + 0.001)));
-    if (t > 0.66) return `rgba(34,197,94,0.55)`;
-    if (t > 0.33) return `rgba(245,158,11,0.55)`;
-    return `rgba(239,68,68,0.45)`;
-  };
 
   const grouped = { high: [], mid: [], low: [] };
   data.sims.forEach(s => {
@@ -724,25 +828,28 @@ function renderEfficientFrontier(data) {
     const bucket = t > 0.66 ? 'high' : t > 0.33 ? 'mid' : 'low';
     grouped[bucket].push({ x: +(s.vol * 100).toFixed(2), y: +(s.ret * 100).toFixed(2) });
   });
-  // Render at most 200 pts per bucket (600 total) — calculation used all 3000
   const sampleBucket = (arr, max) => {
     if (arr.length <= max) return arr;
     const step = arr.length / max;
-    return Array.from({length: max}, (_, i) => arr[Math.floor(i * step)]);
+    return Array.from({ length: max }, (_, i) => arr[Math.floor(i * step)]);
   };
   grouped.low  = sampleBucket(grouped.low,  300);
   grouped.mid  = sampleBucket(grouped.mid,  300);
   grouped.high = sampleBucket(grouped.high, 300);
 
-  const fmtPct = v => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
+  const yAxisLabel = {
+    '6m':  'Retorno Histórico 6m anualizado (%)',
+    '12m': 'Retorno Histórico 12m (%)',
+    '36m': 'Retorno Histórico 36m anualizado (%)',
+  }[efState.activeWindow] || 'Retorno Histórico (%)';
 
   window.__piEFChart = new Chart(canvas, {
     type: "scatter",
     data: {
       datasets: [
-        { label: "Baixo Sharpe", data: grouped.low,  backgroundColor: "rgba(239,68,68,0.35)",   pointRadius: 2 },
-        { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: "rgba(245,158,11,0.45)",  pointRadius: 2 },
-        { label: "Alto Sharpe",  data: grouped.high, backgroundColor: "rgba(34,197,94,0.55)",   pointRadius: 2 },
+        { label: "Baixo Sharpe", data: grouped.low,  backgroundColor: "rgba(239,68,68,0.35)",  pointRadius: 2 },
+        { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: "rgba(245,158,11,0.45)", pointRadius: 2 },
+        { label: "Alto Sharpe",  data: grouped.high, backgroundColor: "rgba(34,197,94,0.55)",  pointRadius: 2 },
         {
           label: "_halo",
           data: [{ x: +(data.curVol * 100).toFixed(2), y: +(data.curRet * 100).toFixed(2) }],
@@ -782,13 +889,16 @@ function renderEfficientFrontier(data) {
           grid: { color: gridColor },
         },
         y: {
-          title: { display: true, text: "Retorno Esperado (%)", color: tickColor, font: { size: 11 } },
+          title: { display: true, text: yAxisLabel, color: tickColor, font: { size: 11 } },
           ticks: { color: tickColor, callback: v => v + "%" },
           grid: { color: gridColor },
         },
       },
       plugins: {
-        legend: { position: "top", labels: { color: tickColor, boxWidth: 10, font: { size: 11 }, filter: item => !item.text.startsWith("_") } },
+        legend: {
+          position: "top",
+          labels: { color: tickColor, boxWidth: 10, font: { size: 11 }, filter: item => !item.text.startsWith("_") }
+        },
         tooltip: {
           callbacks: {
             label: ctx => ` Risco: ${ctx.parsed.x.toFixed(1)}%  |  Retorno: ${ctx.parsed.y.toFixed(1)}%`,
@@ -798,110 +908,177 @@ function renderEfficientFrontier(data) {
     },
   });
 
+  // ── KPIs with percentiles ──
   const metaEl = document.getElementById("piEfficientFrontierMeta");
   if (metaEl) {
-    const kpi = (label, value, color = "var(--foreground)") => `
+    const fmtPct = v => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
+    const kpi = (label, value, color = "var(--foreground)", sub = "") => `
       <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--card);">
         <div style="font-size:0.62rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted-foreground); font-weight:800; margin-bottom:4px;">${label}</div>
         <div style="font-size:0.95rem; font-weight:800; color:${color};">${value}</div>
+        ${sub ? `<div style="font-size:0.68rem; color:var(--muted-foreground); margin-top:2px;">${sub}</div>` : ""}
       </div>`;
+
+    const p10 = efPercentile(data.sims, 10);
+    const p50 = efPercentile(data.sims, 50);
+    const p90 = efPercentile(data.sims, 90);
+    const shColor = v => v >= 1 ? "#22c55e" : v >= 0.5 ? "#f59e0b" : "#ef4444";
+
     metaEl.innerHTML =
-      kpi("Retorno esperado (atual)", fmtPct(data.curRet), data.curRet >= 0 ? "#22c55e" : "#ef4444") +
+      kpi("Retorno histórico (atual)", fmtPct(data.curRet), data.curRet >= 0 ? "#22c55e" : "#ef4444", `Janela: ${efState.activeWindow}`) +
       kpi("Volatilidade (atual)", `${(data.curVol * 100).toFixed(1)}%`) +
-      kpi("Rácio Sharpe (atual)", data.curSharpe.toFixed(2), data.curSharpe >= 1 ? "#22c55e" : data.curSharpe >= 0.5 ? "#f59e0b" : "#ef4444") +
-      kpi("Sharpe máximo simulado", data.best.sharpe.toFixed(2), "#06b6d4") +
-      kpi("Retorno Sharpe max.", fmtPct(data.best.ret), "#06b6d4") +
-      kpi("Vol. Sharpe max.", `${(data.best.vol * 100).toFixed(1)}%`, "#06b6d4");
+      kpi("Sharpe (atual)", data.curSharpe.toFixed(2), shColor(data.curSharpe)) +
+      kpi("Sharpe p10 — pessimista", p10.toFixed(2), shColor(p10), "10% das simulações abaixo deste valor") +
+      kpi("Sharpe p50 — mediana", p50.toFixed(2), shColor(p50), "metade das simulações abaixo deste valor") +
+      kpi("Sharpe p90 — otimista", p90.toFixed(2), shColor(p90), "90% das simulações abaixo deste valor") +
+      kpi("Sharpe máximo simulado", data.best.sharpe.toFixed(2), "#06b6d4", "melhor das 3 000 simulações") +
+      kpi("Retorno no Sharpe max.", fmtPct(data.best.ret), "#06b6d4") +
+      kpi("Vol. no Sharpe max.", `${(data.best.vol * 100).toFixed(1)}%`, "#06b6d4");
   }
 
+  // ── Action panel ──
   const actionsEl = document.getElementById("piEFActions");
-  if (actionsEl && data.best.weights && data.curW) {
-    const totalVal = data.portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
-    const CAP = 0.30;
-    const cappedWeights = capWeights(data.best.weights, CAP);
-    const moves = data.portfolio
-      .map((p, i) => ({
-        ticker: p.ticker,
-        nome: p.nome || p.ticker,
-        cur: data.curW[i] * 100,
-        target: cappedWeights[i] * 100,
-        delta: (cappedWeights[i] - data.curW[i]) * 100,
-        curVal: (data.curW[i] || 0) * totalVal,
-        targetVal: (cappedWeights[i] || 0) * totalVal,
-      }))
-      .filter(m => Math.abs(m.delta) >= 0.5)
-      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  if (!actionsEl || !data.best.weights || !data.curW) return;
 
-    if (!moves.length) {
-      actionsEl.innerHTML = `<div class="pi-obs positive" style="margin-top:12px;">✅ A carteira atual já está próxima do portfolio de Sharpe máximo. Nenhum ajuste significativo necessário.</div>`;
-    } else {
-      const increase = moves.filter(m => m.delta > 0);
-      const decrease = moves.filter(m => m.delta < 0);
+  const isFree = efState.mode === 'free';
+  const totalVal = data.portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
+  const targetWeights = isFree ? [...data.best.weights] : capWeights(data.best.weights, 0.30);
 
-      const renderMove = (m) => {
-        const isUp = m.delta > 0;
-        const icon = isUp ? "📈" : "📉";
-        const verb = isUp ? "Aumenta" : "Reduz";
-        const color = isUp ? "#22c55e" : "#ef4444";
-        const bg = isUp ? "rgba(34,197,94,0.07)" : "rgba(239,68,68,0.07)";
-        const border = isUp ? "#22c55e" : "#ef4444";
-        const sign = isUp ? "+" : "";
-        const amountChange = Math.abs(m.targetVal - m.curVal);
-        const action = isUp
-          ? `Compra ~${fmtEUR(amountChange)} adicionais`
-          : `Vende ~${fmtEUR(amountChange)}`;
-        return `
-          <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; background:${bg}; border-left:3px solid ${border};">
-            <span style="font-size:1.1rem;">${icon}</span>
-            <div style="flex:1; min-width:0;">
-              <div style="font-weight:900; font-size:0.88rem;">${verb} <strong>${escapeHtml(m.ticker)}</strong></div>
-              <div class="muted" style="font-size:0.75rem;">${escapeHtml(m.nome)}</div>
-              <div style="font-size:0.78rem; margin-top:3px;">
-                <span style="color:var(--muted-foreground);">${m.cur.toFixed(1)}%</span>
-                <span style="margin:0 4px; color:var(--muted-foreground);">→</span>
-                <span style="font-weight:800; color:${color};">${m.target.toFixed(1)}%</span>
-                <span style="color:${color}; font-weight:700; margin-left:6px;">(${sign}${m.delta.toFixed(1)}pp)</span>
-              </div>
-            </div>
-            <div style="text-align:right; font-size:0.75rem; flex:0 0 auto;">
-              <div style="font-weight:700; color:${color};">${action}</div>
-              <div class="muted">${fmtEUR(m.targetVal)} alvo</div>
-            </div>
-          </div>`;
-      };
+  const moves = data.portfolio
+    .map((p, i) => ({
+      ticker: p.ticker,
+      nome: p.nome || p.ticker,
+      cur: data.curW[i] * 100,
+      target: targetWeights[i] * 100,
+      delta: (targetWeights[i] - data.curW[i]) * 100,
+      curVal: (data.curW[i] || 0) * totalVal,
+      targetVal: (targetWeights[i] || 0) * totalVal,
+    }))
+    .filter(m => Math.abs(m.delta) >= 0.5)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
 
-      const sharpeGain = data.best.sharpe - data.curSharpe;
-      actionsEl.innerHTML = `
-        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-            <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
-            <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
-            <span class="muted" style="font-size:0.72rem;">Baseado na melhor das 3 000 simulações Monte Carlo</span>
-          </div>
-          ${increase.length ? `
-            <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reforçar</div>
-            <div style="display:grid; gap:6px; margin-bottom:10px;">${increase.map(renderMove).join("")}</div>
-          ` : ""}
-          ${decrease.length ? `
-            <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reduzir</div>
-            <div style="display:grid; gap:6px;">${decrease.map(renderMove).join("")}</div>
-          ` : ""}
-          <div style="margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(245,158,11,0.09); border:1.5px solid #f59e0b; display:flex; gap:12px; align-items:flex-start;">
-            <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
-            <div style="font-size:0.8rem; line-height:1.5;">
-              <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
-              <div style="color:var(--foreground);">Retornos estimados a partir de dados históricos do último ano. Cada ativo limitado a <strong>30% máximo</strong>. Resultado varia a cada execução (estocástico). Valida sempre com a tua análise fundamental antes de agir.</div>
-              <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
-                <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
-                Retorno esperado → <code>priceChange_1y</code> (variação de preço no último ano)<br>
-                Volatilidade → <code>priceChange_1m × √12</code> (variação mensal anualizada)<br>
-                Correlações → estimadas por setor · fallback <code>0.30</code> quando insuficientes
-              </div>
-            </div>
-          </div>
-        </div>`;
-    }
+  if (!moves.length) {
+    actionsEl.innerHTML = `<div class="pi-obs positive" style="margin-top:12px;">✅ A carteira atual já está próxima do portfolio de Sharpe máximo. Nenhum ajuste significativo necessário.</div>`;
+    return;
   }
+
+  const increase = moves.filter(m => m.delta > 0);
+  const decrease = moves.filter(m => m.delta < 0);
+
+  const renderMove = (m) => {
+    const isUp = m.delta > 0;
+    const icon = isUp ? "📈" : "📉";
+    const verb = isUp ? "Aumenta" : "Reduz";
+    const color = isUp ? "#22c55e" : "#ef4444";
+    const bg = isUp ? "rgba(34,197,94,0.07)" : "rgba(239,68,68,0.07)";
+    const border = isUp ? "#22c55e" : "#ef4444";
+    const sign = isUp ? "+" : "";
+    const amountChange = Math.abs(m.targetVal - m.curVal);
+    const action = isUp ? `Compra ~${fmtEUR(amountChange)} adicionais` : `Vende ~${fmtEUR(amountChange)}`;
+    return `
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; background:${bg}; border-left:3px solid ${border};">
+        <span style="font-size:1.1rem;">${icon}</span>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:900; font-size:0.88rem;">${verb} <strong>${escapeHtml(m.ticker)}</strong></div>
+          <div class="muted" style="font-size:0.75rem;">${escapeHtml(m.nome)}</div>
+          <div style="font-size:0.78rem; margin-top:3px;">
+            <span style="color:var(--muted-foreground);">${m.cur.toFixed(1)}%</span>
+            <span style="margin:0 4px; color:var(--muted-foreground);">→</span>
+            <span style="font-weight:800; color:${color};">${m.target.toFixed(1)}%</span>
+            <span style="color:${color}; font-weight:700; margin-left:6px;">(${sign}${m.delta.toFixed(1)}pp)</span>
+          </div>
+        </div>
+        <div style="text-align:right; font-size:0.75rem; flex:0 0 auto;">
+          <div style="font-weight:700; color:${color};">${action}</div>
+          <div class="muted">${fmtEUR(m.targetVal)} alvo</div>
+        </div>
+      </div>`;
+  };
+
+  const sharpeGain = data.best.sharpe - data.curSharpe;
+  const windowLabel = { '6m': '6 meses', '12m': '12 meses', '36m': '36 meses' }[efState.activeWindow] || efState.activeWindow;
+
+  // Disclaimer changes based on mode
+  const disclaimer = isFree
+    ? `<div style="margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(239,68,68,0.09); border:2px solid #ef4444; display:flex; gap:12px; align-items:flex-start;">
+        <span style="font-size:1.4rem; flex:0 0 auto; line-height:1;">🚨</span>
+        <div style="font-size:0.8rem; line-height:1.55;">
+          <div style="font-weight:900; color:#ef4444; margin-bottom:6px;">MODO SEM LIMITES ACTIVO</div>
+          <div style="color:var(--foreground);">As sugestões podem recomendar concentração extrema num único activo. Isto reflecte o histórico recente (janela: <strong>${escapeHtml(windowLabel)}</strong>), não uma garantia futura. Trata como ponto de partida de discussão, não como instrução de execução.</div>
+          <div style="margin-top:8px; color:var(--foreground);">Retornos <strong>não</strong> são limitados a 30% por activo. Resultado estocástico. Valida sempre com análise fundamental independente.</div>
+          <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
+            <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
+            Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
+            Volatilidade → <code>priceChange_1m × √12</code><br>
+            Correlações → estimadas por setor · fallback <code>0.30</code>
+          </div>
+        </div>
+      </div>`
+    : `<div style="margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(245,158,11,0.09); border:1.5px solid #f59e0b; display:flex; gap:12px; align-items:flex-start;">
+        <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
+        <div style="font-size:0.8rem; line-height:1.5;">
+          <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
+          <div style="color:var(--foreground);">Retornos históricos da janela <strong>${escapeHtml(windowLabel)}</strong>. Cada activo limitado a <strong>30% máximo</strong>. Resultado estocástico. Valida sempre com análise fundamental antes de agir.</div>
+          <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
+            <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
+            Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
+            Volatilidade → <code>priceChange_1m × √12</code><br>
+            Correlações → estimadas por setor · fallback <code>0.30</code>
+          </div>
+        </div>
+      </div>`;
+
+  actionsEl.innerHTML = `
+    <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+        <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
+        <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
+        <span class="muted" style="font-size:0.72rem;">Melhor das 3 000 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : "cap 30%"}</span>
+      </div>
+      ${increase.length ? `
+        <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reforçar</div>
+        <div style="display:grid; gap:6px; margin-bottom:10px;">${increase.map(renderMove).join("")}</div>
+      ` : ""}
+      ${decrease.length ? `
+        <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reduzir</div>
+        <div style="display:grid; gap:6px;">${decrease.map(renderMove).join("")}</div>
+      ` : ""}
+      ${disclaimer}
+    </div>`;
+}
+
+function bindEFEvents() {
+  document.getElementById("piEFModeToggle")?.addEventListener("change", (e) => {
+    efState.mode = e.target.checked ? "free" : "capped";
+    if (efState.data) renderEfficientFrontier(efState.data);
+  });
+
+  document.querySelectorAll("[data-ef-window]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      efState.activeWindow = btn.dataset.efWindow;
+      document.querySelectorAll("[data-ef-window]").forEach(b =>
+        b.classList.toggle("active", b === btn)
+      );
+      if (efState.data) renderEfficientFrontier(efState.data);
+    });
+  });
+
+  document.getElementById("piEFSeed")?.addEventListener("change", (e) => {
+    const v = e.target.value.trim();
+    efState.seed = v ? parseInt(v, 10) : null;
+  });
+
+  document.getElementById("piEFReseed")?.addEventListener("click", () => {
+    efState.seed = null;
+    const inp = document.getElementById("piEFSeed");
+    if (inp) inp.value = "";
+    if (entryPlannerState.hasLoaded) scheduleAnalysisRerun();
+  });
+}
+
+function updateEFSeedDisplay() {
+  const inp = document.getElementById("piEFSeed");
+  if (inp && efState.seed != null) inp.value = efState.seed;
 }
 
 function bindEntryPlannerEvents() {
