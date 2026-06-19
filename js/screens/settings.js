@@ -1031,123 +1031,123 @@ export function initScreen() {
   // ═══════════════════════════════════════════
   (function wireAlerts() {
     const TYPE_LABELS = {
-      preco_alvo:  { label: “Preço alvo (≥)”,      unit: “€”,    hasThreshold: false },
-      preco_queda: { label: “Preço de queda (≤)”,   unit: “€”,    hasThreshold: false },
-      rsi_compra:  { label: “RSI Sobrevenda (≤)”,   unit: “RSI”,  hasThreshold: false },
-      rsi_venda:   { label: “RSI Sobrecompra (≥)”,  unit: “RSI”,  hasThreshold: false },
-      alocacao:    { label: “Desvio de Alocação”,   unit: “%”,    hasThreshold: true  },
+      preco_alvo:  { label: "Preco alvo (>=)",      unit: "EUR",  hasThreshold: false },
+      preco_queda: { label: "Preco de queda (<=)",  unit: "EUR",  hasThreshold: false },
+      rsi_compra:  { label: "RSI Sobrevenda (<=)",  unit: "RSI",  hasThreshold: false },
+      rsi_venda:   { label: "RSI Sobrecompra (>=)", unit: "RSI",  hasThreshold: false },
+      alocacao:    { label: "Desvio de Alocacao",   unit: "%",    hasThreshold: true  },
     };
 
-    const btnAdd       = document.getElementById(“btnAddAlert”);
-    const formWrap     = document.getElementById(“alertFormWrap”);
-    const btnSave      = document.getElementById(“btnSaveAlert”);
-    const btnCancel    = document.getElementById(“btnCancelAlert”);
-    const alertsListEl = document.getElementById(“alertsList”);
-    const selType      = document.getElementById(“alertType”);
-    const inpTicker    = document.getElementById(“alertTicker”);
-    const inpValue     = document.getElementById(“alertValue”);
-    const inpThreshold = document.getElementById(“alertThreshold”);
-    const lblValue     = document.getElementById(“alertValueLabel”);
-    const threshWrap   = document.getElementById(“alertThresholdWrap”);
-    const btnPerm      = document.getElementById(“btnRequestNotifPerm”);
+    const btnAdd       = document.getElementById("btnAddAlert");
+    const formWrap     = document.getElementById("alertFormWrap");
+    const btnSave      = document.getElementById("btnSaveAlert");
+    const btnCancel    = document.getElementById("btnCancelAlert");
+    const alertsListEl = document.getElementById("alertsList");
+    const selType      = document.getElementById("alertType");
+    const inpTicker    = document.getElementById("alertTicker");
+    const inpValue     = document.getElementById("alertValue");
+    const inpThreshold = document.getElementById("alertThreshold");
+    const lblValue     = document.getElementById("alertValueLabel");
+    const threshWrap   = document.getElementById("alertThresholdWrap");
+    const btnPerm      = document.getElementById("btnRequestNotifPerm");
 
     if (!btnAdd || !formWrap) return;
 
     function renderAlertsList() {
       const alerts = loadAlerts();
       if (!alerts.length) {
-        alertsListEl.innerHTML = `<div class=”muted” style=”text-align:center;padding:20px;font-size:0.8rem;”>Sem alertas configurados.</div>`;
+        alertsListEl.innerHTML = `<div class="muted" style="text-align:center;padding:20px;font-size:0.8rem;">Sem alertas configurados.</div>`;
         return;
       }
       alertsListEl.innerHTML = alerts.map(a => {
-        const meta = TYPE_LABELS[a.type] || { label: a.type, unit: “” };
+        const meta = TYPE_LABELS[a.type] || { label: a.type, unit: "" };
         const firedBadge = a.fired
-          ? `<span style=”background:#ef444420;color:#ef4444;border:1px solid #ef444440;font-size:0.6rem;padding:1px 6px;border-radius:4px;”>DISPARADO</span>`
-          : `<span style=”background:#22c55e20;color:#22c55e;border:1px solid #22c55e40;font-size:0.6rem;padding:1px 6px;border-radius:4px;”>ATIVO</span>`;
-        const threshLine = a.threshold ? ` · tolerância ${a.threshold}%` : “”;
+          ? `<span style="background:#ef444420;color:#ef4444;border:1px solid #ef444440;font-size:0.6rem;padding:1px 6px;border-radius:4px;">DISPARADO</span>`
+          : `<span style="background:#22c55e20;color:#22c55e;border:1px solid #22c55e40;font-size:0.6rem;padding:1px 6px;border-radius:4px;">ATIVO</span>`;
+        const threshLine = a.threshold ? ` · tolerância ${a.threshold}%` : "";
         const firedLine  = a.fired && a.firedAt
-          ? `<div class=”muted” style=”font-size:0.68rem;margin-top:3px;”>Disparado: ${new Date(a.firedAt).toLocaleString(“pt-PT”)}</div>` : “”;
+          ? `<div class="muted" style="font-size:0.68rem;margin-top:3px;">Disparado: ${new Date(a.firedAt).toLocaleString("pt-PT")}</div>` : "";
         return `
-          <div style=”display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(var(--primary-rgb),0.03);border:1px solid var(--border);border-radius:8px;”>
-            <div style=”flex:1;min-width:0;”>
-              <div style=”display:flex;align-items:center;gap:6px;flex-wrap:wrap;”>
-                <span style=”font-weight:700;font-size:0.82rem;”>${a.ticker || “—“}</span>
-                <span class=”muted” style=”font-size:0.72rem;”>${meta.label}</span>
-                <span style=”font-size:0.72rem;”>${Number(a.value).toFixed(a.type.startsWith(“rsi”) ? 0 : 2)} ${meta.unit}${threshLine}</span>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(var(--primary-rgb),0.03);border:1px solid var(--border);border-radius:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-weight:700;font-size:0.82rem;">${a.ticker || "—"}</span>
+                <span class="muted" style="font-size:0.72rem;">${meta.label}</span>
+                <span style="font-size:0.72rem;">${Number(a.value).toFixed(a.type.startsWith("rsi") ? 0 : 2)} ${meta.unit}${threshLine}</span>
                 ${firedBadge}
               </div>
               ${firedLine}
             </div>
-            <div style=”display:flex;gap:6px;flex-shrink:0;”>
-              ${a.fired ? `<button class=”btn ghost” style=”padding:4px 8px;font-size:0.7rem;” data-reset=”${a.id}” title=”Resetar”><i class=”fas fa-redo-alt”></i></button>` : “”}
-              <button class=”btn ghost” style=”padding:4px 8px;font-size:0.7rem;color:#ef4444;” data-delete=”${a.id}” title=”Apagar”><i class=”fas fa-trash”></i></button>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              ${a.fired ? `<button class="btn ghost" style="padding:4px 8px;font-size:0.7rem;" data-reset="${a.id}" title="Resetar"><i class="fas fa-redo-alt"></i></button>` : ""}
+              <button class="btn ghost" style="padding:4px 8px;font-size:0.7rem;color:#ef4444;" data-delete="${a.id}" title="Apagar"><i class="fas fa-trash"></i></button>
             </div>
           </div>`;
-      }).join(“”);
+      }).join("");
 
-      alertsListEl.querySelectorAll(“[data-delete]”).forEach(btn =>
-        btn.addEventListener(“click”, () => {
+      alertsListEl.querySelectorAll("[data-delete]").forEach(btn =>
+        btn.addEventListener("click", () => {
           deleteAlert(btn.dataset.delete);
           renderAlertsList();
         })
       );
-      alertsListEl.querySelectorAll(“[data-reset]”).forEach(btn =>
-        btn.addEventListener(“click”, () => {
+      alertsListEl.querySelectorAll("[data-reset]").forEach(btn =>
+        btn.addEventListener("click", () => {
           resetAlert(btn.dataset.reset);
           renderAlertsList();
-          if (window.showToast) window.showToast(“Alerta reativado!”, “success”);
+          if (window.showToast) window.showToast("Alerta reativado!", "success");
         })
       );
     }
 
     function updateFormForType() {
-      const meta = TYPE_LABELS[selType.value] || { unit: “€”, hasThreshold: false };
+      const meta = TYPE_LABELS[selType.value] || { unit: "€", hasThreshold: false };
       lblValue.textContent = `Valor (${meta.unit})`;
-      threshWrap.style.display = meta.hasThreshold ? “block” : “none”;
+      threshWrap.style.display = meta.hasThreshold ? "block" : "none";
     }
 
-    selType.addEventListener(“change”, updateFormForType);
+    selType.addEventListener("change", updateFormForType);
     updateFormForType();
 
-    btnAdd.addEventListener(“click”, () => {
-      formWrap.style.display = formWrap.style.display === “none” ? “block” : “none”;
-      if (formWrap.style.display === “block”) {
-        inpTicker.value = “”;
-        inpValue.value = “”;
-        inpThreshold.value = “5”;
-        selType.value = “preco_alvo”;
+    btnAdd.addEventListener("click", () => {
+      formWrap.style.display = formWrap.style.display === "none" ? "block" : "none";
+      if (formWrap.style.display === "block") {
+        inpTicker.value = "";
+        inpValue.value = "";
+        inpThreshold.value = "5";
+        selType.value = "preco_alvo";
         updateFormForType();
         inpTicker.focus();
       }
     });
 
-    btnCancel.addEventListener(“click”, () => { formWrap.style.display = “none”; });
+    btnCancel.addEventListener("click", () => { formWrap.style.display = "none"; });
 
-    btnSave.addEventListener(“click”, () => {
+    btnSave.addEventListener("click", () => {
       const ticker = inpTicker.value.trim().toUpperCase();
       const value  = parseFloat(inpValue.value);
-      if (!ticker) { if (window.showToast) window.showToast(“Introduz um ticker.”, “warning”); return; }
-      if (isNaN(value) || value <= 0) { if (window.showToast) window.showToast(“Valor inválido.”, “warning”); return; }
+      if (!ticker) { if (window.showToast) window.showToast("Introduz um ticker.", "warning"); return; }
+      if (isNaN(value) || value <= 0) { if (window.showToast) window.showToast("Valor inválido.", "warning"); return; }
       const alert = { ticker, type: selType.value, value };
-      if (selType.value === “alocacao”) alert.threshold = parseFloat(inpThreshold.value) || 5;
+      if (selType.value === "alocacao") alert.threshold = parseFloat(inpThreshold.value) || 5;
       addAlert(alert);
-      formWrap.style.display = “none”;
+      formWrap.style.display = "none";
       renderAlertsList();
-      if (window.showToast) window.showToast(`Alerta criado para ${ticker}!`, “success”);
+      if (window.showToast) window.showToast(`Alerta criado para ${ticker}!`, "success");
     });
 
     // Botão permissão notificações
     if (btnPerm) {
-      const notifSupported = “Notification” in window;
-      if (notifSupported && Notification.permission !== “granted”) {
-        btnPerm.style.display = “block”;
-        btnPerm.addEventListener(“click”, async () => {
+      const notifSupported = "Notification" in window;
+      if (notifSupported && Notification.permission !== "granted") {
+        btnPerm.style.display = "block";
+        btnPerm.addEventListener("click", async () => {
           const granted = await requestNotificationPermission();
           if (granted) {
-            btnPerm.style.display = “none”;
-            if (window.showToast) window.showToast(“Notificações ativadas!”, “success”);
+            btnPerm.style.display = "none";
+            if (window.showToast) window.showToast("Notificações ativadas!", "success");
           } else {
-            if (window.showToast) window.showToast(“Permissão negada pelo browser.”, “warning”);
+            if (window.showToast) window.showToast("Permissão negada pelo browser.", "warning");
           }
         });
       }
@@ -1156,9 +1156,9 @@ export function initScreen() {
     renderAlertsList();
   })();
 
-  // (Opcional) Seguir alterações do sistema se o user nunca “forçou”
+  // (Opcional) Seguir alterações do sistema se o user nunca "forçou"
   try {
-    const mq = window.matchMedia(“(prefers-color-scheme: dark)”);
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e) => {
       // só respeita o sistema se o utilizador nunca mudou manualmente
       const saved = loadSettings();
