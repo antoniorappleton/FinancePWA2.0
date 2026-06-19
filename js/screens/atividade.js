@@ -3503,6 +3503,7 @@ function renderAnnualDcaPlan(plan) {
 let _holdingsChart = null;
 let _holdingsGeoChart = null;
 let _holdingsGlobalViewData = null;
+let _holdingsViewSubtitle = "";
 let _holdingsEventsWired = false;
 
 function clearHoldingsTreemap() {
@@ -4022,12 +4023,14 @@ function renderGlobalHoldingsView(view) {
   container.innerHTML = "";
 
   if (view === "geography") {
-    subtitleEl.textContent = "Cobertura geografica consolidada do portfolio";
+    subtitleEl.textContent = _holdingsViewSubtitle && _holdingsViewSubtitle.includes("geografia")
+      ? _holdingsViewSubtitle
+      : "Cobertura geografica consolidada do portfolio";
     renderGeographyWorldMap(container, _holdingsGlobalViewData.geography || []);
     return;
   }
 
-  subtitleEl.textContent = "Agregacao de todas as holdings subjacentes detetadas";
+  subtitleEl.textContent = _holdingsViewSubtitle || "Agregacao de todas as holdings subjacentes detetadas";
   initTreemap(container, _holdingsGlobalViewData.holdings || [], "Global Portfolio", true);
 }
 
@@ -4256,11 +4259,12 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
   const tabsEl = document.getElementById("holdingsMapViewTabs");
 
   titleEl.textContent = `Holdings: ${ticker}`;
-  subtitleEl.textContent = etfName || "Distribuição interna do ETF";
+  subtitleEl.textContent = etfName ? `Distribuição por setor e geografia de ${etfName}` : "Distribuição por setor e geografia do ETF";
   loadingEl.classList.remove("hidden");
   emptyEl.classList.add("hidden");
-  tabsEl?.classList.add("hidden");
+  tabsEl?.classList.remove("hidden");
   _holdingsGlobalViewData = null;
+  _holdingsViewSubtitle = subtitleEl.textContent;
   container.innerHTML = "";
 
   await ensureECharts();
@@ -4281,32 +4285,109 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
       }
     });
 
-    if (!data || !data.holdings || !Array.isArray(data.holdings)) {
+    if (!data || !Array.isArray(data.holdings) || !data.holdings.length) {
       console.warn(`⚠️ [HoldingsMap] Nenhuma holding encontrada para o ticker limpo: ${cleanT}`);
       loadingEl.classList.add("hidden");
       emptyEl.classList.remove("hidden");
       return;
     }
 
-    const chartData = data.holdings
-      .map(h => {
-        let w = Number(h.weight) || Number(h.Weight) || 0;
-        let safety = 0;
-        while (isFinite(w) && Math.abs(w) > 1.0001 && safety < 10) {
-          w /= 100; // Normalizar para fração
-          safety++;
+    const rawHoldings = data.holdings.map(h => {
+      let w = Number(h.weight) || Number(h.Weight) || 0;
+      let safety = 0;
+      while (isFinite(w) && Math.abs(w) > 1.0001 && safety < 10) {
+        w /= 100;
+        safety++;
+      }
+      return {
+        name: h.symbol || h.ticker || h.name || "??",
+        value: w * 100,
+        fullName: h.name || h.symbol || h.ticker || "Unknown",
+        weight: w,
+      };
+    }).filter(h => h.value > 0);
+
+    if (!rawHoldings.length) {
+      console.warn(`⚠️ [HoldingsMap] Dados de holdings sem peso positivo para: ${cleanT}`);
+      loadingEl.classList.add("hidden");
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+
+    const acoesSnap = await getDocs(collection(db, "acoesDividendos"));
+    const tickerSectorMap = new Map();
+    const nameSectorMap = new Map();
+    acoesSnap.forEach(doc => {
+      const d = doc.data();
+      const sector = normalizeSector(d);
+      if (d.ticker) tickerSectorMap.set(cleanTicker(d.ticker), sector);
+      if (d.nome) nameSectorMap.set(String(d.nome).toUpperCase(), sector);
+    });
+
+    const FALLBACK_SECTORS = {
+      "AAPL": "Tecnologia", "MSFT": "Tecnologia", "NVDA": "Tecnologia", "AVGO": "Tecnologia", "ASML": "Tecnologia",
+      "AMZN": "Consumo Discricionário", "TSLA": "Consumo Discricionário", "HD": "Consumo Discricionário",
+      "GOOGL": "Serviços de Comunicação", "GOOG": "Serviços de Comunicação", "META": "Serviços de Comunicação", "NFLX": "Serviços de Comunicação", "DIS": "Serviços de Comunicação",
+      "BRK.B": "Financeiro", "BRK-B": "Financeiro", "JPM": "Financeiro", "V": "Financeiro", "MA": "Financeiro", "BAC": "Financeiro", "WFC": "Financeiro",
+      "LLY": "Saúde", "UNH": "Saúde", "NVO": "Saúde", "JNJ": "Saúde", "PG": "Consumo Defensivo", "KO": "Consumo Defensivo", "PEP": "Consumo Defensivo",
+      "XOM": "Energia", "CVX": "Energia", "SHEL": "Energia", "TTE": "Energia"
+    };
+
+    const groupedBySector = new Map();
+    rawHoldings.forEach(h => {
+      const cleanSymbol = cleanTicker(h.name).toUpperCase();
+      let sector = tickerSectorMap.get(cleanSymbol) || FALLBACK_SECTORS[cleanSymbol];
+      if (!sector) {
+        const upperName = String(h.fullName).toUpperCase();
+        sector = nameSectorMap.get(upperName);
+        if (!sector) {
+          for (const [dbName, dbSector] of nameSectorMap.entries()) {
+            if (upperName.includes(dbName) || dbName.includes(upperName)) {
+              sector = dbSector;
+              break;
+            }
+          }
         }
-        return {
-          name: h.symbol || h.ticker || h.name || "??",
-          value: w * 100, // 0-100
-          fullName: h.name || h.symbol
-        };
-      })
-      .filter(h => h.value > 0)
-      .sort((a, b) => b.value - a.value);
+      }
+      if (!sector) sector = "Outros";
+      const item = {
+        name: h.name,
+        fullName: h.fullName,
+        value: h.value,
+        etfs: [{ ticker: cleanT, weightInEtf: h.weight, totalContrib: h.value }]
+      };
+      if (!groupedBySector.has(sector)) {
+        groupedBySector.set(sector, { name: sector, value: 0, children: [] });
+      }
+      const group = groupedBySector.get(sector);
+      group.value += item.value;
+      group.children.push(item);
+    });
+
+    const chartData = Array.from(groupedBySector.values()).sort((a, b) => b.value - a.value);
+
+    const geoRows = normalizeGeoComposition(data.geography);
+    const geographyMap = new Map();
+    geoRows.forEach(row => {
+      const geoName = normalizeGeoName(row.name);
+      if (!geoName) return;
+      geographyMap.set(geoName, { name: geoName, value: Number(row.weight), sources: [{ ticker: cleanT, value: Number(row.weight) }] });
+    });
+    if (geographyMap.size === 0) {
+      const inferred = inferAssetGeography(data);
+      geographyMap.set(inferred, { name: inferred, value: 100, sources: [{ ticker: cleanT, value: 100 }] });
+    }
+
+    _holdingsGlobalViewData = {
+      holdings: chartData,
+      geography: normalizeAggregatedGeoData(geographyMap)
+    };
 
     loadingEl.classList.add("hidden");
-    initTreemap(container, chartData, ticker);
+    emptyEl.classList.add("hidden");
+    tabsEl?.classList.remove("hidden");
+    document.querySelectorAll(".holdings-map-view").forEach(btn => btn.classList.toggle("active", btn.getAttribute("data-map-view") === "holdings"));
+    renderGlobalHoldingsView("holdings");
 
   } catch (err) {
     console.error("💥 [HoldingsMap] Erro individual:", err);
