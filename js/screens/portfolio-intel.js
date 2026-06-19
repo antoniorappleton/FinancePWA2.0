@@ -678,33 +678,74 @@ function getWindowReturn(mkt, windowKey) {
 }
 
 function capWeights(weights, cap) {
+  const n = weights.length;
+  // If cap × n < 1 the constraint is infeasible (can't sum to 1 with each ≤ cap).
+  // Relax to the minimum feasible cap so the loop always converges.
+  const effectiveCap = Math.max(cap, 1 / n);
   let w = [...weights];
   for (let iter = 0; iter < 200; iter++) {
-    if (!w.some(v => v > cap + 1e-9)) break;
-    w = w.map(v => Math.min(v, cap));
+    if (!w.some(v => v > effectiveCap + 1e-9)) break;
+    w = w.map(v => Math.min(v, effectiveCap));
     const s = w.reduce((a, b) => a + b, 0);
+    if (!(s > 0)) return weights.map(() => 1 / n);
     w = w.map(v => v / s);
   }
   return w;
 }
 
-function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand) {
+function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, weightCap) {
   const n = portfolio.length;
   if (n < 2) return null;
   const RISK_FREE = 0.03;
 
   const returnData = portfolio.map(p => getWindowReturn(p.mkt, windowKey));
-  const expReturns = returnData.map(d => isFinite(d.r) ? Math.max(-0.6, Math.min(d.r, 1.5)) : 0.06);
+  // Fallback estimates (hasData===false) use Math.pow(1+r1m, 12) which amplifies one
+  // month's noise to potentially absurd annual figures (e.g. +105%). Apply a tighter
+  // clamp [-40%, +50%] for those; confirmed data can use the wider [-60%, +150%].
+  const expReturns = returnData.map(d =>
+    isFinite(d.r)
+      ? (d.hasData ? Math.max(-0.60, Math.min(d.r, 1.50)) : Math.max(-0.40, Math.min(d.r, 0.50)))
+      : 0.06
+  );
   const shortHistory = returnData.map((d, i) => ({ ticker: portfolio[i].ticker, hasData: d.hasData, note: d.note }))
     .filter(x => !x.hasData);
 
-  const vols = portfolio.map(p => {
-    const r = Number(p.mkt?.priceChange_1m ?? 0);
-    const rn = Math.abs(r) > 1 ? r / 100 : r;
-    const av = Math.abs(rn) * Math.sqrt(12);
-    return isFinite(av) && av > 0.01 ? Math.min(av, 1.2) : 0.18;
+  // Vol estimation: tier lookup uses the same window-matched return already in
+  // returnData (6m return for 6m window, 3y annualised for 36m, etc.) so risk
+  // varies between windows, not just expected return. The monthly signal floors
+  // assets that were calm in the selected window but are inherently volatile.
+  const vols = portfolio.map((p, i) => {
+    const mkt = p.mkt || {};
+    const cat = getAssetCategory(mkt);
+    const isETF = cat.includes('ETF');
+
+    // Short-term signal — monthly return annualised
+    const r1m = Number(mkt.priceChange_1m ?? 0);
+    const rn1m = Math.abs(r1m) > 1 ? r1m / 100 : r1m;
+    const volShort = Math.abs(rn1m) * Math.sqrt(12);
+
+    // Use the same annualised return that getWindowReturn chose for this window
+    const rAbs = Math.abs(isFinite(returnData[i].r) ? returnData[i].r : 0);
+
+    let baseline;
+    if (isETF) {
+      if (rAbs > 0.40) baseline = 0.28;
+      else if (rAbs > 0.20) baseline = 0.18;
+      else baseline = 0.13;
+    } else {
+      if (rAbs > 0.60) baseline = 0.48;
+      else if (rAbs > 0.35) baseline = 0.33;
+      else if (rAbs > 0.15) baseline = 0.25;
+      else baseline = 0.20;
+    }
+
+    return Math.min(Math.max(baseline, volShort), 0.90);
   });
 
+  // Correlation matrix is computed once per analysis run from historical prices and
+  // is shared across all three windows (6m/12m/36m). This is a known limitation:
+  // short-term and long-term correlation regimes can differ. Accepted trade-off for
+  // now — changing it would require per-window price history in Firestore.
   const matrix = corrObj?.matrix || {};
   const getCorrVal = (i, j) => {
     if (i === j) return 1;
@@ -722,17 +763,21 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand) 
     return Math.max(0, v);
   };
   const portReturn = w => w.reduce((s, wi, i) => s + wi * expReturns[i], 0);
-  const randWeights = () => {
+  const rawWeights = () => {
     const r = Array.from({ length: n }, () => -Math.log(rand() + 1e-10));
     const sum = r.reduce((s, v) => s + v, 0);
     return r.map(v => v / sum);
   };
 
+  // Pre-compute the effective cap so it can be surfaced in the disclaimer.
+  // capWeights() also computes this internally; having it here avoids a second call.
+  const effectiveWeightCap = weightCap != null ? Math.max(weightCap, 1 / n) : null;
+
   const M = 3000;
   const sims = [];
   let best = { sharpe: -Infinity, weights: null };
   for (let k = 0; k < M; k++) {
-    const w = randWeights();
+    const w = effectiveWeightCap != null ? capWeights(rawWeights(), effectiveWeightCap) : rawWeights();
     const ret = portReturn(w);
     const vol = Math.sqrt(portVariance(w));
     const sharpe = vol > 0 ? (ret - RISK_FREE) / vol : 0;
@@ -746,16 +791,19 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand) 
   const curVol = Math.sqrt(portVariance(curW));
   const curSharpe = curVol > 0 ? (curRet - RISK_FREE) / curVol : 0;
 
-  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW, shortHistory, windowKey };
+  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW, shortHistory, windowKey, effectiveWeightCap };
 }
 
 function computeEfficientFrontier(portfolio, corrObj) {
-  const results = {};
-  for (const w of ['6m', '12m', '36m']) {
-    const rand = efState.seed != null
-      ? mulberry32(efState.seed + w.charCodeAt(0) * 7)
-      : Math.random.bind(Math);
-    results[w] = computeEfficientFrontierForWindow(portfolio, corrObj, w, rand);
+  // Pre-compute both modes so toggle is instant (no re-simulation on switch).
+  // When seeded, both modes use identical starting seeds → same raw portfolios,
+  // different constraint → fair "capped vs free" comparison.
+  const results = { capped: {}, free: {} };
+  for (const win of ['6m', '12m', '36m']) {
+    const seedBase = efState.seed != null ? efState.seed + win.charCodeAt(0) * 7 : null;
+    const mkRand = () => seedBase != null ? mulberry32(seedBase) : Math.random.bind(Math);
+    results.free[win]   = computeEfficientFrontierForWindow(portfolio, corrObj, win, mkRand(), null);
+    results.capped[win] = computeEfficientFrontierForWindow(portfolio, corrObj, win, mkRand(), 0.30);
   }
   efState.data = results;
   return results;
@@ -763,7 +811,7 @@ function computeEfficientFrontier(portfolio, corrObj) {
 
 function renderEfficientFrontier(allData) {
   if (!allData) return;
-  const data = allData[efState.activeWindow];
+  const data = allData[efState.mode]?.[efState.activeWindow];
   if (!data) return;
 
   // ── Sync window tab highlight ──
@@ -787,14 +835,25 @@ function renderEfficientFrontier(allData) {
   }
 
   // ── Return source label ──
+  // Show a low-confidence label when any asset is using a fallback estimate, because
+  // the fallback formula (Math.pow(1+r1m,12) or 1y proxy) can mislead if presented
+  // with the same authority as genuine window data.
   const labelEl = document.getElementById("piEFReturnLabel");
   if (labelEl) {
+    const hasLowConf = (data.shortHistory?.length ?? 0) > 0;
     const windowLabels = {
-      '6m':  'Retorno Histórico (Janela: 6 meses, anualizado) — baseado em priceChange_6m quando disponível; caso contrário estimado a partir do retorno mensal',
+      '6m':  'Retorno Histórico (Janela: 6 meses, anualizado) — baseado em priceChange_6m. Nota: retorno passado ≠ expectativa futura.',
       '12m': 'Retorno Histórico (Janela: 12 meses) — baseado em priceChange_1y. Nota: retorno passado ≠ expectativa futura.',
-      '36m': 'Retorno Histórico (Janela: 36 meses, anualizado) — baseado em priceChange_3y quando disponível; caso contrário aproximado pelo retorno de 12 meses',
+      '36m': 'Retorno Histórico (Janela: 36 meses, anualizado) — baseado em priceChange_3y. Nota: retorno passado ≠ expectativa futura.',
     };
-    labelEl.textContent = windowLabels[efState.activeWindow] || '';
+    const lowConfLabels = {
+      '6m':  'Estimativa de baixa confiança (1m → anualizado para um ou mais activos) — dados de 6 meses indisponíveis. Clamp aplicado: [−40%, +50%].',
+      '12m': 'Retorno Histórico (Janela: 12 meses) — baseado em priceChange_1y. Nota: retorno passado ≠ expectativa futura.',
+      '36m': 'Estimativa de baixa confiança (12m como aproximação para um ou mais activos) — dados de 3 anos indisponíveis. Clamp aplicado: [−40%, +50%].',
+    };
+    labelEl.textContent = (hasLowConf ? lowConfLabels : windowLabels)[efState.activeWindow] || '';
+    labelEl.style.color = hasLowConf ? '#f59e0b' : '';
+    labelEl.style.fontWeight = hasLowConf ? '700' : '';
   }
 
   // ── Insufficient history warnings ──
@@ -843,13 +902,48 @@ function renderEfficientFrontier(allData) {
     '36m': 'Retorno Histórico 36m anualizado (%)',
   }[efState.activeWindow] || 'Retorno Histórico (%)';
 
+  // Axis bounds derived from the simulation cloud, not from individual asset dots.
+  // Asset dots can sit outside the canvas (clipped by Chart.js) without stretching
+  // the axes — which was the root cause of the "esquisito" X-axis deformation.
+  let sXMin = Infinity, sXMax = -Infinity, sYMin = Infinity, sYMax = -Infinity;
+  for (const s of data.sims) {
+    const sv = s.vol * 100, sr = s.ret * 100;
+    if (sv < sXMin) sXMin = sv;
+    if (sv > sXMax) sXMax = sv;
+    if (sr < sYMin) sYMin = sr;
+    if (sr > sYMax) sYMax = sr;
+  }
+  const xPad = Math.max((sXMax - sXMin) * 0.08, 1);
+  const yPad = Math.max((sYMax - sYMin) * 0.10, 1);
+  const axisXMin = Math.floor(sXMin - xPad);
+  const axisXMax = Math.ceil(sXMax + xPad);
+  const axisYMin = Math.floor(sYMin - yPad);
+  const axisYMax = Math.ceil(sYMax + yPad);
+
+  // Individual asset anchor points (drawn first = behind the Sharpe cloud)
+  const assetDots = data.portfolio.map((p, i) => ({
+    x: +(data.vols[i] * 100).toFixed(2),
+    y: +(data.expReturns[i] * 100).toFixed(2),
+    ticker: p.ticker,
+  }));
+
   window.__piEFChart = new Chart(canvas, {
     type: "scatter",
     data: {
       datasets: [
-        { label: "Baixo Sharpe", data: grouped.low,  backgroundColor: "rgba(239,68,68,0.35)",  pointRadius: 2 },
-        { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: "rgba(245,158,11,0.45)", pointRadius: 2 },
-        { label: "Alto Sharpe",  data: grouped.high, backgroundColor: "rgba(34,197,94,0.55)",  pointRadius: 2 },
+        // Asset dots first so they sit BEHIND the Sharpe cloud
+        {
+          label: "Activos individuais",
+          data: assetDots,
+          backgroundColor: "rgba(255,165,0,0.75)",
+          borderColor: "rgba(255,140,0,0.9)",
+          borderWidth: 1.5,
+          pointRadius: 7,
+          pointStyle: "crossRot",
+        },
+        { label: "Baixo Sharpe", data: grouped.low,  backgroundColor: "rgba(239,68,68,0.30)",  pointRadius: 2 },
+        { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: "rgba(245,158,11,0.40)", pointRadius: 2 },
+        { label: "Alto Sharpe",  data: grouped.high, backgroundColor: "rgba(34,197,94,0.50)",  pointRadius: 2 },
         {
           label: "_halo",
           data: [{ x: +(data.curVol * 100).toFixed(2), y: +(data.curRet * 100).toFixed(2) }],
@@ -884,11 +978,13 @@ function renderEfficientFrontier(allData) {
       maintainAspectRatio: false,
       scales: {
         x: {
+          min: axisXMin, max: axisXMax,
           title: { display: true, text: "Risco — Volatilidade Anualizada (%)", color: tickColor, font: { size: 11 } },
           ticks: { color: tickColor, callback: v => v + "%" },
           grid: { color: gridColor },
         },
         y: {
+          min: axisYMin, max: axisYMax,
           title: { display: true, text: yAxisLabel, color: tickColor, font: { size: 11 } },
           ticks: { color: tickColor, callback: v => v + "%" },
           grid: { color: gridColor },
@@ -901,7 +997,12 @@ function renderEfficientFrontier(allData) {
         },
         tooltip: {
           callbacks: {
-            label: ctx => ` Risco: ${ctx.parsed.x.toFixed(1)}%  |  Retorno: ${ctx.parsed.y.toFixed(1)}%`,
+            label: ctx => {
+              if (ctx.dataset.label === "Activos individuais") {
+                return ` ${ctx.raw.ticker}  |  Vol est.: ${ctx.parsed.x.toFixed(1)}%  |  Retorno: ${ctx.parsed.y.toFixed(1)}%`;
+              }
+              return ` Risco: ${ctx.parsed.x.toFixed(1)}%  |  Retorno: ${ctx.parsed.y.toFixed(1)}%`;
+            },
           },
         },
       },
@@ -942,7 +1043,8 @@ function renderEfficientFrontier(allData) {
 
   const isFree = efState.mode === 'free';
   const totalVal = data.portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
-  const targetWeights = isFree ? [...data.best.weights] : capWeights(data.best.weights, 0.30);
+  // best.weights already reflects the mode's constraint (applied during simulation)
+  const targetWeights = [...data.best.weights];
 
   const moves = data.portfolio
     .map((p, i) => ({
@@ -998,6 +1100,15 @@ function renderEfficientFrontier(allData) {
   const sharpeGain = data.best.sharpe - data.curSharpe;
   const windowLabel = { '6m': '6 meses', '12m': '12 meses', '36m': '36 meses' }[efState.activeWindow] || efState.activeWindow;
 
+  // Use the actual effective cap returned by the simulation (may differ from 30%
+  // when n is small and the constraint was relaxed for feasibility).
+  const capPct = data.effectiveWeightCap != null
+    ? `${(data.effectiveWeightCap * 100).toFixed(0)}%`
+    : null;
+  const capNote = data.effectiveWeightCap != null && data.effectiveWeightCap > 0.30 + 1e-6
+    ? ` (relaxado de 30% → ${capPct} por inviabilidade com ${data.portfolio.length} activos)`
+    : '';
+
   // Disclaimer changes based on mode
   const disclaimer = isFree
     ? `<div style="margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(239,68,68,0.09); border:2px solid #ef4444; display:flex; gap:12px; align-items:flex-start;">
@@ -1005,12 +1116,12 @@ function renderEfficientFrontier(allData) {
         <div style="font-size:0.8rem; line-height:1.55;">
           <div style="font-weight:900; color:#ef4444; margin-bottom:6px;">MODO SEM LIMITES ACTIVO</div>
           <div style="color:var(--foreground);">As sugestões podem recomendar concentração extrema num único activo. Isto reflecte o histórico recente (janela: <strong>${escapeHtml(windowLabel)}</strong>), não uma garantia futura. Trata como ponto de partida de discussão, não como instrução de execução.</div>
-          <div style="margin-top:8px; color:var(--foreground);">Retornos <strong>não</strong> são limitados a 30% por activo. Resultado estocástico. Valida sempre com análise fundamental independente.</div>
+          <div style="margin-top:8px; color:var(--foreground);">Sem limite por activo. Resultado estocástico. Valida sempre com análise fundamental independente.</div>
           <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
             <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
             Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
-            Volatilidade → <code>priceChange_1m × √12</code><br>
-            Correlações → estimadas por setor · fallback <code>0.30</code>
+            Volatilidade → tier por categoria + sinal mensal<br>
+            Correlações → estimadas por setor (fixas entre janelas) · fallback <code>0.30</code>
           </div>
         </div>
       </div>`
@@ -1018,12 +1129,12 @@ function renderEfficientFrontier(allData) {
         <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
         <div style="font-size:0.8rem; line-height:1.5;">
           <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
-          <div style="color:var(--foreground);">Retornos históricos da janela <strong>${escapeHtml(windowLabel)}</strong>. Cada activo limitado a <strong>30% máximo</strong>. Resultado estocástico. Valida sempre com análise fundamental antes de agir.</div>
+          <div style="color:var(--foreground);">Retornos históricos da janela <strong>${escapeHtml(windowLabel)}</strong>. Cada activo limitado a <strong>${capPct ?? '30%'} máximo</strong>${escapeHtml(capNote)}. Resultado estocástico. Valida sempre com análise fundamental antes de agir.</div>
           <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
             <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
             Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
-            Volatilidade → <code>priceChange_1m × √12</code><br>
-            Correlações → estimadas por setor · fallback <code>0.30</code>
+            Volatilidade → tier por categoria + sinal mensal<br>
+            Correlações → estimadas por setor (fixas entre janelas) · fallback <code>0.30</code>
           </div>
         </div>
       </div>`;
@@ -1033,7 +1144,7 @@ function renderEfficientFrontier(allData) {
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
         <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
         <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
-        <span class="muted" style="font-size:0.72rem;">Melhor das 3 000 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : "cap 30%"}</span>
+        <span class="muted" style="font-size:0.72rem;">Melhor das 3 000 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : `cap ${capPct ?? '30%'}`}</span>
       </div>
       ${increase.length ? `
         <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reforçar</div>
