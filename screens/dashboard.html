@@ -94,6 +94,29 @@
     <!-- Injetado via dashboard.js -->
   </div>
 
+
+  <!-- POPUP: Briefing inicial do portf&oacute;lio -->
+  <div id="startupBriefModal" class="modal startup-brief-modal hidden" role="dialog" aria-modal="true" aria-labelledby="startupBriefTitle">
+    <div class="modal-dialog startup-brief-dialog">
+      <div class="modal-header startup-brief-header">
+        <div>
+          <p class="startup-brief-eyebrow">Prontid&atilde;o do portf&oacute;lio</p>
+          <h2 id="startupBriefTitle">Resumo essencial</h2>
+        </div>
+        <button class="icon-btn" id="startupBriefClose" title="Fechar" aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-body startup-brief-body" id="startupBriefBody">
+        <div class="startup-brief-empty">A analisar portf&oacute;lio...</div>
+      </div>
+      <div class="modal-footer startup-brief-footer">
+        <button type="button" class="btn outline" id="startupBriefLater">Fechar</button>
+        <button type="button" class="btn premium" id="startupBriefIntel">
+          <i class="fas fa-brain"></i>
+          Portfolio Intelligence
+        </button>
+      </div>
+    </div>
+  </div>
   <div class="dashboard-columns">
     <div class="card glass">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">

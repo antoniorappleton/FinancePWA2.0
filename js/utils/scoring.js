@@ -466,7 +466,7 @@ export function getAssetType(ticker, acao) {
   const s = String(acao?.setor || acao?.sector || acao?.Setor || acao?.Sector || "").toUpperCase();
   
   const cryptoTickers = ["BTC", "ETH", "SOL", "DOT", "ADA", "XRP", "AVAX", "LINK", "MATIC"];
-  const commodityTickers = ["VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"];
+  const commodityTickers = ["GZUR", "VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"];
   const etfTickers = [
     "VWCE", "IWDA", "VUSA", "CSPX", "EUNL", "VGWL", "SWDA",
     "VOO", "SPY", "VTI", "VT", "VEU", "VXUS", "VHYL", "VWRL", "IWVL",

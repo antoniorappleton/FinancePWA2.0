@@ -22,9 +22,14 @@ import {
 } from "../utils/scoring.js";
 import { toNumStrict } from "../utils/num.js";
 import { Treemap } from "../components/treemap.js";
-import { canonicalTicker } from "../utils/normalize.js";
+import { canonicalTicker, getAssetCategory } from "../utils/normalize.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
+import { checkAlerts, loadAlerts } from "../utils/alerts.js";
+import { portfolioHealth } from "../engines/portfolio-health.js";
+import { stressTest } from "../engines/stress-test.js";
+import { riskContribution } from "../engines/risk-contrib.js";
+import { analyzeETFOverlap, isKnownETF, smartETFAnalysis } from "../engines/etf-overlap.js";
 
 let lastAtivosSnap = null;
 let lastAcoesSnap = null;
@@ -34,6 +39,7 @@ let unsubAcoes = null;
 let unsubConfig = null;
 let lastConfigData = null;
 let histFltState = { ticker: "", tipo: "", periodo: "" };
+const STARTUP_BRIEF_SESSION_KEY = "fin_startup_brief_seen_v1";
 
 
 export async function initScreen() {
@@ -159,6 +165,7 @@ export async function initScreen() {
 
     // --- NOVA LÓGICA: Capital Manager ---
     renderCapitalStrategy(agrupadoPorTicker, valorAtualMap);
+    renderStartupPortfolioBrief(agrupadoPorTicker, valorAtualMap);
   };
 
   // Se já tivermos dados de uma navegação anterior, mostramos logo
@@ -228,6 +235,8 @@ export async function initScreen() {
   document.getElementById("opModal")?.addEventListener("click", (e) => {
     if (e.target.id === "opModal") closeOportunidades();
   });
+
+  setupStartupBriefModal();
 
   // Chips do período no popup
   document.querySelectorAll("#opModal .chip").forEach((btn) => {
@@ -341,6 +350,402 @@ export async function initScreen() {
 /**
  * Renderiza a secção de Estratégia de Capital e War Chest
  */
+function setupStartupBriefModal() {
+  const modal = document.getElementById("startupBriefModal");
+  if (!modal || modal.__wired) return;
+  modal.__wired = true;
+
+  const close = () => {
+    modal.classList.add("hidden");
+    sessionStorage.setItem(STARTUP_BRIEF_SESSION_KEY, "1");
+  };
+
+  modal.querySelector("#startupBriefClose")?.addEventListener("click", close);
+  modal.querySelector("#startupBriefLater")?.addEventListener("click", close);
+  modal.querySelector("#startupBriefIntel")?.addEventListener("click", () => {
+    close();
+    window.navigateTo?.("portfolio-intel");
+  });
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+}
+
+function renderStartupPortfolioBrief(agrupadoPorTicker, valorAtualMap) {
+  const modal = document.getElementById("startupBriefModal");
+  const body = document.getElementById("startupBriefBody");
+  if (!modal || !body || !lastAcoesSnap) return;
+
+  const infoMap = buildTickerInfoMap();
+  const positions = buildBriefPositions(agrupadoPorTicker, valorAtualMap, infoMap);
+  if (!positions.length) return;
+
+  const totalValue = positions.reduce((sum, p) => sum + p.valAtual, 0);
+  const totalInvested = positions.reduce((sum, p) => sum + p.investido, 0);
+  const openPnL = positions.reduce((sum, p) => sum + p.pnl, 0);
+  const realizedPnL = positions.reduce((sum, p) => sum + (p.realizado || 0), 0);
+  const achievedObjectives = positions.filter((p) => p.objetivo > 0 && p.pnl + (p.realizado || 0) >= p.objetivo).length;
+  const objectiveCount = positions.filter((p) => p.objetivo > 0).length;
+
+  const health = portfolioHealth(positions, totalValue);
+  const stress = stressTest(positions, totalValue);
+  const risk = riskContribution(positions, totalValue);
+  const etfOverlap = analyzeETFOverlap(positions);
+  const triggered = checkAlerts(positions, infoMap);
+  const fired = loadAlerts()
+    .filter((a) => a.fired && a.lastMessage)
+    .map((a) => ({ alert: a, message: a.lastMessage, alreadyFired: true }));
+
+  const urgentItems = buildUrgentBriefItems({ positions, health, stress, risk, etfOverlap, triggered, fired, totalValue });
+  const actions = buildBriefActions({ positions, health, stress, risk, urgentItems, objectiveCount, achievedObjectives });
+  const objectives = buildObjectiveBriefItems(positions);
+  const topPosition = [...positions].sort((a, b) => b.valAtual - a.valAtual)[0];
+  const topSector = getTopSector(positions, totalValue);
+
+  const updatedAt = new Intl.DateTimeFormat("pt-PT", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date());
+
+  body.innerHTML = `
+    <section class="startup-brief-hero">
+      <div>
+        <p class="startup-brief-kicker">Briefing de abertura</p>
+        <h2>${getBriefHeadline(urgentItems.length, health.score)}</h2>
+        <p class="muted">Atualizado em ${updatedAt}. Prioriza alertas, risco e objetivos antes de olhar para detalhes.</p>
+      </div>
+      <div class="startup-brief-score ${getBriefScoreClass(health.score)}">
+        <span>${health.score}</span>
+        <small>Saude<br>estrutural</small>
+      </div>
+    </section>
+
+    <section class="startup-brief-metrics" aria-label="Resumo essencial do portfolio">
+      ${briefMetric("Valor em carteira", fmtBriefEUR(totalValue), "fa-wallet")}
+      ${briefMetric("Lucro aberto", fmtBriefEUR(openPnL), openPnL >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down", openPnL >= 0 ? "positive" : "negative", "Posicoes atuais vs custo medio") }
+      ${briefMetric("Retorno aberto", totalInvested > 0 ? `${((openPnL / totalInvested) * 100).toFixed(1)}%` : "---", "fa-percent")}
+      ${briefMetric("Objetivos", `${achievedObjectives}/${objectiveCount}`, "fa-bullseye")}
+      ${briefMetric("Stress pior caso", stress.worstCase ? `${stress.worstCase.portfolioDropPct}%` : "---", "fa-shield-halved", stress.worstCase?.portfolioDropPct <= -25 ? "negative" : "")}
+      ${briefMetric("Lucro acumulado", fmtBriefEUR(openPnL + realizedPnL), "fa-coins", openPnL + realizedPnL >= 0 ? "positive" : "negative", "Aberto + vendas realizadas") }
+    </section>
+
+
+    <section class="startup-brief-objectives">
+      <div class="startup-brief-panel-title">
+        <i class="fas fa-bullseye"></i>
+        <h3>Objetivos em aberto</h3>
+      </div>
+      <div class="startup-brief-objective-list">
+        ${objectives.length ? objectives.map(renderObjectiveItem).join("") : `<div class="startup-brief-empty">Sem objetivos configurados nas posicoes atuais.</div>`}
+      </div>
+    </section>
+    <section class="startup-brief-grid">
+      <div class="startup-brief-panel urgent">
+        <div class="startup-brief-panel-title">
+          <i class="fas fa-triangle-exclamation"></i>
+          <h3>Alertas urgentes</h3>
+        </div>
+        <div class="startup-brief-list">
+          ${urgentItems.length ? urgentItems.slice(0, 6).map(renderUrgentItem).join("") : `<div class="startup-brief-empty">Sem alertas urgentes neste momento.</div>`}
+        </div>
+      </div>
+
+      <div class="startup-brief-panel">
+        <div class="startup-brief-panel-title">
+          <i class="fas fa-list-check"></i>
+          <h3>O que fazer agora</h3>
+        </div>
+        <div class="startup-brief-actions-list">
+          ${actions.map((a) => `<div class="startup-brief-action ${a.type}"><strong>${a.title}</strong><span>${a.text}</span></div>`).join("")}
+        </div>
+      </div>
+    </section>
+
+    <section class="startup-brief-exposure">
+      <div>
+        <span>Maior posicao bruta</span>
+        <strong>${escapeBrief(topPosition?.ticker || "---")}</strong>
+        <small>${topPosition ? getPositionContextLabel(topPosition, totalValue) : "---"}</small>
+      </div>
+      <div>
+        <span>Maior setor</span>
+        <strong>${escapeBrief(topSector.name)}</strong>
+        <small>${fmtBriefPct(topSector.weight)} do portfolio</small>
+      </div>
+      <div>
+        <span>Risco escondido</span>
+        <strong>${health.hiddenRiskScore}/100</strong>
+        <small>${health.classification || "---"}</small>
+      </div>
+      <div>
+        <span>Beta estimado</span>
+        <strong>${risk.portfolioBeta || "---"}</strong>
+        <small>Distribuicao de risco: ${risk.riskDistributionScore || 0}/100</small>
+      </div>
+    </section>
+  `;
+
+  if (sessionStorage.getItem(STARTUP_BRIEF_SESSION_KEY) !== "1" && !modal.__openedOnce) {
+    modal.__openedOnce = true;
+    modal.classList.remove("hidden");
+  }
+}
+
+function buildTickerInfoMap() {
+  const infoMap = new Map();
+  lastAcoesSnap?.forEach((docu) => {
+    const data = docu.data();
+    const ticker = cleanTicker(String(data.ticker || "").toUpperCase());
+    if (ticker) infoMap.set(ticker, data);
+  });
+  return infoMap;
+}
+
+function buildBriefPositions(agrupadoPorTicker, valorAtualMap, infoMap) {
+  return Array.from(agrupadoPorTicker.values())
+    .filter((g) => g.qtd > 0)
+    .map((g) => {
+      const info = infoMap.get(g.ticker) || {};
+      const precoAtual = Number(valorAtualMap.get(g.ticker) ?? info.valorStock ?? 0);
+      const valAtual = g.qtd * Math.max(precoAtual, 0);
+      return {
+        ...g,
+        precoAtual,
+        valAtual,
+        pnl: valAtual - (g.investido || 0),
+        pnlPct: g.investido > 0 ? ((valAtual - g.investido) / g.investido) * 100 : 0,
+        mkt: info,
+        setor: normalizeSector(info) || g.setor,
+      };
+    })
+    .filter((p) => p.valAtual > 0 || p.investido > 0);
+}
+
+function buildUrgentBriefItems({ positions, health, stress, risk, etfOverlap, triggered, fired, totalValue }) {
+  const items = [];
+  const seenMessages = new Set();
+  const topRisk = risk.contributions?.[0];
+  const topRiskPosition = positions.find((p) => p.ticker === topRisk?.ticker);
+  const topRiskIsBroadETF = topRiskPosition && isBroadMarketETF(topRiskPosition);
+
+  for (const item of [...triggered, ...fired]) {
+    if (!item.message || seenMessages.has(item.message)) continue;
+    seenMessages.add(item.message);
+    items.push({ severity: "critical", title: "Alerta configurado", text: item.message });
+  }
+
+  const coreInsight = buildCoreRiskInsight(topRiskPosition, topRisk, totalValue);
+  if (coreInsight) items.push(coreInsight);
+
+  for (const warning of (health.warnings || [])) {
+    if (isDuplicateConcentrationWarning(warning, topRiskPosition, topRiskIsBroadETF)) continue;
+    items.push({ severity: health.score < 50 ? "critical" : "warning", title: "Estrutura do portfolio", text: warning });
+  }
+
+  for (const warning of (risk.warnings || [])) {
+    if (isDuplicateConcentrationWarning(warning, topRiskPosition, topRiskIsBroadETF)) continue;
+    items.push({ severity: "warning", title: "Contribuicao de risco", text: warning });
+  }
+
+  if (etfOverlap?.knownETFs?.length) {
+    for (const warning of (etfOverlap.warnings || []).slice(0, 2)) {
+      items.push({ severity: "warning", title: "Look-through de ETFs", text: warning });
+    }
+  }
+
+  if (stress.worstCase && stress.worstCase.portfolioDropPct <= -30) {
+    items.push({
+      severity: stress.worstCase.portfolioDropPct <= -40 ? "critical" : "warning",
+      title: "Stress test severo",
+      text: `${stress.worstCase.name}: perda estimada de ${stress.worstCase.portfolioDropPct}% (${fmtBriefEUR(stress.worstCase.estimatedLoss)}).`,
+    });
+  }
+
+  const heavy = [...positions].sort((a, b) => b.valAtual - a.valAtual)[0];
+  if (heavy && totalValue > 0 && heavy.valAtual / totalValue >= 0.25 && !isBroadMarketETF(heavy)) {
+    items.push({ severity: "warning", title: "Posicao dominante", text: `${heavy.ticker} representa ${fmtBriefPct(heavy.valAtual / totalValue)} do portfolio.` });
+  }
+
+  for (const p of positions.filter((x) => x.pnlPct <= -15).sort((a, b) => a.pnlPct - b.pnlPct).slice(0, 2)) {
+    items.push({ severity: "warning", title: "Queda relevante", text: `${p.ticker} esta com ${p.pnlPct.toFixed(1)}% de perda aberta (${fmtBriefEUR(p.pnl)}).` });
+  }
+
+  return dedupeBriefItems(items).sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
+}
+function buildCoreRiskInsight(position, contribution, totalValue) {
+  if (!position || !contribution || contribution.riskContribution < 35) return null;
+
+  const weight = totalValue > 0 ? (position.valAtual || 0) / totalValue : 0;
+  if (isBroadMarketETF(position)) {
+    const etf = isKnownETF(position.ticker) ? smartETFAnalysis(position.ticker) : null;
+    const lookThrough = etf
+      ? ` Top 10 interno: ${etf.top10Concentration.toFixed(1)}%, logo nao equivale a uma single stock.`
+      : " E uma ancora diversificada; avaliar por dependencia da ancora, nao por concentracao numa acao.";
+
+    return {
+      severity: contribution.riskContribution >= 70 ? "warning" : "info",
+      title: "Ancora core dominante",
+      text: `${position.ticker}: ${fmtBriefPct(weight)} do valor e ${contribution.riskContribution.toFixed(1)}% do risco estimado. O risco vem do peso na carteira, nao de beta desproporcional.${lookThrough}`,
+    };
+  }
+
+  return {
+    severity: "warning",
+    title: "Contribuicao de risco elevada",
+    text: `${position.ticker}: ${fmtBriefPct(weight)} do valor e ${contribution.riskContribution.toFixed(1)}% do risco estimado.`,
+  };
+}
+
+function isBroadMarketETF(position) {
+  return getAssetCategory({ ...(position.mkt || {}), ...position, ticker: position.ticker }) === "Broad Market ETF";
+}
+
+function isDuplicateConcentrationWarning(message, topRiskPosition, topRiskIsBroadETF) {
+  if (!message) return false;
+  const text = String(message).toUpperCase();
+  if (topRiskIsBroadETF && topRiskPosition?.ticker && text.includes(topRiskPosition.ticker)) return true;
+  if (topRiskIsBroadETF && /TOP\s+[135]/.test(text)) return true;
+  if (topRiskIsBroadETF && text.includes("DIVERSIFICA")) return true;
+  return false;
+}
+
+function dedupeBriefItems(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${item.title}|${item.text}`.toUpperCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildObjectiveBriefItems(positions) {
+  return positions
+    .filter((p) => p.objetivo > 0)
+    .map((p) => {
+      const current = p.pnl + (p.realizado || 0);
+      const progress = p.objetivo > 0 ? (current / p.objetivo) * 100 : 0;
+      return { ticker: p.ticker, objective: p.objetivo, current, progress };
+    })
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, 6);
+}
+
+function renderObjectiveItem(item) {
+  const capped = Math.max(0, Math.min(100, item.progress));
+  const tone = item.progress >= 100 ? "complete" : item.progress >= 85 ? "near" : "";
+  return `
+    <div class="startup-brief-objective ${tone}">
+      <div>
+        <strong>${escapeBrief(item.ticker)}</strong>
+        <span>${fmtBriefEUR(item.current)} / ${fmtBriefEUR(item.objective)}</span>
+      </div>
+      <div class="startup-brief-objective-bar" aria-hidden="true"><span style="width:${capped.toFixed(0)}%"></span></div>
+      <small>${item.progress.toFixed(0)}%</small>
+    </div>
+  `;
+}
+
+function getPositionContextLabel(position, totalValue) {
+  const weight = fmtBriefPct((position.valAtual || 0) / Math.max(totalValue, 1));
+  if (isBroadMarketETF(position)) return `${weight} do portfolio; ETF core diversificado`;
+  if (getAssetCategory({ ...(position.mkt || {}), ...position, ticker: position.ticker }) === "Commodity") return `${weight} do portfolio; hedge/commodity`;
+  return `${weight} do portfolio`;
+}
+function buildBriefActions({ positions, health, stress, risk, urgentItems, objectiveCount, achievedObjectives }) {
+  const actions = [];
+  if (urgentItems.some((i) => i.severity === "critical")) {
+    actions.push({ type: "critical", title: "Agir com prioridade", text: "Reve primeiro os alertas criticos antes de novas compras." });
+  }
+  if (health.score < 50 || health.hiddenRiskScore > 60) {
+    actions.push({ type: "warning", title: "Rever diversificacao", text: "A estrutura sugere concentracao ou risco escondido acima do desejavel." });
+  }
+  const topRisk = risk.contributions?.[0];
+  if (topRisk && topRisk.riskContribution >= 35) {
+    actions.push({ type: "warning", title: `Validar ${topRisk.ticker}`, text: `Contribui ${topRisk.riskContribution}% do risco estimado do portfolio.` });
+  }
+  if (stress.resilience < 55) {
+    actions.push({ type: "warning", title: "Testar cenario defensivo", text: "O stress test indica vulnerabilidade em quedas fortes de mercado." });
+  }
+  const closeObjective = positions
+    .filter((p) => p.objetivo > 0)
+    .map((p) => ({ ...p, progress: ((p.pnl + (p.realizado || 0)) / p.objetivo) * 100 }))
+    .filter((p) => p.progress >= 85)
+    .sort((a, b) => b.progress - a.progress)[0];
+  if (closeObjective) {
+    actions.push({ type: "positive", title: `Objetivo perto em ${closeObjective.ticker}`, text: `${closeObjective.progress.toFixed(0)}% do objetivo financeiro ja foi atingido.` });
+  }
+  if (!actions.length) {
+    actions.push({ type: "positive", title: "Sem urgencias", text: "O portfolio nao mostra sinais criticos no briefing atual." });
+  }
+  if (objectiveCount > 0 && achievedObjectives === objectiveCount) {
+    actions.push({ type: "positive", title: "Objetivos encaminhados", text: "Todos os objetivos definidos aparecem cumpridos ou acima da meta." });
+  }
+  return actions.slice(0, 4);
+}
+
+function getTopSector(positions, totalValue) {
+  const sectors = new Map();
+  for (const p of positions) {
+    const sector = normalizeSector(p.mkt || p) || p.setor || "Outros";
+    sectors.set(sector, (sectors.get(sector) || 0) + (p.valAtual || 0));
+  }
+  const [name = "---", value = 0] = [...sectors.entries()].sort((a, b) => b[1] - a[1])[0] || [];
+  return { name, weight: totalValue > 0 ? value / totalValue : 0 };
+}
+
+function getBriefHeadline(urgentCount, healthScore) {
+  if (urgentCount >= 3 || healthScore < 40) return "Ha pontos que merecem atencao imediata";
+  if (urgentCount > 0) return "Ha sinais para rever antes de agir";
+  return "Portfolio sem urgencias no arranque";
+}
+
+function briefMetric(label, value, icon, tone = "", sublabel = "") {
+  return `<div class="startup-brief-metric ${tone}"><i class="fas ${icon}"></i><span>${label}</span><strong>${value}</strong>${sublabel ? `<small>${escapeBrief(sublabel)}</small>` : ""}</div>`;
+}
+
+function renderUrgentItem(item) {
+  return `<div class="startup-brief-alert ${item.severity}"><span>${item.severity === "critical" ? "Critico" : "Atencao"}</span><div><strong>${escapeBrief(item.title)}</strong><p>${escapeBrief(item.text)}</p></div></div>`;
+}
+
+function getBriefScoreClass(score) {
+  if (score >= 65) return "good";
+  if (score >= 45) return "watch";
+  return "risk";
+}
+
+function severityRank(severity) {
+  return severity === "critical" ? 3 : severity === "warning" ? 2 : 1;
+}
+
+function fmtBriefEUR(value) {
+  return new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+}
+
+function fmtBriefPct(value) {
+  return `${(Number(value || 0) * 100).toFixed(1)}%`;
+}
+
+function escapeBrief(value) {
+  return normalizeBriefText(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function normalizeBriefText(value) {
+  return String(value ?? "")
+    .replace(/\uFFFD/g, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\u2264/g, "<=")
+    .replace(/\u2265/g, ">=");
+}
 function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
   const container = document.getElementById("capitalStrategyContainer");
   if (!container) return;

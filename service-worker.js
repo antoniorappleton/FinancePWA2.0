@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v51";
+const CACHE_NAME = "finance-pwa-v52";
 
 const ASSETS = [
   "./",
@@ -79,11 +79,12 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Para ficheiros de navegação ou lógica, preferimos rede para apanhar atualizações
+  // Para ficheiros de navegacao, logica e estilos, preferimos rede para apanhar atualizacoes
   if (
     event.request.mode === "navigate" ||
     url.pathname.endsWith(".js") ||
-    url.pathname.endsWith(".html")
+    url.pathname.endsWith(".html") ||
+    url.pathname.endsWith(".css")
   ) {
     event.respondWith(
       fetch(event.request)
@@ -97,7 +98,7 @@ self.addEventListener("fetch", (event) => {
         .catch(() => caches.match(event.request)),
     );
   } else {
-    // Para outros (CSS, imagens), Cache-First
+    // Para outros (imagens, manifest), Cache-First
     event.respondWith(
       caches.match(event.request).then((response) => {
         return response || fetch(event.request);

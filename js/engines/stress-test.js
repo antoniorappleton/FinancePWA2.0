@@ -103,6 +103,38 @@ function normSector(s) {
   const raw = String(s || "").trim();
   return SECTOR_ALIASES[raw] || raw;
 }
+const PRECIOUS_METAL_SHOCKS = {
+  gold: {
+    covid_2020: -0.08,
+    gfc_2008: 0.12,
+    dotcom_2000: 0.05,
+    rate_hike_2022: -0.08,
+    tech_bear: 0.02,
+    energy_crisis: 0.10,
+    global_recession: 0.06
+  },
+  silver: {
+    covid_2020: -0.18,
+    gfc_2008: -0.18,
+    dotcom_2000: -0.05,
+    rate_hike_2022: -0.14,
+    tech_bear: -0.06,
+    energy_crisis: 0.06,
+    global_recession: -0.08
+  }
+};
+
+function getPreciousMetalKind(asset) {
+  const ticker = cleanTicker(asset.ticker || asset.mkt?.ticker || "");
+  const name = String(asset.nome || asset.name || asset.mkt?.nome || asset.mkt?.name || "").toLowerCase();
+  const sector = String(asset.setor || asset.sector || asset.mkt?.setor || asset.mkt?.sector || "").toLowerCase();
+
+  if (["GZUR", "PHAU", "SGLN", "IGLN", "GLD", "IAU"].includes(ticker) || name.includes("gold") || name.includes("ouro")) return "gold";
+  if (["VZLC", "PHAG", "SSLV", "SLV"].includes(ticker) || name.includes("silver") || name.includes("prata")) return "silver";
+  if (sector.includes("gold") || sector.includes("ouro")) return "gold";
+  if (sector.includes("silver") || sector.includes("prata")) return "silver";
+  return null;
+}
 
 /**
  * Simulate an asset's expected drawdown in a given scenario.
@@ -111,7 +143,10 @@ function simulateAsset(asset, scenario) {
   const sector = normSector(normalizeSector(asset.mkt || asset));
   const beta = safeMetric(asset.mkt || asset, "beta") || 1.0;
   
-  const baseDrop = scenario.sectorDrops[sector] ?? scenario.defaultDrop;
+  const metalKind = getPreciousMetalKind(asset);
+  const baseDrop = metalKind
+    ? (PRECIOUS_METAL_SHOCKS[metalKind]?.[asset.__scenarioKey] ?? scenario.sectorDrops[sector] ?? scenario.defaultDrop)
+    : (scenario.sectorDrops[sector] ?? scenario.defaultDrop);
   
   // Beta-adjust: higher beta = more sensitive to market drops
   const adjustedDrop = baseDrop * Math.max(0.5, beta);
@@ -144,7 +179,7 @@ export function stressTest(portfolio, totalValue) {
 
     for (const p of portfolio) {
       const weight = (p.valAtual || 0) / total;
-      const sim = simulateAsset(p, scenario);
+      const sim = simulateAsset({ ...p, __scenarioKey: key }, scenario);
       portfolioDrop += sim.expectedDrop * weight;
       
       assetDrops.push({

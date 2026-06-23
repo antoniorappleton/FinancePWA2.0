@@ -173,7 +173,7 @@ export function getAssetCategory(asset) {
   const sector = String(asset.setor || asset.sector || "").toLowerCase();
   
   // ── 0. Commodities & Physical Assets (ETCs / Physical Metals) ──
-  const commTickers = new Set(["VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"]);
+  const commTickers = new Set(["GZUR", "VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"]);
   if (commTickers.has(ticker) || sector.includes("commodit") || name.includes("physical") || name.includes("silver") || name.includes("gold") || name.includes("copper") || name.includes("platinum")) {
     return "Commodity";
   }
