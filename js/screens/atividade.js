@@ -1338,15 +1338,6 @@ function wireQuickActions(gruposArr) {
     }
   });
 
-  vendaTot?.addEventListener("change", () => {
-    const checked = !!vendaTot.checked;
-    if (checked && fQtd) {
-      fQtd.value = currentPosQty.toFixed(4).replace(/\.?0+$/, "");
-      fQtd.setAttribute("readonly", true);
-    } else if (fQtd) {
-      fQtd.removeAttribute("readonly");
-    }
-  });
   window.openActionModal = openActionModal;
   function openActionModal(kind, ticker) {
     const g = byTickerGlobal.get(ticker);
@@ -1381,7 +1372,7 @@ function wireQuickActions(gruposArr) {
     if (fSetor) fSetor.value = g.setor || "";
     if (fMerc) fMerc.value = g.mercado || "";
     if (fQtd) fQtd.value = "";
-    if (fPreco) fPreco.value = "";
+    if (fPreco) fPreco.value = (kind === "venda" && g.precoAtual) ? Number(g.precoAtual).toFixed(4) : "";
     if (fData) fData.value = new Date().toISOString().split("T")[0];
     if (fObj) fObj.value = g.objetivo || "";
     if (fLink) fLink.value = g.link || "";
@@ -1454,9 +1445,16 @@ function wireQuickActions(gruposArr) {
       }
       fQtd.value = Math.abs(pos).toString();
       fQtd.setAttribute("readonly", "readonly");
+      // Pré-preencher o preço atual de mercado se ainda não estiver preenchido
+      const curP = byTickerGlobal.get(fTicker?.value)?.precoAtual;
+      if (curP && fPreco && (!fPreco.value || parseFloat(fPreco.value) === 0)) {
+        fPreco.value = Number(curP).toFixed(4);
+      }
+      calcCusto();
     } else {
       fQtd.removeAttribute("readonly");
       fQtd.value = "";
+      calcCusto();
     }
   });
 
@@ -1512,10 +1510,14 @@ function wireQuickActions(gruposArr) {
           precoCompra: precoFinal, objetivoFinanceiro: obj, linkExterno: lnk,
           dataCompra: fData?.value ? Timestamp.fromDate(new Date(fData.value)) : serverTimestamp()
         });
+        if (tipo === "venda" && vendaTotal) {
+          showToast(`Posição de ${ticker} fechada. P&L registado em "Posições Fechadas".`);
+        }
       }
       closeModal();
     } catch (err) {
       console.error("Erro ao guardar:", err);
+      alert("Não foi possível guardar. Tenta novamente.");
     }
   });
 }

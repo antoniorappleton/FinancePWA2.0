@@ -544,11 +544,11 @@ function _tabPosition() {
 
     <div style="margin-top:20px;display:flex;gap:8px">
       <button class="adp-action-btn adp-action-btn--buy"
-        onclick="window.openActionModal?.('buy','${pos.ticker}');window.closeAssetPanel?.()">
+        onclick="window.openActionModal?.('compra','${pos.ticker}');window.closeAssetPanel?.()">
         + Comprar
       </button>
       <button class="adp-action-btn adp-action-btn--sell"
-        onclick="window.openActionModal?.('sell','${pos.ticker}');window.closeAssetPanel?.()">
+        onclick="window.openActionModal?.('venda','${pos.ticker}');window.closeAssetPanel?.()">
         − Vender
       </button>
     </div>
