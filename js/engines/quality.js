@@ -26,26 +26,47 @@ function getSectorProfile(asset) {
   return SECTOR_PROFILES[sector] || SECTOR_PROFILES.default;
 }
 
-// ── ETF Quality Model (Diversification, TER, Tracking) ──
+// ── ETF Quality Model (TER, Breadth, Sector/Geo Diversity, Holdings Quality) ──
 function scoreETFQuality(asset) {
   const ter = safePercent(asset, "ter", "expense_ratio");
   const holdings = safeMetric(asset, "holdings_count", "num_holdings");
   const cat = getAssetCategory(asset);
 
-  let total = 0, count = 0;
+  // Pre-computed enrichment fields (attached by enrichETFAsset before scoring)
+  const sectorScore  = typeof asset._etfSectorScore  === "number" ? asset._etfSectorScore  : null;
+  const geoScore     = typeof asset._etfGeoScore     === "number" ? asset._etfGeoScore     : null;
+  const holdingsQual = typeof asset._etfHoldingsQuality === "number" ? asset._etfHoldingsQuality / 100 : null;
 
-  // 1. TER Score (0.0% to 1.0%)
+  // Dynamic weights — base always present, enrichment slots added when data exists
+  const W = { ter: 0.25, breadth: 0.20, category: 0.10 };
+  if (sectorScore  !== null) W.sector   = 0.20;
+  if (geoScore     !== null) W.geo      = 0.10;
+  if (holdingsQual !== null) W.holdings = 0.15;
+
+  // Normalise so weights always sum to 1
+  const wSum = Object.values(W).reduce((a, b) => a + b, 0);
+  for (const k of Object.keys(W)) W[k] /= wSum;
+
+  const components = {};
+  let total = 0;
+
+  // 1. TER Score
   if (isFinite(ter)) {
     let s;
-    if (ter <= 0.0010) s = 1.0;      // 0.10% (Exceptional)
-    else if (ter <= 0.0025) s = 0.85; // 0.25% (Good)
-    else if (ter <= 0.0050) s = 0.6;  // 0.50% (Average)
-    else if (ter <= 0.0080) s = 0.3;  // 0.80% (Expensive)
+    if (ter <= 0.0010) s = 1.0;
+    else if (ter <= 0.0025) s = 0.85;
+    else if (ter <= 0.0050) s = 0.60;
+    else if (ter <= 0.0080) s = 0.30;
     else s = 0.05;
-    total += s * 0.4; count += 0.4;
+    components.ter = s;
+    total += s * W.ter;
+  } else {
+    // No TER data — use category prior
+    const prior = cat === "Broad Market ETF" ? 0.85 : 0.60;
+    total += prior * W.ter;
   }
 
-  // 2. Diversification Score
+  // 2. Breadth (number of holdings)
   if (isFinite(holdings)) {
     let s;
     if (cat === "Broad Market ETF") {
@@ -53,17 +74,50 @@ function scoreETFQuality(asset) {
     } else {
       s = holdings > 100 ? 1.0 : holdings > 50 ? 0.8 : holdings > 20 ? 0.5 : 0.2;
     }
-    total += s * 0.4; count += 0.4;
+    components.breadth = s;
+    total += s * W.breadth;
+  } else {
+    const prior = cat === "Broad Market ETF" ? 0.8 : 0.5;
+    total += prior * W.breadth;
   }
 
-  // 3. Category Premium
-  const catScore = cat === "Broad Market ETF" ? 0.9 : cat === "Sector ETF" ? 0.7 : 0.6;
-  total += catScore * 0.2; count += 0.2;
+  // 3. Category premium
+  const catScore = cat === "Broad Market ETF" ? 0.90 : cat === "Sector ETF" ? 0.70 : 0.60;
+  components.category = catScore;
+  total += catScore * W.category;
 
-  const raw = count > 0 ? total / count : 0.6;
-  return { 
-    score: Math.round(raw * 100), 
-    classification: raw > 0.8 ? "Institutional Grade ETF" : raw > 0.6 ? "Quality ETF" : "Niche / High Cost ETF" 
+  // 4. Sector diversification (HHI-derived, 0=concentrated, 1=balanced)
+  if (sectorScore !== null) {
+    components.sector = sectorScore;
+    total += sectorScore * W.sector;
+  }
+
+  // 5. Geographic diversification
+  if (geoScore !== null) {
+    components.geo = geoScore;
+    total += geoScore * W.geo;
+  }
+
+  // 6. Holdings quality (weighted avg quality of underlying companies)
+  if (holdingsQual !== null) {
+    components.holdingsQuality = holdingsQual;
+    total += holdingsQual * W.holdings;
+  }
+
+  const raw = clamp(total, 0, 1);
+  return {
+    score: Math.round(raw * 100),
+    classification: raw > 0.80 ? "Institutional Grade ETF" : raw > 0.60 ? "Quality ETF" : "Niche / High Cost ETF",
+    breakdown: {
+      ...components,
+      sectorCount: asset._etfSectorCount ?? null,
+      dominantSector: asset._etfDominantSector ?? null,
+      geoCount: asset._etfGeoCount ?? null,
+      dominantRegion: asset._etfDominantRegion ?? null,
+      holdingsCoverage: asset._etfHoldingsCoverage ?? null,
+      holdingsDetails: asset._etfHoldingsDetails ?? null,
+      weights: W
+    }
   };
 }
 
@@ -202,7 +256,7 @@ export function qualityScore(asset) {
       score: etf.score,
       classification: etf.classification,
       confidence: Math.round(confidenceScore(asset) * 100),
-      breakdown: { etf: true, ...etf }
+      breakdown: { etf: true, ...etf.breakdown }
     };
   }
 

@@ -4,6 +4,7 @@
 // Detects: duplicate holdings, indirect exposure, hidden concentration.
 // Example: VWCE + SEC0 + QDVE = massive exposure to MSFT, NVDA, AAPL
 // ═══════════════════════════════════════════════════════════════════
+import { qualityScore } from "./quality.js";
 
 // ── Known ETF Holdings (top holdings with approximate weights) ──
 // In production, this would come from an API. For now, static top-20 per ETF.
@@ -85,6 +86,80 @@ const ETF_HOLDINGS = {
     geography: { US: 70, Japan: 6, UK: 4, Other: 20 }
   }
 };
+
+// ── HHI-based diversity score (0 = 1 dominant, 1 = perfectly spread) ──
+function hhiDiversityScore(weights) {
+  const vals = Object.values(weights).map(Number).filter(v => v > 0);
+  if (vals.length === 0) return null;
+  const total = vals.reduce((a, b) => a + b, 0);
+  const hhi = vals.reduce((sum, v) => sum + Math.pow(v / total, 2), 0);
+  const n = vals.length;
+  if (n === 1) return 0;
+  return (1 - hhi) / (1 - 1 / n);
+}
+
+/**
+ * Enrich an ETF asset object with sector diversity, geographic diversity,
+ * and holdings quality scores derived from the acoesDividendos data map.
+ * Attaches results as _etf* fields so the quality engine can consume them.
+ *
+ * @param {Object} etfAsset - The ETF document from acoesDividendos
+ * @param {Map<string,Object>} allAssetsMap - Map of ticker → asset from acoesDividendos
+ * @returns {Object} The same etfAsset object (mutated in-place)
+ */
+export function enrichETFAsset(etfAsset, allAssetsMap) {
+  const ticker = String(etfAsset?.ticker || "").toUpperCase();
+  const holdingsData = ETF_HOLDINGS[ticker];
+  if (!holdingsData) return etfAsset;
+
+  // 1. Sector diversification
+  if (holdingsData.sectors && Object.keys(holdingsData.sectors).length > 0) {
+    const score = hhiDiversityScore(holdingsData.sectors);
+    if (score !== null) {
+      etfAsset._etfSectorScore = Math.round(score * 100) / 100;
+      etfAsset._etfSectorCount = Object.keys(holdingsData.sectors).length;
+      etfAsset._etfDominantSector = Object.entries(holdingsData.sectors)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    }
+  }
+
+  // 2. Geographic diversification
+  if (holdingsData.geography && Object.keys(holdingsData.geography).length > 0) {
+    const score = hhiDiversityScore(holdingsData.geography);
+    if (score !== null) {
+      etfAsset._etfGeoScore = Math.round(score * 100) / 100;
+      etfAsset._etfGeoCount = Object.keys(holdingsData.geography).length;
+      etfAsset._etfDominantRegion = Object.entries(holdingsData.geography)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    }
+  }
+
+  // 3. Holdings quality — look up each top holding in acoesDividendos
+  if (allAssetsMap && holdingsData.top?.length > 0) {
+    let weightedQuality = 0;
+    let totalCoveredWeight = 0;
+    const details = [];
+
+    for (const h of holdingsData.top) {
+      const holdingAsset = allAssetsMap.get(h.ticker.toUpperCase());
+      if (holdingAsset) {
+        const q = qualityScore(holdingAsset);
+        const w = h.weight / 100;
+        weightedQuality += q.score * w;
+        totalCoveredWeight += w;
+        details.push({ ticker: h.ticker, weight: h.weight, quality: q.score, classification: q.classification });
+      }
+    }
+
+    if (totalCoveredWeight > 0) {
+      etfAsset._etfHoldingsQuality = Math.round(weightedQuality / totalCoveredWeight);
+      etfAsset._etfHoldingsCoverage = Math.round(totalCoveredWeight * 100) / 100;
+      etfAsset._etfHoldingsDetails = details;
+    }
+  }
+
+  return etfAsset;
+}
 
 /**
  * Analyze overlap between ETFs in the portfolio.

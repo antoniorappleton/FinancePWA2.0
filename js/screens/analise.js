@@ -40,6 +40,7 @@ import {
 import { technicalSignal } from "../engines/technical-signal.js";
 import { INDICATOR_INFO } from "../utils/indicator-info.js";
 import { repairFirestoreData } from "../utils/maintenance.js";
+import { enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
 
 /* =========================================================
 Carregamento “on-demand” de libs (Chart.js, html2canvas, jsPDF)
@@ -746,12 +747,17 @@ function renderPortfolioCards(rows) {
 
   grid.innerHTML = displayRows.map(r => renderSingleCard(r)).join('');
 
-  // Add click handlers
+  // Open Asset Deep Panel on card click (fallback: filter table)
   grid.querySelectorAll('.portfolio-card').forEach(card => {
+    card.style.cursor = "pointer";
     card.addEventListener('click', () => {
       const ticker = card.dataset.ticker;
-      document.getElementById('anlSearch').value = ticker;
-      applyFilters();
+      if (typeof window.openAssetPanel === "function") {
+        window.openAssetPanel(ticker);
+      } else {
+        document.getElementById('anlSearch').value = ticker;
+        applyFilters();
+      }
     });
   });
 }
@@ -1066,12 +1072,19 @@ function fetchAcoes() {
   if (unsubAcoes) unsubAcoes();
 
   unsubAcoes = onSnapshot(query(collection(db, "acoesDividendos")), (snap) => {
+    // Build map first so ETF holdings can be looked up during enrichment
+    const allAssetsMap = new Map();
+    snap.forEach(doc => { const x = doc.data(); if (x.ticker) allAssetsMap.set(String(x.ticker).toUpperCase(), x); });
+    window._marketDataMap = allAssetsMap;
+
     const rows = [];
     snap.forEach((doc) => {
       const d = doc.data();
       const tickerRaw = String(d.ticker || "").toUpperCase();
       if (!tickerRaw) return;
       const ticker = cleanTicker(tickerRaw);
+
+      if (isKnownETF(d.ticker)) enrichETFAsset(d, allAssetsMap);
 
       const valor = toNum(d.valorStock);
       const annual = toNum(d.dividendoMedio24m) || anualPreferido(d);

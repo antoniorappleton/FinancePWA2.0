@@ -3,6 +3,7 @@ const screenContainer = document.getElementById("screenContainer");
 const screenTitleEl = document.getElementById("screenTitle");
 
 import { initGlobalHelp } from "./components/help.js";
+import "./components/asset-deep-panel.js";
 
 export function navigateTo(screen) {
   console.log("👉 Navegar para:", screen);

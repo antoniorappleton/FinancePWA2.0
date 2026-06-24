@@ -802,6 +802,11 @@ function updatePriceFreshness() {
 
 // Expor globalmente para onclick no HTML
 window.openDetails = async function(ticker) {
+  // Prefer the new unified Asset Deep Panel if available
+  if (typeof window.openAssetPanel === "function") {
+    window.openAssetPanel(ticker);
+    return;
+  }
   const g = byTickerGlobal.get(ticker);
   if (!g) return;
 
@@ -1309,6 +1314,7 @@ function renderMovementHistory(ticker) {
 // ===============================
 function wireQuickActions(gruposArr) {
   byTickerGlobal = new Map(gruposArr.map((g) => [g.ticker, g]));
+  window._portfolioPositions = byTickerGlobal;
   if (_eventsWired) return;
   _eventsWired = true;
 
@@ -1858,6 +1864,10 @@ function showPortfolioHelp(force = false) {
       _lastAcoesSnap = snap;
       _lastPriceUpdateTime = new Date();
       updatePriceFreshness();
+      // Expose market data globally for the Asset Deep Panel
+      const mktMap = new Map();
+      snap.forEach(d => { const x = d.data(); if (x.ticker) mktMap.set(String(x.ticker).toUpperCase(), x); });
+      window._marketDataMap = mktMap;
       handleUpdate();
     });
 

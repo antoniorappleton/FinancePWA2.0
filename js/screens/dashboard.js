@@ -29,7 +29,7 @@ import { checkAlerts, loadAlerts } from "../utils/alerts.js";
 import { portfolioHealth } from "../engines/portfolio-health.js";
 import { stressTest } from "../engines/stress-test.js";
 import { riskContribution } from "../engines/risk-contrib.js";
-import { analyzeETFOverlap, isKnownETF, smartETFAnalysis } from "../engines/etf-overlap.js";
+import { analyzeETFOverlap, isKnownETF, smartETFAnalysis, enrichETFAsset } from "../engines/etf-overlap.js";
 
 let lastAtivosSnap = null;
 let lastAcoesSnap = null;
@@ -1140,10 +1140,15 @@ async function carregarTop10Crescimento(periodo = "1m") {
       lastAcoesSnap = snap;
     }
 
+    // Build allAssetsMap for ETF holdings quality enrichment
+    const allAssetsMap = new Map();
+    snap.forEach(doc => { const x = doc.data(); if (x.ticker) allAssetsMap.set(String(x.ticker).toUpperCase(), x); });
+
     const allCands = [];
 
     snap.forEach((doc) => {
       const d = doc.data();
+      if (isKnownETF(d.ticker)) enrichETFAsset(d, allAssetsMap);
       const result = calculateLucroMaximoScore(d, periodo);
       if (d.ticker && result.score > 0) {
         let rawYield = Number(d["Dividend Yield"] || d.yield || 0);

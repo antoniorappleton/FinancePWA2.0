@@ -2,6 +2,7 @@
 import { db } from "../firebase-config.js";
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { calculateLucroMaximoScore, getAssetType, cleanTicker } from "./scoring.js";
+import { enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
 
 let chartInstances = {};
 
@@ -110,6 +111,7 @@ export async function generatePortfolioReport() {
     let totalValue = 0, totalScoreWeight = 0, totalInvested = 0;
     const enriched = activePositions.map(p => {
       const mkt = acoesMap.get(p.ticker) || {};
+      if (isKnownETF(mkt.ticker)) enrichETFAsset(mkt, acoesMap);
       const precoAtual = Number(mkt.valorStock || mkt.price || 0), valAtual = p.qtd * precoAtual;
       const scoreObj = calculateLucroMaximoScore(mkt);
       const assetType = getAssetType(p.ticker, mkt);

@@ -728,6 +728,7 @@ async function carregarSimulacoesGuardadas() {
 
 import { annualizeRate, anualPreferido, calculateLucroMaximoScore, cleanTicker } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
+import { enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
 
 function calcularMetricasBase_TOP(
   acao,
@@ -962,10 +963,14 @@ function distribuirInteiros_porScore_capped_TOP(cands, invest) {
 
 async function fetchAcoesBase() {
   const snap = await getDocs(collection(db, "acoesDividendos"));
+  const allAssetsMap = new Map();
+  snap.forEach(doc => { const x = doc.data(); if (x.ticker) allAssetsMap.set(String(x.ticker).toUpperCase(), x); });
+
   const out = [];
   snap.forEach((doc) => {
     const d = doc.data();
     if (!d || !d.ticker) return;
+    if (isKnownETF(d.ticker)) enrichETFAsset(d, allAssetsMap);
     out.push({
       ...d, // Spread all fields (pe, evebitda, sma, etc) for the scoring engine
       nome: d.nome || d.ticker,

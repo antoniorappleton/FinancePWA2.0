@@ -130,9 +130,46 @@ function generateObservations(asset, engines, category) {
   const { quality, momentum, valuation, risk } = engines;
   const ticker = String(asset.ticker || "").toUpperCase();
 
-  if (category === "Broad Market ETF") {
+  if (category === "Broad Market ETF" || category === "Sector ETF" || category.includes("ETF")) {
     obs.push({ type: "positive", msg: `${ticker}: Âncora de portfólio (Broad Market) — excelente para gestão de risco passiva.` });
     if (momentum.score > 70) obs.push({ type: "positive", msg: `${ticker}: Momento de mercado forte para índices globais.` });
+
+    // Sector diversification
+    const sectorScore = asset._etfSectorScore;
+    const dominantSector = asset._etfDominantSector;
+    if (typeof sectorScore === "number") {
+      if (sectorScore >= 0.75) {
+        obs.push({ type: "positive", msg: `${ticker}: Diversificação sectorial forte (${asset._etfSectorCount} sectores) — risco concentrado baixo.` });
+      } else if (sectorScore <= 0.30) {
+        const label = dominantSector ? ` (${dominantSector})` : "";
+        obs.push({ type: "warning", msg: `${ticker}: ETF concentrado num só sector${label} — volatilidade temática elevada.` });
+      } else if (dominantSector) {
+        obs.push({ type: "neutral", msg: `${ticker}: Sector dominante: ${dominantSector}. Diversificação moderada.` });
+      }
+    }
+
+    // Geographic diversification
+    const geoScore = asset._etfGeoScore;
+    const dominantRegion = asset._etfDominantRegion;
+    if (typeof geoScore === "number") {
+      if (geoScore >= 0.60) {
+        obs.push({ type: "positive", msg: `${ticker}: Boa diversificação geográfica (${asset._etfGeoCount} regiões).` });
+      } else if (geoScore <= 0.20 && dominantRegion) {
+        obs.push({ type: "neutral", msg: `${ticker}: Exposição geográfica concentrada em ${dominantRegion} — risco divisa/país.` });
+      }
+    }
+
+    // Holdings quality from acoesDividendos
+    const holdingsQual = asset._etfHoldingsQuality;
+    const coverage = asset._etfHoldingsCoverage;
+    if (typeof holdingsQual === "number" && coverage >= 0.20) {
+      if (holdingsQual >= 75) {
+        obs.push({ type: "positive", msg: `${ticker}: Qualidade das holdings elevada (score médio ponderado ${holdingsQual}/100).` });
+      } else if (holdingsQual <= 45) {
+        obs.push({ type: "caution", msg: `${ticker}: Qualidade das holdings abaixo da média (${holdingsQual}/100) — avaliar componentes.` });
+      }
+    }
+
     return obs;
   }
 

@@ -551,7 +551,7 @@ function renderScorecards(assets) {
     const v2 = a.v2;
     const engines = v2.engines || {};
     return `
-      <div class="pi-scorecard">
+      <div class="pi-scorecard" data-ticker="${a.ticker}" style="cursor:pointer" title="Ver análise completa">
         <div class="sc-header">
           <span class="sc-ticker">${a.ticker}</span>
           <span class="sc-grade ${gradeClass(v2.grade)}">${v2.grade} — ${v2.finalScore}</span>
@@ -572,6 +572,14 @@ function renderScorecards(assets) {
         </div>
       </div>`;
   }).join("");
+
+  // Open Asset Deep Panel on scorecard click
+  container.querySelectorAll(".pi-scorecard[data-ticker]").forEach(card => {
+    card.addEventListener("click", () => {
+      const ticker = card.dataset.ticker;
+      if (typeof window.openAssetPanel === "function") window.openAssetPanel(ticker);
+    });
+  });
 }
 
 function renderObservations(portfolioObs, assetScores) {
