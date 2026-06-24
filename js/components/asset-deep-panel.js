@@ -179,6 +179,98 @@ function _switchTab(tabId) {
   }
 }
 
+// ── Decision box helpers ──────────────────────────────────
+function _decisionBox(score, grade, isETF) {
+  const a   = _asset;
+  const pos = _position;
+  const ops = a._estadoOp || a.estadoOp || "";
+
+  let icon, label, color, rationale;
+
+  if (score >= 75) {
+    icon = "🟢"; label = "REFORÇAR"; color = "#16a34a";
+    rationale = isETF
+      ? `Score ${score} — ETF com boa eficiência de custo e diversificação. Manter DCA regular.`
+      : `Score ${score} — Fundamentos sólidos com momentum positivo. Bom ponto de reforço.`;
+  } else if (score >= 60) {
+    icon = "🔵"; label = "MANTER"; color = "#2563eb";
+    rationale = `Score ${score} — Ativo equilibrado. Mantém posição, aguarda catalisador antes de reforçar.`;
+  } else if (score >= 40) {
+    icon = "🟡"; label = "MONITORIZAR"; color = "#d97706";
+    rationale = `Score ${score} — Qualidade mista. Revê fundamentais e aguarda melhoria antes de adicionar exposição.`;
+  } else {
+    icon = "🔴"; label = "REDUZIR / SAIR"; color = "#dc2626";
+    rationale = `Score ${score} — Score baixo, sinais negativos. Considera reduzir ou sair da posição.`;
+  }
+
+  if (ops === "REFORÇAR" || ops === "COMPRAR") { icon = "🟢"; label = ops; color = "#16a34a"; }
+  else if (ops === "VENDER")                   { icon = "🔴"; label = "VENDER";  color = "#dc2626"; }
+  else if (ops === "REDUZIR")                  { icon = "🟠"; label = "REDUZIR"; color = "#ea580c"; }
+  else if (ops === "ESPERAR")                  { icon = "🟡"; label = "ESPERAR"; color = "#d97706"; }
+
+  const inPortfolio = pos ? `<span style="font-size:.7rem;color:var(--muted-foreground)">Em carteira · ${pos.category || "—"}</span>` : "";
+
+  return `
+    <div style="border:1.5px solid ${color}40;border-radius:12px;padding:14px 16px;background:${color}08;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.05rem">${icon}</span>
+          <strong style="color:${color};font-size:1rem;letter-spacing:.03em">${label}</strong>
+        </div>
+        ${inPortfolio}
+      </div>
+      <p style="font-size:.75rem;color:var(--muted-foreground);margin:0;line-height:1.45">${rationale}</p>
+    </div>`;
+}
+
+// ── Engine micro-context ──────────────────────────────────
+function _qualityMicroCtx(a) {
+  const fmt1 = v => (v !== null && v !== undefined && isFinite(v)) ? v : null;
+  const roic = fmt1(Number(a.roic));
+  const de   = fmt1(Number(a.debt_eq || a.debtEquity));
+  const om   = fmt1(Number(a.oper_margin || a.operMargin));
+  const parts = [];
+  if (roic !== null && roic !== 0) parts.push(`ROIC ${(roic * (Math.abs(roic) > 1 ? 1 : 100)).toFixed(0)}%`);
+  if (de   !== null && de   !== 0) parts.push(`D/E ${de.toFixed(1)}`);
+  if (om   !== null && om   !== 0) parts.push(`Mg.Op. ${(om * (Math.abs(om) > 1 ? 1 : 100)).toFixed(0)}%`);
+  return parts.length ? parts.slice(0, 3).join(" · ") : "";
+}
+
+function _momentumMicroCtx(a) {
+  const p1m = Number(a.priceChange_1m || a.taxaCrescimento_1mes || 0);
+  const p1y = Number(a.priceChange_1y || a.taxaCrescimento_1ano || 0);
+  const toP = v => { const n = Math.abs(v) > 1 ? v : v * 100; return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`; };
+  const parts = [];
+  if (p1m) parts.push(`1m ${toP(p1m)}`);
+  if (p1y) parts.push(`1a ${toP(p1y)}`);
+  const rsi = Number(a.rsi_14 || a.rsi || 0);
+  if (rsi) parts.push(`RSI ${rsi.toFixed(0)}`);
+  return parts.slice(0, 3).join(" · ");
+}
+
+function _valuationMicroCtx(a) {
+  const pe   = Number(a.pe);
+  const peg  = Number(a.peg);
+  const pfcf = Number(a.p_fcf || a.priceToFCF);
+  const parts = [];
+  if (pe   > 0 && isFinite(pe))   parts.push(`P/E ${pe.toFixed(0)}x`);
+  if (peg  > 0 && isFinite(peg))  parts.push(`PEG ${peg.toFixed(2)}`);
+  if (pfcf > 0 && isFinite(pfcf)) parts.push(`P/FCF ${pfcf.toFixed(0)}x`);
+  return parts.slice(0, 3).join(" · ");
+}
+
+function _riskMicroCtx(a) {
+  const beta = Number(a.beta);
+  const cr   = Number(a.current_ratio || a.currentRatio);
+  const sma200 = Number(a.sma200);
+  const price  = Number(a.valorStock || a.price || 0);
+  const parts = [];
+  if (beta  > 0 && isFinite(beta))   parts.push(`Beta ${beta.toFixed(2)}`);
+  if (cr    > 0 && isFinite(cr))     parts.push(`CR ${cr.toFixed(1)}`);
+  if (sma200 > 0 && price > 0)       parts.push(`vs SMA200 ${((price / sma200 - 1) * 100).toFixed(0)}%`);
+  return parts.slice(0, 3).join(" · ");
+}
+
 // ════════════════════════════════════════════════════════
 // TAB: ANÁLISE
 // ════════════════════════════════════════════════════════
@@ -198,22 +290,33 @@ function _tabAnalysis() {
   const vS  = eng.valuation?.score ?? 50;
   const rS  = eng.risk?.score      ?? 50;
 
-  // ETF-specific enrichment bars
-  let etfBarsHTML = "";
+  // ETF: replace generic engine bars with ETF-specific diversity bars
+  let engineBarsHTML;
   if (isETF) {
     const sectorS  = typeof a._etfSectorScore     === "number" ? Math.round(a._etfSectorScore * 100) : null;
     const geoS     = typeof a._etfGeoScore        === "number" ? Math.round(a._etfGeoScore * 100)    : null;
     const holdingQ = typeof a._etfHoldingsQuality === "number" ? a._etfHoldingsQuality               : null;
+    const ter      = Number(a.ter || a.expense_ratio || 0);
+    const terScore = ter > 0 ? Math.max(0, Math.round(100 - (ter / 0.006) * 100)) : null;
+    const terSub   = ter > 0 ? `TER ${ter < 1 ? (ter * 100).toFixed(2) : ter.toFixed(2)}%` : "";
 
-    if (sectorS !== null || geoS !== null || holdingQ !== null) {
-      etfBarsHTML = `
-        <div class="adp-section-title" style="margin-top:16px">Composição ETF</div>
-        ${sectorS  !== null ? _bar("Diversif. Sectorial",  sectorS,  "#0f766e", a._etfDominantSector  ? `Dominante: ${a._etfDominantSector}`  : "") : ""}
-        ${geoS     !== null ? _bar("Diversif. Geográfica", geoS,     "#2563eb", a._etfDominantRegion  ? `Dominante: ${a._etfDominantRegion}`  : "") : ""}
-        ${holdingQ !== null ? _bar("Qualidade Holdings",   holdingQ, "#7c3aed",
-            a._etfHoldingsCoverage ? `${(a._etfHoldingsCoverage * 100).toFixed(0)}% cobertura em base de dados` : "") : ""}
-      `;
-    }
+    engineBarsHTML = `
+      ${_bar("Custo (TER)", terScore ?? qS, "#6366f1", terSub)}
+      ${sectorS  !== null ? _bar("Diversif. Sectorial", sectorS,  "#0f766e",
+          a._etfDominantSector ? `Dominante: ${a._etfDominantSector}` : "") : _bar("Diversif. Sectorial", 50, "#0f766e", "Dados não disponíveis")}
+      ${geoS     !== null ? _bar("Diversif. Geográfica", geoS,    "#2563eb",
+          a._etfDominantRegion ? `Dominante: ${a._etfDominantRegion}` : "") : _bar("Diversif. Geográfica", 50, "#2563eb", "Dados não disponíveis")}
+      ${holdingQ !== null ? _bar("Qualidade Holdings", holdingQ,  "#7c3aed",
+          a._etfHoldingsCoverage ? `${(a._etfHoldingsCoverage * 100).toFixed(0)}% das holdings avaliadas` : "") : ""}
+      ${_bar("Risco / Volatilidade", rS, "#ef4444", _riskMicroCtx(a))}
+    `;
+  } else {
+    engineBarsHTML = `
+      ${_bar("Quality",      qS, "#6366f1", _qualityMicroCtx(a))}
+      ${_bar("Momentum",     mS, "#f59e0b", _momentumMicroCtx(a))}
+      ${_bar("Valuation",    vS, "#10b981", _valuationMicroCtx(a))}
+      ${_bar("Risco",        rS, "#ef4444", _riskMicroCtx(a))}
+    `;
   }
 
   // Observations
@@ -233,25 +336,102 @@ function _tabAnalysis() {
     : "";
 
   return `
+    ${_decisionBox(score, grade, isETF)}
+
     <div class="adp-score-hero" style="border-color:${gColor}30">
       <div class="adp-grade-big" style="color:${gColor}">${grade}</div>
       <div class="adp-score-big">${score}<span style="font-size:.85rem;opacity:.55"> / 100</span></div>
       <div class="adp-conf">Confiança dos dados: ${conf}%</div>
     </div>
 
-    <div class="adp-section-title">Motores de Score</div>
+    <div class="adp-section-title">${isETF ? "Análise ETF" : "Motores de Score"}</div>
     <div class="adp-engines">
-      ${_bar("Quality",      qS, "#6366f1")}
-      ${_bar("Momentum",     mS, "#f59e0b")}
-      ${_bar(isETF ? "Custo / Categoria" : "Valuation", vS, "#10b981")}
-      ${_bar("Risco",        rS, "#ef4444")}
+      ${engineBarsHTML}
     </div>
-    ${etfBarsHTML}
 
     <div class="adp-section-title" style="margin-top:16px">Observações</div>
     <div class="adp-obs-list">${obsHTML}</div>
     ${sigHTML}
   `;
+}
+
+// ── Strategy editor (CORE/SATÉLITE) ──────────────────────
+function _strategyEditor(ticker, pos) {
+  const dynTickers = window._dynamicStrategyTickers || {};
+  const saved = dynTickers[ticker];
+  const cat = saved?.category || pos?.category || "NONE";
+  const tgt = saved?.target ?? (pos?.targetAlloc ?? 0);
+
+  const id = `adpStrat_${ticker}`;
+  const catId  = `${id}_cat`;
+  const tgtId  = `${id}_tgt`;
+  const btnId  = `${id}_save`;
+  const statusId = `${id}_status`;
+
+  // Wire after render
+  setTimeout(() => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.onclick = async () => {
+      const newCat = document.getElementById(catId)?.value || "NONE";
+      const newTgt = parseFloat(document.getElementById(tgtId)?.value) || 0;
+      const statusEl = document.getElementById(statusId);
+      btn.disabled = true;
+      btn.textContent = "A guardar…";
+      if (typeof window.saveAssetStrategy === "function") {
+        await window.saveAssetStrategy(ticker, newCat, newTgt);
+        if (statusEl) {
+          statusEl.textContent = "Guardado!";
+          statusEl.style.color = "var(--success)";
+          setTimeout(() => { if (statusEl) statusEl.textContent = ""; }, 3000);
+        }
+      } else {
+        if (statusEl) { statusEl.textContent = "Abre Atividade primeiro."; statusEl.style.color = "var(--destructive)"; }
+      }
+      btn.disabled = false;
+      btn.textContent = "Guardar";
+    };
+
+    // Live category toggle: show/hide target input
+    document.getElementById(catId)?.addEventListener("change", (e) => {
+      const tgtWrap = document.getElementById(`${id}_tgtwrap`);
+      if (tgtWrap) tgtWrap.style.display = e.target.value === "NONE" ? "none" : "";
+    });
+  }, 0);
+
+  const showTarget = cat !== "NONE";
+
+  return `
+    <div class="adp-section-title" style="margin-top:18px">Estratégia do Ativo</div>
+    <div style="background:rgba(var(--primary-rgb,99,102,241),.06);border:1px solid rgba(var(--primary-rgb,99,102,241),.2);border-radius:10px;padding:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="display:block;font-size:.65rem;color:var(--muted-foreground);margin-bottom:4px;font-weight:700">CATEGORIA</label>
+          <select id="${catId}" style="width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--input);font-size:.82rem;color:var(--foreground)">
+            <option value="NONE"      ${cat === "NONE"      ? "selected" : ""}>Nenhuma</option>
+            <option value="CORE"      ${cat === "CORE"      ? "selected" : ""}>Core</option>
+            <option value="SATELLITE" ${cat === "SATELLITE" ? "selected" : ""}>Satélite</option>
+          </select>
+        </div>
+        <div id="${id}_tgtwrap" style="${showTarget ? "" : "display:none"}">
+          <label style="display:block;font-size:.65rem;color:var(--muted-foreground);margin-bottom:4px;font-weight:700">ALVO (%)</label>
+          <div style="position:relative">
+            <input id="${tgtId}" type="number" min="0" max="100" step="0.5" value="${Number(tgt).toFixed(1)}"
+              style="width:100%;padding:7px 28px 7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--input);font-size:.82rem;color:var(--foreground)">
+            <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);opacity:.5;font-size:.8rem">%</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="${btnId}" style="flex:1;padding:7px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:.8rem;font-weight:700;cursor:pointer">
+          Guardar
+        </button>
+        <span id="${statusId}" style="font-size:.72rem"></span>
+      </div>
+      <div style="margin-top:8px;font-size:.7rem;color:var(--muted-foreground)">
+        A % alvo é usada no cálculo de cobertura estratégica do portfólio.
+      </div>
+    </div>`;
 }
 
 // ════════════════════════════════════════════════════════
@@ -317,24 +497,50 @@ function _tabPosition() {
       <span>TP Objetivo: ${fmtEUR(tpObj)}</span>
     </div>` : ""}
 
-    ${pos.category ? `
-    <div class="adp-section-title" style="margin-top:16px">Estratégia</div>
-    <div class="adp-row-spread" style="font-size:.85rem;margin-bottom:4px">
-      <span>Categoria</span>
-      <span class="adp-badge adp-badge--strat">${pos.category}</span>
-    </div>
-    ${pos.targetAlloc ? `<div class="adp-row-spread" style="font-size:.85rem"><span>Alocação Alvo</span><span>${pos.targetAlloc}%</span></div>` : ""}` : ""}
+    ${_strategyEditor(_asset.ticker, _position)}
 
+    ${(() => {
+      // Quantity calculations
+      const monthlyBase  = Number(window._strategyConfig?.monthlyBase || 0);
+      const currentQtd   = Number(pos.qtd || 0);
+      const isDecimal    = currentQtd > 0 && currentQtd < 1; // fractional (ETFs)
+      const fmtQty = (q, price) => {
+        if (monthlyBase <= 0 || price <= 0) return null;
+        const raw = monthlyBase / price;
+        return isDecimal ? raw : Math.floor(raw);
+      };
+      const sellQty = (frac) => {
+        if (currentQtd <= 0) return null;
+        const raw = currentQtd * frac;
+        return isDecimal ? raw : Math.max(1, Math.floor(raw));
+      };
+
+      const p95  = precoAtual * 0.95;
+      const p90  = precoAtual * 0.90;
+      const p80  = precoAtual * 0.80;
+      const tp1  = precoMedio * 1.05;
+      const tp2  = precoMedio * 1.10;
+      const tp3  = precoMedio * 1.15;
+      const stop = precoMedio * 0.90;
+
+      const qtyNote = monthlyBase > 0
+        ? `<div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">com aporte mensal de ${new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(monthlyBase)}</div>`
+        : `<div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">Define o aporte mensal em Definições para ver quantidades</div>`;
+
+      return `
     <div class="adp-section-title" style="margin-top:16px">Níveis de Entrada</div>
-    ${_priceRow("Reforço −5%",  precoAtual * 0.95)}
-    ${_priceRow("Reforço −10%", precoAtual * 0.90)}
-    ${_priceRow("Reforço −20%", precoAtual * 0.80)}
+    ${qtyNote}
+    ${_priceRow("Reforço −5%",  p95,  "var(--foreground)", fmtQty(null, p95),  "ações")}
+    ${_priceRow("Reforço −10%", p90,  "var(--foreground)", fmtQty(null, p90),  "ações")}
+    ${_priceRow("Reforço −20%", p80,  "var(--foreground)", fmtQty(null, p80),  "ações")}
 
     <div class="adp-section-title" style="margin-top:16px">Plano de Saída</div>
-    ${_priceRow("TP1 +5%",  precoMedio * 1.05, "#16a34a")}
-    ${_priceRow("TP2 +10%", precoMedio * 1.10, "#16a34a")}
-    ${_priceRow("TP3 +15%", precoMedio * 1.15, "#16a34a")}
-    ${_priceRow("Stop −10%", precoMedio * 0.90, "#dc2626")}
+    <div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">da posição atual de ${currentQtd % 1 === 0 ? currentQtd : currentQtd.toFixed(4)} ações</div>
+    ${_priceRow("TP1 +5%",   tp1,  "#16a34a", sellQty(1/3),  "ações")}
+    ${_priceRow("TP2 +10%",  tp2,  "#16a34a", sellQty(1/3),  "ações")}
+    ${_priceRow("TP3 +15%",  tp3,  "#16a34a", sellQty(1/3),  "ações")}
+    ${_priceRow("Stop −10%", stop, "#dc2626", currentQtd > 0 ? currentQtd : null, "ações (tudo)")}`;
+    })()}
 
     <div style="margin-top:20px;display:flex;gap:8px">
       <button class="adp-action-btn adp-action-btn--buy"
@@ -494,6 +700,29 @@ function _tabHoldings() {
   const holdingQ = typeof a._etfHoldingsQuality === "number" ? a._etfHoldingsQuality                    : null;
   const cov      = typeof a._etfHoldingsCoverage === "number" ? (a._etfHoldingsCoverage * 100).toFixed(0) : null;
 
+  // Cross-reference: which ETF holdings overlap with portfolio direct positions
+  const portfolioTickers = window._portfolioPositions
+    ? new Set([...window._portfolioPositions.keys()])
+    : new Set();
+  const overlaps = topList.filter(h => portfolioTickers.has(h.ticker));
+  const overlapHTML = overlaps.length > 0 ? `
+    <div class="adp-section-title" style="margin-top:14px;color:#7c3aed">Sobreposição com Carteira</div>
+    <div style="font-size:.73rem;color:var(--muted-foreground);margin-bottom:6px">
+      Holdings deste ETF que também tens em carteira direta:
+    </div>
+    <div class="adp-holdings-list" style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:6px 8px;">
+      ${overlaps.map(h => {
+        const pos = window._portfolioPositions.get(h.ticker);
+        const inv = pos?.investido > 0 ? new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(pos.investido) : null;
+        return `
+          <div class="adp-holding-row">
+            <span class="adp-holding-ticker" style="color:#7c3aed">${h.ticker}</span>
+            <span class="adp-holding-weight">${h.weight}% no ETF</span>
+            ${inv ? `<span style="font-size:.72rem;color:var(--muted-foreground)">${inv} direto</span>` : "<span></span>"}
+          </div>`;
+      }).join("")}
+    </div>` : "";
+
   return `
     <div class="adp-fund-grid">
       ${_cell("TER", terStr, ter > 0 && ter < 0.0025 ? "pos" : ter > 0.006 ? "neg" : "")}
@@ -514,6 +743,7 @@ function _tabHoldings() {
     ${sectorHTML}
     ${geoHTML}
     ${holdingsHTML}
+    ${overlapHTML}
   `;
 }
 
@@ -618,12 +848,18 @@ function _cell(label, value, modifier = "") {
     </div>`;
 }
 
-function _priceRow(label, price, color = "var(--foreground)") {
+function _priceRow(label, price, color = "var(--foreground)", qty = null, qtyLabel = "") {
   const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
+  const qtyStr = qty !== null && qty > 0
+    ? `<span style="font-size:.72rem;color:var(--muted-foreground);margin-left:6px">${qty % 1 === 0 ? qty : qty.toFixed(4)} ${qtyLabel}</span>`
+    : "";
   return `
-    <div class="adp-row-spread" style="font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--border)">
       <span style="color:var(--muted-foreground)">${label}</span>
-      <span style="font-weight:700;color:${color}">${fmtEUR(price)}</span>
+      <span style="display:flex;align-items:center;gap:0">
+        <span style="font-weight:700;color:${color}">${fmtEUR(price)}</span>
+        ${qtyStr}
+      </span>
     </div>`;
 }
 

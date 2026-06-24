@@ -84,6 +84,32 @@ const ETF_HOLDINGS = {
     ],
     sectors: { Technology: 24, Financials: 15, Healthcare: 13, Industrials: 11 },
     geography: { US: 70, Japan: 6, UK: 4, Other: 20 }
+  },
+  "GRID": {
+    name: "iShares Global Clean Energy UCITS ETF",
+    type: "Thematic — Clean Energy",
+    top: [
+      { ticker: "ENPH",  weight: 7.2 }, { ticker: "FSLR",  weight: 6.8 },
+      { ticker: "NEE",   weight: 5.9 }, { ticker: "PLUG",  weight: 4.1 },
+      { ticker: "BE",    weight: 3.7 }, { ticker: "RUN",   weight: 3.4 },
+      { ticker: "SEDG",  weight: 3.2 }, { ticker: "NOVA",  weight: 2.8 },
+      { ticker: "ARRY",  weight: 2.5 }, { ticker: "CSIQ",  weight: 2.1 }
+    ],
+    sectors: { Utilities: 52, Technology: 24, Industrials: 16, "Basic Materials": 8 },
+    geography: { US: 42, Europe: 33, China: 9, Canada: 4, Other: 12 }
+  },
+  "IS3N": {
+    name: "iShares Core MSCI EM IMI UCITS ETF",
+    type: "Emerging Markets Equity",
+    top: [
+      { ticker: "TSM",  weight: 6.8 }, { ticker: "BABA",  weight: 3.2 },
+      { ticker: "RELIANCE", weight: 2.4 }, { ticker: "VALE", weight: 2.1 },
+      { ticker: "ITUB", weight: 1.8 }, { ticker: "PBR",  weight: 1.6 },
+      { ticker: "INFY", weight: 1.5 }, { ticker: "TCS",  weight: 1.4 },
+      { ticker: "HDFC", weight: 1.2 }, { ticker: "JD",   weight: 1.1 }
+    ],
+    sectors: { Technology: 25, Financials: 22, "Consumer Cyclical": 14, "Basic Materials": 8, Energy: 7, Industrials: 7, "Consumer Defensive": 6, Healthcare: 5, Utilities: 4, Other: 2 },
+    geography: { China: 28, India: 19, Taiwan: 17, "South Korea": 11, Brazil: 5, "South Africa": 4, Other: 16 }
   }
 };
 

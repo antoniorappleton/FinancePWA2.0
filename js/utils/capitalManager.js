@@ -92,6 +92,22 @@ export function getWarChestRecommendation(portfolioState, availableCash) {
 }
 
 /**
+ * Calcula a posição de cash em relação à reserva estratégica definida pelo utilizador.
+ * @param {number} portfolioValue - Valor total de mercado do portfólio
+ * @param {Object} strategy - Campos do doc config/strategy: availableCash, monthlyBase, cashReservePct
+ * @returns {{ targetReserve, currentCash, gapToReserve, monthlyBase, availableToInvest }}
+ */
+export function calculateCashPosition(portfolioValue, strategy) {
+  const cashReservePct = Number(strategy?.cashReservePct || 0);
+  const currentCash    = Number(strategy?.availableCash  || 0);
+  const monthlyBase    = Number(strategy?.monthlyBase    || 0);
+  const targetReserve  = portfolioValue * (cashReservePct / 100);
+  const gapToReserve   = targetReserve - currentCash;
+  const availableToInvest = Math.max(0, currentCash + monthlyBase - targetReserve);
+  return { targetReserve, currentCash, gapToReserve, monthlyBase, availableToInvest, cashReservePct };
+}
+
+/**
  * Ajusta o plano DCA mensal.
  */
 export function getSmartDCA(baseMonthly, portfolioState) {

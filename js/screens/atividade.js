@@ -1023,25 +1023,7 @@ window.openDetails = async function(ticker) {
     document.getElementById("detBtnSaveStrat").onclick = async () => {
       const newCat = document.getElementById("detInpStratCat").value;
       const newTgt = parseFloat(document.getElementById("detInpStratTarget").value) || 0;
-      
-      try {
-        const stratRef = doc(db, "config", "strategy");
-        const snap = await getDoc(stratRef);
-        const currentStrat = snap.exists() ? snap.data() : {};
-        const tickers = currentStrat.tickers || {};
-        
-        if (newCat === "NONE") {
-          delete tickers[g.ticker];
-        } else {
-          tickers[g.ticker] = { category: newCat, target: newTgt };
-        }
-        
-        await setDoc(stratRef, { ...currentStrat, tickers }, { merge: true });
-        showToast("Estratégia atualizada!");
-      } catch (err) {
-        console.error(err);
-        showToast("Erro ao guardar estratégia.", "error");
-      }
+      await window.saveAssetStrategy?.(g.ticker, newCat, newTgt);
     };
   }
 
@@ -1876,6 +1858,26 @@ function showPortfolioHelp(force = false) {
       handleUpdate();
     });
 
+    window.saveAssetStrategy = async (ticker, category, targetPct) => {
+      try {
+        const stratRef = doc(db, "config", "strategy");
+        const snap = await getDoc(stratRef);
+        const current = snap.exists() ? snap.data() : {};
+        const tickers = current.tickers || {};
+        if (category === "NONE") {
+          delete tickers[ticker];
+        } else {
+          tickers[ticker] = { category, target: Number(targetPct) || 0 };
+        }
+        await setDoc(stratRef, { ...current, tickers }, { merge: true });
+        window._dynamicStrategyTickers = tickers;
+        showToast("Estratégia guardada!");
+      } catch (err) {
+        console.error(err);
+        showToast("Erro ao guardar.", "error");
+      }
+    };
+
     // Inicializar eventos estáticos do Mapa de Holdings (uma única vez)
     wireHoldingsMapEvents();
   }
@@ -1897,6 +1899,14 @@ function showPortfolioHelp(force = false) {
     
       window._dynamicStrategyGlobals = { CORE: dynCoreTotal, SATELLITE: dynSatTotal };
       window._dynamicStrategyTickers = dynTickers;
+      if (stratSnap && stratSnap.exists()) {
+        const _sd = stratSnap.data();
+        window._strategyConfig = {
+          monthlyBase:    Number(_sd.monthlyBase    || 0),
+          availableCash:  Number(_sd.availableCash  || 0),
+          cashReservePct: Number(_sd.cashReservePct || 0),
+        };
+      }
 
       const infoMap = new Map();
       aSnap.forEach((d) => {
@@ -2131,6 +2141,42 @@ function showPortfolioHelp(force = false) {
         }
       }
       if (elWC) elWC.textContent = fmtEUR.format(totalWarChest);
+
+      // --- RESERVA ESTRATÉGICA ---
+      {
+        const stratData = (stratSnap && stratSnap.exists()) ? stratSnap.data() : {};
+        const cashReservePct = Number(stratData.cashReservePct || 0);
+        const cashReserveCard = document.getElementById("prtCashReserveCard");
+        if (cashReserveCard) {
+          if (cashReservePct > 0) {
+            cashReserveCard.style.display = "";
+            const portfolioValue = abertos.reduce((s, g) =>
+              s + (isFiniteNum(g.precoAtual) ? g.precoAtual * (g.qtd || 0) : (g.investido || 0)), 0);
+            const cp = CapitalManager.calculateCashPosition(portfolioValue, stratData);
+            const gapColor = cp.gapToReserve > 50 ? "#ef4444" : cp.gapToReserve < -50 ? "#22c55e" : "#f59e0b";
+            const dispEl = document.getElementById("prtReservaDisponivel");
+            const alvoEl = document.getElementById("prtReservaAlvo");
+            const cashEl = document.getElementById("prtReservaCash");
+            const gapEl  = document.getElementById("prtReservaGap");
+            const apoEl  = document.getElementById("prtReservaAporte");
+            if (alvoEl) alvoEl.textContent = fmtEUR.format(cp.targetReserve) + ` (${cashReservePct}%)`;
+            if (cashEl) cashEl.textContent  = fmtEUR.format(cp.currentCash);
+            if (gapEl) {
+              gapEl.textContent = cp.gapToReserve > 0
+                ? `Falta ${fmtEUR.format(cp.gapToReserve)}`
+                : `Excesso ${fmtEUR.format(Math.abs(cp.gapToReserve))}`;
+              gapEl.style.color = gapColor;
+            }
+            if (apoEl) apoEl.textContent = fmtEUR.format(cp.monthlyBase) + "/mês";
+            if (dispEl) {
+              dispEl.textContent = fmtEUR.format(cp.availableToInvest);
+              dispEl.style.color = cp.availableToInvest > 0 ? "#6366f1" : "#ef4444";
+            }
+          } else {
+            cashReserveCard.style.display = "none";
+          }
+        }
+      }
 
       // --- CÁLCULO DE COBERTURA ESTRATÉGICA (Task 3 - Dinâmico por Ativo) ---
       let totalCoreTarget = 0;

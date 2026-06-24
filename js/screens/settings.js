@@ -94,6 +94,10 @@ export function initScreen() {
 
   const elAvailCash = document.getElementById("cfgAvailableCash");
   const elMonthlyBase = document.getElementById("cfgMonthlyBase");
+  const elCashReserveSlider = document.getElementById("cfgCashReservePct");
+  const elCashReserveNum    = document.getElementById("cfgCashReservePctNum");
+  const valCashReservePct   = document.getElementById("valCashReservePct");
+  const valCashReserveCalc  = document.getElementById("valCashReserveCalc");
 
   // Estratégia
   const elCoreW = document.getElementById("cfgCoreWeight");
@@ -127,9 +131,42 @@ export function initScreen() {
     if (valAllocBonds) valAllocBonds.textContent = fmtEUR(totalCash * (pBonds / 100));
   }
 
+  function updateCashReserveCalc() {
+    const pct  = Number(elCashReserveSlider?.value || 0);
+    const cash = Number(elAvailCash?.value || 0);
+    const mon  = Number(elMonthlyBase?.value || 0);
+    if (valCashReservePct) valCashReservePct.textContent = `${pct}%`;
+    if (elCashReserveNum) elCashReserveNum.value = pct;
+    if (valCashReserveCalc) {
+      if (cash > 0) {
+        const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v);
+        // We don't know portfolioValue here (no Firestore read), so we estimate
+        // just showing how to read the number — the actual calc is in atividade.js
+        valCashReserveCalc.textContent = `Reserve alvo: ${pct}% do portfólio · Cash atual: ${fmtEUR(cash)} · Aporte: ${fmtEUR(mon)}/mês`;
+      } else {
+        valCashReserveCalc.textContent = `Define primeiro a Liquidez Disponível para ver o cálculo.`;
+      }
+    }
+  }
+
+  if (elCashReserveSlider) {
+    elCashReserveSlider.addEventListener("input", () => {
+      if (elCashReserveNum) elCashReserveNum.value = elCashReserveSlider.value;
+      updateCashReserveCalc();
+    });
+  }
+  if (elCashReserveNum) {
+    elCashReserveNum.addEventListener("input", () => {
+      const v = Math.max(0, Math.min(30, Number(elCashReserveNum.value) || 0));
+      if (elCashReserveSlider) elCashReserveSlider.value = v;
+      updateCashReserveCalc();
+    });
+  }
+
   [elAvailCash, elAllocStocks, elAllocEtfs, elAllocBonds].forEach(el => {
     el?.addEventListener("input", calculateAllocations);
   });
+  [elAvailCash, elMonthlyBase].forEach(el => el?.addEventListener("input", updateCashReserveCalc));
 
   if (elCoreW && elSatW) {
     elCoreW.addEventListener("input", () => {
@@ -149,6 +186,11 @@ export function initScreen() {
           if (typeof d.satelliteWeight === "number") elSatW.value = d.satelliteWeight;
           if (typeof d.availableCash === "number") elAvailCash.value = d.availableCash;
           if (typeof d.monthlyBase === "number") elMonthlyBase.value = d.monthlyBase;
+          if (typeof d.cashReservePct === "number") {
+            if (elCashReserveSlider) elCashReserveSlider.value = d.cashReservePct;
+            if (elCashReserveNum)    elCashReserveNum.value    = d.cashReservePct;
+          }
+          updateCashReserveCalc();
           
           if (typeof d.allocStocks === "number") elAllocStocks.value = d.allocStocks;
           if (typeof d.allocEtfs === "number") elAllocEtfs.value = d.allocEtfs;
@@ -182,7 +224,8 @@ export function initScreen() {
             allocEtfs: Number(elAllocEtfs.value),
             allocBonds: Number(elAllocBonds.value),
             availableCash: Number(elAvailCash.value),
-            monthlyBase: Number(elMonthlyBase.value)
+            monthlyBase: Number(elMonthlyBase.value),
+            cashReservePct: Number(elCashReserveSlider?.value || 0)
           };
 
           // --- Alocação por Setor ---
