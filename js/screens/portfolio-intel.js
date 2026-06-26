@@ -14,7 +14,7 @@ import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
 import { analyzeETFOverlap, smartETFAnalysis, enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
-import { canonicalTicker, confidenceScore, getAssetCategory } from "../utils/normalize.js";
+import { canonicalTicker, confidenceScore, getAssetCategory, HEALTHY_LIMITS } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 import { generatePortfolioReport } from "../utils/reportGenerator.js";
@@ -441,78 +441,184 @@ function portfolioSectorWeights(portfolio, totalValue) {
 }
 
 function renderSectorBenchmarkRadar(portfolio, totalValue) {
-  const ctx = document.getElementById("piSectorBenchmarkRadar");
-  if (!ctx) return;
+  const canvas = document.getElementById("piSectorBenchmarkRadar");
+  if (!canvas) return;
   entryPlannerState.lastPortfolioForSectorRadar = { portfolio, totalValue };
-  const key = entryPlannerState.sectorBenchmark || "sp500";
-  const benchmark = SECTOR_BENCHMARKS[key] || SECTOR_BENCHMARKS.sp500;
-  const mine = portfolioSectorWeights(portfolio, totalValue);
-  const myData = SECTOR_RADAR_LABELS.map(label => Math.round((mine[label] || 0) * 10) / 10);
-  const benchData = SECTOR_RADAR_LABELS.map(label => Math.round((benchmark.weights[label] || 0) * 10) / 10);
 
-  const maxVal = Math.max(...myData, ...benchData, 1);
-  const radarMax = Math.max(Math.ceil(maxVal * 1.25 / 10) * 10, 40);
-  const radarStep = radarMax <= 50 ? 10 : radarMax <= 80 ? 20 : 25;
+  if (window.piSectorBenchmarkChart) { window.piSectorBenchmarkChart.destroy(); window.piSectorBenchmarkChart = null; }
 
-  if (window.piSectorBenchmarkChart) window.piSectorBenchmarkChart.destroy();
-  window.piSectorBenchmarkChart = new Chart(ctx, {
-    type: "radar",
-    data: {
-      labels: SECTOR_RADAR_LABELS,
-      datasets: [
-        {
-          label: benchmark.label,
-          data: benchData,
-          backgroundColor: "rgba(148,163,184,0.08)",
-          borderColor: "#94a3b8",
-          borderWidth: 1.5,
-          borderDash: [6, 4],
-          pointBackgroundColor: "#94a3b8",
-          pointBorderColor: "#94a3b8",
-          pointRadius: 3,
-          pointHoverRadius: 5
-        },
-        {
-          label: "Meu portfólio",
-          data: myData,
-          backgroundColor: "rgba(99,102,241,0.28)",
-          borderColor: "#6366f1",
-          borderWidth: 2.5,
-          pointBackgroundColor: "#6366f1",
-          pointBorderColor: "#fff",
-          pointBorderWidth: 1.5,
-          pointRadius: 5,
-          pointHoverRadius: 7
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      resizeDelay: 120,
-      devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
-      scales: {
-        r: {
-          min: 0,
-          max: radarMax,
-          ticks: { stepSize: radarStep, callback: v => `${v}%`, backdropColor: "transparent", color: "#64748b", font: { size: 11, weight: "700" } },
-          grid: { color: "rgba(148,163,184,0.30)", circular: true },
-          angleLines: { color: "rgba(148,163,184,0.24)" },
-          pointLabels: { padding: 13, font: { size: 12, weight: "800" } }
-        }
-      },
-      plugins: { legend: { position: "bottom", labels: { boxWidth: 12, usePointStyle: true, padding: 16, font: { size: 12, weight: "700" } } } }
-    }
-  });
+  const key   = entryPlannerState.sectorBenchmark || "sp500";
+  const bench = SECTOR_BENCHMARKS[key] || SECTOR_BENCHMARKS.sp500;
+  const mine  = portfolioSectorWeights(portfolio, totalValue);
+  const myRaw = SECTOR_RADAR_LABELS.map(l => Math.round((mine[l]          || 0) * 10) / 10);
+  const bcRaw = SECTOR_RADAR_LABELS.map(l => Math.round((bench.weights[l] || 0) * 10) / 10);
 
-  const diffs = SECTOR_RADAR_LABELS.map(label => ({ label, delta: (mine[label] || 0) - (benchmark.weights[label] || 0) }))
+  _drawPolarRose(canvas, SECTOR_RADAR_LABELS, myRaw, bcRaw, bench.label);
+
+  const diffs = SECTOR_RADAR_LABELS
+    .map((label, i) => ({ label, delta: myRaw[i] - bcRaw[i] }))
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
     .slice(0, 3);
-  const summary = document.getElementById("piSectorBenchmarkSummary");
-  if (summary) {
-    summary.textContent = `Maiores diferenças vs ${benchmark.label}: ${diffs.map(d => `${d.label} ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(1)}pp`).join(" · ")}`;
+  const el = document.getElementById("piSectorBenchmarkSummary");
+  if (el) el.textContent = `Maiores diferenças vs ${bench.label}: ${diffs.map(d => `${d.label} ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(1)}pp`).join(" · ")}`;
+}
+
+function _drawPolarRose(canvas, labels, portData, benchData, benchLabel) {
+  const dpr = Math.max(window.devicePixelRatio || 1, 2);
+  const W0  = canvas.offsetWidth  || canvas.parentElement?.offsetWidth  || 380;
+  const H0  = canvas.offsetHeight || canvas.parentElement?.offsetHeight || 380;
+  canvas.width  = W0 * dpr;
+  canvas.height = H0 * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  const isDark   = document.documentElement.getAttribute("data-theme") === "dark";
+  const textCol  = isDark ? "#94a3b8" : "#64748b";
+  const gridCol  = isDark ? "rgba(148,163,184,0.18)" : "rgba(148,163,184,0.28)";
+  const sepCol   = isDark ? "rgba(148,163,184,0.12)" : "rgba(148,163,184,0.18)";
+
+  const cx = W0 / 2, cy = H0 / 2;
+  const MARGIN = 54;
+  const R = Math.min(W0, H0) / 2 - MARGIN;
+  if (R < 40) return;
+
+  // Log scale: % value → radius 0..R
+  const RING_PCTS = [1, 3, 10, 30, 100];
+  const LOG_DENOM = Math.log10(101);
+  const toR = v => v > 0 ? (Math.log10(v + 1) / LOG_DENOM) * R : 0;
+
+  const n    = labels.length;               // 12 sectors
+  const step = (Math.PI * 2) / (n * 2);    // 15° per bar slot (2 bars per sector)
+  const barW = step * 0.86;                 // 86% of slot = bar width
+  const gapH = step * 0.14;                 // 14% = gap between bars
+
+  ctx.clearRect(0, 0, W0, H0);
+
+  // ── Outer boundary circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = gridCol;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // ── Ring gridlines
+  for (const pct of RING_PCTS) {
+    const r = toR(pct);
+    if (r < 2) continue;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = gridCol;
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
   }
+
+  // ── Radial separators between sector pairs
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + i * 2 * step - gapH / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+    ctx.strokeStyle = sepCol;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+
+  // ── Draw petals (portfolio = teal, benchmark = coral)
+  const C = {
+    port:  "rgba(20,184,166,0.82)",
+    bench: "rgba(239,100,80,0.82)",
+    portB: "rgba(20,184,166,1)",
+    benchB:"rgba(239,100,80,1)",
+  };
+
+  for (let i = 0; i < n; i++) {
+    const base = -Math.PI / 2 + i * 2 * step;
+
+    // Portfolio petal
+    const r1 = toR(portData[i]);
+    if (r1 > 1.5) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r1, base + gapH / 2, base + barW + gapH / 2);
+      ctx.closePath();
+      ctx.fillStyle = C.port;
+      ctx.fill();
+      ctx.strokeStyle = C.portB;
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    }
+
+    // Benchmark petal
+    const r2 = toR(benchData[i]);
+    if (r2 > 1.5) {
+      const ba = base + step;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r2, ba + gapH / 2, ba + barW + gapH / 2);
+      ctx.closePath();
+      ctx.fillStyle = C.bench;
+      ctx.fill();
+      ctx.strokeStyle = C.benchB;
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    }
+  }
+
+  // ── Ring % labels (just left of 12-o'clock, inside each ring)
+  ctx.textBaseline = "bottom";
+  ctx.textAlign    = "right";
+  const lblAngle   = -Math.PI / 2 - 0.08;
+  for (const pct of RING_PCTS) {
+    const r = toR(pct);
+    if (r < 8) continue;
+    ctx.font      = `700 ${r < 30 ? 8 : 9}px sans-serif`;
+    ctx.fillStyle = isDark ? "#64748b" : "#94a3b8";
+    ctx.fillText(`${pct}%`,
+      cx + r * Math.cos(lblAngle),
+      cy + r * Math.sin(lblAngle) - 1
+    );
+  }
+
+  // ── Sector labels (outside the ring, tangent-rotated)
+  ctx.font      = "700 9px sans-serif";
+  ctx.fillStyle = textCol;
+  ctx.textBaseline = "middle";
+
+  for (let i = 0; i < n; i++) {
+    const midAngle = -Math.PI / 2 + i * 2 * step + step; // between the two petals
+    const lr = R + 20;
+    const lx = cx + lr * Math.cos(midAngle);
+    const ly = cy + lr * Math.sin(midAngle);
+
+    ctx.save();
+    ctx.translate(lx, ly);
+    // Tangent rotation: +90°, then flip if in lower-left half to avoid upside-down text
+    let rot = midAngle + Math.PI / 2;
+    const normRot = ((rot % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    if (normRot > Math.PI / 2 && normRot < Math.PI * 1.5) rot += Math.PI;
+    ctx.rotate(rot);
+    ctx.textAlign = "center";
+    const lbl = labels[i].length > 10 ? labels[i].slice(0, 9) + "…" : labels[i];
+    ctx.fillText(lbl, 0, 0);
+    ctx.restore();
+  }
+
+  // ── Legend (bottom-left)
+  const LX = 12, LY = H0 - 34;
+  const SW = 12, SH = 9;
+  ctx.textAlign    = "left";
+  ctx.textBaseline = "middle";
+  ctx.font         = "700 10px sans-serif";
+
+  ctx.fillStyle = C.port;
+  ctx.fillRect(LX, LY, SW, SH);
+  ctx.fillStyle = textCol;
+  ctx.fillText("Portfólio", LX + SW + 5, LY + SH / 2);
+
+  ctx.fillStyle = C.bench;
+  ctx.fillRect(LX, LY + 14, SW, SH);
+  ctx.fillStyle = textCol;
+  ctx.fillText(benchLabel, LX + SW + 5, LY + 14 + SH / 2);
 }
 function renderThematic(themes) {
   const container = document.getElementById("piThematicBars");
@@ -872,8 +978,6 @@ function getWindowReturn(mkt, windowKey) {
 
 function capWeights(weights, cap) {
   const n = weights.length;
-  // If cap × n < 1 the constraint is infeasible (can't sum to 1 with each ≤ cap).
-  // Relax to the minimum feasible cap so the loop always converges.
   const effectiveCap = Math.max(cap, 1 / n);
   let w = [...weights];
   for (let iter = 0; iter < 200; iter++) {
@@ -884,6 +988,60 @@ function capWeights(weights, cap) {
     w = w.map(v => v / s);
   }
   return w;
+}
+
+// Category-aware max caps (capped mode). Broad Market ETFs also get a min floor
+// so the optimizer can't dismantle the core anchor.
+const CATEGORY_CAPS = {
+  "Broad Market ETF": { min: 0.30, max: 0.70 },
+  "Sector ETF":       { min: 0.00, max: 0.20 },
+  "Thematic ETF":     { min: 0.00, max: 0.15 },
+  "Single Stock":     { min: 0.00, max: 0.10 },
+  "Speculative Asset":{ min: 0.00, max: 0.05 },
+  "Commodity":        { min: 0.00, max: 0.12 },
+  "Satellite Asset":  { min: 0.00, max: 0.08 },
+};
+const DEFAULT_CONSTRAINT = { min: 0.00, max: 0.25 };
+
+function buildCategoryConstraints(portfolio) {
+  return portfolio.map(p => {
+    const cat = getAssetCategory(p.mkt || p);
+    return CATEGORY_CAPS[cat] ?? DEFAULT_CONSTRAINT;
+  });
+}
+
+// Projects weights onto the per-asset [min, max] box while keeping sum = 1.
+// Pass 1: iterative max-cap (existing logic, per-asset).
+// Pass 2: raise any asset below its floor, taking proportionally from assets above theirs.
+function applyPortfolioConstraints(rawW, constraints) {
+  const n = rawW.length;
+  let w = [...rawW];
+
+  // Pass 1 — max caps
+  for (let iter = 0; iter < 300; iter++) {
+    if (!w.some((v, i) => v > constraints[i].max + 1e-9)) break;
+    w = w.map((v, i) => Math.min(v, constraints[i].max));
+    const s = w.reduce((a, b) => a + b, 0);
+    if (!(s > 0)) return w.map(() => 1 / n);
+    w = w.map(v => v / s);
+  }
+
+  // Pass 2 — min floors
+  for (let iter = 0; iter < 300; iter++) {
+    if (!w.some((v, i) => v < constraints[i].min - 1e-9)) break;
+    let deficit = 0;
+    w = w.map((v, i) => {
+      if (v < constraints[i].min) { deficit += constraints[i].min - v; return constraints[i].min; }
+      return v;
+    });
+    const overIdx = w.map((v, i) => v > constraints[i].min + 1e-9 ? i : -1).filter(i => i >= 0);
+    const overSum = overIdx.reduce((s, i) => s + (w[i] - constraints[i].min), 0);
+    if (overSum < 1e-10) break;
+    for (const i of overIdx) w[i] -= (w[i] - constraints[i].min) / overSum * deficit;
+  }
+
+  const s = w.reduce((a, b) => a + b, 0);
+  return s > 0 ? w.map(v => v / s) : w;
 }
 
 function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, weightCap) {
@@ -962,15 +1120,20 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, 
     return r.map(v => v / sum);
   };
 
-  // Pre-compute the effective cap so it can be surfaced in the disclaimer.
-  // capWeights() also computes this internally; having it here avoids a second call.
-  const effectiveWeightCap = weightCap != null ? Math.max(weightCap, 1 / n) : null;
+  // Capped mode uses per-category constraints (Broad Market ETF: min 30%, max 70%;
+  // Thematic/Sector ETF: max 15-20%; Single Stock: max 10%) instead of a uniform 30% cap.
+  // This prevents the optimizer from dismantling core anchor positions.
+  const catConstraints = weightCap != null ? buildCategoryConstraints(portfolio) : null;
+  // Keep effectiveWeightCap for display purposes (show "30% max" label in UI)
+  const effectiveWeightCap = weightCap;
 
   const M = 1200;
   const sims = [];
   let best = { sharpe: -Infinity, weights: null };
   for (let k = 0; k < M; k++) {
-    const w = effectiveWeightCap != null ? capWeights(rawWeights(), effectiveWeightCap) : rawWeights();
+    const w = catConstraints != null
+      ? applyPortfolioConstraints(rawWeights(), catConstraints)
+      : rawWeights();
     const ret = portReturn(w);
     const vol = Math.sqrt(portVariance(w));
     const sharpe = vol > 0 ? (ret - RISK_FREE) / vol : 0;
@@ -984,7 +1147,7 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, 
   const curVol = Math.sqrt(portVariance(curW));
   const curSharpe = curVol > 0 ? (curRet - RISK_FREE) / curVol : 0;
 
-  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW, shortHistory, windowKey, effectiveWeightCap };
+  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW, shortHistory, windowKey, effectiveWeightCap, catConstraints };
 }
 
 function computeEfficientFrontier(portfolio, corrObj) {
@@ -1286,6 +1449,19 @@ function renderEfficientFrontier(allData) {
   const increase = moves.filter(m => m.delta > 0);
   const decrease = moves.filter(m => m.delta < 0);
 
+  // Annotate moves with their strategic category and any health-limit contradictions
+  const movesWithContext = moves.map(m => {
+    const mkt = data.portfolio.find(p => p.ticker === m.ticker)?.mkt || {};
+    const cat = getAssetCategory(mkt);
+    const healthMax = HEALTHY_LIMITS[cat] ?? DEFAULT_CONSTRAINT.max;
+    const isCore = cat === "Broad Market ETF";
+    // A contradiction: reducing below healthy max, or reducing a Core position at all
+    const contradiction =
+      (!m.delta > 0 && isCore) ||                                // reducing Core anchor
+      (m.delta > 0 && m.target / 100 > healthMax + 0.01);       // pushing above category limit
+    return { ...m, cat, isCore, contradiction };
+  });
+
   const renderMove = (m) => {
     const isUp = m.delta > 0;
     const icon = isUp ? "📈" : "📉";
@@ -1296,11 +1472,20 @@ function renderEfficientFrontier(allData) {
     const sign = isUp ? "+" : "";
     const amountChange = Math.abs(m.targetVal - m.curVal);
     const action = isUp ? `Compra ~${fmtEUR(amountChange)} adicionais` : `Vende ~${fmtEUR(amountChange)}`;
+
+    const catBadge = `<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.62rem;font-weight:800;background:rgba(99,102,241,0.1);color:#6366f1;margin-left:6px;">${escapeHtml(m.cat)}</span>`;
+    const coreBadge = m.isCore && !isUp
+      ? `<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.62rem;font-weight:900;background:rgba(239,68,68,0.12);color:#dc2626;margin-left:4px;">⚓ Âncora Core</span>`
+      : "";
+    const contradictionNote = m.contradiction && isUp
+      ? `<div style="font-size:0.7rem;color:#d97706;margin-top:3px;">⚠️ Acima do limite saudável para ${escapeHtml(m.cat)} (${((HEALTHY_LIMITS[m.cat] ?? DEFAULT_CONSTRAINT.max)*100).toFixed(0)}%)</div>`
+      : "";
+
     return `
       <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; background:${bg}; border-left:3px solid ${border};">
         <span style="font-size:1.1rem;">${icon}</span>
         <div style="flex:1; min-width:0;">
-          <div style="font-weight:900; font-size:0.88rem;">${verb} <strong>${escapeHtml(m.ticker)}</strong></div>
+          <div style="font-weight:900; font-size:0.88rem;">${verb} <strong>${escapeHtml(m.ticker)}</strong>${catBadge}${coreBadge}</div>
           <div class="muted" style="font-size:0.75rem;">${escapeHtml(m.nome)}</div>
           <div style="font-size:0.78rem; margin-top:3px;">
             <span style="color:var(--muted-foreground);">${m.cur.toFixed(1)}%</span>
@@ -1308,6 +1493,7 @@ function renderEfficientFrontier(allData) {
             <span style="font-weight:800; color:${color};">${m.target.toFixed(1)}%</span>
             <span style="color:${color}; font-weight:700; margin-left:6px;">(${sign}${m.delta.toFixed(1)}pp)</span>
           </div>
+          ${contradictionNote}
         </div>
         <div style="text-align:right; font-size:0.75rem; flex:0 0 auto;">
           <div style="font-weight:700; color:${color};">${action}</div>
@@ -1319,14 +1505,15 @@ function renderEfficientFrontier(allData) {
   const sharpeGain = data.best.sharpe - data.curSharpe;
   const windowLabel = { '6m': '6 meses', '12m': '12 meses', '36m': '36 meses' }[efState.activeWindow] || efState.activeWindow;
 
-  // Use the actual effective cap returned by the simulation (may differ from 30%
-  // when n is small and the constraint was relaxed for feasibility).
-  const capPct = data.effectiveWeightCap != null
-    ? `${(data.effectiveWeightCap * 100).toFixed(0)}%`
-    : null;
-  const capNote = data.effectiveWeightCap != null && data.effectiveWeightCap > 0.30 + 1e-6
-    ? ` (relaxado de 30% → ${capPct} por inviabilidade com ${data.portfolio.length} activos)`
-    : '';
+  // Detect structural contradictions (Core anchor being dismantled)
+  const coreReductions = decrease.filter(m => m.isCore);
+  const contradictionBanner = coreReductions.length > 0
+    ? `<div style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(239,68,68,0.08); border:1.5px solid #ef4444; font-size:0.78rem; color:var(--foreground); line-height:1.5;">
+        <strong style="color:#dc2626;">⚓ Atenção — o optimizador propõe reduzir ${coreReductions.map(m => m.ticker).join(", ")} (Âncora Core).</strong>
+        O optimizador maximiza Sharpe histórico; não sabe que esta posição é o núcleo de longo prazo da carteira.
+        Em modo <em>com cap</em> o VWCE nunca desce abaixo de 30% (floor aplicado). Em modo <em>sem limites</em> não há protecção — trata como exercício teórico.
+      </div>`
+    : "";
 
   // Disclaimer changes based on mode
   const disclaimer = isFree
@@ -1348,7 +1535,7 @@ function renderEfficientFrontier(allData) {
         <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
         <div style="font-size:0.8rem; line-height:1.5;">
           <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
-          <div style="color:var(--foreground);">Retornos históricos da janela <strong>${escapeHtml(windowLabel)}</strong>. Cada activo limitado a <strong>${capPct ?? '30%'} máximo</strong>${escapeHtml(capNote)}. Resultado estocástico. Valida sempre com análise fundamental antes de agir.</div>
+          <div style="color:var(--foreground);">Retornos históricos da janela <strong>${escapeHtml(windowLabel)}</strong>. Constraints por categoria aplicados: Broad Market ETF mín. 30% / máx. 70%; Thematic ETF máx. 15%; Single Stock máx. 10%. Resultado estocástico. Valida com análise fundamental antes de agir.</div>
           <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
             <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
             Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
@@ -1363,8 +1550,9 @@ function renderEfficientFrontier(allData) {
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
         <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
         <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
-        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : `cap ${capPct ?? '30%'}`}</span>
+        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : "constraints por categoria"}</span>
       </div>
+      ${contradictionBanner}
       ${increase.length ? `
         <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reforçar</div>
         <div style="display:grid; gap:6px; margin-bottom:10px;">${increase.map(renderMove).join("")}</div>

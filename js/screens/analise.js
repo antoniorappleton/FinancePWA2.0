@@ -144,26 +144,19 @@ const canon = (s) =>
    Config ajustável — pesos/limites do algoritmo (visível)
    ========================================================= */
 const CFG = {
-  // limites prudentes (crescimento anualizado composto)
-  MAX_ANNUAL_RETURN: 0.8, // +80%/ano (limite técnico)
-  MIN_ANNUAL_RETURN: -0.8, // -80%/ano
-
-  // peso dos componentes no score [0..1]
-  // R = retorno/€, V = P/E, T = tendência (SMA), D = dividend yield, E = EV/EBITDA, Rsk = constante
-  // (Weights are now centrally managed in scoring.js/settings.js)
+  // Teto realista de projeção (stocks best-in-class raramente sustentam >30%/ano; S&P ~10%)
+  MAX_ANNUAL_RETURN: 0.30,
+  MIN_ANNUAL_RETURN: -0.30,
 
   // teto duro por ticker (usado em frações e inteiros)
   CAP_PCT_POR_TICKER: 0.15,
 
   // blend das taxas conforme período escolhido no simulador
   BLEND_WEIGHTS: {
-    "1s": { w: 0.75, m: 0.15, y: 0.1 },
-    "1m": { w: 0.1, m: 0.75, y: 0.15 },
-    "1a": { w: 0.1, m: 0.15, y: 0.75 },
+    “1s”: { w: 0.75, m: 0.15, y: 0.1 },
+    “1m”: { w: 0.1, m: 0.75, y: 0.15 },
+    “1a”: { w: 0.1, m: 0.15, y: 0.75 },
   },
-
-  // “cap” económico para evitar projeções irrealistas
-  REALISM_CAP: { enabled: true, trigger: 0.8, cap: 0.2 }, // se taxa primária anualizada >80%, corta blend a 20%
 };
 
 window.ANL_CFG = CFG; // podes ajustar via consola se quiseres
@@ -1362,15 +1355,23 @@ function calcularMetricasBase(
     anualDiv = precoAtual * 0.5;
   }
 
-  const rAnnual = annualizeRate(acao, periodo);
+  const rawRate = annualizeRate(acao, periodo);
   const h = Math.max(1, Number(horizonte || 1));
 
-  // desconto de fiabilidade com o tempo (cada ano -15% de confiança)
-  const decay = Math.exp(-0.15 * (h - 1));
+  // 1. Limitar a taxa ao intervalo realista (aplica CFG pela primeira vez)
+  const rCapped = Math.max(CFG.MIN_ANNUAL_RETURN, Math.min(CFG.MAX_ANNUAL_RETURN, rawRate));
 
-  // valorização prudente (não usa rAnnual a 100%)
+  // 2. Mean-reversion: a longo prazo as taxas convergem; fator suaviza com horizonte
+  //    h=1 → ×1.00 (usa taxa cheia), h=5 → ×0.68, h=10 → ×0.64
+  const reversionFactor = 0.6 + 0.4 / h;
+  const rAnnual = rCapped * reversionFactor;
+
+  // 3. Decay de confiança mais agressivo (cada ano -20% em vez de -15%)
+  const decay = Math.exp(-0.20 * (h - 1));
+
+  // 4. Multiplicador prudente reduzido de 0.8 para 0.75
   const valorizacaoNoHorizonte =
-    precoAtual * (Math.pow(1 + rAnnual * 0.8, h) - 1) * decay;
+    precoAtual * (Math.pow(1 + rAnnual * 0.75, h) - 1) * decay;
   const dividendosNoHorizonte = (incluirDiv ? anualDiv * h : 0) * decay;
 
   const lucroUnidade = dividendosNoHorizonte + valorizacaoNoHorizonte;
@@ -1379,7 +1380,7 @@ function calcularMetricasBase(
   return {
     preco: precoAtual,
     dividendoAnual: anualDiv,
-    taxaPct: rAnnual * 100,
+    taxaPct: rawRate * 100, // exibe taxa histórica real (sem cap) para informação
     totalDividendos: dividendosNoHorizonte,
     valorizacao: valorizacaoNoHorizonte,
     lucroUnidade,
