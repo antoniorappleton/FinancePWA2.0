@@ -183,7 +183,8 @@ function _switchTab(tabId) {
 function _decisionBox(score, grade, isETF) {
   const a   = _asset;
   const pos = _position;
-  const ops = a._estadoOp || a.estadoOp || "";
+  // _estadoOp lives on the portfolio position object (set by atividade.js), not on market data
+  const ops = pos?._estadoOp || a._estadoOp || a.estadoOp || "";
 
   let icon, label, color, rationale;
 
@@ -203,10 +204,20 @@ function _decisionBox(score, grade, isETF) {
     rationale = `Score ${score} — Score baixo, sinais negativos. Considera reduzir ou sair da posição.`;
   }
 
-  if (ops === "REFORÇAR" || ops === "COMPRAR") { icon = "🟢"; label = ops; color = "#16a34a"; }
-  else if (ops === "VENDER")                   { icon = "🔴"; label = "VENDER";  color = "#dc2626"; }
-  else if (ops === "REDUZIR")                  { icon = "🟠"; label = "REDUZIR"; color = "#ea580c"; }
-  else if (ops === "ESPERAR")                  { icon = "🟡"; label = "ESPERAR"; color = "#d97706"; }
+  // Portfolio/technical state overrides the score-based label when it gives a stronger signal
+  if (ops === "REFORÇAR" || ops === "COMPRAR") {
+    icon = "🟢"; label = ops; color = "#16a34a";
+    rationale = `Score ${score} — Análise técnica e de carteira indicam reforço. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
+  } else if (ops === "VENDER") {
+    icon = "🔴"; label = "VENDER";  color = "#dc2626";
+    rationale = `Score ${score} — Análise operacional indica saída. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
+  } else if (ops === "REDUZIR") {
+    icon = "🟠"; label = "REDUZIR"; color = "#ea580c";
+    rationale = `Score ${score} — Posição acima do alvo estratégico, considera reduzir. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
+  } else if (ops === "ESPERAR") {
+    icon = "🟡"; label = "ESPERAR"; color = "#d97706";
+    rationale = `Score ${score} — Sem sinal claro de entrada ou saída. Aguarda.`;
+  }
 
   const inPortfolio = pos ? `<span style="font-size:.7rem;color:var(--muted-foreground)">Em carteira · ${pos.category || "—"}</span>` : "";
 
@@ -329,7 +340,10 @@ function _tabAnalysis() {
         </div>`).join("")
     : `<div class="adp-empty">Dados insuficientes para gerar observações.</div>`;
 
-  const signals = [...(s.warnings ?? []), ...(s.signals ?? [])].slice(0, 3);
+  const signals = [...(s.warnings ?? []), ...(s.signals ?? [])]
+    .map(w => (typeof w === "string" ? w : w?.msg ?? null))
+    .filter(Boolean)
+    .slice(0, 3);
   const sigHTML = signals.length
     ? `<div class="adp-section-title" style="margin-top:16px">Sinais</div>
        ${signals.map(w => `<div class="adp-signal">${w}</div>`).join("")}`

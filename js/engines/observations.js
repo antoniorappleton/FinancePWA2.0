@@ -104,7 +104,7 @@ export function generateAssetObservations(asset, engines, temporal = null) {
     obs.push({ type: "caution", msg: `Perfil de risco especulativo — limitar a 2-5% do portfólio.`, priority: 9 });
   }
   if (risk?.score > 80) {
-    obs.push({ type: "positive", msg: `Perfil de risco muito estável — adequado para posição CORE.`, priority: 5 });
+    obs.push({ type: "positive", msg: `Perfil de risco muito estável — beta baixo e volatilidade controlada.`, priority: 5 });
   }
 
   // ── Sector-specific observations ──
