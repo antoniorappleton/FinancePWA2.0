@@ -726,9 +726,11 @@ function _tabHoldings() {
   const holdingQ = typeof a._etfHoldingsQuality === "number" ? a._etfHoldingsQuality                    : null;
   const cov      = typeof a._etfHoldingsCoverage === "number" ? (a._etfHoldingsCoverage * 100).toFixed(0) : null;
 
-  // Cross-reference: which ETF holdings overlap with portfolio direct positions
+  // Cross-reference: which ETF holdings overlap with open direct positions (closed positions excluded)
   const portfolioTickers = window._portfolioPositions
-    ? new Set([...window._portfolioPositions.keys()])
+    ? new Set([...window._portfolioPositions.entries()]
+        .filter(([, pos]) => (pos?.qtd || 0) > 0)
+        .map(([ticker]) => ticker))
     : new Set();
   const overlaps = topList.filter(h => portfolioTickers.has(h.ticker));
   const overlapHTML = overlaps.length > 0 ? `

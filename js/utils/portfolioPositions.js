@@ -101,6 +101,8 @@ export function aggregatePortfolioPositions(snapshot) {
       lots: [],
       hasOversoldMovement: false,
       lastMovementQty: 0,
+      totalBuyValue: 0,
+      totalBuyQty: 0,
     };
 
     g.lastMovementQty = safeQtd;
@@ -108,6 +110,8 @@ export function aggregatePortfolioPositions(snapshot) {
     if (safeQtd > 0) {
       g.lots.push({ qty: safeQtd, preco: safePreco });
       g.qtd += safeQtd;
+      g.totalBuyValue += safeQtd * safePreco;
+      g.totalBuyQty += safeQtd;
     } else if (safeQtd < 0) {
       const sellQtd = Math.abs(safeQtd);
       if (sellQtd > g.qtd) {
@@ -225,6 +229,13 @@ export function aggregatePortfolioPositions(snapshot) {
       group.custoMedio = netQty > 0 ? totalCost / netQty : 0;
       group.investido = group.qtd * group.custoMedio;
     }
+  }
+
+  // Compute historical cost basis for all groups (useful for closed positions display)
+  for (const group of groups.values()) {
+    group.custoMedioHistorico = group.totalBuyQty > 0
+      ? group.totalBuyValue / group.totalBuyQty
+      : 0;
   }
 
   return {

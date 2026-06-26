@@ -813,6 +813,121 @@ window.openDetails = async function(ticker) {
   const $ = (s) => document.querySelector(s);
   const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 
+  // Reset modal elements that may have been hidden by a previous closed-position view
+  const _bBuy = $("#detBtnBuy");
+  const _bSell = $("#detBtnSell");
+  if (_bBuy) _bBuy.style.display = "";
+  if (_bSell) _bSell.style.display = "";
+  const _bgBadge = document.getElementById("detEsforcoBadge");
+  if (_bgBadge) _bgBadge.style.display = "";
+
+  // ---- POSIÇÃO FECHADA ----
+  if ((g.qtd || 0) <= 0) {
+    const realizado = g.realizado || 0;
+    const totalComprado = g.totalBuyValue || 0;
+    const retPct = totalComprado > 0 ? (realizado / totalComprado) * 100 : 0;
+    const cmHist = g.custoMedioHistorico || 0;
+    const precoAtualFech = g.precoAtual || 0;
+
+    const detBadge = document.getElementById("detEstadoBadge");
+    if (detBadge) {
+      detBadge.textContent = "FECHADA";
+      detBadge.style.background = "rgba(100,116,139,0.15)";
+      detBadge.style.color = "#64748b";
+      detBadge.style.borderColor = "rgba(100,116,139,0.3)";
+    }
+
+    $(`#detTickerTitle`).textContent = `${g.ticker} — ${g.nome}`;
+    $(`#detPrecoAtualHeader`).textContent = precoAtualFech > 0 ? fmtEUR.format(precoAtualFech) : "—";
+
+    const elLH = $(`#detLucroAtualHeader`);
+    if (elLH) {
+      elLH.textContent = `${realizado >= 0 ? "+" : ""}${fmtEUR.format(realizado)} (${retPct >= 0 ? "+" : ""}${retPct.toFixed(2)}%) Realizado`;
+      elLH.className = realizado >= 0 ? "up" : "down";
+    }
+    $(`#detQtdHeader`).textContent = "Fechada";
+    $(`#detPMHeader`).textContent = cmHist > 0 ? fmtEUR.format(cmHist) : "—";
+    const capEl2 = $(`#detCapitalHeader`);
+    if (capEl2) capEl2.textContent = totalComprado > 0 ? fmtEUR.format(totalComprado) : "—";
+
+    const decDiv2 = $(`#detDecisaoSistema`);
+    if (decDiv2) { decDiv2.style.borderColor = "#64748b"; decDiv2.style.background = "rgba(100,116,139,0.05)"; }
+    const decTextoEl2 = $(`#detDecisaoTexto`);
+    if (decTextoEl2) { decTextoEl2.textContent = "🗂️ POSIÇÃO FECHADA"; decTextoEl2.style.color = "#64748b"; }
+    const decSubEl2 = $(`#detDecisaoSub`);
+    if (decSubEl2) decSubEl2.innerHTML = `
+      <div style="margin-top:6px; line-height:1.6;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.82rem;">
+          <div><span style="color:var(--muted-foreground)">P&L Realizado:</span><br>
+            <strong style="color:${realizado>=0?'#22c55e':'#ef4444'}">${realizado>=0?"+":""}${fmtEUR.format(realizado)}</strong></div>
+          <div><span style="color:var(--muted-foreground)">Retorno Total:</span><br>
+            <strong style="color:${retPct>=0?'#22c55e':'#ef4444'}">${retPct>=0?"+":""}${retPct.toFixed(2)}%</strong></div>
+          <div><span style="color:var(--muted-foreground)">Capital Investido:</span><br>
+            <strong>${totalComprado>0?fmtEUR.format(totalComprado):"—"}</strong></div>
+          <div><span style="color:var(--muted-foreground)">PM Histórico:</span><br>
+            <strong>${cmHist>0?fmtEUR.format(cmHist):"—"}</strong></div>
+        </div>
+      </div>`;
+
+    if (_bgBadge) _bgBadge.style.display = "none";
+    if (_bBuy)  _bBuy.style.display  = "none";
+    if (_bSell) _bSell.style.display = "none";
+
+    $(`#detKpiCapital`).textContent = totalComprado > 0 ? fmtEUR.format(totalComprado) : "—";
+    $(`#detKpiUpside`).textContent  = "—";
+    $(`#detKpiTP`).textContent      = "—";
+    $(`#detKpiSMA200`).textContent  = "—";
+    if ($("#detYield"))  $("#detYield").textContent  = "—";
+    if ($("#detPE"))     $("#detPE").textContent     = "—";
+    if ($("#detRR"))     $("#detRR").textContent     = "—";
+    if ($("#detSMA50"))  $("#detSMA50").textContent  = "—";
+    if ($("#detSMA200")) $("#detSMA200").textContent = "—";
+
+    if ($(`#detPlanSaida`))  $(`#detPlanSaida`).innerHTML  = "";
+    if ($(`#detBarStop`))    $(`#detBarStop`).textContent  = "—";
+    if ($(`#detBarPreco`))   $(`#detBarPreco`).textContent = precoAtualFech > 0 ? fmtEUR.format(precoAtualFech) : "—";
+    if ($(`#detBarAlvo`))    $(`#detBarAlvo`).textContent  = "—";
+    const elChest2 = $("#detWarChestTable");
+    if (elChest2) elChest2.innerHTML = "";
+    const recBloco2 = $("#detRecuperacaoBloco");
+    if (recBloco2) recBloco2.style.display = "none";
+    const detStratDiv2 = document.getElementById("detStrategyDiv");
+    if (detStratDiv2) detStratDiv2.innerHTML = "";
+    const detCrisisDiv2 = document.getElementById("detCrisisSim");
+    if (detCrisisDiv2) detCrisisDiv2.innerHTML = "";
+    const elRef2 = $("#detNiveisReforco");
+    if (elRef2) elRef2.innerHTML = "";
+    const elBlocoPM2 = $("#detBlocoReforcoPM");
+    if (elBlocoPM2) elBlocoPM2.style.display = "none";
+    const elCen2 = $("#detCenariosNovos");
+    if (elCen2) elCen2.innerHTML = "";
+
+    const bEdit2 = $("#detBtnEdit");
+    const bLink2 = $("#detBtnLink");
+    if (bEdit2) bEdit2.onclick = () => {
+      document.getElementById("activityDetailModal")?.classList.add("hidden");
+      const profModal = document.getElementById("assetProfileModal");
+      if (profModal) {
+        document.getElementById("profTicker").value = g.ticker;
+        document.getElementById("profNome").value = g.nome || "";
+        document.getElementById("profSetor").value = g.setor === "—" ? "" : g.setor;
+        document.getElementById("profMercado").value = g.mercado === "—" ? "" : g.mercado;
+        document.getElementById("profObjetivo").value = g.objetivo || "";
+        document.getElementById("profLink").value = g.link || "";
+        profModal.classList.remove("hidden");
+      }
+    };
+    if (bLink2) {
+      bLink2.onclick = () => { if (g.link) window.open(g.link, "_blank"); };
+      bLink2.className = `btn ghost ${g.link ? "" : "muted"}`;
+    }
+
+    renderMovementHistory(ticker);
+    document.getElementById("activityDetailModal")?.classList.remove("hidden");
+    return;
+  }
+  // ---- FIM POSIÇÃO FECHADA ----
+
   // VARIAVEIS BASE
   const precoAtual = g.precoAtual || 0;
   const precoMedio = g.qtd > 0 ? (g.investido || 0) / g.qtd : 0;
@@ -1211,6 +1326,8 @@ function renderMovementHistory(ticker) {
   if (!corpo) return;
 
   const g = byTickerGlobal.get(ticker);
+  const isClosed = (g?.qtd || 0) <= 0;
+  // For closed positions use current price only to show "what you left on the table" — label it clearly
   const precoAtual = g?.precoAtual || null;
 
   const movimentos = (_allMovimentos || [])
@@ -1238,9 +1355,10 @@ function renderMovementHistory(ticker) {
       const plEur = (precoAtual - m.preco) * absQtd;
       const plPct = m.preco > 0 ? ((precoAtual - m.preco) / m.preco) * 100 : 0;
       const color = plEur >= 0 ? "#22c55e" : "#ef4444";
+      const note = isClosed ? `<span style="font-size:0.6rem;color:var(--muted-foreground);display:block;">vs cotação atual</span>` : "";
       plCell = `<td style="padding: 10px; text-align: right; font-weight: 700; color: ${color};">
         ${fmtEUR.format(plEur)}<br>
-        <span style="font-size: 0.65rem; opacity: 0.85;">${fmtPct(plPct)}</span>
+        <span style="font-size: 0.65rem; opacity: 0.85;">${fmtPct(plPct)}</span>${note}
       </td>`;
     }
 
@@ -2478,18 +2596,24 @@ function showPortfolioHelp(force = false) {
                       <th style="padding: 10px 14px;">Ticker</th>
                       <th style="padding: 10px 14px;">Nome</th>
                       <th style="padding: 10px 14px; text-align: right;">Lucro Realizado</th>
+                      <th style="padding: 10px 14px; text-align: right;">Retorno</th>
                       <th style="padding: 10px 14px; text-align: center;">Lotes</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${fechadas.sort((a, b) => (b.realizado || 0) - (a.realizado || 0)).map(g => {
-                      const cor = (g.realizado || 0) >= 0 ? "#22c55e" : "#ef4444";
+                      const realizado = g.realizado || 0;
+                      const cor = realizado >= 0 ? "#22c55e" : "#ef4444";
                       const nLotes = (_allMovimentos || []).filter(m => m.ticker === g.ticker && m.qtd > 0).length;
+                      const retPct = (g.totalBuyValue || 0) > 0
+                        ? (realizado / g.totalBuyValue) * 100
+                        : null;
                       return `
                         <tr style="border-bottom: 1px solid var(--border);" onclick="window.openDetails('${g.ticker}')" class="cursor-pointer">
                           <td style="padding: 10px 14px; font-weight: 800; font-family: monospace;">${g.ticker}</td>
                           <td style="padding: 10px 14px; color: var(--muted-foreground);">${g.nome}</td>
-                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${(g.realizado || 0) >= 0 ? "+" : ""}${fmtEUR.format(g.realizado || 0)}</td>
+                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${realizado >= 0 ? "+" : ""}${fmtEUR.format(realizado)}</td>
+                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${retPct !== null ? `${retPct >= 0 ? "+" : ""}${retPct.toFixed(2)}%` : "—"}</td>
                           <td style="padding: 10px 14px; text-align: center; color: var(--muted-foreground);">${nLotes}</td>
                         </tr>`;
                     }).join("")}
