@@ -522,10 +522,13 @@ function _tabPosition() {
       const tp2  = precoMedio * 1.10;
       const tp3  = precoMedio * 1.15;
       const stop = precoMedio * 0.90;
+      const breakEven = (pos.qtd > 0 && pos.investido > 0) ? (pos.investido + 2) / pos.qtd : 0;
 
       const qtyNote = monthlyBase > 0
         ? `<div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">com aporte mensal de ${new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(monthlyBase)}</div>`
         : `<div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">Define o aporte mensal em Definições para ver quantidades</div>`;
+
+      const fmtEUR2 = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
 
       return `
     <div class="adp-section-title" style="margin-top:16px">Níveis de Entrada</div>
@@ -539,7 +542,16 @@ function _tabPosition() {
     ${_priceRow("TP1 +5%",   tp1,  "#16a34a", sellQty(1/3),  "ações")}
     ${_priceRow("TP2 +10%",  tp2,  "#16a34a", sellQty(1/3),  "ações")}
     ${_priceRow("TP3 +15%",  tp3,  "#16a34a", sellQty(1/3),  "ações")}
-    ${_priceRow("Stop −10%", stop, "#dc2626", currentQtd > 0 ? currentQtd : null, "ações (tudo)")}`;
+    ${_priceRow("Stop −10%", stop, "#dc2626", currentQtd > 0 ? currentQtd : null, "ações (tudo)")}
+
+    ${breakEven > 0 ? `
+    <div style="margin-top:12px;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--muted) 60%,transparent);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:.75rem;font-weight:600;color:var(--foreground)">Ponto de Equilíbrio</div>
+        <div style="font-size:.68rem;color:var(--muted-foreground);margin-top:1px">vender tudo sem perder (incl. 2€ comissões)</div>
+      </div>
+      <div style="font-size:.9rem;font-weight:700;color:${precoAtual >= breakEven ? "#16a34a" : "#dc2626"}">${fmtEUR2(breakEven)}</div>
+    </div>` : ""}`;
     })()}
 
     <div style="margin-top:20px;display:flex;gap:8px">
