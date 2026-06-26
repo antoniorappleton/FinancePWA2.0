@@ -374,18 +374,86 @@ function portfolioSectorWeights(portfolio, totalValue) {
   });
   return out;
 }
-function radarConfig(portfolioWeights, benchmark) {
-  return {
-    type: "radar",
-    data: {
-      labels: SECTOR_RADAR_LABELS,
-      datasets: [
-        { label: benchmark.label, data: SECTOR_RADAR_LABELS.map(label => benchmark.weights[label] || 0), borderColor: "#94a3b8", backgroundColor: "rgba(148,163,184,0.16)", pointRadius: 4, borderWidth: 3 },
-        { label: "Meu portfolio", data: SECTOR_RADAR_LABELS.map(label => portfolioWeights[label] || 0), borderColor: "#4f46e5", backgroundColor: "rgba(79,70,229,0.22)", pointRadius: 4, borderWidth: 4 }
-      ]
-    },
-    options: { responsive: false, animation: false, devicePixelRatio: 1.5, layout: { padding: 18 }, plugins: { legend: { position: "bottom", labels: { boxWidth: 14, padding: 18, font: { size: 22, weight: "bold" } } } }, scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, callback: v => `${v}%`, backdropColor: "transparent", font: { size: 18, weight: "700" } }, pointLabels: { padding: 14, font: { size: 20, weight: "bold" } }, grid: { color: "#dbe3ee" }, angleLines: { color: "#dbe3ee" } } } }
-  };
+function drawPolarRosePDF(canvas, labels, portData, benchData, benchLabel) {
+  const W0 = canvas.width, H0 = canvas.height;
+  const ctx = canvas.getContext("2d");
+  const cx = W0 / 2, cy = H0 / 2;
+  const MARGIN = 72;
+  const R = Math.min(W0, H0) / 2 - MARGIN;
+  if (R < 40) return;
+
+  const RING_PCTS = [1, 3, 10, 30, 100];
+  const LOG_DENOM = Math.log10(101);
+  const toR = v => v > 0 ? (Math.log10(v + 1) / LOG_DENOM) * R : 0;
+  const n    = labels.length;
+  const step = (Math.PI * 2) / (n * 2);
+  const barW = step * 0.86;
+  const gapH = step * 0.14;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W0, H0);
+
+  for (const pct of RING_PCTS) {
+    const r = toR(pct);
+    if (r < 2) continue;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(148,163,184,0.35)"; ctx.lineWidth = 1; ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(148,163,184,0.25)"; ctx.lineWidth = 1; ctx.stroke();
+
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + i * 2 * step - gapH / 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+    ctx.strokeStyle = "rgba(148,163,184,0.22)"; ctx.lineWidth = 0.8; ctx.stroke();
+  }
+
+  const C = { port: "rgba(20,184,166,0.82)", bench: "rgba(239,100,80,0.82)", portB: "rgba(20,184,166,1)", benchB: "rgba(239,100,80,1)" };
+  for (let i = 0; i < n; i++) {
+    const base = -Math.PI / 2 + i * 2 * step;
+    const r1 = toR(portData[i]);
+    if (r1 > 1.5) {
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r1, base + gapH / 2, base + barW + gapH / 2); ctx.closePath();
+      ctx.fillStyle = C.port; ctx.fill(); ctx.strokeStyle = C.portB; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    const r2 = toR(benchData[i]);
+    if (r2 > 1.5) {
+      const ba = base + step;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r2, ba + gapH / 2, ba + barW + gapH / 2); ctx.closePath();
+      ctx.fillStyle = C.bench; ctx.fill(); ctx.strokeStyle = C.benchB; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+  }
+
+  ctx.textBaseline = "bottom"; ctx.textAlign = "right";
+  const lblAngle = -Math.PI / 2 - 0.08;
+  for (const pct of RING_PCTS) {
+    const r = toR(pct);
+    if (r < 12) continue;
+    ctx.font = `700 ${r < 50 ? 12 : 13}px sans-serif`; ctx.fillStyle = "#94a3b8";
+    ctx.fillText(`${pct}%`, cx + r * Math.cos(lblAngle), cy + r * Math.sin(lblAngle) - 1);
+  }
+
+  ctx.font = "800 13px sans-serif"; ctx.fillStyle = "#475569"; ctx.textBaseline = "middle";
+  for (let i = 0; i < n; i++) {
+    const midAngle = -Math.PI / 2 + i * 2 * step + step;
+    const lx = cx + (R + 28) * Math.cos(midAngle);
+    const ly = cy + (R + 28) * Math.sin(midAngle);
+    ctx.save(); ctx.translate(lx, ly);
+    let rot = midAngle + Math.PI / 2;
+    const nr = ((rot % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    if (nr > Math.PI / 2 && nr < Math.PI * 1.5) rot += Math.PI;
+    ctx.rotate(rot); ctx.textAlign = "center";
+    ctx.fillText(labels[i].length > 10 ? labels[i].slice(0, 9) + "…" : labels[i], 0, 0);
+    ctx.restore();
+  }
+
+  const LX = 18, LY = H0 - 46, SW = 16, SH = 12;
+  ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.font = "700 14px sans-serif";
+  ctx.fillStyle = C.port; ctx.fillRect(LX, LY, SW, SH);
+  ctx.fillStyle = "#475569"; ctx.fillText("Portfólio", LX + SW + 7, LY + SH / 2);
+  ctx.fillStyle = C.bench; ctx.fillRect(LX, LY + 19, SW, SH);
+  ctx.fillStyle = "#475569"; ctx.fillText(benchLabel, LX + SW + 7, LY + 19 + SH / 2);
 }
 function sectorBarConfig(portfolioWeights) {
   const labels = SECTOR_RADAR_LABELS;
@@ -551,8 +619,11 @@ async function buildChartImages(data) {
     charts.push(new Chart(makeCanvas(340, 420), doughnutConfig(sKeys, sKeys.map(k=>data.diag.sectors[k]), true)));
 
     const sectorWeights = portfolioSectorWeights(data.enriched, data.totalValue);
-    charts.push(new Chart(makeCanvas(520, 460), radarConfig(sectorWeights, SECTOR_BENCHMARKS.sp500)));
-    charts.push(new Chart(makeCanvas(520, 460), radarConfig(sectorWeights, SECTOR_BENCHMARKS.berkshire)));
+    const portRaw = SECTOR_RADAR_LABELS.map(l => Math.round((sectorWeights[l] || 0) * 10) / 10);
+    const cSp500 = makeCanvas(520, 460);
+    drawPolarRosePDF(cSp500, SECTOR_RADAR_LABELS, portRaw, SECTOR_RADAR_LABELS.map(l => SECTOR_BENCHMARKS.sp500.weights[l] || 0), SECTOR_BENCHMARKS.sp500.label);
+    const cBerk = makeCanvas(520, 460);
+    drawPolarRosePDF(cBerk, SECTOR_RADAR_LABELS, portRaw, SECTOR_RADAR_LABELS.map(l => SECTOR_BENCHMARKS.berkshire.weights[l] || 0), SECTOR_BENCHMARKS.berkshire.label);
 
     const frontier = computeReportEfficientFrontier(data.enriched, data.analysis?.corr);
     if (frontier) charts.push(new Chart(makeCanvas(900, 420), frontierConfig(frontier)));
@@ -564,10 +635,10 @@ async function buildChartImages(data) {
       strat: charts[0] ? canvasToJpeg(charts[0]) : null,
       assets: charts[1] ? canvasToJpeg(charts[1]) : null,
       sectors: charts[2] ? canvasToJpeg(charts[2]) : null,
-      sectorSp500: charts[3] ? canvasToJpeg(charts[3]) : null,
-      sectorBerkshire: charts[4] ? canvasToJpeg(charts[4]) : null,
-      frontier: charts[5] ? canvasToJpeg(charts[5]) : null,
-      sectorBar: charts[6] ? canvasToJpeg(charts[6]) : null
+      sectorSp500: cSp500.toDataURL('image/jpeg', 0.92),
+      sectorBerkshire: cBerk.toDataURL('image/jpeg', 0.92),
+      frontier: charts[3] ? canvasToJpeg(charts[3]) : null,
+      sectorBar: charts[4] ? canvasToJpeg(charts[4]) : null
     };
   } finally { charts.forEach(c => c?.destroy?.()); wrap.remove(); }
 }
