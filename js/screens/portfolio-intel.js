@@ -159,11 +159,9 @@ async function runFullAnalysis() {
       };
     }).filter(p => p.quantidade > 0);
     const baseTotalValue = basePortfolio.reduce((s, p) => s + p.valAtual, 0);
-    renderEntryPlanner(buildEntryPlannerAssets(acoesMap, basePortfolio), basePortfolio, baseTotalValue);
 
-    const portfolio = applyEntrySimulation(basePortfolio, acoesMap, baseTotalValue);
-    const totalValue = portfolio.reduce((s, p) => s + p.valAtual, 0);
-    renderEntrySimulationNote(baseTotalValue, totalValue);
+    const portfolio = basePortfolio;
+    const totalValue = baseTotalValue;
 
     // ── 2. Run all structural engines ──
     const assetScores = [];
