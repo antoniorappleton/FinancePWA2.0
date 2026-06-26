@@ -6,7 +6,7 @@
 // Outputs: Portfolio Health Score, Hidden Risk Score, Structural Stability
 // ═══════════════════════════════════════════════════════════════════
 
-import { safeMetric, clamp } from "../utils/normalize.js";
+import { safeMetric, clamp, getAssetCategory } from "../utils/normalize.js";
 import { getAssetType, normalizeSector } from "../utils/scoring.js";
 
 // ── Helpers ──
@@ -48,13 +48,18 @@ function scoreDiversification(portfolio, totalValue) {
 
   // Sector diversification
   const sectorMap = {};
+  let broadEtfSectorCount = 0;
   portfolio.forEach(p => {
+    const category = getAssetCategory(p.mkt || p);
+    if (category === "Broad Market ETF") {
+      broadEtfSectorCount = Math.max(broadEtfSectorCount, Number(p.mkt?._etfSectorCount || p._etfSectorCount || 8));
+    }
     const s = normalizeSector(p.mkt || p) || "Outros";
     sectorMap[s] = (sectorMap[s] || 0) + (p.valAtual || 0);
   });
-  const sectorCount = Object.keys(sectorMap).filter(k => k !== "—" && k !== "Outros").length;
+  const directSectorCount = Object.keys(sectorMap).filter(k => k && !["-", "--", "Outros"].includes(k)).length;
+  const sectorCount = Math.max(directSectorCount, broadEtfSectorCount);
   const sectorScore = sectorCount >= 7 ? 1.0 : sectorCount >= 5 ? 0.8 : sectorCount >= 3 ? 0.5 : 0.2;
-
   // Type diversification (stocks, ETFs, crypto, bonds)
   const typeMap = {};
   portfolio.forEach(p => {
@@ -81,18 +86,21 @@ function scoreConcentration(portfolio, totalValue) {
   if (portfolio.length === 0) return { score: 1, top5Pct: 0, warnings: [] };
 
   const sorted = [...portfolio].sort((a, b) => b.valAtual - a.valAtual);
-  const top1 = sorted[0]?.valAtual || 0;
-  const top3 = sorted.slice(0, 3).reduce((s, p) => s + p.valAtual, 0);
-  const top5 = sorted.slice(0, 5).reduce((s, p) => s + p.valAtual, 0);
+  const adjusted = sorted.map(p => {
+    const category = getAssetCategory(p.mkt || p);
+    const rawPct = totalValue > 0 ? (p.valAtual || 0) / totalValue : 0;
+    const concentrationFactor = category === "Broad Market ETF" ? 0.25 : category === "Sector ETF" ? 0.75 : 1;
+    return { ...p, category, rawPct, effectivePct: rawPct * concentrationFactor };
+  });
 
-  const top1Pct = totalValue > 0 ? top1 / totalValue : 0;
-  const top3Pct = totalValue > 0 ? top3 / totalValue : 0;
-  const top5Pct = totalValue > 0 ? top5 / totalValue : 0;
+  const top1Pct = adjusted[0]?.rawPct || 0;
+  const top3Pct = adjusted.slice(0, 3).reduce((s, p) => s + p.effectivePct, 0);
+  const top5Pct = adjusted.slice(0, 5).reduce((s, p) => s + p.effectivePct, 0);
+  const top1EffectivePct = adjusted[0]?.effectivePct || 0;
 
   const warnings = [];
-  if (top1Pct > 0.25) warnings.push(`${sorted[0]?.ticker} representa ${(top1Pct * 100).toFixed(0)}% do portfólio — risco de concentração`);
-  if (top3Pct > 0.60) warnings.push(`Top 3 posições representam ${(top3Pct * 100).toFixed(0)}% — diversificação insuficiente`);
-
+  if (top1EffectivePct > 0.25 && adjusted[0]?.category !== "Broad Market ETF") warnings.push(`${adjusted[0]?.ticker} representa ${(top1Pct * 100).toFixed(0)}% do portfólio — risco de concentração`);
+  if (top3Pct > 0.60) warnings.push(`Top 3 posições representam ${(top3Pct * 100).toFixed(0)}% de concentração efetiva — diversificação insuficiente`);
   // Lower concentration = higher score (safer)
   let s;
   if (top5Pct < 0.40) s = 1.0;
@@ -103,7 +111,7 @@ function scoreConcentration(portfolio, totalValue) {
 
   return {
     score: s,
-    top1: { ticker: sorted[0]?.ticker, pct: Math.round(top1Pct * 100) },
+    top1: { ticker: adjusted[0]?.ticker, pct: Math.round(top1Pct * 100), effectivePct: Math.round(top1EffectivePct * 100) },
     top3Pct: Math.round(top3Pct * 100),
     top5Pct: Math.round(top5Pct * 100),
     warnings

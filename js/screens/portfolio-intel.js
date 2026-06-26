@@ -12,16 +12,52 @@ import { thematicExposure } from "../engines/thematic.js";
 import { portfolioDNA } from "../engines/dna.js";
 import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
-import { analyzeETFOverlap, smartETFAnalysis } from "../engines/etf-overlap.js";
+import { analyzeETFOverlap, smartETFAnalysis, enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
 import { canonicalTicker, confidenceScore, getAssetCategory } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
+import { generatePortfolioReport } from "../utils/reportGenerator.js";
+import { calculatePortfolioAssessment } from "../utils/portfolioAssessment.js";
 
 const db = getFirestore(app);
 const readAssetPrice = (asset) =>
   Number(asset?.valorStock || asset?.price || asset?.preco || asset?.precoAtual || 0);
 
+const SECTOR_RADAR_LABELS = [
+  "Tecnologia", "Financeiro", "Comunicacao", "Consumo Ciclico", "Industria", "Saude",
+  "Consumo Basico", "Energia", "Utilidades", "Imobiliario", "Materiais", "Outros"
+];
+
+const SECTOR_BENCHMARKS = {
+  sp500: {
+    label: "S&P 500",
+    weights: {
+      "Tecnologia": 36.5,
+      "Financeiro": 12.3,
+      "Comunicacao": 10.6,
+      "Consumo Ciclico": 9.7,
+      "Industria": 8.4,
+      "Saude": 8.4,
+      "Consumo Basico": 5.3,
+      "Energia": 3.0,
+      "Utilidades": 2.1,
+      "Imobiliario": 1.8,
+      "Materiais": 1.8,
+      "Outros": 0.1
+    }
+  },
+  berkshire: {
+    label: "Berkshire Hathaway",
+    weights: {
+      "Financeiro": 45,
+      "Tecnologia": 22,
+      "Consumo Basico": 11,
+      "Energia": 8,
+      "Outros": 14
+    }
+  }
+};
 const entryPlannerState = {
   assets: [],
   basePortfolio: [],
@@ -30,16 +66,37 @@ const entryPlannerState = {
   universe: "all",
   hasLoaded: false,
   rerunTimer: null,
-  isRunning: false
+  isRunning: false,
+  sectorBenchmark: "sp500",
+  lastPortfolioForSectorRadar: null,
+  eventsBound: false
 };
 
 export async function initScreen() {
   const btn = document.getElementById("piRunAnalysis");
-  btn?.addEventListener("click", runFullAnalysis);
-  bindEntryPlannerEvents();
-  bindEFEvents();
+  if (btn) btn.onclick = runFullAnalysis;
+  const pdfBtn = document.getElementById("piExportReport");
+  if (pdfBtn) pdfBtn.onclick = async () => {
+    const oldHtml = pdfBtn.innerHTML;
+    try {
+      pdfBtn.disabled = true;
+      pdfBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> A gerar...`;
+      await generatePortfolioReport({ autoExport: true });
+    } catch (err) {
+      console.error("Erro ao exportar relatorio integrado:", err);
+      window.showToast?.("Erro ao exportar PDF integrado.", "error");
+    } finally {
+      pdfBtn.disabled = false;
+      pdfBtn.innerHTML = oldHtml;
+    }
+  };
+  if (!entryPlannerState.eventsBound) {
+    bindEntryPlannerEvents();
+    bindSectorBenchmarkEvents();
+    bindEFEvents();
+    entryPlannerState.eventsBound = true;
+  }
 }
-
 async function runFullAnalysis() {
   if (entryPlannerState.isRunning) return;
   entryPlannerState.isRunning = true;
@@ -79,7 +136,16 @@ async function runFullAnalysis() {
     const basePortfolio = openPositions.map(p => {
       const rawTicker = cleanTicker(p.ticker);
       const ct = canonicalTicker(rawTicker);
-      const mkt = acoesMap.get(ct) || acoesMap.get(rawTicker) || {};
+      const mkt = { ...(acoesMap.get(ct) || acoesMap.get(rawTicker) || {}) };
+      const manual = manualComposition.get(ct) || manualComposition.get(rawTicker);
+      if (manual) Object.assign(mkt, {
+        holdings: Array.isArray(manual.holdings) ? manual.holdings : mkt.holdings,
+        sectors: Array.isArray(manual.sectors) ? manual.sectors : mkt.sectors,
+        geography: Array.isArray(manual.geography) ? manual.geography : mkt.geography,
+        holdings_count: Array.isArray(manual.holdings) ? manual.holdings.length : mkt.holdings_count
+      });
+      mkt.ticker = mkt.ticker || ct;
+      if (isKnownETF(ct) || Array.isArray(mkt.holdings)) enrichETFAsset(mkt, acoesMap);
       const precoAtual = readAssetPrice(mkt);
       return {
         ticker: ct,
@@ -135,11 +201,12 @@ async function runFullAnalysis() {
     const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap });
 
     // ── 3. Render everything ──
+    results?.classList.remove("hidden");
     renderDNA(dna);
     renderHealth(health, riskDecomp);
     renderResilience(riskDecomp);
     renderFactorRadar(factors, baseFactors);
-    renderCorrelation(corr);
+    renderSectorBenchmarkRadar(portfolio, totalValue);
     renderThematic(themes);
     // renderTickerComposition(portfolio, manualComposition); // DESATIVADO: dados bugados com percentagens incorretas
     renderEconomicDrivers(economicDrivers);
@@ -155,7 +222,6 @@ async function runFullAnalysis() {
     updateEFSeedDisplay();
 
     loading?.classList.add("hidden");
-    results?.classList.remove("hidden");
     entryPlannerState.hasLoaded = true;
 
   } catch (err) {
@@ -239,8 +305,13 @@ function renderFactorRadar(factors, baseFactors = null) {
     },
     options: {
       responsive: true,
-      scales: { r: { min: 0, max: 100, ticks: { display: false }, pointLabels: { font: { size: 11, weight: "bold" } } } },
-      plugins: { legend: { display: Boolean(baseData), labels: { boxWidth: 10, usePointStyle: true } } }
+      maintainAspectRatio: false,
+      animation: false,
+      resizeDelay: 120,
+      devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
+      elements: { line: { borderWidth: 3 }, point: { radius: 3, hoverRadius: 5 } },
+      scales: { r: { min: 0, max: 100, ticks: { display: true, stepSize: 25, backdropColor: "transparent", color: "#94a3b8", font: { size: 11, weight: "700" } }, grid: { color: "rgba(148,163,184,0.24)", circular: true }, angleLines: { color: "rgba(148,163,184,0.22)" }, pointLabels: { padding: 12, font: { size: 13, weight: "800" } } } },
+      plugins: { legend: { display: Boolean(baseData), labels: { boxWidth: 12, usePointStyle: true, font: { size: 12, weight: "700" } } } }
     }
   });
   renderFactorExpansionHints(factors);
@@ -308,31 +379,143 @@ function findBestFactorCandidate(factorKey, currentTickers, selectedTickers) {
   return ranked[0] || null;
 }
 
-function renderCorrelation(corr) {
-  const grid = document.getElementById("piCorrelationGrid");
-  const warn = document.getElementById("piCorrWarnings");
-  if (!grid) return;
-
-  const tickers = corr.tickers.slice(0, 12);
-  let html = `<table class="corr-heatmap"><tr><th></th>${tickers.map(t => `<th>${t}</th>`).join("")}</tr>`;
-  for (const t of tickers) {
-    html += `<tr><th>${t}</th>`;
-    for (const t2 of tickers) {
-      const v = corr.matrix[t]?.[t2] || 0;
-      const intensity = Math.abs(v);
-      const r = v > 0.65 ? 239 : 100;
-      const g = v > 0.65 ? 68 : 200;
-      const bg = t === t2 ? "var(--muted)" : `rgba(${r}, ${g}, 100, ${0.05 + intensity * 0.35})`;
-      html += `<td style="background:${bg}; font-weight:${v > 0.65 ? 800 : 400}; color:${v > 0.65 ? "#ef4444" : "inherit"};">${v.toFixed(2)}</td>`;
-    }
-    html += `</tr>`;
-  }
-  html += `</table>`;
-  grid.innerHTML = html;
-
-  if (warn) warn.innerHTML = corr.warnings.map(w => `<div>⚠️ ${w}</div>`).join("");
+function bindSectorBenchmarkEvents() {
+  document.getElementById("piResults")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-sector-benchmark]");
+    if (!btn) return;
+    entryPlannerState.sectorBenchmark = btn.getAttribute("data-sector-benchmark") || "sp500";
+    document.querySelectorAll("[data-sector-benchmark]").forEach(x => x.classList.toggle("active", x === btn));
+    const last = entryPlannerState.lastPortfolioForSectorRadar;
+    if (last) renderSectorBenchmarkRadar(last.portfolio, last.totalValue);
+  });
 }
 
+function normalizeRadarSector(raw) {
+  const s = String(raw || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (s.includes("tech") || s.includes("tecnolog") || s.includes("itech") || s.includes("information")) return "Tecnologia";
+  if (s.includes("finan") || s.includes("bank") || s.includes("segur")) return "Financeiro";
+  if (s.includes("comunic") || s.includes("telecom") || s.includes("communication")) return "Comunicacao";
+  if (s.includes("discr") || s.includes("ciclic") || s.includes("cyclic") || s.includes("consumer cyc")) return "Consumo Ciclico";
+  if (s.includes("industr")) return "Industria";
+  if (s.includes("saude") || s.includes("health") || s.includes("pharma")) return "Saude";
+  if (s.includes("basico") || s.includes("defens") || s.includes("staples") || s.includes("consumer defensive")) return "Consumo Basico";
+  if (s.includes("energ") || s.includes("oil") || s.includes("gas")) return "Energia";
+  if (s.includes("utilit") || s.includes("utilities")) return "Utilidades";
+  if (s.includes("imob") || s.includes("real estate") || s.includes("reit")) return "Imobiliario";
+  if (s.includes("mater") || s.includes("basic materials") || s.includes("minera")) return "Materiais";
+  return "Outros";
+}
+
+
+function normalizeSectorComposition(input) {
+  if (!input) return null;
+  const rows = Array.isArray(input)
+    ? input.map(row => [row?.name || row?.label || row?.sector, row?.weight ?? row?.value])
+    : Object.entries(input);
+  const out = [];
+  rows.forEach(([name, weight]) => {
+    let w = Number(weight || 0);
+    if (!Number.isFinite(w) || w <= 0) return;
+    if (w <= 1) w *= 100;
+    while (w > 100) w /= 100;
+    out.push({ sector: normalizeRadarSector(name), weight: w });
+  });
+  const total = out.reduce((sum, row) => sum + row.weight, 0) || 1;
+  return out.map(row => ({ ...row, weight: row.weight / total }));
+}
+function portfolioSectorWeights(portfolio, totalValue) {
+  const out = Object.fromEntries(SECTOR_RADAR_LABELS.map(label => [label, 0]));
+  const total = Math.max(Number(totalValue || 0), 1);
+  portfolio.forEach(p => {
+    const portfolioWeight = (Number(p.valAtual || 0) / total) * 100;
+    const category = getAssetCategory(p.mkt || p);
+    const etfSectors = normalizeSectorComposition(p.mkt?._etfSectors || p.mkt?.sectors || p._etfSectors);
+    if (category.includes("ETF") && etfSectors?.length) {
+      etfSectors.forEach(row => {
+        out[row.sector] = (out[row.sector] || 0) + portfolioWeight * row.weight;
+      });
+      return;
+    }
+    const sector = normalizeRadarSector(p.mkt?.setor || p.mkt?.sector || p.setor || p.category);
+    out[sector] = (out[sector] || 0) + portfolioWeight;
+  });
+  return out;
+}
+
+function renderSectorBenchmarkRadar(portfolio, totalValue) {
+  const ctx = document.getElementById("piSectorBenchmarkRadar");
+  if (!ctx) return;
+  entryPlannerState.lastPortfolioForSectorRadar = { portfolio, totalValue };
+  const key = entryPlannerState.sectorBenchmark || "sp500";
+  const benchmark = SECTOR_BENCHMARKS[key] || SECTOR_BENCHMARKS.sp500;
+  const mine = portfolioSectorWeights(portfolio, totalValue);
+  const myData = SECTOR_RADAR_LABELS.map(label => Math.round((mine[label] || 0) * 10) / 10);
+  const benchData = SECTOR_RADAR_LABELS.map(label => Math.round((benchmark.weights[label] || 0) * 10) / 10);
+
+  const maxVal = Math.max(...myData, ...benchData, 1);
+  const radarMax = Math.max(Math.ceil(maxVal * 1.25 / 10) * 10, 40);
+  const radarStep = radarMax <= 50 ? 10 : radarMax <= 80 ? 20 : 25;
+
+  if (window.piSectorBenchmarkChart) window.piSectorBenchmarkChart.destroy();
+  window.piSectorBenchmarkChart = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels: SECTOR_RADAR_LABELS,
+      datasets: [
+        {
+          label: benchmark.label,
+          data: benchData,
+          backgroundColor: "rgba(148,163,184,0.08)",
+          borderColor: "#94a3b8",
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          pointBackgroundColor: "#94a3b8",
+          pointBorderColor: "#94a3b8",
+          pointRadius: 3,
+          pointHoverRadius: 5
+        },
+        {
+          label: "Meu portfólio",
+          data: myData,
+          backgroundColor: "rgba(99,102,241,0.28)",
+          borderColor: "#6366f1",
+          borderWidth: 2.5,
+          pointBackgroundColor: "#6366f1",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 1.5,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      resizeDelay: 120,
+      devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
+      scales: {
+        r: {
+          min: 0,
+          max: radarMax,
+          ticks: { stepSize: radarStep, callback: v => `${v}%`, backdropColor: "transparent", color: "#64748b", font: { size: 11, weight: "700" } },
+          grid: { color: "rgba(148,163,184,0.30)", circular: true },
+          angleLines: { color: "rgba(148,163,184,0.24)" },
+          pointLabels: { padding: 13, font: { size: 12, weight: "800" } }
+        }
+      },
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 12, usePointStyle: true, padding: 16, font: { size: 12, weight: "700" } } } }
+    }
+  });
+
+  const diffs = SECTOR_RADAR_LABELS.map(label => ({ label, delta: (mine[label] || 0) - (benchmark.weights[label] || 0) }))
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, 3);
+  const summary = document.getElementById("piSectorBenchmarkSummary");
+  if (summary) {
+    summary.textContent = `Maiores diferenças vs ${benchmark.label}: ${diffs.map(d => `${d.label} ${d.delta >= 0 ? "+" : ""}${d.delta.toFixed(1)}pp`).join(" · ")}`;
+  }
+}
 function renderThematic(themes) {
   const container = document.getElementById("piThematicBars");
   if (!container) return;
@@ -360,6 +543,8 @@ function buildManualCompositionMap(snapshot) {
     const ticker = String(data.ticker || docSnap.id || "").toUpperCase();
     if (!ticker) return;
     map.set(ticker, data);
+    map.set(cleanTicker(ticker), data);
+    map.set(canonicalTicker(cleanTicker(ticker)), data);
   });
   return map;
 }
@@ -532,6 +717,8 @@ function renderWeightRisk(wrData, riskContrib) {
     },
     options: {
       responsive: true,
+      animation: false,
+      resizeDelay: 120,
       plugins: { legend: { position: "top" } },
       scales: { y: { beginAtZero: true } }
     }
@@ -781,7 +968,7 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, 
   // capWeights() also computes this internally; having it here avoids a second call.
   const effectiveWeightCap = weightCap != null ? Math.max(weightCap, 1 / n) : null;
 
-  const M = 3000;
+  const M = 1200;
   const sims = [];
   let best = { sharpe: -Infinity, weights: null };
   for (let k = 0; k < M; k++) {
@@ -1008,6 +1195,8 @@ function renderEfficientFrontier(allData) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
+      resizeDelay: 120,
       scales: {
         x: {
           min: axisXMin, max: axisXMax,
@@ -1064,7 +1253,7 @@ function renderEfficientFrontier(allData) {
       kpi("Sharpe p10 — pessimista", p10.toFixed(2), shColor(p10), "10% das simulações abaixo deste valor") +
       kpi("Sharpe p50 — mediana", p50.toFixed(2), shColor(p50), "metade das simulações abaixo deste valor") +
       kpi("Sharpe p90 — otimista", p90.toFixed(2), shColor(p90), "90% das simulações abaixo deste valor") +
-      kpi("Sharpe máximo simulado", data.best.sharpe.toFixed(2), "#06b6d4", "melhor das 3 000 simulações") +
+      kpi("Sharpe máximo simulado", data.best.sharpe.toFixed(2), "#06b6d4", "melhor das 1 200 simulações") +
       kpi("Retorno no Sharpe max.", fmtPct(data.best.ret), "#06b6d4") +
       kpi("Vol. no Sharpe max.", `${(data.best.vol * 100).toFixed(1)}%`, "#06b6d4");
   }
@@ -1176,7 +1365,7 @@ function renderEfficientFrontier(allData) {
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
         <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
         <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
-        <span class="muted" style="font-size:0.72rem;">Melhor das 3 000 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : `cap ${capPct ?? '30%'}`}</span>
+        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : `cap ${capPct ?? '30%'}`}</span>
       </div>
       ${increase.length ? `
         <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reforçar</div>

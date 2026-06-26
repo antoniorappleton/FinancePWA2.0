@@ -73,25 +73,6 @@
     gap: 4px;
   }
 
-  /* Responsividade do Modal de Relatório */
-  @media (max-width: 600px) {
-    #reportModal .modal-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 16px;
-    }
-    #reportModal .modal-header h2 {
-      font-size: 1.1rem !important;
-    }
-    #reportModal .modal-header div {
-      width: 100%;
-      justify-content: flex-end;
-    }
-    #reportModal .modal-body {
-      padding: 12px !important;
-    }
-  }
   /* Sector Allocation rows */
   .sector-alloc-row {
     display: grid;
@@ -438,9 +419,6 @@
       </button>
       <button class="tab-btn" data-tab="tab-interface">
         <i class="fas fa-sliders"></i> Preferências
-      </button>
-      <button class="tab-btn" data-tab="tab-relatorios">
-        <i class="fas fa-file-contract"></i> Relatórios
       </button>
       <button class="tab-btn" data-tab="tab-glossario">
         <i class="fas fa-book-open"></i> Glossário
@@ -1057,38 +1035,6 @@
       </div>
     </div>
 
-    <!-- TAB: RELATÓRIOS -->
-    <div id="tab-relatorios" class="settings-section">
-      <div class="card premium">
-        <div class="card-content">
-          <div style="width: 100%; text-align: center; padding: 20px 0;">
-            <i class="fas fa-file-invoice-dollar" style="font-size: 3rem; color: var(--primary); margin-bottom: 20px;"></i>
-            <h3 style="margin-bottom: 8px">Análise Profissional de Portfólio</h3>
-            <p class="muted" style="margin-bottom: 24px">Gera um documento PDF (A4) completo com stress tests e recomendações algorítmicas.</p>
-            <button id="btnGenerateReport" class="btn premium full" style="max-width: 320px; margin: 0 auto">
-              Gerar Relatório em PDF
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="card">
-        <div class="card-content">
-          <div style="width: 100%">
-            <p class="label">Privacidade de Dados</p>
-            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span>Partilha de dados anónimos</span>
-              <label class="switch"><input type="checkbox" id="cfgDataSharing" /><span class="slider"></span></label>
-            </label>
-            <label style="display: flex; justify-content: space-between; align-items: center;">
-              <span>Analytics</span>
-              <label class="switch"><input type="checkbox" id="cfgAnalytics" /><span class="slider"></span></label>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- TAB: GLOSSÁRIO -->
     <div id="tab-glossario" class="settings-section">
       <div class="glossary-hero">
@@ -1361,28 +1307,6 @@
       <button class="btn premium" id="cfgSave" style="padding-left: 32px; padding-right: 32px;">Guardar Tudo</button>
     </div>
 
-  </div>
-</div>
-
-<!-- MODAL DO RELATÓRIO (mantido igual) -->
-<div id="reportModal" class="modal hidden" style="z-index: 2001;">
-  <div class="modal-dialog" style="width: min(1000px, 96vw); max-height: 92vh;">
-    <div class="modal-header">
-      <h2 style="font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-        <i class="fas fa-chart-pie" style="color: var(--premium);"></i>
-        Relatório de Investimento
-      </h2>
-      <div style="display: flex; gap: 8px;">
-        <button id="btnReportPrint" class="icon-btn" title="Imprimir/PDF"><i class="fas fa-print"></i></button>
-        <button id="reportModalClose" class="icon-btn" title="Fechar"><i class="fas fa-times"></i></button>
-      </div>
-    </div>
-    <div class="modal-body" id="reportContent" style="padding: 24px; overflow-y: auto; background: var(--muted);">
-      <div id="reportLoader" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 20px;">
-         <div class="spinner"></div>
-         <p class="muted">A analisar portfólio...</p>
-      </div>
-    </div>
   </div>
 </div>
 

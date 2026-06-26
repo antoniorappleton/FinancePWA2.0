@@ -28,7 +28,7 @@ export function openAssetPanel(ticker) {
   const position = window._portfolioPositions?.get(ticker) ?? null;
   const market   = { ...(window._marketDataMap?.get(ticker) ?? {}), ticker };
 
-  if (isKnownETF(ticker)) {
+  if (isKnownETF(ticker) || Array.isArray(market.holdings)) {
     enrichETFAsset(market, window._marketDataMap ?? new Map());
   }
 
@@ -625,7 +625,7 @@ function _tabFundamentals() {
 // ════════════════════════════════════════════════════════
 function _tabHoldings() {
   const a   = _asset;
-  const etf = smartETFAnalysis(a.ticker);
+  const etf = smartETFAnalysis(a);
 
   const ter  = Number(a.ter || a.expense_ratio || 0);
   const terStr = ter > 0

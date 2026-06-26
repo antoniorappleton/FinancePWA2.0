@@ -12,6 +12,9 @@
       <button id="piRunAnalysis" class="btn premium" style="display:flex; align-items:center; gap:8px;">
         <i class="fas fa-bolt"></i> Analisar Portfólio
       </button>
+      <button id="piExportReport" class="btn outline" style="display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-file-pdf"></i> Exportar PDF
+      </button>
     </div>
   </div>
 
@@ -65,10 +68,8 @@
       </div>
     </div>
 
-    <!-- ── ROW 1: DNA + Health + Resilience ── -->
+    <!-- ROW 1: DNA + Assessment + Resilience -->
     <div class="pi-kpi-grid">
-
-      <!-- Portfolio DNA -->
       <div class="card" id="piDnaCard">
         <div class="card-content" style="display:block;">
           <div class="muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Portfolio DNA</div>
@@ -77,51 +78,46 @@
           <div id="piDnaSecondary" class="muted" style="font-size:0.8rem;"></div>
         </div>
       </div>
-
-      <!-- Portfolio Health -->
       <div class="card" id="piHealthCard">
         <div class="card-content" style="display:block;">
-          <div class="muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Saúde do Portfólio</div>
-          <div style="display:flex; align-items:baseline; gap:8px;">
-            <div id="piHealthScore" style="font-size:2.5rem; font-weight:900; color:var(--primary);">—</div>
-            <span class="muted">/100</span>
-          </div>
+          <div class="muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Avaliação do Portfólio</div>
+          <div style="display:flex; align-items:baseline; gap:8px;"><div id="piHealthScore" style="font-size:2.5rem; font-weight:900; color:var(--primary);">—</div><span class="muted">/100</span></div>
           <div id="piHealthClass" class="muted" style="font-size:0.85rem;">—</div>
           <div id="piHiddenRisk" style="font-size:0.8rem; margin-top:6px;"></div>
         </div>
       </div>
-
-      <!-- Stress Resilience -->
       <div class="card" id="piResilienceCard">
         <div class="card-content" style="display:block;">
           <div class="muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Resiliência a Crises</div>
-          <div style="display:flex; align-items:baseline; gap:8px;">
-            <div id="piResilience" style="font-size:2.5rem; font-weight:900;">—</div>
-            <span class="muted">/100</span>
-          </div>
+          <div style="display:flex; align-items:baseline; gap:8px;"><div id="piResilience" style="font-size:2.5rem; font-weight:900;">—</div><span class="muted">/100</span></div>
           <div id="piResilienceSummary" class="muted" style="font-size:0.8rem;">—</div>
         </div>
       </div>
     </div>
 
-    <!-- ── ROW 2: Factor Radar + Correlation ── -->
+    <!-- ROW 2: Factor Radar + Sector Benchmark -->
     <div class="pi-main-grid">
       <div class="card">
         <div class="card-content" style="display:block;">
-          <h3 style="margin:0 0 12px 0; font-size:0.95rem;">📊 Exposição por Fatores</h3>
-          <canvas id="piFactorRadar" height="260"></canvas>
+          <h3 style="margin:0 0 12px 0; font-size:0.95rem;">Exposição por Fatores</h3>
+          <div class="pi-chart-box"><canvas id="piFactorRadar"></canvas></div>
           <div id="piFactorHints" class="pi-factor-hints"></div>
         </div>
       </div>
       <div class="card">
         <div class="card-content" style="display:block;">
-          <h3 style="margin:0 0 12px 0; font-size:0.95rem;">🔗 Correlação (Heatmap)</h3>
-          <div id="piCorrelationGrid" style="overflow-x:auto;"></div>
-          <div id="piCorrWarnings" class="muted" style="font-size:0.8rem; margin-top:8px;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:0.95rem;">Radar Setorial vs Benchmark</h3>
+            <div class="pi-benchmark-switch" role="group" aria-label="Benchmark de comparação setorial">
+              <button type="button" class="active" data-sector-benchmark="sp500">S&P 500</button>
+              <button type="button" data-sector-benchmark="berkshire">Berkshire</button>
+            </div>
+          </div>
+          <div class="pi-chart-box"><canvas id="piSectorBenchmarkRadar"></canvas></div>
+          <div id="piSectorBenchmarkSummary" class="muted" style="font-size:0.8rem; margin-top:8px;"></div>
         </div>
       </div>
     </div>
-
     <!-- ── ROW 2.5: Fronteira Eficiente de Markowitz ── -->
     <div class="card pi-section">
       <div class="card-content" style="display:block;">
@@ -130,7 +126,7 @@
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
           <div>
             <h3 style="margin:0 0 4px 0; font-size:0.95rem;">📈 Fronteira Eficiente (Markowitz — Monte Carlo)</h3>
-            <div class="muted" style="font-size:0.78rem;">3 000 carteiras simuladas por janela. X = Risco (vol), Y = Retorno Histórico. Cor = Rácio Sharpe.</div>
+            <div class="muted" style="font-size:0.78rem;">1 200 carteiras simuladas por janela. X = Risco (vol), Y = Retorno Histórico. Cor = Rácio Sharpe.</div>
           </div>
           <div style="display:flex; gap:12px; font-size:0.72rem; align-items:center; flex-wrap:wrap;">
             <span><span style="color:#22c55e; font-size:0.9rem;">●</span> Alto Sharpe</span>
@@ -174,7 +170,7 @@
         <div style="height:360px; position:relative;">
           <canvas id="piEfficientFrontier"
             role="img"
-            aria-label="Fronteira Eficiente — nuvem de 3 000 portfolios simulados por Sharpe (baixo/médio/alto), ponto da carteira actual e portfolio de Sharpe máximo"></canvas>
+            aria-label="Fronteira Eficiente — nuvem de 1 200 portfolios simulados por Sharpe (baixo/médio/alto), ponto da carteira actual e portfolio de Sharpe máximo"></canvas>
         </div>
         <!-- indicator shown when asset dots fall outside the fixed axis range -->
         <div id="piEFClipWarning" style="display:none; margin-top:6px; font-size:0.72rem; color:var(--muted-foreground); font-style:italic;"></div>
@@ -754,4 +750,9 @@
   .pi-composition-columns { grid-template-columns: 1fr; }
 }
 
+.pi-chart-box { position:relative; height:360px; width:100%; min-height:360px; }
+.pi-chart-box canvas { display:block; width:100% !important; height:100% !important; image-rendering:auto; }
+.pi-benchmark-switch { display:flex; gap:4px; padding:3px; border:1px solid var(--border); border-radius:8px; background:var(--muted); }
+.pi-benchmark-switch button { border:0; background:transparent; color:var(--muted-foreground); padding:5px 9px; border-radius:6px; font-size:0.72rem; font-weight:800; cursor:pointer; }
+.pi-benchmark-switch button.active { background:var(--background); color:var(--foreground); box-shadow:0 1px 2px rgba(0,0,0,.08); }
 </style>

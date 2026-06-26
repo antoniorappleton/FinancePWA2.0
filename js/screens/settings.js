@@ -6,7 +6,6 @@
 import { doLogout } from "./auth.js";
 import { db } from "../firebase-config.js";
 import { doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { generatePortfolioReport } from "../utils/reportGenerator.js";
 import { calculateLucroMaximoScore, getAssetType, normalizeSector } from "../utils/scoring.js";
 import { loadAlerts, addAlert, deleteAlert, resetAlert, requestNotificationPermission } from "../utils/alerts.js";
 
@@ -765,33 +764,6 @@ export function initScreen() {
     if (sugOk) sugOk.addEventListener("click", () => sugModal.classList.add("hidden"));
     if (sugModal) sugModal.addEventListener("click", (e) => { if (e.target === sugModal) sugModal.classList.add("hidden"); });
   }
-
-  // Relatório de Investimento
-  const btnGenReport = document.getElementById("btnGenerateReport");
-  const reportModal = document.getElementById("reportModal");
-  const reportClose = document.getElementById("reportModalClose");
-  const btnPrint = document.getElementById("btnReportPrint");
-
-  if (btnGenReport) {
-    btnGenReport.addEventListener("click", () => {
-      generatePortfolioReport();
-    });
-  }
-
-  if (reportClose) {
-    reportClose.addEventListener("click", () => {
-      reportModal.classList.add("hidden");
-    });
-  }
-
-  if (reportModal) {
-    reportModal.addEventListener("click", (e) => {
-      if (e.target === reportModal) reportModal.classList.add("hidden");
-    });
-  }
-
-  // O listener do btnPrint (PDF) é agora gerido dinamicamente pelo reportGenerator.js
-  // para garantir que os dados atuais são exportados via jsPDF (A4).
 
   // Botões de Perfil
   const btnProfCons = document.getElementById("btnProfCons");

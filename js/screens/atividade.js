@@ -1760,6 +1760,7 @@ function showPortfolioHelp(force = false) {
   // ===============================
   let _lastAtivosSnap = null;
   let _lastAcoesSnap = null;
+  let _lastEtfHoldingsSnap = null;
   let _lastStrategySnap = null;
   let _currentTotalInvested = 0;
   let _currentGruposArr = [];
@@ -1830,6 +1831,35 @@ function showPortfolioHelp(force = false) {
       });
     });
 
+
+    const refreshMarketDataMap = () => {
+      const mktMap = new Map();
+      _lastAcoesSnap?.forEach(d => {
+        const x = d.data();
+        if (x.ticker) mktMap.set(String(x.ticker).toUpperCase(), x);
+      });
+
+      _lastEtfHoldingsSnap?.forEach(d => {
+        const x = d.data();
+        const rawTicker = String(x.ticker || d.id || "").toUpperCase();
+        if (!rawTicker) return;
+        const cleanT = cleanTicker(rawTicker).toUpperCase();
+        const patch = {
+          holdings: Array.isArray(x.holdings) ? x.holdings : undefined,
+          sectors: Array.isArray(x.sectors) ? x.sectors : undefined,
+          geography: Array.isArray(x.geography) ? x.geography : undefined,
+          holdings_count: Array.isArray(x.holdings) ? x.holdings.length : undefined,
+          _etfHoldingsDoc: x
+        };
+
+        [rawTicker, cleanT].filter(Boolean).forEach(key => {
+          const existing = mktMap.get(key) || mktMap.get(cleanT) || {};
+          mktMap.set(key, { ...existing, ...patch, ticker: existing.ticker || cleanT || rawTicker });
+        });
+      });
+
+      window._marketDataMap = mktMap;
+    };
     const handleUpdate = async () => {
       if (!_lastAtivosSnap || !_lastAcoesSnap) return;
       await processAndRender(_lastAtivosSnap, _lastAcoesSnap, _lastStrategySnap);
@@ -1848,10 +1878,13 @@ function showPortfolioHelp(force = false) {
       _lastAcoesSnap = snap;
       _lastPriceUpdateTime = new Date();
       updatePriceFreshness();
-      // Expose market data globally for the Asset Deep Panel
-      const mktMap = new Map();
-      snap.forEach(d => { const x = d.data(); if (x.ticker) mktMap.set(String(x.ticker).toUpperCase(), x); });
-      window._marketDataMap = mktMap;
+      refreshMarketDataMap();
+      handleUpdate();
+    });
+
+    onSnapshot(collection(db, "etfHoldings"), (snap) => {
+      _lastEtfHoldingsSnap = snap;
+      refreshMarketDataMap();
       handleUpdate();
     });
 

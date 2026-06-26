@@ -114,6 +114,66 @@ const ETF_HOLDINGS = {
 };
 
 // ── HHI-based diversity score (0 = 1 dominant, 1 = perfectly spread) ──
+function toPercentWeight(value) {
+  let n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  if (n <= 1) return n * 100;
+  while (n > 100) n /= 100;
+  return n;
+}
+
+function normalizeCompositionObject(input) {
+  if (!input) return null;
+  if (!Array.isArray(input) && typeof input === "object") {
+    const out = {};
+    Object.entries(input).forEach(([key, value]) => {
+      const n = toPercentWeight(value);
+      if (key && n > 0) out[key] = Math.round(n * 100) / 100;
+    });
+    return Object.keys(out).length ? out : null;
+  }
+  if (!Array.isArray(input)) return null;
+
+  const out = {};
+  input.forEach(row => {
+    const name = String(row?.name || row?.label || row?.sector || row?.country || "").trim();
+    const n = toPercentWeight(row?.weight ?? row?.value);
+    if (name && n > 0) out[name] = Math.round(n * 100) / 100;
+  });
+  return Object.keys(out).length ? out : null;
+}
+
+function normalizeTopHoldings(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map(row => {
+    const ticker = String(row?.ticker || row?.symbol || row?.name || "").trim().toUpperCase();
+    const name = String(row?.name || row?.symbol || row?.ticker || "").trim();
+    const weight = toPercentWeight(row?.weight ?? row?.Weight ?? row?.value);
+    return ticker && weight > 0
+      ? { ticker, name: name || ticker, weight: Math.round(weight * 100) / 100 }
+      : null;
+  }).filter(Boolean);
+}
+
+function resolveETFHoldings(assetOrTicker) {
+  const asset = typeof assetOrTicker === "object" && assetOrTicker !== null ? assetOrTicker : null;
+  const ticker = String(asset?.ticker || assetOrTicker || "").toUpperCase();
+  const staticData = ETF_HOLDINGS[ticker] || null;
+  const manualTop = normalizeTopHoldings(asset?.holdings);
+  const manualSectors = normalizeCompositionObject(asset?.sectors || asset?.sector_weights || asset?.sectorAllocation);
+  const manualGeography = normalizeCompositionObject(asset?.geography || asset?.geo || asset?.country_weights || asset?.countryAllocation);
+
+  if (!staticData && !manualTop.length && !manualSectors && !manualGeography) return null;
+
+  return {
+    ...(staticData || {}),
+    name: asset?.nome || asset?.name || staticData?.name || ticker,
+    type: staticData?.type || asset?.setor || asset?.assetType || "ETF",
+    top: manualTop.length ? manualTop : (staticData?.top || []),
+    sectors: manualSectors || staticData?.sectors || null,
+    geography: manualGeography || staticData?.geography || null
+  };
+}
 function hhiDiversityScore(weights) {
   const vals = Object.values(weights).map(Number).filter(v => v > 0);
   if (vals.length === 0) return null;
@@ -134,12 +194,12 @@ function hhiDiversityScore(weights) {
  * @returns {Object} The same etfAsset object (mutated in-place)
  */
 export function enrichETFAsset(etfAsset, allAssetsMap) {
-  const ticker = String(etfAsset?.ticker || "").toUpperCase();
-  const holdingsData = ETF_HOLDINGS[ticker];
+  const holdingsData = resolveETFHoldings(etfAsset);
   if (!holdingsData) return etfAsset;
 
   // 1. Sector diversification
   if (holdingsData.sectors && Object.keys(holdingsData.sectors).length > 0) {
+    etfAsset._etfSectors = holdingsData.sectors;
     const score = hhiDiversityScore(holdingsData.sectors);
     if (score !== null) {
       etfAsset._etfSectorScore = Math.round(score * 100) / 100;
@@ -151,6 +211,7 @@ export function enrichETFAsset(etfAsset, allAssetsMap) {
 
   // 2. Geographic diversification
   if (holdingsData.geography && Object.keys(holdingsData.geography).length > 0) {
+    etfAsset._etfGeography = holdingsData.geography;
     const score = hhiDiversityScore(holdingsData.geography);
     if (score !== null) {
       etfAsset._etfGeoScore = Math.round(score * 100) / 100;
@@ -300,8 +361,8 @@ export function analyzeETFOverlap(portfolio) {
  * Get smart ETF analysis for a single ETF.
  */
 export function smartETFAnalysis(ticker) {
-  const t = String(ticker || "").toUpperCase();
-  const data = ETF_HOLDINGS[t];
+  const t = String((typeof ticker === "object" ? ticker?.ticker : ticker) || "").toUpperCase();
+  const data = resolveETFHoldings(ticker);
   if (!data) return null;
 
   const top10Weight = data.top.reduce((s, h) => s + h.weight, 0);
