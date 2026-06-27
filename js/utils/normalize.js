@@ -124,7 +124,8 @@ export function safePercent(asset, ...keys) {
 /**
  * Ticker Normalization / Deduplication
  * Resolves aliases and exchanges to a canonical ID.
- * Examples: "VWCE.DE" -> "VWCE", "QDVF.DE" -> "QDVE", "VOO.US" -> "VOO"
+ * Examples: "VWCE.DE" -> "VWCE", "VOO.US" -> "VOO", "XETR:DAVV" -> "DAVV"
+ * Note: QDVF (Energy) and QDVE (IT) are distinct assets — not aliased.
  */
 export function canonicalTicker(ticker) {
   if (!ticker) return "";
@@ -152,16 +153,25 @@ export function canonicalTicker(ticker) {
 }
 
 // ── Contextual Concentration Limits ──
+// Single source of truth — importado por risk.js, rebalance.js, portfolio-intel.js.
 export const HEALTHY_LIMITS = {
-  "Broad Market ETF": 0.70, // 70% max for a core anchor
-  "Sector ETF":       0.25, // 25% max
-  "Thematic ETF":     0.15, // 15% max
-  "Single Stock":     0.10, // 10% max
-  "Speculative Asset": 0.05, // 5% max
-  "Satellite Asset":  0.08,
-  "Crypto":           0.05,
-  "Commodity":        0.12  // 12% max for physical assets/ETC
+  "Broad Market ETF":  0.70,
+  "Sector ETF":        0.25,
+  "Thematic ETF":      0.15,
+  "Single Stock":      0.10, // override via config/strategy.singleStockCapPct
+  "Speculative Asset": 0.05,
+  "Satellite Asset":   0.08,
+  "Commodity":         0.12
 };
+
+/**
+ * Returns HEALTHY_LIMITS com override de singleStockCapPct vindo da estratégia.
+ * @param {Object} [strategy={}] - config/strategy do Firestore
+ */
+export function getConcentrationLimits(strategy = {}) {
+  const cap = Number(strategy.singleStockCapPct || 10) / 100;
+  return { ...HEALTHY_LIMITS, "Single Stock": cap };
+}
 
 /**
  * Asset Classification Layer

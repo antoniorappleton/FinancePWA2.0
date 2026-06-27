@@ -188,7 +188,7 @@ async function runFullAnalysis() {
       ? portfolioFactors(basePortfolio, baseTotalValue)
       : null;
     const health = portfolioHealth(portfolio, totalValue);
-    const riskDecomp = portfolioRiskDecomposition(portfolio, totalValue, corr.avgCorrelation);
+    const riskDecomp = portfolioRiskDecomposition(portfolio, totalValue, corr.avgCorrelation, { sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });
     const riskContrib = riskContribution(portfolio, totalValue);
     const wrChart = weightVsRiskChart(portfolio, totalValue);
     const stress = stressTest(portfolio, totalValue);
@@ -196,7 +196,7 @@ async function runFullAnalysis() {
     const dna = portfolioDNA(portfolio, totalValue);
     const economicDrivers = calculateEconomicDrivers(portfolio, totalValue);
     const etfOverlap = analyzeETFOverlap(portfolio);
-    const rebalance = rebalanceSuggestions(portfolio, totalValue, { riskContrib });
+    const rebalance = rebalanceSuggestions(portfolio, totalValue, { riskContrib, sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });
     const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap });
 
     // ── 3. Render everything ──

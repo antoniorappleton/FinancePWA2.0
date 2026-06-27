@@ -198,7 +198,7 @@ async function buildCombinedReportData() {
   const corr = correlationMatrix(enriched);
   const factors = portfolioFactors(enriched, totalValue);
   const health = portfolioHealth(enriched, totalValue);
-  const riskDecomp = portfolioRiskDecomposition(enriched, totalValue, corr.avgCorrelation);
+  const riskDecomp = portfolioRiskDecomposition(enriched, totalValue, corr.avgCorrelation, { sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });
   const riskContrib = riskContribution(enriched, totalValue);
   const wrChart = weightVsRiskChart(enriched, totalValue);
   const stress = stressTest(enriched, totalValue);
@@ -206,7 +206,7 @@ async function buildCombinedReportData() {
   const dna = portfolioDNA(enriched, totalValue);
   const economicDrivers = calculateEconomicDrivers(enriched, totalValue);
   const etfOverlap = analyzeETFOverlap(enriched);
-  const rebalance = rebalanceSuggestions(enriched, totalValue, { riskContrib });
+  const rebalance = rebalanceSuggestions(enriched, totalValue, { riskContrib, sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });
   const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap });
   const analysis = { corr, factors, health, riskDecomp, riskContrib, wrChart, stress, themes, dna, economicDrivers, etfOverlap, rebalance, portfolioObs };
   const scoreV2 = calculatePortfolioScoreV2({ assetAvg, diag, analysis, enriched });

@@ -1,23 +1,26 @@
-import { safeMetric, safePercent, clamp, isValid, getAssetCategory } from "../utils/normalize.js";
+import { safeMetric, safePercent, clamp, isValid, getAssetCategory, HEALTHY_LIMITS } from "../utils/normalize.js";
 
-// ── Contextual Concentration Limits ──
-const HEALTHY_LIMITS = {
-  "Broad Market ETF": 0.70, // 70% max for a core anchor
-  "Sector ETF":       0.20, // 20% max
-  "Thematic ETF":     0.10, // 10% max
-  "Single Stock":     0.08, // 8% max
-  "Speculative Asset": 0.04, // 4% max
-  "Satellite Asset":  0.05
+// ── Sector name normalization (EN → PT canónico) ──
+// Evita que "Technology" e "Tecnologia" sejam contados como setores distintos.
+const _EN_TO_PT_SECTOR = {
+  "Technology": "Tecnologia", "Information Technology": "Tecnologia",
+  "Healthcare": "Saúde", "Health Care": "Saúde",
+  "Financial Services": "Financeiros", "Financials": "Financeiros",
+  "Energy": "Energia",
+  "Consumer Cyclical": "Consumo Cíclico", "Consumer Discretionary": "Consumo Cíclico",
+  "Consumer Defensive": "Consumo Defensivo", "Consumer Staples": "Consumo Defensivo",
+  "Industrials": "Industriais",
+  "Basic Materials": "Materiais", "Materials": "Materiais",
+  "Real Estate": "Imobiliário",
+  "Communication Services": "Comunicações",
+  "Utilities": "Utilidades",
+  "Commodities": "Commodities"
 };
 
-// ── Historical crisis baselines ──
-const CRISIS_DROPS = {
-  covid:     { name: "COVID-19 (2020)",         avgDrop: -0.34, techDrop: -0.32, energyDrop: -0.55 },
-  gfc:       { name: "Crise Financeira (2008)",  avgDrop: -0.56, techDrop: -0.52, energyDrop: -0.48 },
-  dotcom:    { name: "Dotcom (2000)",            avgDrop: -0.49, techDrop: -0.78, energyDrop: -0.20 },
-  rates2022: { name: "Subida Taxas (2022)",      avgDrop: -0.24, techDrop: -0.33, energyDrop: 0.10 },
-  eurozone:  { name: "Crise Eurozona (2011)",    avgDrop: -0.22, techDrop: -0.18, energyDrop: -0.25 }
-};
+function _sectorKey(p) {
+  const raw = String((p.mkt || p).setor || (p.mkt || p).sector || "Outros").trim();
+  return _EN_TO_PT_SECTOR[raw] || raw || "Outros";
+}
 
 /**
  * Calculate Concentration Risk with contextual awareness.
@@ -52,8 +55,10 @@ export function calculateConcentrationRisk(portfolio, totalValue) {
 
 /**
  * Decomposed Risk Analysis for a portfolio.
+ * @param {Object} [options={}]
+ * @param {number} [options.sectorConcentrationLimitPct=35] - Limite setorial em % (D3)
  */
-export function portfolioRiskDecomposition(portfolio, totalValue, avgCorrelation) {
+export function portfolioRiskDecomposition(portfolio, totalValue, avgCorrelation, options = {}) {
   const conc = calculateConcentrationRisk(portfolio, totalValue);
   
   // 1. Volatility Risk (Weighted Beta)
@@ -74,12 +79,13 @@ export function portfolioRiskDecomposition(portfolio, totalValue, avgCorrelation
   // Penalize if too many assets are in same sensitive sectors (Tech, Finance)
   const sectorMap = {};
   for (const p of portfolio) {
-    const s = String(p.mkt?.setor || p.setor || "Outros");
+    const s = _sectorKey(p);
     sectorMap[s] = (sectorMap[s] || 0) + ((p.valAtual || 0) / totalValue);
   }
+  const sectorLimit = (Number(options.sectorConcentrationLimitPct) || 35) / 100;
   let macroRisk = 0;
   for (const w of Object.values(sectorMap)) {
-    if (w > 0.40) macroRisk += (w - 0.40) * 100;
+    if (w > sectorLimit) macroRisk += (w - sectorLimit) * 100;
   }
   macroRisk = Math.round(clamp(macroRisk, 0, 100));
 

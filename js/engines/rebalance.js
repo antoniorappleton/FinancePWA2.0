@@ -63,7 +63,7 @@ export function rebalanceSuggestions(portfolio, totalValue, options = {}) {
     sectorMap[s].assets.push(p);
   }
 
-  const SECTOR_LIMIT = 0.35;
+  const SECTOR_LIMIT = (Number(options.sectorConcentrationLimitPct) || 35) / 100;
   for (const [sector, data] of Object.entries(sectorMap)) {
     const weight = data.total / total;
     if (weight > SECTOR_LIMIT) {

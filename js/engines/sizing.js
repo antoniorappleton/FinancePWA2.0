@@ -10,12 +10,12 @@ import { normalizeSector, cleanTicker } from "../utils/scoring.js";
 
 // ── Config ──
 const RULES = {
-  maxSinglePosition:   0.10,  // 10% max per asset
-  maxSectorExposure:   0.30,  // 30% max per sector
-  maxTypeExposure:     0.60,  // 60% max per type (stocks, etfs)
-  maxSpeculativeTotal: 0.10,  // 10% max for speculative assets (crypto, meme)
-  minPositions:        5,     // Minimum recommended positions
-  idealPositions:      12,    // Ideal number of positions
+  maxSinglePosition:   0.10,  // 10% max per asset (override via singleStockCapPct)
+  maxSectorExposure:   0.35,  // 35% max per sector (D3, override via sectorConcentrationLimitPct)
+  maxTypeExposure:     0.60,
+  maxSpeculativeTotal: 0.10,
+  minPositions:        5,
+  idealPositions:      12,
 };
 
 /**
@@ -28,8 +28,12 @@ const RULES = {
  * @returns {{ recommendedSize: number, maxSize: number, warnings: Array, reasoning: Array }}
  */
 export function calculatePositionSize(params) {
-  const { asset, totalPortfolioValue, availableCash, currentPositions = [] } = params;
+  const { asset, totalPortfolioValue, availableCash, currentPositions = [],
+          singleStockCapPct, sectorConcentrationLimitPct } = params;
   if (!asset) return { recommendedSize: 0, maxSize: 0, warnings: ["Ativo inválido"], reasoning: [] };
+
+  const singleLimit  = singleStockCapPct        ? singleStockCapPct  / 100 : RULES.maxSinglePosition;
+  const sectorLimit  = sectorConcentrationLimitPct ? sectorConcentrationLimitPct / 100 : RULES.maxSectorExposure;
 
   const totalVal = Math.max(totalPortfolioValue, 1);
   const ticker = cleanTicker(asset.ticker);
@@ -37,7 +41,7 @@ export function calculatePositionSize(params) {
   const reasoning = [];
 
   // ── 1. Base max from single position rule ──
-  let maxPct = RULES.maxSinglePosition;
+  let maxPct = singleLimit;
   reasoning.push(`Regra base: máx. ${(maxPct * 100).toFixed(0)}% por posição`);
 
   // ── 2. Volatility adjustment ──
@@ -57,7 +61,7 @@ export function calculatePositionSize(params) {
   const existingPos = currentPositions.find(p => cleanTicker(p.ticker) === ticker);
   const existingPct = existingPos ? (existingPos.valAtual || 0) / totalVal : 0;
 
-  if (existingPct >= RULES.maxSinglePosition) {
+  if (existingPct >= singleLimit) {
     warnings.push(`Já tens ${(existingPct * 100).toFixed(1)}% em ${ticker} — acima do máximo recomendado`);
     maxPct = Math.max(0, maxPct - existingPct);
   } else if (existingPct > 0) {
@@ -73,9 +77,9 @@ export function calculatePositionSize(params) {
     if (pSec === assetSector) sectorPct += (p.valAtual || 0) / totalVal;
   });
 
-  if (sectorPct >= RULES.maxSectorExposure) {
+  if (sectorPct >= sectorLimit) {
     warnings.push(`Setor "${assetSector}" já tem ${(sectorPct * 100).toFixed(0)}% — limite atingido`);
-    maxPct = Math.min(maxPct, Math.max(0, RULES.maxSectorExposure - sectorPct));
+    maxPct = Math.min(maxPct, Math.max(0, sectorLimit - sectorPct));
   }
 
   // ── 5. Speculative asset cap ──
@@ -100,7 +104,7 @@ export function calculatePositionSize(params) {
   }
 
   // ── Final calculation ──
-  maxPct = clamp(maxPct, 0, RULES.maxSinglePosition);
+  maxPct = clamp(maxPct, 0, singleLimit);
   const maxEUR = maxPct * totalVal;
   const recommended = Math.min(maxEUR, availableCash * 0.8); // Never use 100% of cash in one trade
 
@@ -121,7 +125,10 @@ export function calculatePositionSize(params) {
  * @param {number} totalValue
  * @returns {{ violations: Array, suggestions: Array }}
  */
-export function auditPositionSizes(positions, totalValue) {
+export function auditPositionSizes(positions, totalValue, options = {}) {
+  const singleLimit = (Number(options.singleStockCapPct) || RULES.maxSinglePosition * 100) / 100;
+  const sectorLimit = (Number(options.sectorConcentrationLimitPct) || RULES.maxSectorExposure * 100) / 100;
+
   const violations = [];
   const suggestions = [];
   const total = Math.max(totalValue, 1);
@@ -131,9 +138,9 @@ export function auditPositionSizes(positions, totalValue) {
     const pct = (p.valAtual || 0) / total;
     const ticker = cleanTicker(p.ticker);
 
-    if (pct > RULES.maxSinglePosition * 1.5) {
-      violations.push({ ticker, pct: Math.round(pct * 100), msg: `${ticker} está em ${(pct * 100).toFixed(1)}% — recomendado reduzir para <${RULES.maxSinglePosition * 100}%`, severity: "high" });
-    } else if (pct > RULES.maxSinglePosition) {
+    if (pct > singleLimit * 1.5) {
+      violations.push({ ticker, pct: Math.round(pct * 100), msg: `${ticker} está em ${(pct * 100).toFixed(1)}% — recomendado reduzir para <${singleLimit * 100}%`, severity: "high" });
+    } else if (pct > singleLimit) {
       violations.push({ ticker, pct: Math.round(pct * 100), msg: `${ticker} acima do limite recomendado (${(pct * 100).toFixed(1)}%)`, severity: "medium" });
     }
   }
@@ -147,8 +154,8 @@ export function auditPositionSizes(positions, totalValue) {
 
   for (const [sector, value] of Object.entries(sectorMap)) {
     const pct = value / total;
-    if (pct > RULES.maxSectorExposure) {
-      violations.push({ sector, pct: Math.round(pct * 100), msg: `Setor "${sector}" com ${(pct * 100).toFixed(0)}% — acima do limite de ${RULES.maxSectorExposure * 100}%`, severity: "medium" });
+    if (pct > sectorLimit) {
+      violations.push({ sector, pct: Math.round(pct * 100), msg: `Setor "${sector}" com ${(pct * 100).toFixed(0)}% — acima do limite de ${sectorLimit * 100}%`, severity: "medium" });
     }
   }
 
