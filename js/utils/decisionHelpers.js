@@ -70,12 +70,14 @@ export function getReforcoSuggestion(drawdown, investido, precoAtual, qtd) {
     return { quedaAtualStr: 'Sem queda', rangeMin: 0, rangeMax: 0, newMedioEst: 0 };
   }
 
-  const quedaAbs = -drawdown * 100; // positive %
-  let pctReforco = 0.25;
-  if (quedaAbs >= 0.30) pctReforco = 1.0;
-  else if (quedaAbs >= 0.20) pctReforco = 0.75;
-  else if (quedaAbs >= 0.10) pctReforco = 0.50;
-  else if (quedaAbs >= 0.05) pctReforco = 0.25;
+  const quedaAbs = -drawdown * 100; // positive %, ex: drawdown=-0.15 → quedaAbs=15
+  // Escada alinhada com D5.2 (crisisLadder): limiares em %, frações do investido.
+  let pctReforco = 0;
+  if (quedaAbs >= 50) pctReforco = 1.00;
+  else if (quedaAbs >= 25) pctReforco = 0.75;
+  else if (quedaAbs >= 15) pctReforco = 0.50;
+  else if (quedaAbs >= 10) pctReforco = 0.25;
+  else if (quedaAbs >= 5)  pctReforco = 0.10;
 
   const midReforco = investido * pctReforco;
   const rangeMin = Math.round(midReforco * 0.5);
