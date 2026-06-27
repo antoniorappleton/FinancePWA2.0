@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // ANALISE.JS — VERSÃO ANOTADA (estrutura por secções, sem alterar lógica)
 // ------------------------------------------------------------
 // Objetivo:
@@ -43,7 +43,7 @@ import { repairFirestoreData } from "../utils/maintenance.js";
 import { enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
 
 /* =========================================================
-Carregamento “on-demand” de libs (Chart.js, html2canvas, jsPDF)
+Carregamento "on-demand" de libs (Chart.js, html2canvas, jsPDF)
 ========================================================= */
 async function ensureScript(src) {
   if ([...document.scripts].some((s) => s.src === src)) return;
@@ -153,9 +153,9 @@ const CFG = {
 
   // blend das taxas conforme período escolhido no simulador
   BLEND_WEIGHTS: {
-    “1s”: { w: 0.75, m: 0.15, y: 0.1 },
-    “1m”: { w: 0.1, m: 0.75, y: 0.15 },
-    “1a”: { w: 0.1, m: 0.15, y: 0.75 },
+    "1s": { w: 0.75, m: 0.15, y: 0.1 },
+    "1m": { w: 0.1, m: 0.75, y: 0.15 },
+    "1a": { w: 0.1, m: 0.15, y: 0.75 },
   },
 };
 
@@ -1803,7 +1803,7 @@ function renderResultadoSimulacao(res) {
     </div>`;
 }
 
-/* === Pizza (selecionados) — sem “tremores” === */
+/* === Pizza (selecionados) — sem "tremores" === */
 let chartSelSetor = null;
 async function renderSelectedSectorChart(rowsSelecionadas) {
   await ensureChartJS();
@@ -2994,7 +2994,7 @@ export async function initScreen() {
       dataRows = selecionadas.map((r) => ({
         nome: r.nome,
         ticker: r.ticker,
-        // sem simulação, tomamos “1 unidade” como aproximação só para pré-visualizar
+        // sem simulação, tomamos "1 unidade" como aproximação só para pré-visualizar
         investido: Number(r.valorStock || 0),
         dividendoAnual: Number(r.divAnual || r.dividendoMedio24m || 0),
         dividendoHorizonte:
