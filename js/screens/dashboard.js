@@ -666,7 +666,7 @@ function buildBriefActions({ positions, health, stress, risk, urgentItems, objec
   if (topRisk && topRisk.riskContribution >= 35) {
     actions.push({ type: "warning", title: `Validar ${topRisk.ticker}`, text: `Contribui ${topRisk.riskContribution}% do risco estimado do portfolio.` });
   }
-  if (stress.resilience < 55) {
+  if (stress.robustnessCrisis < 55) {
     actions.push({ type: "warning", title: "Testar cenario defensivo", text: "O stress test indica vulnerabilidade em quedas fortes de mercado." });
   }
   const closeObjective = positions

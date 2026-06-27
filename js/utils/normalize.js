@@ -122,6 +122,34 @@ export function safePercent(asset, ...keys) {
 }
 
 /**
+ * Normalize unicode whitespace and zero-width chars in a string.
+ * Used by normalizeSector and anywhere sector/market strings need clean comparison.
+ */
+export function canon(s) {
+  return String(s ?? "")
+    .replace(/ /g, " ")
+    .replace(/[​-‍]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Extract and normalize the sector string from an asset object.
+ * Reads setor/sector/industry/segmento fields and applies canon().
+ */
+export function normalizeSector(d) {
+  const sRaw = d.setor || d.sector || d.Setor || d.Sector ||
+               d.industry || d.Industry || d.indústria || d.Indústria ||
+               d.segmento || d.segment || "";
+  let s = canon(sRaw);
+  if ((!s || s === "—") && String(d.ticker).includes(":")) {
+    const p = String(d.ticker).split(":")[0].trim();
+    if (p.length > 2) s = canon(p);
+  }
+  return s || "—";
+}
+
+/**
  * Ticker Normalization / Deduplication
  * Resolves aliases and exchanges to a canonical ID.
  * Examples: "VWCE.DE" -> "VWCE", "VOO.US" -> "VOO", "XETR:DAVV" -> "DAVV"

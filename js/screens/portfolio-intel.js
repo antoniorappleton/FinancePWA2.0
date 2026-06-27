@@ -118,7 +118,7 @@ async function runFullAnalysis() {
     acoesSnap.forEach(d => {
       const x = d.data();
       if (x.ticker) {
-        const ct = canonicalTicker(cleanTicker(x.ticker));
+        const ct = canonicalTicker(x.ticker);
         // Se houver duplicados, preferimos o que tiver mais dados (confidenceScore)
         if (!acoesMap.has(ct) || confidenceScore(x) > confidenceScore(acoesMap.get(ct))) {
           acoesMap.set(ct, x);
@@ -649,7 +649,7 @@ function buildManualCompositionMap(snapshot) {
     if (!ticker) return;
     map.set(ticker, data);
     map.set(cleanTicker(ticker), data);
-    map.set(canonicalTicker(cleanTicker(ticker)), data);
+    map.set(canonicalTicker(ticker), data);
   });
   return map;
 }

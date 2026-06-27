@@ -163,11 +163,11 @@ function simulateAsset(asset, scenario) {
  * Run stress tests on the entire portfolio.
  * @param {Array} portfolio - Array of { ticker, valAtual, mkt }
  * @param {number} totalValue
- * @returns {{ scenarios: Object, worstCase: Object, resilience: number, summary: string }}
+ * @returns {{ scenarios: Object, worstCase: Object, robustnessCrisis: number, summary: string }}
  */
 export function stressTest(portfolio, totalValue) {
   if (!portfolio || portfolio.length === 0) {
-    return { scenarios: {}, worstCase: null, resilience: 0, summary: "Portfólio vazio" };
+    return { scenarios: {}, worstCase: null, robustnessCrisis: 0, summary: "Portfólio vazio" };
   }
 
   const total = Math.max(totalValue, 1);
@@ -214,15 +214,15 @@ export function stressTest(portfolio, totalValue) {
   // Average drop across all scenarios
   const avgDrop = Object.values(results).reduce((s, r) => s + r.portfolioDropPct, 0) / Object.keys(results).length;
   
-  // Resilience: 0 = very fragile, 100 = fortress
-  const resilience = Math.round(clamp(100 + avgDrop * 2, 0, 100));
+  // robustnessCrisis: 0 = muito frágil, 100 = fortaleza (D4 — "Robustez em crise")
+  const robustnessCrisis = Math.round(clamp(100 + avgDrop * 2, 0, 100));
 
   // Summary
   let summary;
-  if (resilience >= 75) summary = "Portfólio resiliente — sobrevive bem à maioria dos cenários de stress";
-  else if (resilience >= 55) summary = "Portfólio moderado — vulnerável a crises severas mas recuperável";
-  else if (resilience >= 35) summary = "Portfólio agressivo — perdas significativas esperadas em cenários de stress";
+  if (robustnessCrisis >= 75) summary = "Portfólio resiliente — sobrevive bem à maioria dos cenários de stress";
+  else if (robustnessCrisis >= 55) summary = "Portfólio moderado — vulnerável a crises severas mas recuperável";
+  else if (robustnessCrisis >= 35) summary = "Portfólio agressivo — perdas significativas esperadas em cenários de stress";
   else summary = "Portfólio muito exposto — risco extremo em crises de mercado";
 
-  return { scenarios: results, worstCase, resilience, summary };
+  return { scenarios: results, worstCase, robustnessCrisis, summary };
 }

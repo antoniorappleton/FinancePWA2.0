@@ -282,7 +282,7 @@ function renderReportUI(data) {
   const { totalValue, totalInvested, scoreV2, diag, enriched, analysis, narrative } = data;
   const globalProfit = totalValue - totalInvested;
   const globalProfitPct = totalInvested > 0 ? (globalProfit / totalInvested) * 100 : 0;
-  const resilience = analysis.riskDecomp?.resilienceScore ?? analysis.stress?.resilience ?? 0;
+  const resilience = analysis.riskDecomp?.resilienceScore ?? analysis.stress?.robustnessCrisis ?? 0;
   return `
     <style>
       .report-v2 { font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc; padding: 0; }
@@ -697,7 +697,7 @@ async function exportPortfolioToPDF(data) {
   section("4.1 Saude, resiliencia e fatores");
   Object.entries(scoreV2.breakdown).forEach(([k, v], i) => { const y = currY + i * 16; doc.setFontSize(8); doc.setTextColor(80); doc.text(k.toUpperCase(), margin, y); doc.setFillColor(240); doc.rect(margin + 95, y - 6, 100, 5, 'F'); doc.setFillColor(79, 70, 229); doc.rect(margin + 95, y - 6, clamp(v), 5, 'F'); doc.text(`${v.toFixed(0)}%`, margin + 205, y); });
   const factorEntries = topEntries(analysis.factors, 6);
-  bulletList([`Saude estrutural: ${analysis.health?.classification || "n/d"} (${analysis.health?.score || 0}/100).`, `Resiliencia a crises: ${analysis.riskDecomp?.resilienceScore ?? analysis.stress?.resilience ?? 0}/100.`, `Fatores dominantes: ${factorEntries.slice(0, 3).map(([k, v]) => `${k} ${Math.round(v)}`).join(", ") || "n/d"}.`, `Correlacao media: ${Number(analysis.corr?.avgCorrelation || 0).toFixed(2)}.`], margin + 260, currY, pageWidth - margin - 260);
+  bulletList([`Saude estrutural: ${analysis.health?.classification || "n/d"} (${analysis.health?.score || 0}/100).`, `Robustez em crise: ${analysis.riskDecomp?.resilienceScore ?? analysis.stress?.robustnessCrisis ?? 0}/100.`, `Fatores dominantes: ${factorEntries.slice(0, 3).map(([k, v]) => `${k} ${Math.round(v)}`).join(", ") || "n/d"}.`, `Correlacao media: ${Number(analysis.corr?.avgCorrelation || 0).toFixed(2)}.`], margin + 260, currY, pageWidth - margin - 260);
 
   currY += 115; section("4.2 Stress test em linguagem simples");
   const stressRows = Object.values(analysis.stress?.scenarios || {}).slice(0, 5).map(s => [s.name, `${s.portfolioDropPct}%`, fmtEUR(s.estimatedLoss), `${s.recoveryMonths || "-"} meses`]);

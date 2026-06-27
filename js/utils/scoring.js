@@ -1,6 +1,8 @@
 // js/utils/scoring.js
 
 import { scoreAssetV2, styleToMultipliers } from "../engines/score-v2.js";
+import { canonicalTicker } from "./normalize.js";
+export { canon, normalizeSector } from "./normalize.js";
 
 export function getUserWeights() {
   try {
@@ -290,34 +292,7 @@ export function anualPreferido(doc) {
   return anualizarDividendo(doc.dividendo, doc.periodicidade);
 }
 
-export function canon(s) {
-  return String(s ?? "")
-    .replace(/ /g, " ")
-    .replace(/[​-‍]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 export function cleanTicker(t) {
-  const s = String(t || "");
-  const up = s.toUpperCase().trim();
-  if (up.includes(":")) {
-    const parts = up.split(":").filter(Boolean);
-    const currencyCodes = new Set(["EUR", "USD", "GBP", "CHF"]);
-    return parts.length >= 3 && currencyCodes.has(parts.at(-1)) ? parts[0] : parts.at(-1);
-  }
-  return up;
-}
-
-export function normalizeSector(d) {
-  const sRaw = d.setor || d.sector || d.Setor || d.Sector ||
-               d.industry || d.Industry || d.indústria || d.Indústria ||
-               d.segmento || d.segment || "";
-
-  let s = canon(sRaw);
-  if ((!s || s === "—") && String(d.ticker).includes(":")) {
-    const p = String(d.ticker).split(":")[0].trim();
-    if (p.length > 2) s = canon(p);
-  }
-  return s || "—";
+  return canonicalTicker(t);
 }
