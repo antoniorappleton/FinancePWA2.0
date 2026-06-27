@@ -34,7 +34,7 @@ export function openAssetPanel(ticker) {
 
   let scoreResult;
   try {
-    scoreResult = scoreAssetV2(market);
+    scoreResult = scoreAssetV2(market, null, window._macroRegime ?? "high_rates");
   } catch {
     scoreResult = { finalScore: 50, grade: "C", confidence: 0,
       engines: {}, signals: [], warnings: [], observations: [] };

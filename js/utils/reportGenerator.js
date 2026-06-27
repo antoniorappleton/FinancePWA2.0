@@ -1,7 +1,7 @@
 // js/utils/reportGenerator.js
 import { db } from "../firebase-config.js";
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { calculateLucroMaximoScore, getAssetType, cleanTicker, normalizeSector } from "./scoring.js";
+import { getAssetType, cleanTicker, normalizeSector } from "./scoring.js";
 import { canonicalTicker, confidenceScore } from "./normalize.js";
 import { aggregatePortfolioPositions } from "./portfolioPositions.js";
 import { calculatePortfolioAssessment } from "./portfolioAssessment.js";
@@ -186,12 +186,11 @@ async function buildCombinedReportData() {
     const precoAtual = readAssetPrice(mkt) || Number(p.custoMedio || 0);
     const valAtual = Number(p.qtd || 0) * precoAtual;
     const v2 = scoreAssetV2(mkt, styleMult, regime);
-    const legacy = calculateLucroMaximoScore(mkt);
     const assetType = getAssetType(rawTicker, mkt);
     totalValue += valAtual;
     totalInvested += Number(p.investido || 0);
     totalScoreWeight += v2.finalScore * valAtual;
-    return { ...p, ticker: canonical || rawTicker, nome: p.nome || mkt.nome || rawTicker, setor: p.setor || normalizeSector(mkt) || "Outros", precoAtual, valAtual, score: v2.finalScore, legacyScore: legacy.score, grade: v2.grade, v2, mkt, category: assetType };
+    return { ...p, ticker: canonical || rawTicker, nome: p.nome || mkt.nome || rawTicker, setor: p.setor || normalizeSector(mkt) || "Outros", precoAtual, valAtual, score: v2.finalScore, legacyScore: (v2.finalScore / 100), grade: v2.grade, v2, mkt, category: assetType };
   }).filter(p => p.qtd > 0 && p.valAtual > 0);
 
   const assetAvg = totalValue > 0 ? totalScoreWeight / totalValue : 0;

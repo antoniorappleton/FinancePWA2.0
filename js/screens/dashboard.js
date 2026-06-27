@@ -1149,7 +1149,7 @@ async function carregarTop10Crescimento(periodo = "1m") {
     snap.forEach((doc) => {
       const d = doc.data();
       if (isKnownETF(d.ticker)) enrichETFAsset(d, allAssetsMap);
-      const result = calculateLucroMaximoScore(d, periodo);
+      const result = calculateLucroMaximoScore(d, periodo, null, lastConfigData?.macroRegime ?? null);
       if (d.ticker && result.score > 0) {
         let rawYield = Number(d["Dividend Yield"] || d.yield || 0);
         let yPct =

@@ -1,10 +1,6 @@
 // js/utils/scoring.js
 
-import { scoreAssetV2 } from "../engines/score-v2.js";
-import { momentumScore } from "../engines/momentum.js";
-import { qualityScore } from "../engines/quality.js";
-import { valuationScore } from "../engines/valuation.js";
-import { riskScore } from "../engines/risk.js";
+import { scoreAssetV2, styleToMultipliers } from "../engines/score-v2.js";
 
 export function getUserWeights() {
   try {
@@ -20,15 +16,6 @@ export const SCORING_CFG = {
     etf: { T: 0.4, Diversification: 0.25, Cost: 0.15, Liquidity: 0.10, Volatility: 0.10 },
     crypto: { T: 0.45, Momentum: 0.2, Volatility: 0.25, Weight: 0.10 }
   }
-};
-
-const INDICATOR_INFO = {
-  pe: { min: 5, target: 15, max: 35, inverse: true },
-  peg: { min: 0.5, target: 1.0, max: 2.5, inverse: true },
-  p_fcf: { min: 5, target: 15, max: 40, inverse: true },
-  roe: { min: 0.05, target: 0.15, max: 0.35, inverse: false },
-  roic: { min: 0.05, target: 0.12, max: 0.30, inverse: false },
-  oper_margin: { min: 0.05, target: 0.15, max: 0.40, inverse: false }
 };
 
 const SCORING_READINESS_THRESHOLD = 0.6;
@@ -105,20 +92,18 @@ function toNum(v) {
   if (typeof v === "number") return v;
   if (v === undefined || v === null || v === "") return NaN;
   let s = String(v).trim();
-  // Se contiver vírgula e ponto, assume-se que o ponto é milhar e a vírgula é decimal (PT format)
   if (s.includes(",") && s.includes(".")) {
     s = s.replace(/\./g, "").replace(",", ".");
   } else if (s.includes(",")) {
-    // Se só tiver vírgula, é o separador decimal
     s = s.replace(",", ".");
   }
   const n = parseFloat(s);
   return isNaN(n) ? NaN : n;
 }
 
-function clamp(v, min, max) { 
+function clamp(v, min, max) {
   const val = Number(v) || 0;
-  return Math.max(min, Math.min(max, val)); 
+  return Math.max(min, Math.min(max, val));
 }
 
 function hasValidValue(v) {
@@ -176,62 +161,7 @@ export function getScoringReadiness(asset) {
   return { type, ready, coverage: all.ratio, groups: { common, technical, valuation, quality, risk, dividend } };
 }
 
-function infoToConfig(info) { return { min: info.min, target: info.target, max: info.max, inverse: info.inverse }; }
-
-// --- FUNÇÕES DE SCORING ESPECIALIZADAS ---
-
-// Duplicate early definition of scoreStock removed – using later version with custom multipliers.
-
-function scoreETF(acao, metrics) {
-  const ticker = String(acao.ticker || "").toUpperCase();
-  const { T, R_Price } = metrics;
-  const isCore = ["VWCE", "IWDA", "VUSA", "CSPX", "EUNL", "VGWL"].includes(ticker);
-  const isThematic = ["QDVE", "GRID", "NUKL", "VVMX", "WCLD", "ESPO"].includes(ticker);
-  const divScore = isCore ? 0.9 : (isThematic ? 0.5 : 0.7);
-  const costScore = isCore ? 0.9 : 0.6;
-  const liqScore = isCore ? 0.95 : 0.7;
-  const volScore = isThematic ? 0.5 : 0.8;
-  const W = SCORING_CFG.TYPE_WEIGHTS.etf;
-  const T_Final = clamp((Number(T)||0) * 0.7 + (Number(R_Price)||0) * 0.3, 0, 1);
-  const res = (W.T * T_Final) + (W.Diversification * divScore) + (W.Cost * costScore) + (W.Liquidity * liqScore) + (W.Volatility * volScore);
-  return clamp(res, 0, 1);
-}
-
-function scoreCrypto(acao, metrics) {
-  const { T, R_Price } = metrics;
-  const W = SCORING_CFG.TYPE_WEIGHTS.crypto;
-  const res = (W.T * (Number(T)||0)) + (W.Momentum * (Number(R_Price)||0)) + (W.Volatility * 0.4);
-  return clamp(res, 0, 1);
-}
-
-function scoreEPS(yoy, next, fiv) {
-  let s = 0;
-  if (yoy > 0.20) s += 0.4; else if (yoy > 0.05) s += 0.2;
-  if (next > 0.15) s += 0.3; else if (next > 0.05) s += 0.15;
-  if (fiv > 0.12) s += 0.3; else if (fiv > 0.05) s += 0.15;
-  return clamp(s, 0, 1);
-}
-
-function scorePE(pe) {
-  const v = Number(pe) || 0;
-  if (v <= 0) return 0.1;
-  if (v < 15) return 1.0;
-  if (v < 25) return 0.6;
-  if (v < 40) return 0.3;
-  return 0.1;
-}
-
-function scoreTrend(p, s50, s200, rsi) {
-  const price = Number(p)||0, sma50 = Number(s50)||0, sma200 = Number(s200)||0, r = Number(rsi)||50;
-  let s = 0;
-  if (price > sma200) s += 0.4;
-  if (price > sma50) s += 0.3;
-  if (sma50 > sma200) s += 0.1;
-  if (r > 40 && r < 70) s += 0.2;
-  else if (r >= 70) s += 0.1;
-  return clamp(s, 0, 1);
-}
-
+// Dividendo sem motor dedicado em V2 — mantido como fallback para campo D.
 function scoreDividendYield(y) {
   const v = Number(y) || 0;
   if (v > 8) return 0.6;
@@ -241,34 +171,59 @@ function scoreDividendYield(y) {
   return 0.1;
 }
 
-function scoreSolvency(cr, de, nd_eb) {
-  const current = Number(cr)||0, debt = Number(de)||0;
-  let s = 0;
-  if (current > 1.5) s += 0.3; else if (current > 1.0) s += 0.15;
-  if (debt < 0.8) s += 0.3; else if (debt < 1.5) s += 0.15;
-  if (nd_eb !== null) {
-    const v = Number(nd_eb)||0;
-    if (v < 2.0) s += 0.4; else if (v < 4.0) s += 0.2;
-  } else s += 0.2;
-  return clamp(s, 0, 1);
-}
+let _warnedRegime = false;
 
-function scoreGeneric(v, cfg) {
-  const val = Number(v) || 0;
-  const { min, target, max, inverse } = cfg;
-  if (!inverse) {
-    if (val >= target) return 0.8 + clamp((val - target) / (max - target), 0, 0.2);
-    return clamp((val - min) / (target - min), 0, 0.8);
-  } else {
-    if (val <= target) return 0.8 + clamp((target - val) / (target - min), 0, 0.2);
-    return clamp((max - val) / (max - target), 0, 0.8);
+/**
+ * Adaptador fino para scoreAssetV2.
+ * Assinatura alargada em Fase 4 (D1): styleAlloc substitui customMultipliers (V1);
+ * regime lido de config/strategy.macroRegime e passado pelo chamador.
+ * @param {Object} acao - Dados de mercado do ativo
+ * @param {string} [period="1y"] - Período de referência para annualizeRate
+ * @param {Object|null} [styleAlloc] - {growth,value,div,qual} em escala 0-100
+ * @param {string|null} [regime] - Regime macro (ex: "high_rates", "risk_on")
+ */
+export function calculateLucroMaximoScore(acao, period = "1y", styleAlloc = null, regime = null) {
+  if (!acao) return { score: 0.5, components: { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 } };
+
+  if (!regime && !_warnedRegime) {
+    console.warn("[scoring] Chamadores sem regime explícito usam 'high_rates' como fallback. Atualizar em Fase 4.3.");
+    _warnedRegime = true;
   }
+  const effectiveRegime = regime ?? "high_rates";
+  const styleMult = styleToMultipliers(styleAlloc);
+  const rAnnual = annualizeRate(acao, period);
+
+  let v2;
+  try {
+    v2 = scoreAssetV2(acao, styleMult, effectiveRegime);
+  } catch (err) {
+    console.warn("[scoring] scoreAssetV2 falhou:", err);
+    return { score: 0.5, rAnnual, components: { R: 0.5, V: 0.5, T: 0.5, D: 0.5, E: 0.5, S: 0.5 }, mode: "erro" };
+  }
+
+  const eng = v2.engines || {};
+  const D = scoreDividendYield(acao.yield);
+
+  return {
+    score: clamp((v2.finalScore ?? 50) / 100, 0, 1),
+    rAnnual,
+    components: {
+      R: clamp((eng.momentum?.score  ?? 50) / 100, 0, 1),
+      V: clamp((eng.valuation?.score ?? 50) / 100, 0, 1),
+      T: clamp((eng.momentum?.score  ?? 50) / 100, 0, 1),
+      D,
+      E: clamp((eng.quality?.score   ?? 50) / 100, 0, 1),
+      S: clamp((eng.risk?.score      ?? 50) / 100, 0, 1),
+    },
+    mode: "v2",
+    v2,
+    readiness: getScoringReadiness(acao),
+  };
 }
 
 export function annualizeRate(acao, period = "1y") {
   if (!acao) return 0.1;
 
-  // Try to use pre-calculated rates from the database
   let val = undefined;
   if (period === "1w" || period === "1s") {
     val = acao.priceChange_1w ?? acao.taxaCrescimento_1semana ?? acao.g1w ?? acao.price_change_1w;
@@ -280,13 +235,9 @@ export function annualizeRate(acao, period = "1y") {
 
   const nVal = toNum(val);
   if (!isNaN(nVal)) {
-    // Normalização: se o valor absoluto for > 1, assume-se que está em percentagem (ex: 5.4 para 5.4%)
-    // Se for <= 1, assume-se que já é uma fração (ex: 0.054 para 5.4%)
-    // Excepto se for exatamente 1 ou -1, mas na prática crescimento raramente é exactamente 100%
     return Math.abs(nVal) > 1 ? nVal / 100 : nVal;
   }
 
-  // Fallback to price-based estimation
   const pClose = toNum(acao.valorStock || acao.price);
   const pOpen = toNum(acao.price_open_1y || acao.price_1y_ago);
 
@@ -295,162 +246,6 @@ export function annualizeRate(acao, period = "1y") {
 
   return (pClose - pOpen) / pOpen;
 }
-
-export function calculateLucroMaximoScore(acao, period = "1y", customMultipliers = null) {
-    if (!acao) return { score: 0.5, components: { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 } };
-    const assetType = getAssetType(acao.ticker, acao);
-    const rAnnual = annualizeRate(acao, period);
-
-    const R_Price = clamp(rAnnual / 0.5, 0, 1);
-    const R_Eps = scoreEPS(
-      Number(acao.epsYoY || acao.eps_yoy || acao.eps_growth || 0),
-      Number(acao.epsNextY || acao.eps_next_y || acao.eps_growth_next || 0),
-      Number(acao.eps_next_5y || acao.eps_growth_5y || 0)
-    );
-    const R = clamp(R_Price * 0.4 + R_Eps * 0.6, 0, 1);
-
-    const V = clamp(scorePE(acao.pe) * 0.5 + scoreGeneric(acao.peg, infoToConfig(INDICATOR_INFO.peg)) * 0.3 + scoreGeneric(acao.p_fcf, infoToConfig(INDICATOR_INFO.p_fcf)) * 0.2, 0, 1);
-    
-    const p = Number(acao.valorStock || acao.price || 0);
-    const T = scoreTrend(p, acao.sma50, acao.sma200, acao.rsi_14);
-    const D = scoreDividendYield(acao.yield);
-    const E = clamp(scoreGeneric(acao.roic, infoToConfig(INDICATOR_INFO.roic)) * 0.4 + scoreGeneric(acao.roe, infoToConfig(INDICATOR_INFO.roe)) * 0.3 + scoreGeneric(acao.oper_margin, infoToConfig(INDICATOR_INFO.oper_margin)) * 0.3, 0, 1);
-    const S = scoreSolvency(acao.current_ratio, acao.debt_eq, null);
-
-    const metrics = { R, V, T, D, E, S, R_Price };
-
-    let finalScore = 0.5;
-    if (assetType === "etf") finalScore = scoreETF(acao, metrics);
-    else if (assetType === "crypto") finalScore = scoreCrypto(acao, metrics);
-    else finalScore = scoreStock(acao, metrics, customMultipliers);
-
-    const legacyResult = {
-      score: Number(finalScore) || 0.5,
-      rAnnual,
-      components: metrics,
-      mode: "legacy",
-      readiness: getScoringReadiness(acao)
-    };
-
-    return applyAdaptiveScoring(acao, legacyResult, customMultipliers);
-  }
-
-  function applyAdaptiveScoring(acao, legacyResult, customMultipliers = null) {
-    const readiness = legacyResult.readiness || getScoringReadiness(acao);
-    let engines = null;
-
-    try {
-      engines = {
-        momentum: momentumScore(acao),
-        quality: qualityScore(acao),
-        valuation: valuationScore(acao),
-        risk: riskScore(acao),
-      };
-
-      if (readiness.ready) {
-        const v2 = scoreAssetV2(acao, v1MultipliersToV2(customMultipliers));
-        return {
-          ...legacyResult,
-          score: clamp((v2.finalScore || 50) / 100, 0, 1),
-          components: v2Components(v2, legacyResult.components),
-          mode: "v2",
-          v2,
-          readiness,
-        };
-      }
-
-      const hybrid = hybridComponents(legacyResult.components, readiness, engines);
-      if (!hybrid.changed) return { ...legacyResult, engines, readiness };
-
-      const score = readiness.type === "etf"
-        ? scoreETF(acao, hybrid.components)
-        : readiness.type === "crypto"
-          ? scoreCrypto(acao, hybrid.components)
-          : scoreStock(acao, hybrid.components, customMultipliers);
-
-      return {
-        ...legacyResult,
-        score,
-        components: hybrid.components,
-        mode: "hybrid",
-        engines,
-        readiness,
-      };
-    } catch (err) {
-      console.warn("[scoring] Adaptive scoring fallback to legacy:", err);
-      return { ...legacyResult, mode: "legacy", engines, readiness };
-    }
-  }
-
-  function v1MultipliersToV2(m) {
-    if (!m) return null;
-    return {
-      momentum: m.R || m.T ? ((m.R || 1) + (m.T || 1)) / 2 : undefined,
-      valuation: m.V,
-      quality: m.E,
-      risk: m.S,
-    };
-  }
-
-  function v2Components(v2, fallback) {
-    const engines = v2?.engines || {};
-    return {
-      R: clamp((engines.momentum?.score ?? fallback.R * 100) / 100, 0, 1),
-      V: clamp((engines.valuation?.score ?? fallback.V * 100) / 100, 0, 1),
-      T: clamp((engines.momentum?.score ?? fallback.T * 100) / 100, 0, 1),
-      D: fallback.D,
-      E: clamp((engines.quality?.score ?? fallback.E * 100) / 100, 0, 1),
-      S: clamp((engines.risk?.score ?? fallback.S * 100) / 100, 0, 1),
-      R_Price: fallback.R_Price,
-    };
-  }
-
-  function hybridComponents(fallback, readiness, engines) {
-    const c = { ...fallback };
-    let changed = false;
-    const groups = readiness.groups || {};
-    const use = (key, value) => {
-      const n = Number(value);
-      if (Number.isFinite(n)) {
-        c[key] = clamp(n / 100, 0, 1);
-        changed = true;
-      }
-    };
-
-    if ((groups.technical?.ratio || 0) >= 0.35) {
-      use("T", engines.momentum?.score);
-      c.R = clamp((c.R * 0.6) + ((engines.momentum?.score || c.R * 100) / 100) * 0.4, 0, 1);
-    }
-    if ((groups.valuation?.ratio || 0) >= 0.45) use("V", engines.valuation?.score);
-    if ((groups.quality?.ratio || 0) >= 0.25) use("E", engines.quality?.score);
-    if ((groups.risk?.ratio || 0) >= 0.25) use("S", engines.risk?.score);
-
-    return { changed, components: c };
-  }
-
-  function scoreStock(acao, metrics, customMultipliers = null) {
-    const { R, V, T, D, E, S } = metrics;
-    const W = { ...SCORING_CFG.TYPE_WEIGHTS.stock };
-    
-    // Apply custom multipliers if provided (e.g., from Style settings)
-    if (customMultipliers) {
-      if (customMultipliers.R) W.R *= customMultipliers.R;
-      if (customMultipliers.V) W.V *= customMultipliers.V;
-      if (customMultipliers.D) W.D *= customMultipliers.D;
-      if (customMultipliers.E) W.E *= customMultipliers.E;
-      if (customMultipliers.T) W.T *= customMultipliers.T;
-      if (customMultipliers.S) W.S *= customMultipliers.S;
-      
-      // Re-normalize weights so they sum to 1
-      const sum = W.R + W.V + W.T + W.D + W.E + W.S;
-      if (sum > 0) {
-        W.R /= sum; W.V /= sum; W.T /= sum; W.D /= sum; W.E /= sum; W.S /= sum;
-      }
-    }
-
-    const res = (W.R * (R||0)) + (W.V * (V||0)) + (W.T * (T||0)) + (W.D * (D||0)) + (W.E * (E||0)) + (W.S * (S||0));
-    return clamp(res, 0, 1);
-  }
 
 export function parseSma(sma, currentPrice) {
   if (sma === undefined || sma === null || sma === "") return null;
@@ -461,10 +256,9 @@ export function parseSma(sma, currentPrice) {
 
 export function getAssetType(ticker, acao) {
   const cleanT = String(ticker || "").split(".")[0].split(":")[0].toUpperCase().trim();
-  const t = String(ticker || "").toUpperCase();
   const n = String(acao?.nome || acao?.name || "").toUpperCase();
   const s = String(acao?.setor || acao?.sector || acao?.Setor || acao?.Sector || "").toUpperCase();
-  
+
   const cryptoTickers = ["BTC", "ETH", "SOL", "DOT", "ADA", "XRP", "AVAX", "LINK", "MATIC"];
   const commodityTickers = ["GZUR", "VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"];
   const etfTickers = [
@@ -477,12 +271,12 @@ export function getAssetType(ticker, acao) {
   if (cryptoTickers.includes(cleanT) || n.includes("BITCOIN") || n.includes("ETHEREUM") || s.includes("CRIPTO")) return "crypto";
   if (commodityTickers.includes(cleanT) || n.includes("PHYSICAL") || n.includes("SILVER") || n.includes("GOLD") || s === "COMMODITIES" || s === "COMMODITY") return "commodity";
   if (etfTickers.includes(cleanT) || n.includes("ETF") || n.includes("UCITS") || n.includes("VANGUARD") || n.includes("ISHARES") || n.includes("LYXOR") || n.includes("AMUNDI") || s.includes("ETF")) return "etf";
-  
+
   return "stock";
 }
 
 export function anualizarDividendo(d, p) {
-  const val = Number(d)||0; const per = String(p||"").toLowerCase();
+  const val = Number(d) || 0; const per = String(p || "").toLowerCase();
   if (val <= 0) return 0;
   if (per === "mensal" || per === "monthly") return val * 12;
   if (per === "trimestral" || per === "quarterly") return val * 4;
@@ -495,10 +289,11 @@ export function anualPreferido(doc) {
   if (d24 > 0) return d24;
   return anualizarDividendo(doc.dividendo, doc.periodicidade);
 }
+
 export function canon(s) {
   return String(s ?? "")
-    .replace(/\u00A0/g, " ")
-    .replace(/[\u200B-\u200D]/g, "")
+    .replace(/ /g, " ")
+    .replace(/[​-‍]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -515,10 +310,10 @@ export function cleanTicker(t) {
 }
 
 export function normalizeSector(d) {
-  const sRaw = d.setor || d.sector || d.Setor || d.Sector || 
+  const sRaw = d.setor || d.sector || d.Setor || d.Sector ||
                d.industry || d.Industry || d.indústria || d.Indústria ||
                d.segmento || d.segment || "";
-  
+
   let s = canon(sRaw);
   if ((!s || s === "—") && String(d.ticker).includes(":")) {
     const p = String(d.ticker).split(":")[0].trim();

@@ -130,6 +130,7 @@ async function runFullAnalysis() {
     const manualComposition = buildManualCompositionMap(etfHoldingsSnap);
     const styleMult = styleToMultipliers(strategy.styleAlloc);
     const regime = strategy.macroRegime || "high_rates";
+    window._macroRegime = regime; // exposto para asset-deep-panel e outros componentes
 
     // Build enriched portfolio with the same FIFO source of truth used by the Portfolio screen.
     const { openPositions } = aggregatePortfolioPositions(ativosSnap);

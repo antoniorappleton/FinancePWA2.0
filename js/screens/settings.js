@@ -520,17 +520,16 @@ export function initScreen() {
           qual:   (Number(document.getElementById("cfgStyleQual")?.value) || 25) / 100,
         };
 
-        const scored = allData.map(d => {
-          // Ajustar pesos do algoritmo baseados no Estilo do utilizador
-          // O Estilo atua como um multiplicador de preferência
-          const styleAdjWeights = {
-             R: 1 + (userStyles.growth * 2), // Growth aumenta importância de Crescimento
-             V: 1 + (userStyles.value * 2),  // Value aumenta importância de Valuation
-             D: 1 + (userStyles.div * 2),    // Div aumenta importância de Dividendos
-             E: 1 + (userStyles.qual * 2),   // Quality aumenta importância de Eficiência
-          };
+        // userStyles está em escala 0–1; styleToMultipliers (chamado internamente) espera 0–100
+        const styleAllocScaled = {
+          growth: userStyles.growth * 100,
+          value:  userStyles.value  * 100,
+          div:    userStyles.div    * 100,
+          qual:   userStyles.qual   * 100,
+        };
 
-          const res = calculateLucroMaximoScore(d, "1m", styleAdjWeights);
+        const scored = allData.map(d => {
+          const res = calculateLucroMaximoScore(d, "1m", styleAllocScaled);
           let type = getAssetType(d.ticker, d);
           const nomeU = String(d.nome || "").toUpperCase();
           if (nomeU.includes("BOND") || nomeU.includes("OBRIGA") || nomeU.includes("TREASURY")) {
