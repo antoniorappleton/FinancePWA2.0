@@ -173,12 +173,8 @@ function scoreDividendYield(y) {
   return 0.1;
 }
 
-let _warnedRegime = false;
-
 /**
  * Adaptador fino para scoreAssetV2.
- * Assinatura alargada em Fase 4 (D1): styleAlloc substitui customMultipliers (V1);
- * regime lido de config/strategy.macroRegime e passado pelo chamador.
  * @param {Object} acao - Dados de mercado do ativo
  * @param {string} [period="1y"] - Período de referência para annualizeRate
  * @param {Object|null} [styleAlloc] - {growth,value,div,qual} em escala 0-100
@@ -187,10 +183,6 @@ let _warnedRegime = false;
 export function calculateLucroMaximoScore(acao, period = "1y", styleAlloc = null, regime = null) {
   if (!acao) return { score: 0.5, components: { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 } };
 
-  if (!regime && !_warnedRegime) {
-    console.warn("[scoring] Chamadores sem regime explícito usam 'high_rates' como fallback. Atualizar em Fase 4.3.");
-    _warnedRegime = true;
-  }
   const effectiveRegime = regime ?? "high_rates";
   const styleMult = styleToMultipliers(styleAlloc);
   const rAnnual = annualizeRate(acao, period);
