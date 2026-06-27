@@ -764,7 +764,8 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
     }
   });
 
-  const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap);
+  const cashReservePct = lastConfigData?.cashReservePct ?? 22;
+  const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap, cashReservePct);
   
   // Valores do utilizador vindos do Firestore
   const availableCash = lastConfigData?.availableCash || 0;
@@ -833,7 +834,12 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
           
           <div style="margin-top: 16px; font-size: 0.8rem; padding: 10px; background: rgba(239, 68, 68, 0.05); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.1);">
              <i class="fas fa-fire" style="color: #ef4444; margin-right: 6px;"></i>
-             <strong>Plano de Crise:</strong> Se o mercado cair 10%, mobiliza <strong>${fmtEUR.format(CapitalManager.getCrisisDeployment(0.1, recommendation.amount).amountToDeploy)}</strong> da reserva.
+             ${(() => {
+               const ladder = lastConfigData?.crisisLadder || CapitalManager.DEFAULT_CRISIS_LADDER;
+               const firstRung = ladder[0] ?? { drawdownPct: 10, deployPct: 25 };
+               const deployed = CapitalManager.getCrisisDeployment(firstRung.drawdownPct / 100, recommendation.amount, ladder).amountToDeploy;
+               return `<strong>Plano de Crise:</strong> Se o mercado cair ${firstRung.drawdownPct}%, mobiliza <strong>${fmtEUR.format(deployed)}</strong> da reserva.`;
+             })()}
           </div>
         </div>
       </div>

@@ -1,49 +1,65 @@
 // js/utils/capitalManager.js
 import { calculateLucroMaximoScore, cleanTicker } from "./scoring.js";
 
-/**
- * Define as regras dinâmicas de reserva (War Chest) baseadas no estado da carteira.
- */
-export const CAPITAL_STRATEGY = {
+// Escada canónica de crise (D5.2) — usada por default se crisisLadder não vier da strategy.
+export const DEFAULT_CRISIS_LADDER = [
+  { drawdownPct: 5,  deployPct: 10  },
+  { drawdownPct: 10, deployPct: 25  },
+  { drawdownPct: 15, deployPct: 50  },
+  { drawdownPct: 25, deployPct: 75  },
+  { drawdownPct: 50, deployPct: 100 },
+];
+
+// Labels/cores/mensagens estáticos (independentes de cashReservePct).
+const _STRATEGY_LABELS = {
   OVERVALUED: {
     label: "Sobrevalorizada",
     color: "var(--destructive)",
-    reserveMin: 0.60,
-    reserveMax: 0.80,
-    dcaFactor: 0.5, // Investir apenas metade do habitual
     message: "⚠️ Mercado caro. É prudente reduzir as compras agora e acumular liquidez (War Chest) para quando os preços baixarem."
   },
   NEUTRAL: {
     label: "Justa / Neutra",
     color: "var(--premium)",
-    reserveMin: 0.30,
-    reserveMax: 0.50,
-    dcaFactor: 1.0, // Investimento normal
     message: "⚖️ Carteira em equilíbrio. Mantém o teu plano base de investimento mensal sem grandes desvios."
   },
   UNDERVALUED: {
     label: "Subvalorizada",
     color: "var(--success)",
-    reserveMin: 0.10,
-    reserveMax: 0.25,
-    dcaFactor: 1.5, // Investir mais agressivamente
     message: "✅ Oportunidade: Ativos com desconto! Podes acelerar os teus investimentos e usar parte da tua reserva para comprar mais agora."
   }
 };
 
 /**
- * Calcula o estado agregado da carteira.
- * @param {Array} positions - Ativos atuais (da coleção 'ativos')
- * @param {Map|Array} acoesData - Dados de mercado (da coleção 'acoesDividendos')
+ * Gera as bandas de reserva a partir de cashReservePct (D5).
+ * @param {number} [cashReservePct=22] - % de reserva alvo (config/strategy.cashReservePct)
  */
-export function calculatePortfolioState(positions, acoesData) {
-  const acoesMap = Array.isArray(acoesData) 
+export function buildCapitalStrategy(cashReservePct = 22) {
+  const base = cashReservePct / 100;
+  return {
+    OVERVALUED:  { reserveMin: base * 1.4, reserveMax: base * 1.8, dcaFactor: 0.5, ..._STRATEGY_LABELS.OVERVALUED },
+    NEUTRAL:     { reserveMin: base * 0.9, reserveMax: base * 1.1, dcaFactor: 1.0, ..._STRATEGY_LABELS.NEUTRAL    },
+    UNDERVALUED: { reserveMin: base * 0.4, reserveMax: base * 0.7, dcaFactor: 1.5, ..._STRATEGY_LABELS.UNDERVALUED }
+  };
+}
+
+// Exportado para backward compat (callers que lêem CAPITAL_STRATEGY.NEUTRAL.reserveMin directamente).
+// Substitui os valores anteriores pelo default cashReservePct=22.
+export const CAPITAL_STRATEGY = buildCapitalStrategy(22);
+
+/**
+ * Calcula o estado agregado da carteira.
+ * @param {Array} positions
+ * @param {Map|Array} acoesData
+ * @param {number} [cashReservePct=22] - de config/strategy.cashReservePct
+ */
+export function calculatePortfolioState(positions, acoesData, cashReservePct = 22) {
+  const strategy = buildCapitalStrategy(cashReservePct);
+  const acoesMap = Array.isArray(acoesData)
     ? new Map(acoesData.map(a => [cleanTicker(a.ticker), a]))
     : acoesData;
 
   let totalValue = 0;
   let weightedValuationScore = 0;
-  let count = 0;
 
   positions.forEach(p => {
     const ticker = cleanTicker(p.ticker);
@@ -54,27 +70,21 @@ export function calculatePortfolioState(positions, acoesData) {
     const valAtual = (p.quantidade || p.qtd || 0) * precoAtual;
     if (valAtual <= 0) return;
 
-    // Obter o componente de Valuation (V) do score
     const scoreObj = calculateLucroMaximoScore(mkt);
     const vScore = scoreObj.components.V || 0.5;
 
     weightedValuationScore += vScore * valAtual;
     totalValue += valAtual;
-    count++;
   });
 
   const avgValuation = totalValue > 0 ? (weightedValuationScore / totalValue) : 0.5;
 
   let state;
-  if (avgValuation > 0.65) state = CAPITAL_STRATEGY.UNDERVALUED;
-  else if (avgValuation < 0.35) state = CAPITAL_STRATEGY.OVERVALUED;
-  else state = CAPITAL_STRATEGY.NEUTRAL;
+  if (avgValuation > 0.65) state = strategy.UNDERVALUED;
+  else if (avgValuation < 0.35) state = strategy.OVERVALUED;
+  else state = strategy.NEUTRAL;
 
-  return {
-    score: avgValuation,
-    ...state,
-    totalValue
-  };
+  return { score: avgValuation, ...state, totalValue };
 }
 
 /**
@@ -83,19 +93,16 @@ export function calculatePortfolioState(positions, acoesData) {
 export function getWarChestRecommendation(portfolioState, availableCash) {
   const targetReserve = (portfolioState.reserveMin + portfolioState.reserveMax) / 2;
   const recommendedReserveAmount = availableCash * targetReserve;
-  
+
   return {
     percentage: targetReserve * 100,
     amount: recommendedReserveAmount,
-    totalInvestable: availableCash - recommendedReserveAmount // Bolo total disponível para ser alocado via DCA ou Oportunidades
+    totalInvestable: availableCash - recommendedReserveAmount
   };
 }
 
 /**
  * Calcula a posição de cash em relação à reserva estratégica definida pelo utilizador.
- * @param {number} portfolioValue - Valor total de mercado do portfólio
- * @param {Object} strategy - Campos do doc config/strategy: availableCash, monthlyBase, cashReservePct
- * @returns {{ targetReserve, currentCash, gapToReserve, monthlyBase, availableToInvest }}
  */
 export function calculateCashPosition(portfolioValue, strategy) {
   const cashReservePct = Number(strategy?.cashReservePct || 0);
@@ -113,7 +120,7 @@ export function calculateCashPosition(portfolioValue, strategy) {
 export function getSmartDCA(baseMonthly, portfolioState) {
   const adjustedValue = baseMonthly * portfolioState.dcaFactor;
   const toReserve = Math.max(0, baseMonthly - adjustedValue);
-  
+
   return {
     original: baseMonthly,
     adjusted: adjustedValue,
@@ -123,18 +130,27 @@ export function getSmartDCA(baseMonthly, portfolioState) {
 }
 
 /**
- * Plano de crise escalonado para uso da reserva.
+ * Plano de crise escalonado (D5.2).
+ * @param {number} drawdown - Queda em fração (ex: 0.15 para -15%)
+ * @param {number} currentWarChest - Reserva disponível em €
+ * @param {Array} [crisisLadder] - Escada de crise (default: DEFAULT_CRISIS_LADDER)
  */
-export function getCrisisDeployment(drawdown, currentWarChest) {
-  let percentageToUse = 0;
-  
-  if (drawdown >= 0.30) percentageToUse = 1.0;      // Usar restante
-  else if (drawdown >= 0.20) percentageToUse = 0.6; // +30% (acumulado 60%)
-  else if (drawdown >= 0.10) percentageToUse = 0.3; // +20% (acumulado 30%)
-  else if (drawdown >= 0.05) percentageToUse = 0.1; // 10%
-  
+export function getCrisisDeployment(drawdown, currentWarChest, crisisLadder) {
+  const ladder = Array.isArray(crisisLadder) && crisisLadder.length > 0
+    ? crisisLadder
+    : DEFAULT_CRISIS_LADDER;
+
+  const quedaPct = drawdown * 100;
+  let deployPct = 0;
+
+  for (const rung of ladder) {
+    if (quedaPct >= rung.drawdownPct) deployPct = rung.deployPct;
+  }
+
+  const percentageToUse = deployPct / 100;
+
   return {
-    drawdown: drawdown * 100,
+    drawdown: quedaPct,
     amountToDeploy: currentWarChest * percentageToUse,
     remainingChest: currentWarChest * (1 - percentageToUse)
   };
@@ -142,17 +158,11 @@ export function getCrisisDeployment(drawdown, currentWarChest) {
 
 /**
  * Priorização de ativos para reforço.
- * Ordena por: 1) Desvio Target, 2) Qualidade, 3) Valuation, 4) Tendência
  */
 export function prioritizeReinforcements(enrichedAtivos) {
   return [...enrichedAtivos].sort((a, b) => {
-    // 1. Prioridade absoluta: Qualidade (fundamental) e Valuation se estiverem bons
-    // Mas o critério #1 do utilizador é desvio ao target.
-    
-    // Supondo que 'desvioTarget' é positivo se estiver ABAIXO do target
     const scoreA = (a.desvioTarget || 0) * 0.4 + (a.scoreQuality || 0) * 0.3 + (a.scoreValuation || 0) * 0.2 + (a.scoreTrend || 0) * 0.1;
     const scoreB = (b.desvioTarget || 0) * 0.4 + (b.scoreQuality || 0) * 0.3 + (b.scoreValuation || 0) * 0.2 + (b.scoreTrend || 0) * 0.1;
-    
     return scoreB - scoreA;
   });
 }
