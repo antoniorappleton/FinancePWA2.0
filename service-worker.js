@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v53";
+const CACHE_NAME = "finance-pwa-v54";
 
 const ASSETS = [
   "./",
@@ -22,6 +22,13 @@ const ASSETS = [
   "./js/utils/normalize.js",
   "./js/utils/portfolioPositions.js",
   "./js/utils/portfolioAssessment.js",
+  "./js/utils/capitalManager.js",
+  "./js/utils/decisionHelpers.js",
+  "./js/utils/alerts.js",
+  "./js/help-data.js",
+  "./js/components/help.js",
+  "./js/components/asset-deep-panel.js",
+  "./js/components/treemap.js",
   "./js/engines/quality.js",
   "./js/engines/momentum.js",
   "./js/engines/valuation.js",
