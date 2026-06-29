@@ -6,34 +6,26 @@
 // "PE 30 em software ≠ PE 30 em bancos"
 // ═══════════════════════════════════════════════════════════════════
 
-import { safeMetric, clamp, isValid, getAssetCategory } from "../utils/normalize.js";
+import { safeMetric, clamp, isValid, getAssetCategory, normalizeSector } from "../utils/normalize.js";
 
-// ── Sector-relative PE ranges ──
-// { median, cheap, expensive } — where cheap is a good score
+// ── Sector-relative PE ranges (PT canonical names only — D8.2) ──
 const SECTOR_PE = {
-  "Technology":         { cheap: 18, fair: 28, expensive: 45 },
-  "Tecnologia":         { cheap: 18, fair: 28, expensive: 45 },
-  "Healthcare":         { cheap: 15, fair: 25, expensive: 40 },
-  "Saúde":              { cheap: 15, fair: 25, expensive: 40 },
-  "Financials":         { cheap: 8,  fair: 13, expensive: 20 },
-  "Financeiros":        { cheap: 8,  fair: 13, expensive: 20 },
-  "Energy":             { cheap: 8,  fair: 14, expensive: 22 },
-  "Energia":            { cheap: 8,  fair: 14, expensive: 22 },
-  "Consumer Cyclical":  { cheap: 12, fair: 20, expensive: 35 },
-  "Consumo Cíclico":    { cheap: 12, fair: 20, expensive: 35 },
-  "Consumer Defensive": { cheap: 14, fair: 20, expensive: 28 },
-  "Consumo Defensivo":  { cheap: 14, fair: 20, expensive: 28 },
-  "Industrials":        { cheap: 12, fair: 20, expensive: 30 },
-  "Industriais":        { cheap: 12, fair: 20, expensive: 30 },
-  "Real Estate":        { cheap: 15, fair: 30, expensive: 50 },
-  "Imobiliário":        { cheap: 15, fair: 30, expensive: 50 },
-  "Materials":          { cheap: 10, fair: 16, expensive: 25 },
-  "Materiais":          { cheap: 10, fair: 16, expensive: 25 },
-  default:              { cheap: 12, fair: 20, expensive: 35 }
+  "Tecnologia":        { cheap: 18, fair: 28, expensive: 45 },
+  "Saúde":             { cheap: 15, fair: 25, expensive: 40 },
+  "Financeiros":       { cheap: 8,  fair: 13, expensive: 20 },
+  "Energia":           { cheap: 8,  fair: 14, expensive: 22 },
+  "Consumo Cíclico":   { cheap: 12, fair: 20, expensive: 35 },
+  "Consumo Defensivo": { cheap: 14, fair: 20, expensive: 28 },
+  "Industriais":       { cheap: 12, fair: 20, expensive: 30 },
+  "Imobiliário":       { cheap: 15, fair: 30, expensive: 50 },
+  "Materiais":         { cheap: 10, fair: 16, expensive: 25 },
+  "Comunicações":      { cheap: 12, fair: 22, expensive: 35 },
+  "Utilidades":        { cheap: 14, fair: 22, expensive: 32 },
+  default:             { cheap: 12, fair: 20, expensive: 35 }
 };
 
 function getSectorPE(asset) {
-  const sector = asset.setor || asset.sector || "";
+  const sector = normalizeSector(asset);
   return SECTOR_PE[sector] || SECTOR_PE.default;
 }
 
@@ -154,6 +146,18 @@ export function valuationScore(asset) {
   if (!asset) return { score: 50, classification: "Unknown", breakdown: {} };
 
   const category = getAssetCategory(asset);
+
+  // D8.1: ETFs must not be valued as stocks. A single metric (PE of fund wrapper)
+  // does not represent look-through value. Return 50 with low confidence.
+  if (category.includes("ETF")) {
+    return {
+      score: 50,
+      classification: "Sem dados de valuation agregados",
+      available: false,
+      breakdown: { etf: true }
+    };
+  }
+
   if (category === "Commodity") {
     return {
       score: 50,

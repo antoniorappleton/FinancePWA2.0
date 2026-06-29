@@ -74,6 +74,45 @@ const ETF_HOLDINGS = {
     sectors: { Technology: 100 },
     geography: { US: 100 }
   },
+  "QDVF": {
+    name: "iShares S&P 500 Energy Sector UCITS ETF",
+    type: "US Energy Sector",
+    top: [
+      { ticker: "XOM",  weight: 22 }, { ticker: "CVX",  weight: 15 },
+      { ticker: "COP",  weight: 8  }, { ticker: "EOG",  weight: 5  },
+      { ticker: "SLB",  weight: 5  }, { ticker: "MPC",  weight: 4  },
+      { ticker: "PSX",  weight: 4  }, { ticker: "VLO",  weight: 3.5 },
+      { ticker: "PXD",  weight: 3  }, { ticker: "OXY",  weight: 3  }
+    ],
+    sectors: { Energy: 100 },
+    geography: { US: 100 }
+  },
+  "QDVG": {
+    name: "iShares S&P 500 Health Care Sector UCITS ETF",
+    type: "US Health Care Sector",
+    top: [
+      { ticker: "LLY",  weight: 14 }, { ticker: "UNH",  weight: 12 },
+      { ticker: "JNJ",  weight: 9  }, { ticker: "ABBV", weight: 7  },
+      { ticker: "MRK",  weight: 6  }, { ticker: "ABT",  weight: 5  },
+      { ticker: "TMO",  weight: 4  }, { ticker: "DHR",  weight: 3.5 },
+      { ticker: "AMGN", weight: 3  }, { ticker: "PFE",  weight: 3  }
+    ],
+    sectors: { Healthcare: 100 },
+    geography: { US: 100 }
+  },
+  "JEDI": {
+    name: "VanEck Space Innovators UCITS ETF",
+    type: "Thematic — Space & Aerospace",
+    top: [
+      { ticker: "RKLB", weight: 8.5 }, { ticker: "ASTS",  weight: 7.2 },
+      { ticker: "SPCE", weight: 5.1 }, { ticker: "MAXR",  weight: 4.8 },
+      { ticker: "ASTR", weight: 4.2 }, { ticker: "MNTS",  weight: 3.9 },
+      { ticker: "LUNR", weight: 3.6 }, { ticker: "BKSY",  weight: 3.2 },
+      { ticker: "RDW",  weight: 2.9 }, { ticker: "SATL",  weight: 2.5 }
+    ],
+    sectors: { Industrials: 45, Technology: 38, "Consumer Cyclical": 10, Materials: 7 },
+    geography: { US: 72, Europe: 15, Japan: 7, Other: 6 }
+  },
   "EUNL": {
     name: "iShares Core MSCI World UCITS ETF (EUR)",
     type: "Developed World Equity",

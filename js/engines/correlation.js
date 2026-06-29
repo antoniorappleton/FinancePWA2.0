@@ -1,35 +1,25 @@
-import { safeMetric, safePercent, clamp, getAssetCategory, canonicalTicker } from "../utils/normalize.js";
+import { safeMetric, safePercent, clamp, getAssetCategory, canonicalTicker, toCanonicalSector } from "../utils/normalize.js";
 import { normalizeSector } from "../utils/scoring.js";
 
-// ── Refined Sector correlation matrix (Institutional standard) ──
+// ── Refined Sector correlation matrix (PT canonical names — D8.2) ──
 const SECTOR_CORR = {
-  "Tecnologia":        { "Tecnologia": 1.0, "Saúde": 0.25, "Financeiros": 0.35, "Energia": 0.1, "Consumo Cíclico": 0.55, "Consumo Defensivo": 0.15, "Industriais": 0.45, "Materiais": 0.25, "Imobiliário": 0.1 },
-  "Saúde":             { "Tecnologia": 0.25, "Saúde": 1.0, "Financeiros": 0.2, "Energia": 0.05, "Consumo Cíclico": 0.25, "Consumo Defensivo": 0.45, "Industriais": 0.25, "Materiais": 0.1, "Imobiliário": 0.15 },
-  "Financeiros":       { "Tecnologia": 0.35, "Saúde": 0.2, "Financeiros": 1.0, "Energia": 0.4, "Consumo Cíclico": 0.5, "Consumo Defensivo": 0.25, "Industriais": 0.55, "Materiais": 0.45, "Imobiliário": 0.65 },
-  "Energia":           { "Tecnologia": 0.1, "Saúde": 0.05, "Financeiros": 0.4, "Energia": 1.0, "Consumo Cíclico": 0.2, "Consumo Defensivo": 0.1, "Industriais": 0.45, "Materiais": 0.65, "Imobiliário": 0.15 },
-  "Consumo Cíclico":   { "Tecnologia": 0.55, "Saúde": 0.25, "Financeiros": 0.5, "Energia": 0.2, "Consumo Cíclico": 1.0, "Consumo Defensivo": 0.3, "Industriais": 0.6, "Materiais": 0.45, "Imobiliário": 0.4 },
-  "Consumo Defensivo":  { "Tecnologia": 0.15, "Saúde": 0.45, "Financeiros": 0.25, "Energia": 0.1, "Consumo Cíclico": 0.3, "Consumo Defensivo": 1.0, "Industriais": 0.35, "Materiais": 0.2, "Imobiliário": 0.3 },
-  "Industriais":       { "Tecnologia": 0.45, "Saúde": 0.25, "Financeiros": 0.55, "Energia": 0.45, "Consumo Cíclico": 0.6, "Consumo Defensivo": 0.35, "Industriais": 1.0, "Materiais": 0.6, "Imobiliário": 0.4 },
-  "Materiais":         { "Tecnologia": 0.25, "Saúde": 0.1, "Financeiros": 0.45, "Energia": 0.65, "Consumo Cíclico": 0.45, "Consumo Defensivo": 0.2, "Industriais": 0.6, "Materiais": 1.0, "Imobiliário": 0.35 },
-  "Imobiliário":       { "Tecnologia": 0.1, "Saúde": 0.15, "Financeiros": 0.65, "Energia": 0.15, "Consumo Cíclico": 0.4, "Consumo Defensivo": 0.3, "Industriais": 0.4, "Materiais": 0.35, "Imobiliário": 1.0 },
-  "Commodities":       { "Tecnologia": 0.1, "Saúde": 0.1, "Financeiros": 0.45, "Energia": 0.65, "Consumo Cíclico": 0.45, "Consumo Defensivo": 0.2, "Industriais": 0.6, "Materiais": 0.8, "Imobiliário": 0.35 },
-  "Múltiplos Setores": { "Tecnologia": 0.4, "Saúde": 0.4, "Financeiros": 0.4, "Energia": 0.3, "Consumo Cíclico": 0.4, "Consumo Defensivo": 0.4, "Industriais": 0.4, "Materiais": 0.3, "Imobiliário": 0.3, "Múltiplos Setores": 1.0 }
-};
-
-const SECTOR_ALIASES = {
-  "Technology": "Tecnologia", "Healthcare": "Saúde", "Health Care": "Saúde",
-  "Financial Services": "Financeiros", "Financials": "Financeiros",
-  "Energy": "Energia", "Consumer Cyclical": "Consumo Cíclico",
-  "Consumer Defensive": "Consumo Defensivo", "Industrials": "Industriais",
-  "Basic Materials": "Materiais", "Real Estate": "Imobiliário",
-  "Communication Services": "Tecnologia", "Utilities": "Consumo Defensivo",
-  "Commodities": "Commodities",
-  "ETF": "Múltiplos Setores", "Multi-Sector": "Múltiplos Setores"
+  "Tecnologia":        { "Tecnologia": 1.0, "Saúde": 0.25, "Financeiros": 0.35, "Energia": 0.1, "Consumo Cíclico": 0.55, "Consumo Defensivo": 0.15, "Industriais": 0.45, "Materiais": 0.25, "Imobiliário": 0.1,  "Comunicações": 0.60, "Utilidades": 0.10 },
+  "Saúde":             { "Tecnologia": 0.25, "Saúde": 1.0, "Financeiros": 0.2, "Energia": 0.05, "Consumo Cíclico": 0.25, "Consumo Defensivo": 0.45, "Industriais": 0.25, "Materiais": 0.1,  "Imobiliário": 0.15, "Comunicações": 0.20, "Utilidades": 0.30 },
+  "Financeiros":       { "Tecnologia": 0.35, "Saúde": 0.2, "Financeiros": 1.0, "Energia": 0.4,  "Consumo Cíclico": 0.5,  "Consumo Defensivo": 0.25, "Industriais": 0.55, "Materiais": 0.45, "Imobiliário": 0.65, "Comunicações": 0.30, "Utilidades": 0.35 },
+  "Energia":           { "Tecnologia": 0.1,  "Saúde": 0.05,"Financeiros": 0.4, "Energia": 1.0,  "Consumo Cíclico": 0.2,  "Consumo Defensivo": 0.1,  "Industriais": 0.45, "Materiais": 0.65, "Imobiliário": 0.15, "Comunicações": 0.10, "Utilidades": 0.45 },
+  "Consumo Cíclico":   { "Tecnologia": 0.55, "Saúde": 0.25,"Financeiros": 0.5, "Energia": 0.2,  "Consumo Cíclico": 1.0,  "Consumo Defensivo": 0.3,  "Industriais": 0.6,  "Materiais": 0.45, "Imobiliário": 0.4,  "Comunicações": 0.45, "Utilidades": 0.15 },
+  "Consumo Defensivo": { "Tecnologia": 0.15, "Saúde": 0.45,"Financeiros": 0.25,"Energia": 0.1,  "Consumo Cíclico": 0.3,  "Consumo Defensivo": 1.0,  "Industriais": 0.35, "Materiais": 0.2,  "Imobiliário": 0.3,  "Comunicações": 0.20, "Utilidades": 0.40 },
+  "Industriais":       { "Tecnologia": 0.45, "Saúde": 0.25,"Financeiros": 0.55,"Energia": 0.45, "Consumo Cíclico": 0.6,  "Consumo Defensivo": 0.35, "Industriais": 1.0,  "Materiais": 0.6,  "Imobiliário": 0.4,  "Comunicações": 0.35, "Utilidades": 0.30 },
+  "Materiais":         { "Tecnologia": 0.25, "Saúde": 0.1, "Financeiros": 0.45,"Energia": 0.65, "Consumo Cíclico": 0.45, "Consumo Defensivo": 0.2,  "Industriais": 0.6,  "Materiais": 1.0,  "Imobiliário": 0.35, "Comunicações": 0.20, "Utilidades": 0.25 },
+  "Imobiliário":       { "Tecnologia": 0.1,  "Saúde": 0.15,"Financeiros": 0.65,"Energia": 0.15, "Consumo Cíclico": 0.4,  "Consumo Defensivo": 0.3,  "Industriais": 0.4,  "Materiais": 0.35, "Imobiliário": 1.0,  "Comunicações": 0.20, "Utilidades": 0.55 },
+  "Commodities":       { "Tecnologia": 0.1,  "Saúde": 0.1, "Financeiros": 0.45,"Energia": 0.65, "Consumo Cíclico": 0.45, "Consumo Defensivo": 0.2,  "Industriais": 0.6,  "Materiais": 0.8,  "Imobiliário": 0.35, "Comunicações": 0.10, "Utilidades": 0.20 },
+  "Comunicações":      { "Tecnologia": 0.60, "Saúde": 0.20,"Financeiros": 0.30,"Energia": 0.10, "Consumo Cíclico": 0.45, "Consumo Defensivo": 0.20, "Industriais": 0.35, "Materiais": 0.20, "Imobiliário": 0.20, "Comunicações": 1.0,  "Utilidades": 0.15 },
+  "Utilidades":        { "Tecnologia": 0.10, "Saúde": 0.30,"Financeiros": 0.35,"Energia": 0.45, "Consumo Cíclico": 0.15, "Consumo Defensivo": 0.40, "Industriais": 0.30, "Materiais": 0.25, "Imobiliário": 0.55, "Comunicações": 0.15, "Utilidades": 1.0  },
+  "Múltiplos Setores": { "Tecnologia": 0.4,  "Saúde": 0.4, "Financeiros": 0.4, "Energia": 0.3,  "Consumo Cíclico": 0.4,  "Consumo Defensivo": 0.4,  "Industriais": 0.4,  "Materiais": 0.3,  "Imobiliário": 0.3,  "Comunicações": 0.35, "Utilidades": 0.35, "Múltiplos Setores": 1.0 }
 };
 
 function normSector(s) {
-  const raw = String(s || "").trim();
-  return SECTOR_ALIASES[raw] || raw;
+  return toCanonicalSector(String(s || "").trim());
 }
 
 function getSectorCorrelation(s1, s2) {

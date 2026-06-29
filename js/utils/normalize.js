@@ -133,9 +133,39 @@ export function canon(s) {
     .trim();
 }
 
+// ── Canonical EN→PT sector translation table (D8.2) ──
+// Single source of truth used by quality, valuation, risk, stress-test, correlation.
+const EN_TO_PT_SECTOR = {
+  "Technology":             "Tecnologia",
+  "Information Technology": "Tecnologia",
+  "Healthcare":             "Saúde",
+  "Health Care":            "Saúde",
+  "Financials":             "Financeiros",
+  "Financial Services":     "Financeiros",
+  "Energy":                 "Energia",
+  "Consumer Cyclical":      "Consumo Cíclico",
+  "Consumer Discretionary": "Consumo Cíclico",
+  "Consumer Defensive":     "Consumo Defensivo",
+  "Consumer Staples":       "Consumo Defensivo",
+  "Industrials":            "Industriais",
+  "Materials":              "Materiais",
+  "Basic Materials":        "Materiais",
+  "Real Estate":            "Imobiliário",
+  "Communication Services": "Comunicações",
+  "Telecom":                "Comunicações",
+  "Utilities":              "Utilidades",
+  "Commodities":            "Commodities",
+};
+
+/** Translate a raw EN or PT sector string to the canonical PT name. */
+export function toCanonicalSector(raw) {
+  const s = String(raw || "").trim();
+  return EN_TO_PT_SECTOR[s] || s || "Outros";
+}
+
 /**
  * Extract and normalize the sector string from an asset object.
- * Reads setor/sector/industry/segmento fields and applies canon().
+ * Reads setor/sector/industry/segmento fields, applies canon(), then EN→PT.
  */
 export function normalizeSector(d) {
   const sRaw = d.setor || d.sector || d.Setor || d.Sector ||
@@ -146,7 +176,7 @@ export function normalizeSector(d) {
     const p = String(d.ticker).split(":")[0].trim();
     if (p.length > 2) s = canon(p);
   }
-  return s || "—";
+  return toCanonicalSector(s) || "—";
 }
 
 /**
@@ -180,6 +210,57 @@ export function canonicalTicker(ticker) {
   return ALIASES[t] || t;
 }
 
+// ── Canonical Asset Registry (D7.4) ──
+// Source of truth for known tickers. getAssetCategory and getAssetType check this first.
+// Heuristics (name patterns) only apply to unknown tickers.
+// Note: QDVF (Energy) and QDVE (IT) are distinct — never aliased (D6).
+export const ASSET_REGISTRY = {
+  // Broad Market ETFs
+  "VWCE": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "IWDA": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "SWDA": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VOO":  { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "SPY":  { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VTI":  { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VT":   { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VEU":  { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VXUS": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VHYL": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VWRL": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "IWVL": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "CSPX": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "VUSA": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "EUNL": { type: "etf", category: "Broad Market ETF", sector: "Europa" },
+  "VGWL": { type: "etf", category: "Broad Market ETF", sector: "Múltiplos" },
+  "IS3N": { type: "etf", category: "Broad Market ETF", sector: "Mercados Emergentes" }, // iShares Core MSCI EM IMI
+  // S&P 500 Sector ETFs — Sector, NOT Broad, despite "S&P 500" in name
+  "QDVE": { type: "etf", category: "Sector ETF", sector: "Tecnologia" },       // S&P 500 Information Technology
+  "QDVF": { type: "etf", category: "Sector ETF", sector: "Energia" },          // S&P 500 Energy
+  "QDVG": { type: "etf", category: "Sector ETF", sector: "Saúde" },            // S&P 500 Health Care
+  "QDVK": { type: "etf", category: "Sector ETF", sector: "Utilidades" },       // S&P 500 Utilities
+  // Thematic ETFs
+  "IITU": { type: "etf", category: "Thematic ETF", sector: "Tecnologia" },
+  "SMH":  { type: "etf", category: "Thematic ETF", sector: "Semicondutores" },
+  "SOXX": { type: "etf", category: "Thematic ETF", sector: "Semicondutores" },
+  "ROBO": { type: "etf", category: "Thematic ETF", sector: "Robótica" },
+  "NUKL": { type: "etf", category: "Thematic ETF", sector: "Nuclear" },
+  "URNM": { type: "etf", category: "Thematic ETF", sector: "Urânio" },
+  "GRID": { type: "etf", category: "Thematic ETF", sector: "Energia Limpa" },
+  "VVMX": { type: "etf", category: "Thematic ETF", sector: "Tecnologia" },
+  "WCLD": { type: "etf", category: "Thematic ETF", sector: "Cloud" },
+  "ESPO": { type: "etf", category: "Thematic ETF", sector: "Gaming" },
+  "JEDI": { type: "etf", category: "Thematic ETF", sector: "Aeroespacial" }, // VanEck Space Innovators UCITS ETF
+};
+
+// ── Beta Validation (D7.2) ──
+// Returns beta if valid (within [0.1, 3.0]), else null.
+// Prevents beta=1.0 sentinel from fabricating false stability signals.
+export function validBeta(asset) {
+  const raw = safeMetric(asset, "beta");
+  if (raw === null || raw === undefined || isNaN(raw)) return null;
+  return (raw >= 0.1 && raw <= 3.0) ? raw : null;
+}
+
 // ── Contextual Concentration Limits ──
 // Single source of truth — importado por risk.js, rebalance.js, portfolio-intel.js.
 export const HEALTHY_LIMITS = {
@@ -209,19 +290,26 @@ export function getAssetCategory(asset) {
   const ticker = canonicalTicker(asset.ticker);
   const name = String(asset.nome || asset.name || "").toLowerCase();
   const sector = String(asset.setor || asset.sector || "").toLowerCase();
-  
+
+  // ── Registry takes precedence (D7.4) — avoids heuristic misclassification ──
+  if (ASSET_REGISTRY[ticker]) return ASSET_REGISTRY[ticker].category;
+
   // ── 0. Commodities & Physical Assets (ETCs / Physical Metals) ──
   const commTickers = new Set(["GZUR", "VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"]);
   if (commTickers.has(ticker) || sector.includes("commodit") || name.includes("physical") || name.includes("silver") || name.includes("gold") || name.includes("copper") || name.includes("platinum")) {
     return "Commodity";
   }
 
-  // ── 1. Broad Market ETFs (Diversified Core) ──
-  const broadTickers = new Set(["VWCE", "VOO", "SPY", "IWDA", "VTI", "VT", "VEU", "VXUS", "VHYL", "VWRL", "IWVL", "SWDA"]);
-  if (broadTickers.has(ticker)) return "Broad Market ETF";
-  
-  if (name.includes("world") || name.includes("s&p 500") || name.includes("all-world") || name.includes("acwi")) {
-    if (sector.includes("etf") || sector.includes("múltiplos") || name.includes("core")) return "Broad Market ETF";
+  // ── 1. Broad Market ETFs ──
+  // "S&P 500" in name only promotes to Broad if name has no sector qualifier
+  // (prevents QDVF/QDVG-style misclassification for unknown tickers)
+  const SECTOR_QUALIFIERS = ["energy", "health", "financ", "tech", "utilit", "consumer", "industri", "material", "real estate", "communic"];
+  const nameHasSectorWord = SECTOR_QUALIFIERS.some(w => name.includes(w));
+  if ((name.includes("world") || name.includes("all-world") || name.includes("acwi") ||
+       name.includes("msci em") || name.includes("em imi") || name.includes("emerging market") ||
+       (name.includes("s&p 500") && !nameHasSectorWord)) &&
+      (sector.includes("etf") || sector.includes("múltiplos") || name.includes("core") || name.includes("ucits"))) {
+    return "Broad Market ETF";
   }
 
   // ── 2. Specialized ETFs ──

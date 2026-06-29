@@ -2755,9 +2755,42 @@ function hookHeatmapScrollSync() {
 }
 
 /* =========================================================
+   PAINEL DE RISCO — lazy-load ao clicar no tab
+   ========================================================= */
+let _riscoPanelLoaded = false;
+async function _loadRiscoPanelOnce() {
+  if (_riscoPanelLoaded) return;
+  _riscoPanelLoaded = true;
+  try {
+    const { initRiscoPanel } = await import('./risco-panel.js');
+    initRiscoPanel(document.getElementById('riscoPanelMount'));
+  } catch (e) {
+    console.error('Erro ao carregar painel de risco:', e);
+  }
+}
+
+/* =========================================================
    INIT
    ========================================================= */
 export async function initScreen() {
+  // Tab switching: Análise de Ações / Risco de Mercado
+  const tabs = document.querySelectorAll('.anlTab');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      tabs.forEach(b => {
+        const active = b === btn;
+        b.classList.toggle('outline', !active);
+        b.style.background = active ? 'var(--primary)' : '';
+        b.style.color = active ? 'var(--primary-foreground)' : '';
+        b.style.borderColor = active ? 'var(--primary)' : '';
+      });
+      document.getElementById('anlTabAcoes').style.display = tab === 'acoes' ? '' : 'none';
+      document.getElementById('anlTabRisco').style.display = tab === 'risco' ? '' : 'none';
+      if (tab === 'risco') _loadRiscoPanelOnce();
+    });
+  });
+
   await ensureChartJS();
   if (!db) {
     console.error("Firebase DB não inicializado!");

@@ -41,6 +41,19 @@
     </button>
   </div>
 
+  <!-- Tab: Análise de Ações / Risco de Mercado -->
+  <div style="display:flex;gap:6px;margin-bottom:14px">
+    <button class="anlTab btn" data-tab="acoes"
+      style="flex:1;font-size:13px;padding:8px 0;background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)">
+      Análise de Ações
+    </button>
+    <button class="anlTab btn outline" data-tab="risco"
+      style="flex:1;font-size:13px;padding:8px 0">
+      Risco de Mercado
+    </button>
+  </div>
+
+  <div id="anlTabAcoes">
   <!-- TOOLBAR / PESQUISA E FILTROS -->
   <div class="card analysis-toolbar" style="margin-bottom: 12px">
     <div class="toolbar-row">
@@ -395,6 +408,11 @@
         </table>
       </div>
     </div>
+  </div>
+  </div><!-- /anlTabAcoes -->
+
+  <div id="anlTabRisco" style="display:none;padding-top:4px">
+    <div id="riscoPanelMount"></div>
   </div>
 </div>
 

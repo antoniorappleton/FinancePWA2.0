@@ -1,7 +1,7 @@
 // js/utils/scoring.js
 
 import { scoreAssetV2, styleToMultipliers } from "../engines/score-v2.js";
-import { canonicalTicker } from "./normalize.js";
+import { canonicalTicker, ASSET_REGISTRY } from "./normalize.js";
 export { canon, normalizeSector } from "./normalize.js";
 
 export function getUserWeights() {
@@ -249,22 +249,19 @@ export function parseSma(sma, currentPrice) {
 }
 
 export function getAssetType(ticker, acao) {
-  const cleanT = String(ticker || "").split(".")[0].split(":")[0].toUpperCase().trim();
+  const cleanT = canonicalTicker(ticker);
   const n = String(acao?.nome || acao?.name || "").toUpperCase();
   const s = String(acao?.setor || acao?.sector || acao?.Setor || acao?.Sector || "").toUpperCase();
 
-  const cryptoTickers = ["BTC", "ETH", "SOL", "DOT", "ADA", "XRP", "AVAX", "LINK", "MATIC"];
-  const commodityTickers = ["GZUR", "VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"];
-  const etfTickers = [
-    "VWCE", "IWDA", "VUSA", "CSPX", "EUNL", "VGWL", "SWDA",
-    "VOO", "SPY", "VTI", "VT", "VEU", "VXUS", "VHYL", "VWRL", "IWVL",
-    "QDVE", "IITU", "SMH", "SOXX", "ROBO", "NUKL", "URNM", "GRID", "VVMX", "WCLD", "ESPO",
-    "QDVF", "QDVK"
-  ];
+  // Registry takes precedence (D7.4)
+  if (ASSET_REGISTRY[cleanT]) return ASSET_REGISTRY[cleanT].type;
 
-  if (cryptoTickers.includes(cleanT) || n.includes("BITCOIN") || n.includes("ETHEREUM") || s.includes("CRIPTO")) return "crypto";
-  if (commodityTickers.includes(cleanT) || n.includes("PHYSICAL") || n.includes("SILVER") || n.includes("GOLD") || s === "COMMODITIES" || s === "COMMODITY") return "commodity";
-  if (etfTickers.includes(cleanT) || n.includes("ETF") || n.includes("UCITS") || n.includes("VANGUARD") || n.includes("ISHARES") || n.includes("LYXOR") || n.includes("AMUNDI") || s.includes("ETF")) return "etf";
+  const cryptoTickers = new Set(["BTC", "ETH", "SOL", "DOT", "ADA", "XRP", "AVAX", "LINK", "MATIC"]);
+  const commodityTickers = new Set(["GZUR", "VZLC", "PHAG", "PHAU", "SGLN", "IGLN", "SSLV", "GLD", "SLV", "IAU", "PPLT", "PALL"]);
+
+  if (cryptoTickers.has(cleanT) || n.includes("BITCOIN") || n.includes("ETHEREUM") || s.includes("CRIPTO")) return "crypto";
+  if (commodityTickers.has(cleanT) || n.includes("PHYSICAL") || n.includes("SILVER") || n.includes("GOLD") || s === "COMMODITIES" || s === "COMMODITY") return "commodity";
+  if (n.includes("ETF") || n.includes("UCITS") || n.includes("VANGUARD") || n.includes("ISHARES") || n.includes("LYXOR") || n.includes("AMUNDI") || s.includes("ETF")) return "etf";
 
   return "stock";
 }

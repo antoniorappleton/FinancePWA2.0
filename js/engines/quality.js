@@ -1,28 +1,23 @@
-import { safeMetric, safePercent, clamp, isValid, confidenceScore, getAssetCategory } from "../utils/normalize.js";
+import { safeMetric, safePercent, clamp, isValid, confidenceScore, getAssetCategory, normalizeSector } from "../utils/normalize.js";
 
-// ── Sector-aware thresholds ──
+// ── Sector-aware thresholds (PT canonical names only — D8.2) ──
 const SECTOR_PROFILES = {
-  "Technology":         { roicTarget: 0.20, marginTarget: 0.25, debtCeiling: 1.0 },
-  "Tecnologia":         { roicTarget: 0.20, marginTarget: 0.25, debtCeiling: 1.0 },
-  "Healthcare":         { roicTarget: 0.15, marginTarget: 0.20, debtCeiling: 1.2 },
-  "Saúde":              { roicTarget: 0.15, marginTarget: 0.20, debtCeiling: 1.2 },
-  "Financials":         { roicTarget: 0.10, marginTarget: 0.15, debtCeiling: 5.0 },
-  "Financeiros":        { roicTarget: 0.10, marginTarget: 0.15, debtCeiling: 5.0 },
-  "Energy":             { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.5 },
-  "Energia":            { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.5 },
-  "Consumer Cyclical":  { roicTarget: 0.15, marginTarget: 0.12, debtCeiling: 1.5 },
-  "Consumo Cíclico":    { roicTarget: 0.15, marginTarget: 0.12, debtCeiling: 1.5 },
-  "Consumer Defensive": { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.0 },
-  "Consumo Defensivo":  { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.0 },
-  "Industrials":        { roicTarget: 0.12, marginTarget: 0.12, debtCeiling: 1.5 },
-  "Industriais":        { roicTarget: 0.12, marginTarget: 0.12, debtCeiling: 1.5 },
-  "Real Estate":        { roicTarget: 0.08, marginTarget: 0.20, debtCeiling: 3.0 },
-  "Imobiliário":        { roicTarget: 0.08, marginTarget: 0.20, debtCeiling: 3.0 },
-  default:              { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.5 }
+  "Tecnologia":        { roicTarget: 0.20, marginTarget: 0.25, debtCeiling: 1.0 },
+  "Saúde":             { roicTarget: 0.15, marginTarget: 0.20, debtCeiling: 1.2 },
+  "Financeiros":       { roicTarget: 0.10, marginTarget: 0.15, debtCeiling: 5.0 },
+  "Energia":           { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.5 },
+  "Consumo Cíclico":   { roicTarget: 0.15, marginTarget: 0.12, debtCeiling: 1.5 },
+  "Consumo Defensivo": { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.0 },
+  "Industriais":       { roicTarget: 0.12, marginTarget: 0.12, debtCeiling: 1.5 },
+  "Imobiliário":       { roicTarget: 0.08, marginTarget: 0.20, debtCeiling: 3.0 },
+  "Materiais":         { roicTarget: 0.10, marginTarget: 0.12, debtCeiling: 1.5 },
+  "Comunicações":      { roicTarget: 0.10, marginTarget: 0.15, debtCeiling: 2.0 },
+  "Utilidades":        { roicTarget: 0.08, marginTarget: 0.18, debtCeiling: 3.0 },
+  default:             { roicTarget: 0.12, marginTarget: 0.15, debtCeiling: 1.5 }
 };
 
 function getSectorProfile(asset) {
-  const sector = asset.setor || asset.sector || asset.Setor || asset.Sector || "";
+  const sector = normalizeSector(asset);
   return SECTOR_PROFILES[sector] || SECTOR_PROFILES.default;
 }
 

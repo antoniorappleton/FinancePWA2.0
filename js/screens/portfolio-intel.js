@@ -211,7 +211,7 @@ async function runFullAnalysis() {
     renderEconomicDrivers(economicDrivers);
     renderStressTests(stress);
     renderWeightRisk(wrChart, riskContrib);
-    renderScorecards(assetScores.slice(0, 15));
+    renderScorecards(assetScores.slice(0, 15), Number(strategy.minConfidencePct ?? 50));
     renderObservations(portfolioObs, assetScores);
     renderRebalance(rebalance);
 
@@ -832,7 +832,7 @@ function renderWeightRisk(wrData, riskContrib) {
   if (warn) warn.innerHTML = (riskContrib.warnings || []).map(w => `<div>⚠️ ${w}</div>`).join("");
 }
 
-function renderScorecards(assets) {
+function renderScorecards(assets, minConfidencePct = 50) {
   const container = document.getElementById("piScorecards");
   if (!container) return;
 
@@ -841,12 +841,19 @@ function renderScorecards(assets) {
 
   container.innerHTML = assets.map(a => {
     const v2 = a.v2;
+    if (!v2) return `<div class="pi-scorecard"><span class="sc-ticker">${a.ticker || "?"}</span><div class="muted" style="font-size:0.7rem">Score indisponível</div></div>`;
     const engines = v2.engines || {};
+    const lowConf = (v2.confidence ?? 100) < minConfidencePct;
+    const betaVal = v2.engines?.risk?.beta;
+    const betaDisplay = (typeof betaVal === "number") ? betaVal.toFixed(2) : "—";
+    const grade = v2.grade || "—";
+    const gradeDisplay = lowConf ? `${grade}?` : grade;
     return `
-      <div class="pi-scorecard" data-ticker="${a.ticker}" style="cursor:pointer" title="Ver análise completa">
+      <div class="pi-scorecard${lowConf ? " pi-scorecard-lowconf" : ""}" data-ticker="${a.ticker}" style="cursor:pointer" title="Ver análise completa">
+        ${lowConf ? `<div class="sc-lowconf-banner">⚠ Dados insuficientes (${v2.confidence}%)</div>` : ""}
         <div class="sc-header">
           <span class="sc-ticker">${a.ticker}</span>
-          <span class="sc-grade ${gradeClass(v2.grade)}">${v2.grade} — ${v2.finalScore}</span>
+          <span class="sc-grade ${gradeClass(grade)}" title="${lowConf ? "Score provisório — dados insuficientes" : ""}">${gradeDisplay} — ${v2.finalScore ?? "—"}</span>
         </div>
         <div style="font-size:0.7rem; color:var(--muted-foreground); margin-bottom:8px;">${v2.category}</div>
         ${["quality", "momentum", "valuation", "risk"].map(k => {
@@ -860,7 +867,7 @@ function renderScorecards(assets) {
         }).join("")}
         <div class="muted" style="font-size:0.7rem; margin-top:6px; display:flex; justify-content:space-between;">
            <span>Confiança: ${v2.confidence}%</span>
-           <span>Beta: ${v2.engines.risk?.beta?.toFixed(2) || "1.00"}</span>
+           <span>Beta: ${betaDisplay}</span>
         </div>
       </div>`;
   }).join("");
@@ -928,7 +935,7 @@ function renderRebalance(rebalance) {
 // ══════════════════════════════════════════════════════════════
 
 const efState = {
-  mode: 'capped',      // 'capped' | 'free'
+  mode: 'capped',      // 'capped' | 'free' — starts capped (D7.5: sem-limites off por defeito)
   seed: null,          // null = random each run
   activeWindow: '12m', // '6m' | '12m' | '36m'
   data: null           // computed result { '6m': {...}, '12m': {...}, '36m': {...} }
@@ -957,7 +964,7 @@ function getWindowReturn(mkt, windowKey) {
       const rn = Math.abs(r6) > 1 ? r6 / 100 : r6;
       return { r: Math.pow(1 + rn, 2) - 1, hasData: true, note: null };
     }
-    const r1m = Number(mkt?.priceChange_1m ?? 0);
+    const r1m = Number(mkt?.priceChange_1m) || 0;
     const rn1m = Math.abs(r1m) > 1 ? r1m / 100 : r1m;
     return { r: Math.pow(1 + rn1m, 12) - 1, hasData: false, note: '1m anualizado (6m indisponível)' };
   }
@@ -967,12 +974,12 @@ function getWindowReturn(mkt, windowKey) {
       const rn = Math.abs(r3) > 1 ? r3 / 100 : r3;
       return { r: Math.pow(1 + rn, 1 / 3) - 1, hasData: true, note: null };
     }
-    const r1y = Number(mkt?.priceChange_1y ?? mkt?.taxaCrescimento_1ano ?? 0);
+    const r1y = Number(mkt?.priceChange_1y ?? mkt?.taxaCrescimento_1ano) || 0;
     const rn = Math.abs(r1y) > 1 ? r1y / 100 : r1y;
     return { r: rn, hasData: false, note: '12m (36m indisponível — aproximação)' };
   }
   // 12m default
-  const r1y = Number(mkt?.priceChange_1y ?? mkt?.taxaCrescimento_1ano ?? 0);
+  const r1y = Number(mkt?.priceChange_1y ?? mkt?.taxaCrescimento_1ano) || 0;
   const rn = Math.abs(r1y) > 1 ? r1y / 100 : r1y;
   return { r: rn, hasData: true, note: null };
 }
@@ -1072,7 +1079,8 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, 
     const isETF = cat.includes('ETF');
 
     // Short-term signal — monthly return annualised
-    const r1m = Number(mkt.priceChange_1m ?? 0);
+    // Use || 0 (not ?? 0) so string values like "N/A" from Firestore also fall back to 0.
+    const r1m = Number(mkt.priceChange_1m) || 0;
     const rn1m = Math.abs(r1m) > 1 ? r1m / 100 : r1m;
     const volShort = Math.abs(rn1m) * Math.sqrt(12);
 
@@ -1112,7 +1120,7 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, 
   const portVariance = w => {
     let v = 0;
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) v += w[i] * w[j] * cov[i][j];
-    return Math.max(0, v);
+    return isFinite(v) ? Math.max(0, v) : 0;
   };
   const portReturn = w => w.reduce((s, wi, i) => s + wi * expReturns[i], 0);
   const rawWeights = () => {

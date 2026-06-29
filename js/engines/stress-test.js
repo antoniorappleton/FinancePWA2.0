@@ -5,7 +5,7 @@
 // Shows: expected drawdown, recovery time, stress survivability
 // ═══════════════════════════════════════════════════════════════════
 
-import { safeMetric, clamp } from "../utils/normalize.js";
+import { safeMetric, clamp, validBeta } from "../utils/normalize.js";
 import { normalizeSector, cleanTicker } from "../utils/scoring.js";
 
 // ── Historical crisis scenarios with sector-level impacts ──
@@ -89,20 +89,6 @@ const SCENARIOS = {
   }
 };
 
-const SECTOR_ALIASES = {
-  "Technology": "Tecnologia", "Healthcare": "Saúde", "Health Care": "Saúde",
-  "Financial Services": "Financeiros", "Financials": "Financeiros",
-  "Energy": "Energia", "Consumer Cyclical": "Consumo Cíclico",
-  "Consumer Defensive": "Consumo Defensivo", "Industrials": "Industriais",
-  "Basic Materials": "Materiais", "Real Estate": "Imobiliário",
-  "Communication Services": "Tecnologia", "Utilities": "Consumo Defensivo",
-  "Commodities": "Commodities"
-};
-
-function normSector(s) {
-  const raw = String(s || "").trim();
-  return SECTOR_ALIASES[raw] || raw;
-}
 const PRECIOUS_METAL_SHOCKS = {
   gold: {
     covid_2020: -0.08,
@@ -140,22 +126,26 @@ function getPreciousMetalKind(asset) {
  * Simulate an asset's expected drawdown in a given scenario.
  */
 function simulateAsset(asset, scenario) {
-  const sector = normSector(normalizeSector(asset.mkt || asset));
-  const beta = safeMetric(asset.mkt || asset, "beta") || 1.0;
-  
+  const sector = normalizeSector(asset.mkt || asset);
+  // validBeta returns null if missing or out of [0.1, 3.0]; use 1.0 (market avg) as projection fallback (D7.2)
+  const betaRaw = validBeta(asset.mkt || asset);
+  const betaEstimated = betaRaw === null;
+  const beta = betaRaw ?? 1.0;
+
   const metalKind = getPreciousMetalKind(asset);
   const baseDrop = metalKind
     ? (PRECIOUS_METAL_SHOCKS[metalKind]?.[asset.__scenarioKey] ?? scenario.sectorDrops[sector] ?? scenario.defaultDrop)
     : (scenario.sectorDrops[sector] ?? scenario.defaultDrop);
-  
+
   // Beta-adjust: higher beta = more sensitive to market drops
   const adjustedDrop = baseDrop * Math.max(0.5, beta);
-  
+
   return {
     expectedDrop: Math.round(adjustedDrop * 100) / 100,
     expectedDropPct: Math.round(adjustedDrop * 100),
     sector,
-    beta: Math.round(beta * 100) / 100
+    beta: Math.round(beta * 100) / 100,
+    betaEstimated,
   };
 }
 
