@@ -997,7 +997,36 @@ function capWeights(weights, cap) {
   }
   return w;
 }
+function protectCoreAnchorWeights(targetW, curW, portfolio) {
+  const protectedIdx = [];
+  const w = [...targetW];
 
+  for (let i = 0; i < portfolio.length; i++) {
+    const cat = getAssetCategory(portfolio[i].mkt || portfolio[i]);
+    const isCore = cat === "Broad Market ETF" && curW[i] >= 0.25;
+    if (isCore && targetW[i] < curW[i] - 0.005) {
+      protectedIdx.push(i);
+      w[i] = Math.min(curW[i], 0.70);
+    }
+  }
+
+  if (!protectedIdx.length) return { weights: targetW, protectedTickers: [] };
+
+  const protectedSet = new Set(protectedIdx);
+  const protectedSum = protectedIdx.reduce((s, i) => s + w[i], 0);
+  const remaining = Math.max(0, 1 - protectedSum);
+  const openIdx = targetW.map((_, i) => i).filter(i => !protectedSet.has(i));
+  const openSum = openIdx.reduce((s, i) => s + Math.max(0, targetW[i]), 0);
+
+  if (openIdx.length) {
+    const equal = remaining / openIdx.length;
+    for (const i of openIdx) w[i] = openSum > 1e-10 ? Math.max(0, targetW[i]) / openSum * remaining : equal;
+  }
+
+  const sum = w.reduce((s, v) => s + v, 0);
+  const weights = sum > 0 ? w.map(v => v / sum) : targetW;
+  return { weights, protectedTickers: protectedIdx.map(i => portfolio[i].ticker) };
+}
 function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, weightCap) {
   const n = portfolio.length;
   if (n < 2) return null;
@@ -1374,8 +1403,12 @@ function renderEfficientFrontier(allData) {
 
   const isFree = efState.mode === 'free';
   const totalVal = data.portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
-  // best.weights already reflects the mode's constraint (applied during simulation)
-  const targetWeights = [...data.best.weights];
+  // best.weights is the theoretical Markowitz optimum. The action plan protects
+  // strategic core anchors so a short historical window cannot dismantle VWCE-like holdings.
+  const theoreticalWeights = [...data.best.weights];
+  const protectedTarget = protectCoreAnchorWeights(theoreticalWeights, data.curW, data.portfolio);
+  const targetWeights = protectedTarget.weights;
+  const protectedTickers = protectedTarget.protectedTickers;
 
   const moves = data.portfolio
     .map((p, i) => ({
@@ -1447,16 +1480,22 @@ function renderEfficientFrontier(allData) {
   };
 
   const sharpeGain = data.best.sharpe - data.curSharpe;
+  const hasProtectedCore = protectedTickers.length > 0;
   const windowLabel = { '6m': '6 meses', '12m': '12 meses', '36m': '36 meses' }[efState.activeWindow] || efState.activeWindow;
 
   // Detect structural contradictions (Core anchor being dismantled)
   const coreReductions = decrease.filter(m => m.isCore);
-  const contradictionBanner = coreReductions.length > 0
-    ? `<div style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(239,68,68,0.08); border:1.5px solid #ef4444; font-size:0.78rem; color:var(--foreground); line-height:1.5;">
-        <strong style="color:#dc2626;">⚓ Atenção — o optimizador propõe reduzir ${coreReductions.map(m => m.ticker).join(", ")} (Âncora Core).</strong>
-        O optimizador maximiza Sharpe histórico; não sabe que esta posição é o núcleo de longo prazo da carteira. Em modo <em>com cap</em>, nenhum activo alvo passa de 30%; em modo <em>sem limites</em>, a concentracao e livre.
+  const contradictionBanner = hasProtectedCore
+    ? `<div style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(34,197,94,0.08); border:1.5px solid #22c55e; font-size:0.78rem; color:var(--foreground); line-height:1.5;">
+        <strong style="color:#15803d;">Ancora core protegida: ${protectedTickers.map(escapeHtml).join(", ")}.</strong>
+        O ponto grafico de Sharpe maximo continua teorico; o plano abaixo preserva o peso atual do core e redistribui apenas o restante portfolio.
       </div>`
-    : "";
+    : coreReductions.length > 0
+      ? `<div style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(239,68,68,0.08); border:1.5px solid #ef4444; font-size:0.78rem; color:var(--foreground); line-height:1.5;">
+          <strong style="color:#dc2626;">Atencao: o optimizador teorico reduziria ${coreReductions.map(m => m.ticker).join(", ")}.</strong>
+          Trata este resultado como diagnostico, nao como ordem de venda do core.
+        </div>`
+      : "";
 
   // Disclaimer changes based on mode
   const disclaimer = isFree
@@ -1478,7 +1517,7 @@ function renderEfficientFrontier(allData) {
         <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
         <div style="font-size:0.8rem; line-height:1.5;">
           <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
-          <div style="color:var(--foreground);">Retornos historicos da janela <strong>${escapeHtml(windowLabel)}</strong>. Limite aplicado: maximo de 30% por activo na carteira simulada. Resultado estocastico. Valida com analise fundamental antes de agir.</div>
+          <div style="color:var(--foreground);">Retornos historicos da janela <strong>${escapeHtml(windowLabel)}</strong>. Limite aplicado na simulacao: maximo de 30% por activo${hasProtectedCore ? "; no plano de acoes, a ancora core fica preservada" : ""}. Resultado estocastico. Valida com analise fundamental antes de agir.</div>
           <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
             <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
             Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
@@ -1491,9 +1530,9 @@ function renderEfficientFrontier(allData) {
   actionsEl.innerHTML = `
     <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-        <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
-        <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
-        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : "cap 30% por activo"}</span>
+        <span style="font-weight:900; font-size:0.88rem;">${hasProtectedCore ? "Plano core-protected inspirado no Sharpe maximo" : "Para mover a carteira atual para o Sharpe maximo"}</span>
+        <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">${hasProtectedCore ? "Core preservado" : `+${sharpeGain.toFixed(2)} Sharpe`}</span>
+        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulacoes - janela ${escapeHtml(windowLabel)} - ${isFree ? "sem cap" : "cap 30% por activo"}${hasProtectedCore ? " - plano protege core" : ""}</span>
       </div>
       ${contradictionBanner}
       ${increase.length ? `
