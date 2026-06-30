@@ -998,60 +998,6 @@ function capWeights(weights, cap) {
   return w;
 }
 
-// Category-aware max caps (capped mode). Broad Market ETFs also get a min floor
-// so the optimizer can't dismantle the core anchor.
-const CATEGORY_CAPS = {
-  "Broad Market ETF": { min: 0.30, max: 0.70 },
-  "Sector ETF":       { min: 0.00, max: 0.20 },
-  "Thematic ETF":     { min: 0.00, max: 0.15 },
-  "Single Stock":     { min: 0.00, max: 0.10 },
-  "Speculative Asset":{ min: 0.00, max: 0.05 },
-  "Commodity":        { min: 0.00, max: 0.12 },
-  "Satellite Asset":  { min: 0.00, max: 0.08 },
-};
-const DEFAULT_CONSTRAINT = { min: 0.00, max: 0.25 };
-
-function buildCategoryConstraints(portfolio) {
-  return portfolio.map(p => {
-    const cat = getAssetCategory(p.mkt || p);
-    return CATEGORY_CAPS[cat] ?? DEFAULT_CONSTRAINT;
-  });
-}
-
-// Projects weights onto the per-asset [min, max] box while keeping sum = 1.
-// Pass 1: iterative max-cap (existing logic, per-asset).
-// Pass 2: raise any asset below its floor, taking proportionally from assets above theirs.
-function applyPortfolioConstraints(rawW, constraints) {
-  const n = rawW.length;
-  let w = [...rawW];
-
-  // Pass 1 — max caps
-  for (let iter = 0; iter < 300; iter++) {
-    if (!w.some((v, i) => v > constraints[i].max + 1e-9)) break;
-    w = w.map((v, i) => Math.min(v, constraints[i].max));
-    const s = w.reduce((a, b) => a + b, 0);
-    if (!(s > 0)) return w.map(() => 1 / n);
-    w = w.map(v => v / s);
-  }
-
-  // Pass 2 — min floors
-  for (let iter = 0; iter < 300; iter++) {
-    if (!w.some((v, i) => v < constraints[i].min - 1e-9)) break;
-    let deficit = 0;
-    w = w.map((v, i) => {
-      if (v < constraints[i].min) { deficit += constraints[i].min - v; return constraints[i].min; }
-      return v;
-    });
-    const overIdx = w.map((v, i) => v > constraints[i].min + 1e-9 ? i : -1).filter(i => i >= 0);
-    const overSum = overIdx.reduce((s, i) => s + (w[i] - constraints[i].min), 0);
-    if (overSum < 1e-10) break;
-    for (const i of overIdx) w[i] -= (w[i] - constraints[i].min) / overSum * deficit;
-  }
-
-  const s = w.reduce((a, b) => a + b, 0);
-  return s > 0 ? w.map(v => v / s) : w;
-}
-
 function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, weightCap) {
   const n = portfolio.length;
   if (n < 2) return null;
@@ -1123,26 +1069,20 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, 
     return isFinite(v) ? Math.max(0, v) : 0;
   };
   const portReturn = w => w.reduce((s, wi, i) => s + wi * expReturns[i], 0);
-  const rawWeights = () => {
-    const r = Array.from({ length: n }, () => -Math.log(rand() + 1e-10));
+  const rawWeights = (alpha = 1) => {
+    const r = Array.from({ length: n }, () => Math.pow(-Math.log(rand() + 1e-10), 1 / alpha));
     const sum = r.reduce((s, v) => s + v, 0);
     return r.map(v => v / sum);
   };
 
-  // Capped mode uses per-category constraints (Broad Market ETF: min 30%, max 70%;
-  // Thematic/Sector ETF: max 15-20%; Single Stock: max 10%) instead of a uniform 30% cap.
-  // This prevents the optimizer from dismantling core anchor positions.
-  const catConstraints = weightCap != null ? buildCategoryConstraints(portfolio) : null;
-  // Keep effectiveWeightCap for display purposes (show "30% max" label in UI)
   const effectiveWeightCap = weightCap;
 
   const M = 1200;
   const sims = [];
   let best = { sharpe: -Infinity, weights: null };
   for (let k = 0; k < M; k++) {
-    const w = catConstraints != null
-      ? applyPortfolioConstraints(rawWeights(), catConstraints)
-      : rawWeights();
+    const alpha = weightCap == null && k % 4 === 0 ? 0.35 : 1;
+    const w = weightCap != null ? capWeights(rawWeights(alpha), weightCap) : rawWeights(alpha);
     const ret = portReturn(w);
     const vol = Math.sqrt(portVariance(w));
     const sharpe = vol > 0 ? (ret - RISK_FREE) / vol : 0;
@@ -1156,7 +1096,7 @@ function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, 
   const curVol = Math.sqrt(portVariance(curW));
   const curSharpe = curVol > 0 ? (curRet - RISK_FREE) / curVol : 0;
 
-  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW, shortHistory, windowKey, effectiveWeightCap, catConstraints };
+  return { sims, curRet, curVol, curSharpe, best, expReturns, vols, portfolio, curW, shortHistory, windowKey, effectiveWeightCap };
 }
 
 function computeEfficientFrontier(portfolio, corrObj) {
@@ -1458,17 +1398,13 @@ function renderEfficientFrontier(allData) {
   const increase = moves.filter(m => m.delta > 0);
   const decrease = moves.filter(m => m.delta < 0);
 
-  // Annotate moves with their strategic category and any health-limit contradictions
+  const modeCap = data.effectiveWeightCap;
   const movesWithContext = moves.map(m => {
     const mkt = data.portfolio.find(p => p.ticker === m.ticker)?.mkt || {};
     const cat = getAssetCategory(mkt);
-    const healthMax = HEALTHY_LIMITS[cat] ?? DEFAULT_CONSTRAINT.max;
     const isCore = cat === "Broad Market ETF";
-    // A contradiction: reducing below healthy max, or reducing a Core position at all
-    const contradiction =
-      (!m.delta > 0 && isCore) ||                                // reducing Core anchor
-      (m.delta > 0 && m.target / 100 > healthMax + 0.01);       // pushing above category limit
-    return { ...m, cat, isCore, contradiction };
+    const overModeCap = modeCap != null && m.target / 100 > modeCap + 0.0001;
+    return { ...m, cat, isCore, overModeCap };
   });
 
   const renderMove = (m) => {
@@ -1486,10 +1422,9 @@ function renderEfficientFrontier(allData) {
     const coreBadge = m.isCore && !isUp
       ? `<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.62rem;font-weight:900;background:rgba(239,68,68,0.12);color:#dc2626;margin-left:4px;">⚓ Âncora Core</span>`
       : "";
-    const contradictionNote = m.contradiction && isUp
-      ? `<div style="font-size:0.7rem;color:#d97706;margin-top:3px;">⚠️ Acima do limite saudável para ${escapeHtml(m.cat)} (${((HEALTHY_LIMITS[m.cat] ?? DEFAULT_CONSTRAINT.max)*100).toFixed(0)}%)</div>`
+    const capNote = m.overModeCap
+      ? `<div style="font-size:0.7rem;color:#d97706;margin-top:3px;">Aviso: acima do cap de ${(modeCap * 100).toFixed(0)}% por activo</div>`
       : "";
-
     return `
       <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; background:${bg}; border-left:3px solid ${border};">
         <span style="font-size:1.1rem;">${icon}</span>
@@ -1502,7 +1437,7 @@ function renderEfficientFrontier(allData) {
             <span style="font-weight:800; color:${color};">${m.target.toFixed(1)}%</span>
             <span style="color:${color}; font-weight:700; margin-left:6px;">(${sign}${m.delta.toFixed(1)}pp)</span>
           </div>
-          ${contradictionNote}
+          ${capNote}
         </div>
         <div style="text-align:right; font-size:0.75rem; flex:0 0 auto;">
           <div style="font-weight:700; color:${color};">${action}</div>
@@ -1519,8 +1454,7 @@ function renderEfficientFrontier(allData) {
   const contradictionBanner = coreReductions.length > 0
     ? `<div style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(239,68,68,0.08); border:1.5px solid #ef4444; font-size:0.78rem; color:var(--foreground); line-height:1.5;">
         <strong style="color:#dc2626;">⚓ Atenção — o optimizador propõe reduzir ${coreReductions.map(m => m.ticker).join(", ")} (Âncora Core).</strong>
-        O optimizador maximiza Sharpe histórico; não sabe que esta posição é o núcleo de longo prazo da carteira.
-        Em modo <em>com cap</em> o VWCE nunca desce abaixo de 30% (floor aplicado). Em modo <em>sem limites</em> não há protecção — trata como exercício teórico.
+        O optimizador maximiza Sharpe histórico; não sabe que esta posição é o núcleo de longo prazo da carteira. Em modo <em>com cap</em>, nenhum activo alvo passa de 30%; em modo <em>sem limites</em>, a concentracao e livre.
       </div>`
     : "";
 
@@ -1544,7 +1478,7 @@ function renderEfficientFrontier(allData) {
         <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
         <div style="font-size:0.8rem; line-height:1.5;">
           <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
-          <div style="color:var(--foreground);">Retornos históricos da janela <strong>${escapeHtml(windowLabel)}</strong>. Constraints por categoria aplicados: Broad Market ETF mín. 30% / máx. 70%; Thematic ETF máx. 15%; Single Stock máx. 10%. Resultado estocástico. Valida com análise fundamental antes de agir.</div>
+          <div style="color:var(--foreground);">Retornos historicos da janela <strong>${escapeHtml(windowLabel)}</strong>. Limite aplicado: maximo de 30% por activo na carteira simulada. Resultado estocastico. Valida com analise fundamental antes de agir.</div>
           <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
             <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
             Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
@@ -1559,7 +1493,7 @@ function renderEfficientFrontier(allData) {
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
         <span style="font-weight:900; font-size:0.88rem;">🎯 Para mover a ★ até ao ◆ (Sharpe máximo)</span>
         <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">+${sharpeGain.toFixed(2)} Sharpe</span>
-        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : "constraints por categoria"}</span>
+        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulações · janela ${escapeHtml(windowLabel)} · ${isFree ? "sem cap" : "cap 30% por activo"}</span>
       </div>
       ${contradictionBanner}
       ${increase.length ? `
