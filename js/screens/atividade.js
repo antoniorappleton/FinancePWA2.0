@@ -1891,11 +1891,178 @@ function showPortfolioHelp(force = false) {
     recommendation: null
   };
   let _lastInvPlanCopyText = "";
+  let _allocationTargets = new Map();
+  let _allocationPlannerWired = false;
 
   window._dynamicStrategyGlobals = { CORE: 0.65, SATELLITE: 0.35 };
   window._dynamicStrategyTickers = {};
   let fltState = { estado: "", mercado: "", setor: "", sort: "queda", estrategia: "" };
 
+  function getAllocationRows() {
+    const assets = (_currentGruposArr || []).filter(g => Number.isFinite(g.qtd) && g.qtd > 0);
+    const rows = assets.map(g => {
+      const price = Number(g.precoAtual || 0);
+      const value = price > 0 ? price * Number(g.qtd || 0) : Number(g.investido || 0);
+      return { ...g, _allocPrice: price, _allocValue: value };
+    });
+    const total = rows.reduce((s, g) => s + (g._allocValue || 0), 0);
+    return { rows, total };
+  }
+
+  function seedAllocationTargets(force = false) {
+    const { rows, total } = getAllocationRows();
+    if (!force && _allocationTargets.size) return;
+    _allocationTargets = new Map();
+    rows.forEach(g => {
+      const pct = total > 0 ? (g._allocValue / total) * 100 : 0;
+      _allocationTargets.set(g.ticker, Number(pct.toFixed(2)));
+    });
+  }
+
+  function allocationPlanForRows() {
+    const { rows, total } = getAllocationRows();
+    return rows.map(g => {
+      const currentPct = total > 0 ? (g._allocValue / total) * 100 : 0;
+      const targetPct = Number(_allocationTargets.get(g.ticker) ?? currentPct) || 0;
+      const targetValue = total * targetPct / 100;
+      const deltaValue = targetValue - g._allocValue;
+      const units = g._allocPrice > 0 ? deltaValue / g._allocPrice : 0;
+      return { ...g, currentPct, targetPct, targetValue, deltaValue, units, total };
+    });
+  }
+
+  function renderAllocationPlanner() {
+    const modal = document.getElementById("allocationPlannerModal");
+    const list = document.getElementById("allocationPlannerList");
+    if (!modal || !list) return;
+
+    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+    const { total } = getAllocationRows();
+    seedAllocationTargets(false);
+    const plan = allocationPlanForRows().sort((a, b) => b._allocValue - a._allocValue);
+    const targetSum = plan.reduce((s, p) => s + p.targetPct, 0);
+    const turnover = plan.reduce((s, p) => s + Math.abs(p.deltaValue), 0) / 2;
+
+    const totalEl = document.getElementById("allocPlannerTotalValue");
+    const sumEl = document.getElementById("allocPlannerTargetSum");
+    const turnoverEl = document.getElementById("allocPlannerTurnover");
+    if (totalEl) totalEl.textContent = fmtEUR.format(total);
+    if (sumEl) {
+      sumEl.textContent = `${targetSum.toFixed(1)}%`;
+      sumEl.style.color = Math.abs(targetSum - 100) <= 0.15 ? "#22c55e" : "#ef4444";
+    }
+    if (turnoverEl) turnoverEl.textContent = fmtEUR.format(turnover);
+
+    if (!plan.length) {
+      list.innerHTML = `<div class="muted" style="padding:24px;text-align:center;">Sem ativos abertos para ajustar.</div>`;
+      return;
+    }
+
+    list.innerHTML = plan.map(p => {
+      const actionClass = Math.abs(p.deltaValue) < 1 ? "hold" : p.deltaValue > 0 ? "buy" : "sell";
+      const actionVerb = actionClass === "hold" ? "Manter" : actionClass === "buy" ? "Comprar" : "Vender";
+      const unitsAbs = Math.abs(p.units);
+      const priceLabel = p._allocPrice > 0 ? fmtEUR.format(p._allocPrice) : "sem preco";
+      return `
+        <div class="allocation-row" data-alloc-row="${escapeHtml(p.ticker)}">
+          <div class="allocation-asset">
+            <strong>${escapeHtml(p.ticker)}</strong>
+            <span>${escapeHtml(p.nome || p.ticker)} - ${priceLabel}</span>
+          </div>
+          <div class="allocation-current">
+            <strong>${p.currentPct.toFixed(1)}%</strong>
+            <span>${fmtEUR.format(p._allocValue || 0)}</span>
+          </div>
+          <div class="allocation-target-control">
+            <input type="range" min="0" max="100" step="0.1" value="${p.targetPct.toFixed(1)}" data-alloc-range="${escapeHtml(p.ticker)}" aria-label="Alvo ${escapeHtml(p.ticker)}">
+            <input type="number" min="0" max="100" step="0.1" value="${p.targetPct.toFixed(1)}" data-alloc-input="${escapeHtml(p.ticker)}" aria-label="Percentagem alvo ${escapeHtml(p.ticker)}">
+          </div>
+          <div class="allocation-action">
+            <strong class="${actionClass}">${actionVerb} ${fmtEUR.format(Math.abs(p.deltaValue))}</strong>
+            <span>${p._allocPrice > 0 ? `${unitsAbs.toFixed(4).replace(/\.?0+$/, "")} un.` : "sem preco atual"}</span>
+          </div>
+        </div>`;
+    }).join("");
+
+    applyAllocationPlanToCards();
+  }
+
+  function applyAllocationPlanToCards() {
+    const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+    document.querySelectorAll(".allocation-card-plan").forEach(el => el.remove());
+    if (!_allocationTargets.size) return;
+
+    allocationPlanForRows().forEach(p => {
+      if (Math.abs(p.deltaValue) < 1) return;
+      const card = document.getElementById(`card-${p.ticker}`);
+      if (!card) return;
+      const header = card.querySelector(".asset-header") || card;
+      const isBuy = p.deltaValue > 0;
+      const unitsAbs = Math.abs(p.units);
+      const unitsLabel = p._allocPrice > 0 ? `${unitsAbs.toFixed(4).replace(/\.?0+$/, "")} un.` : "sem preco";
+      const html = `
+        <div class="allocation-card-plan">
+          <span>Alvo ${p.targetPct.toFixed(1)}% - atual ${p.currentPct.toFixed(1)}%</span>
+          <strong class="${isBuy ? "buy" : "sell"}">${isBuy ? "Comprar" : "Vender"} ${unitsLabel} (${fmtEUR.format(Math.abs(p.deltaValue))})</strong>
+        </div>`;
+      header.insertAdjacentHTML("afterend", html);
+    });
+  }
+
+  function normalizeAllocationTargets() {
+    const plan = allocationPlanForRows();
+    const sum = plan.reduce((s, p) => s + p.targetPct, 0);
+    if (!(sum > 0)) return;
+    plan.forEach(p => _allocationTargets.set(p.ticker, Number((p.targetPct / sum * 100).toFixed(2))));
+  }
+
+  function wireAllocationPlanner() {
+    if (_allocationPlannerWired) return;
+    _allocationPlannerWired = true;
+
+    const modal = document.getElementById("allocationPlannerModal");
+    const openBtn = document.getElementById("fabAllocation");
+    const closeBtn = document.getElementById("allocationPlannerClose");
+    const applyBtn = document.getElementById("allocationPlannerApplyCards");
+    const useCurrentBtn = document.getElementById("allocUseCurrent");
+    const equalBtn = document.getElementById("allocEqualWeight");
+    const normalizeBtn = document.getElementById("allocNormalize");
+
+    const close = () => modal?.classList.add("hidden");
+    const open = () => {
+      seedAllocationTargets(!_allocationTargets.size);
+      renderAllocationPlanner();
+      modal?.classList.remove("hidden");
+    };
+
+    openBtn?.addEventListener("click", open);
+    closeBtn?.addEventListener("click", close);
+    modal?.addEventListener("click", (e) => { if (e.target === modal) close(); });
+
+    modal?.addEventListener("change", (e) => {
+      const input = e.target.closest("[data-alloc-input],[data-alloc-range]");
+      if (!input) return;
+      const ticker = input.getAttribute("data-alloc-input") || input.getAttribute("data-alloc-range");
+      const value = Math.max(0, Math.min(100, Number(input.value) || 0));
+      _allocationTargets.set(ticker, Number(value.toFixed(2)));
+      const paired = modal.querySelector(input.hasAttribute("data-alloc-input") ? `[data-alloc-range="${ticker}"]` : `[data-alloc-input="${ticker}"]`);
+      if (paired) paired.value = value.toFixed(1);
+      renderAllocationPlanner();
+    });
+
+    useCurrentBtn?.addEventListener("click", () => { seedAllocationTargets(true); renderAllocationPlanner(); });
+    equalBtn?.addEventListener("click", () => {
+      const { rows } = getAllocationRows();
+      const pct = rows.length ? 100 / rows.length : 0;
+      _allocationTargets = new Map(rows.map(g => [g.ticker, Number(pct.toFixed(2))]));
+      renderAllocationPlanner();
+    });
+    normalizeBtn?.addEventListener("click", () => { normalizeAllocationTargets(); renderAllocationPlanner(); });
+    applyBtn?.addEventListener("click", () => {
+      applyAllocationPlanToCards();
+      if (typeof showToast === "function") showToast("Alvos refletidos nos cartoes.", "success");
+    });
+  }
   export async function initScreen() {
     console.log("🏁 initScreen 'atividade' iniciada...");
     const cont = document.getElementById("listaAtividades");
@@ -1909,6 +2076,7 @@ function showPortfolioHelp(force = false) {
     wirePortfolioHelpModal();
     showPortfolioHelp();
     wireInvPlan();
+    wireAllocationPlanner();
     wireAtividadeListeners();
     wireAssetProfileModal();
     
@@ -2575,6 +2743,8 @@ function showPortfolioHelp(force = false) {
       cont.innerHTML =
         finalHtml ||
         `<div class="muted" style="text-align:center; padding: 40px;">Nenhum ativo corresponde aos filtros selecionados.</div>`;
+      applyAllocationPlanToCards();
+      if (!document.getElementById("allocationPlannerModal")?.classList.contains("hidden")) renderAllocationPlanner();
 
       // 🗂️ Posições Fechadas (P&L Realizado)
       const fechadasCont = document.getElementById("listaFechadas");

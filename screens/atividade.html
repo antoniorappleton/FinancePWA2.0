@@ -258,11 +258,52 @@
   <div id="listaFechadas" style="margin-top: 12px;"></div>
 
   <!-- Botão Flutuante de Ajuda -->
+  <button id="fabAllocation" class="fab-allocation" type="button" title="Ajustar alocacao alvo">
+    <i class="fas fa-sliders-h"></i>
+  </button>
+
   <div id="fabHelp" class="fab-help" title="Interpretar Dados e Estratégia">
     <i class="fas fa-question"></i>
   </div>
 </div>
 
+<div id="allocationPlannerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="allocationPlannerTitle">
+  <div class="modal-dialog allocation-planner-dialog">
+    <div class="allocation-planner-header">
+      <div>
+        <h3 id="allocationPlannerTitle">Alocacao alvo por ativo</h3>
+        <p>Ajusta percentagens e ve imediatamente compras/vendas estimadas.</p>
+      </div>
+      <button id="allocationPlannerClose" class="icon-btn" type="button" aria-label="Fechar alocacao"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="allocation-planner-toolbar">
+      <div class="allocation-planner-kpis">
+        <div><span>Atual</span><strong id="allocPlannerTotalValue">--</strong></div>
+        <div><span>Soma alvo</span><strong id="allocPlannerTargetSum">0%</strong></div>
+        <div><span>Movimento bruto</span><strong id="allocPlannerTurnover">--</strong></div>
+      </div>
+      <div class="allocation-planner-actions">
+        <button id="allocUseCurrent" class="btn outline" type="button"><i class="fas fa-undo"></i> Atual</button>
+        <button id="allocEqualWeight" class="btn outline" type="button"><i class="fas fa-balance-scale"></i> Equal</button>
+        <button id="allocNormalize" class="btn premium" type="button"><i class="fas fa-compress-arrows-alt"></i> Normalizar</button>
+      </div>
+    </div>
+
+    <div class="allocation-planner-head">
+      <span>Ativo</span>
+      <span>Atual</span>
+      <span>Alvo</span>
+      <span>Acao estimada</span>
+    </div>
+    <div id="allocationPlannerList" class="allocation-planner-list"></div>
+
+    <div class="allocation-planner-footer">
+      <span>Os valores sao uma simulacao com precos atuais. Para executar, regista compras/vendas nos movimentos.</span>
+      <button id="allocationPlannerApplyCards" class="btn premium" type="button"><i class="fas fa-check"></i> Refletir nos cartoes</button>
+    </div>
+  </div>
+</div>
 <!-- ======== Estilos locais (collapse + modal simples) ======== -->
 <style>
   .activity-item.collapsed .activity-details {
@@ -291,6 +332,62 @@
     z-index: 9999;
   }
 
+  .fab-allocation {
+    position: fixed;
+    right: 20px;
+    bottom: 142px;
+    width: 50px;
+    height: 50px;
+    border: 0;
+    border-radius: 50%;
+    background: #0f766e;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    cursor: pointer;
+    z-index: 1000;
+    border: 2px solid rgba(255,255,255,0.2);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .fab-allocation:hover { transform: scale(1.08); box-shadow: 0 6px 16px rgba(0,0,0,0.35); }
+  .fab-allocation i { font-size: 1.25rem; }
+  .allocation-planner-dialog { width: min(1120px, 96vw); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+  .allocation-planner-header, .allocation-planner-toolbar, .allocation-planner-footer { padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--card); }
+  .allocation-planner-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .allocation-planner-header h3 { margin: 0; font-size: 1rem; }
+  .allocation-planner-header p, .allocation-planner-footer span { margin: 4px 0 0; color: var(--muted-foreground); font-size: .76rem; }
+  .allocation-planner-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .allocation-planner-kpis { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); gap: 8px; flex: 1 1 420px; }
+  .allocation-planner-kpis div { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: rgba(var(--muted), .08); }
+  .allocation-planner-kpis span { display: block; color: var(--muted-foreground); font-size: .62rem; text-transform: uppercase; font-weight: 800; }
+  .allocation-planner-kpis strong { display: block; margin-top: 3px; font-size: .9rem; }
+  .allocation-planner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .allocation-planner-head, .allocation-row { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(90px, .55fr) minmax(220px, 1.3fr) minmax(150px, .9fr); gap: 12px; align-items: center; }
+  .allocation-planner-head { padding: 10px 18px; color: var(--muted-foreground); font-size: .66rem; text-transform: uppercase; font-weight: 900; background: rgba(var(--muted), .12); border-bottom: 1px solid var(--border); }
+  .allocation-planner-list { overflow: auto; padding: 0 18px 12px; }
+  .allocation-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .allocation-asset strong { display: block; font-size: .88rem; }
+  .allocation-asset span, .allocation-current span, .allocation-action span { display: block; color: var(--muted-foreground); font-size: .72rem; margin-top: 2px; }
+  .allocation-target-control { display: grid; grid-template-columns: 1fr 74px; gap: 8px; align-items: center; }
+  .allocation-target-control input[type="range"] { width: 100%; accent-color: #0f766e; }
+  .allocation-target-control input[type="number"] { width: 74px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--background); color: var(--foreground); text-align: right; font-weight: 700; }
+  .allocation-action strong.buy { color: #22c55e; }
+  .allocation-action strong.sell { color: #ef4444; }
+  .allocation-action strong.hold { color: var(--muted-foreground); }
+  .allocation-card-plan { margin: 0 16px 12px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(15,118,110,.22); background: rgba(15,118,110,.08); font-size: .76rem; display: flex; justify-content: space-between; gap: 10px; }
+  .allocation-card-plan strong.buy { color: #22c55e; }
+  .allocation-card-plan strong.sell { color: #ef4444; }
+  .allocation-planner-footer { border-top: 1px solid var(--border); border-bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  @media (max-width: 760px) {
+    .fab-allocation { right: 15px; bottom: 148px; width: 46px; height: 46px; }
+    .allocation-planner-dialog { width: 96vw; max-height: 92vh; }
+    .allocation-planner-head { display: none; }
+    .allocation-row { grid-template-columns: 1fr; gap: 8px; padding: 14px 0; }
+    .allocation-planner-kpis { grid-template-columns: 1fr; flex-basis: 100%; }
+    .allocation-planner-footer { align-items: stretch; flex-direction: column; }
+  }
   /* Estilo para a tabela de histórico */
   #detHistoricoCorpo tr:hover {
     background: rgba(0, 0, 0, 0.02);
