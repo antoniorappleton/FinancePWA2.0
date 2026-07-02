@@ -82,6 +82,7 @@ const fmtEUR = n => new Intl.NumberFormat("pt-PT", { style: "currency", currency
 const pct = n => `${Number(n || 0).toFixed(1)}%`;
 const clamp = (n, min = 0, max = 100) => Math.max(min, Math.min(max, Number(n || 0)));
 const readAssetPrice = asset => Number(asset?.valorStock || asset?.price || asset?.preco || asset?.precoAtual || 0);
+const compound = (principal, annualRate, years) => Number(principal || 0) * Math.pow(1 + Number(annualRate || 0), years);
 
 function buildManualCompositionMap(snapshot) {
   const map = new Map();
@@ -498,6 +499,13 @@ function estimateReturn(asset) {
   const r = Math.abs(raw) > 1 ? raw / 100 : raw;
   return Number.isFinite(r) ? Math.max(-0.60, Math.min(r, 1.50)) : 0.06;
 }
+function estimatePortfolioProjectionRate(enriched) {
+  const eligible = enriched.filter(p => Number(p.valAtual || 0) > 0);
+  const total = eligible.reduce((sum, p) => sum + Number(p.valAtual || 0), 0);
+  if (total <= 0) return 0.06;
+  const weighted = eligible.reduce((sum, p) => sum + (Number(p.valAtual || 0) / total) * estimateReturn(p), 0);
+  return Number.isFinite(weighted) ? Math.max(-0.15, Math.min(weighted, 0.18)) : 0.06;
+}
 function estimateVol(asset) {
   const type = getAssetType(asset.ticker, asset.mkt || asset);
   const r1mRaw = Number(asset?.mkt?.priceChange_1m ?? 0);
@@ -571,11 +579,11 @@ function frontierConfig(frontier) {
   return {
     type: "scatter",
     data: { datasets: [
-      { label: "Carteiras simuladas", data: frontier.sims, parsing: false, pointRadius: 2, pointBackgroundColor: "rgba(79,70,229,0.32)", pointBorderWidth: 0 },
-      { label: "Carteira atual", data: [frontier.current], pointRadius: 6, pointBackgroundColor: "#8b5cf6", pointBorderColor: "#ffffff", pointBorderWidth: 2 },
-      { label: "Sharpe maximo", data: [frontier.best], pointRadius: 6, pointStyle: "rectRot", pointBackgroundColor: "#06b6d4", pointBorderColor: "#ffffff", pointBorderWidth: 2 }
+      { label: "Carteiras simuladas", data: frontier.sims, parsing: false, pointRadius: 3, pointHoverRadius: 3, pointBackgroundColor: "rgba(79,70,229,0.38)", pointBorderWidth: 0 },
+      { label: "Carteira atual", data: [frontier.current], parsing: false, pointRadius: 8, pointHoverRadius: 8, pointBackgroundColor: "#8b5cf6", pointBorderColor: "#ffffff", pointBorderWidth: 2 },
+      { label: "Sharpe maximo", data: [frontier.best], parsing: false, pointRadius: 8, pointHoverRadius: 8, pointStyle: "rectRot", pointBackgroundColor: "#06b6d4", pointBorderColor: "#ffffff", pointBorderWidth: 2 }
     ] },
-    options: { responsive: false, animation: false, devicePixelRatio: 1.5, layout: { padding: 10 }, plugins: { legend: { position: "bottom", labels: { boxWidth: 14, padding: 18, font: { size: 22, weight: "bold" } } }, tooltip: { enabled: false } }, scales: { x: { title: { display: true, text: "Risco / volatilidade anualizada (%)", font: { size: 20, weight: "bold" } }, ticks: { font: { size: 17 } }, grid: { color: "#e2e8f0" } }, y: { title: { display: true, text: "Retorno historico anualizado (%)", font: { size: 20, weight: "bold" } }, ticks: { font: { size: 17 } }, grid: { color: "#e2e8f0" } } } }
+    options: { responsive: false, animation: false, animations: false, transitions: { active: { animation: false }, resize: { animation: false }, show: { animation: false }, hide: { animation: false } }, devicePixelRatio: 1.5, layout: { padding: 10 }, elements: { point: { radius: 3 } }, plugins: { legend: { position: "bottom", labels: { boxWidth: 14, padding: 18, font: { size: 22, weight: "bold" } } }, tooltip: { enabled: false } }, scales: { x: { type: "linear", title: { display: true, text: "Risco / volatilidade anualizada (%)", font: { size: 20, weight: "bold" } }, ticks: { font: { size: 17 } }, grid: { color: "#e2e8f0" } }, y: { type: "linear", title: { display: true, text: "Retorno historico anualizado (%)", font: { size: 20, weight: "bold" } }, ticks: { font: { size: 17 } }, grid: { color: "#e2e8f0" } } } }
   };
 }
 function initReportCharts(enriched, diag) {
@@ -594,6 +602,7 @@ function doughnutConfig(labels, data, showLegend = true) {
   return { type: 'doughnut', data: { labels: labels.map((l, i) => `${l}: ${pct((Number(data[i] || 0) / total) * 100)}`), datasets: [{ data, backgroundColor: REPORT_COLORS, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: true, animation: false, cutout: '70%', plugins: { legend: { display: showLegend, position: 'bottom', labels: { boxWidth: 18, font: { size: 28, weight: 'bold' }, padding: 12 } } } } };
 }
 function canvasToJpeg(chart, quality = 0.92) {
+  chart?.update?.('none');
   const c = chart.canvas;
   const ctx = c.getContext('2d');
   ctx.save();
@@ -625,19 +634,22 @@ async function buildChartImages(data) {
     drawPolarRosePDF(cBerk, SECTOR_RADAR_LABELS, portRaw, SECTOR_RADAR_LABELS.map(l => SECTOR_BENCHMARKS.berkshire.weights[l] || 0), SECTOR_BENCHMARKS.berkshire.label);
 
     const frontier = computeReportEfficientFrontier(data.enriched, data.analysis?.corr);
-    if (frontier) charts.push(new Chart(makeCanvas(900, 420), frontierConfig(frontier)));
+    const frontierChart = frontier ? new Chart(makeCanvas(900, 420), frontierConfig(frontier)) : null;
+    if (frontierChart) charts.push(frontierChart);
 
-    charts.push(new Chart(makeCanvas(900, 520), sectorBarConfig(sectorWeights)));
+    const sectorBarChart = new Chart(makeCanvas(900, 520), sectorBarConfig(sectorWeights));
+    charts.push(sectorBarChart);
 
-    await new Promise(resolve => setTimeout(resolve, 150));
+    charts.forEach(chart => chart?.update?.('none'));
+    await new Promise(requestAnimationFrame);
     return {
       strat: charts[0] ? canvasToJpeg(charts[0]) : null,
       assets: charts[1] ? canvasToJpeg(charts[1]) : null,
       sectors: charts[2] ? canvasToJpeg(charts[2]) : null,
       sectorSp500: cSp500.toDataURL('image/jpeg', 0.92),
       sectorBerkshire: cBerk.toDataURL('image/jpeg', 0.92),
-      frontier: charts[3] ? canvasToJpeg(charts[3]) : null,
-      sectorBar: charts[4] ? canvasToJpeg(charts[4]) : null
+      frontier: frontierChart ? canvasToJpeg(frontierChart) : null,
+      sectorBar: sectorBarChart ? canvasToJpeg(sectorBarChart) : null
     };
   } finally { charts.forEach(c => c?.destroy?.()); wrap.remove(); }
 }
@@ -707,16 +719,40 @@ async function exportPortfolioToPDF(data) {
   section("4.3 Exposicoes e rebalanceamento");
   const availCash = Number(strategy?.availableCash || 0);
   const monthlyBase = Number(strategy?.monthlyBase || 0);
-  bulletList([
+  currY = bulletList([
     `CORE ${pct(diag.corePct)}, Satellite ${pct(diag.satPct)}, Cripto ${pct(diag.cryPct)}.`,
     `DNA principal: ${analysis.dna?.primary?.name || "Personalizado"}.`,
     `Resumo de rebalanceamento: ${analysis.rebalance?.summary || "n/d"}.`,
     availCash > 0 ? `Liquidez disponivel para alocar: ${fmtEUR(availCash)}.` : "Liquidez disponivel: nao configurada (define em Settings).",
     monthlyBase > 0 ? `Investimento mensal base (DCA): ${fmtEUR(monthlyBase)}/mes.` : null,
     monthlyBase > 0 && availCash > 0 ? `Com DCA de ${fmtEUR(monthlyBase)}/mes + liquidez de ${fmtEUR(availCash)}, tens ${fmtEUR(availCash + monthlyBase)} para redistribuir ja.` : null
-  ].filter(Boolean), margin, currY, pageWidth - margin * 2);
-  currY += monthlyBase > 0 ? 70 : 50;
+  ].filter(Boolean), margin, currY, pageWidth - margin * 2) + 18;
 
+  section("4.4 Projecoes de cash e patrimonio");
+  const cashRate = 0.0225;
+  const portfolioRate = estimatePortfolioProjectionRate(enriched);
+  const projectionRows = [
+    ["Cash", "Hoje", fmtEUR(availCash), "Capital configurado em Settings"],
+    ["Cash", "5 anos", fmtEUR(compound(availCash, cashRate, 5)), "2,25% bruto/ano"],
+    ["Cash", "10 anos", fmtEUR(compound(availCash, cashRate, 10)), "2,25% bruto/ano"],
+    ["Portfolio", "5 anos", fmtEUR(compound(totalValue, portfolioRate, 5)), `${pct(portfolioRate * 100)}/ano estimado`],
+    ["Portfolio", "10 anos", fmtEUR(compound(totalValue, portfolioRate, 10)), `${pct(portfolioRate * 100)}/ano estimado`],
+    ["Portfolio", "15 anos", fmtEUR(compound(totalValue, portfolioRate, 15)), `${pct(portfolioRate * 100)}/ano estimado`]
+  ];
+  doc.autoTable({
+    startY: currY,
+    margin: { left: margin, right: margin },
+    head: [["Bloco", "Horizonte", "Valor projetado", "Premissa"]],
+    body: projectionRows,
+    theme: 'striped',
+    headStyles: { fillColor: [30, 41, 59] },
+    styles: { fontSize: 8 },
+    columnStyles: { 2: { halign: 'right' } }
+  });
+  currY = doc.lastAutoTable.finalY + 12;
+  doc.setFontSize(7); doc.setTextColor(90);
+  doc.text("Projecoes brutas e meramente ilustrativas, sem impostos, inflacao, custos, novos aportes ou alteracoes de carteira.", margin, currY);
+  currY += 24;
   if (chartImages.frontier || chartImages.sectorSp500 || chartImages.sectorBerkshire) {
     doc.addPage();
     doc.setFillColor(30, 41, 59); doc.rect(0, 0, pageWidth, 40, 'F'); doc.setFontSize(10); doc.setTextColor(255); doc.text("5. Fronteira e benchmarks", margin, 25);

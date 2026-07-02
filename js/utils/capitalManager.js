@@ -108,10 +108,11 @@ export function calculateCashPosition(portfolioValue, strategy) {
   const cashReservePct = Number(strategy?.cashReservePct || 0);
   const currentCash    = Number(strategy?.availableCash  || 0);
   const monthlyBase    = Number(strategy?.monthlyBase    || 0);
-  const targetReserve  = portfolioValue * (cashReservePct / 100);
+  const totalWealth    = portfolioValue + currentCash;
+  const targetReserve  = totalWealth * (cashReservePct / 100);
   const gapToReserve   = targetReserve - currentCash;
   const availableToInvest = Math.max(0, currentCash + monthlyBase - targetReserve);
-  return { targetReserve, currentCash, gapToReserve, monthlyBase, availableToInvest, cashReservePct };
+  return { targetReserve, currentCash, gapToReserve, monthlyBase, availableToInvest, cashReservePct, totalWealth };
 }
 
 /**

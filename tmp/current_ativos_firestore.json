@@ -1,0 +1,6623 @@
+{
+  "documents": [
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/06AdTybBtHZ6p2XEbqiv",
+      "fields": {
+        "ticker": {
+          "stringValue": "VVMX"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "doubleValue": -12.5
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T07:36:02.467Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "precoCompra": {
+          "doubleValue": 16.092
+        }
+      },
+      "createTime": "2026-05-18T07:36:02.514428Z",
+      "updateTime": "2026-05-18T07:36:02.514428Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/0gcLKq2Geb2rfPpZcplR",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 10.828
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        },
+        "sma50": {
+          "doubleValue": 10.33816
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T09:00:25.372Z"
+        },
+        "rsi": {
+          "doubleValue": 51.12
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:53.788Z"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "valorStock": {
+          "doubleValue": 10.386
+        },
+        "sma200": {
+          "doubleValue": 8.614285
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        },
+        "quantidade": {
+          "integerValue": "-20"
+        }
+      },
+      "createTime": "2026-04-01T09:00:25.418127Z",
+      "updateTime": "2026-04-28T18:15:03.991653Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/2QPVnpjkziFUYAjg74dm",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 61.75
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-22T17:15:22.328Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "quantidade": {
+          "integerValue": "-2"
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        }
+      },
+      "createTime": "2026-04-22T17:15:22.433922Z",
+      "updateTime": "2026-04-28T18:15:06.936376Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/3P3eGVokp6wAdvuoBpPt",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "doubleValue": -5.51
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "precoCompra": {
+          "doubleValue": 58.20851179673321
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-27T13:10:36.515Z"
+        }
+      },
+      "createTime": "2026-05-27T13:10:36.559261Z",
+      "updateTime": "2026-07-01T15:27:30.912158Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/3WxLxYJeksPKck8x1W4r",
+      "fields": {
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 1.9217
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T10:36:47.260Z"
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "precoCompra": {
+          "doubleValue": 57.76037258677213
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        }
+      },
+      "createTime": "2026-05-18T10:36:47.305445Z",
+      "updateTime": "2026-07-01T15:27:31.034817Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/3vWVPeIRHsDMqWQc2Gg8",
+      "fields": {
+        "quantidade": {
+          "integerValue": "45"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 17.426
+        },
+        "nome": {
+          "stringValue": "MSCI Global Semiconductors"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-09T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        }
+      },
+      "createTime": "2026-06-09T16:05:44.837776Z",
+      "updateTime": "2026-06-09T16:05:44.837776Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/4Q5v41uFg1vnZz0nSvPT",
+      "fields": {
+        "nome": {
+          "stringValue": "Dominion Energy"
+        },
+        "precoCompra": {
+          "doubleValue": 59.26
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "15"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-28T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "1"
+        },
+        "ticker": {
+          "stringValue": "D"
+        }
+      },
+      "createTime": "2026-05-28T11:14:26.202185Z",
+      "updateTime": "2026-05-28T11:14:26.202185Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/58RZS5yibNC3XDBktfzO",
+      "fields": {
+        "quantidade": {
+          "integerValue": "10"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "2B76"
+        },
+        "precoCompra": {
+          "doubleValue": 17.318
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "nome": {
+          "stringValue": "iShares Automation & Robotics"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-08T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        }
+      },
+      "createTime": "2026-05-08T12:52:42.720035Z",
+      "updateTime": "2026-05-08T12:52:42.720035Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/5FiaCgVmau6SjuvWCr99",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 69.685
+        },
+        "setor": {
+          "stringValue": "Criptomoedas"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Solana"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-30T17:18:54.928Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "quantidade": {
+          "integerValue": "-5"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "SOL"
+        }
+      },
+      "createTime": "2026-04-30T17:18:54.972800Z",
+      "updateTime": "2026-04-30T17:18:54.972800Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/5nkjc6zDl1ROLempZPEn",
+      "fields": {
+        "quantidade": {
+          "integerValue": "-2"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "VZLC"
+        },
+        "precoCompra": {
+          "doubleValue": 58.86
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "nome": {
+          "stringValue": "WisdomTree Physical Silver"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T07:56:59.645Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "20"
+        }
+      },
+      "createTime": "2026-05-18T07:56:59.688005Z",
+      "updateTime": "2026-05-18T07:56:59.688005Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/68DHbnsDJSu8hf4QYWB3",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 1.5328
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "CEG"
+        },
+        "valorStock": {
+          "doubleValue": 232.65
+        },
+        "nome": {
+          "stringValue": "Constellation Energy"
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 218.5
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "20"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-30T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        }
+      },
+      "createTime": "2026-06-30T21:07:23.237815Z",
+      "updateTime": "2026-07-01T15:26:46.432911Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/6P5ubqrODh0tJSL4xcx8",
+      "fields": {
+        "ticker": {
+          "stringValue": "SU"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-01T11:36:15.353Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "nome": {
+          "stringValue": "Schneider Electric"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 280.42
+        }
+      },
+      "createTime": "2026-06-01T11:36:15.401149Z",
+      "updateTime": "2026-06-01T11:39:04.901750Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/6nYVhdKiO3rOLpj4BFfg",
+      "fields": {
+        "sma50": {
+          "doubleValue": 52.3667
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "precoCompra": {
+          "doubleValue": 53.57
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "sma200": {
+          "doubleValue": 49.743626
+        },
+        "valorStock": {
+          "doubleValue": 52.43
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "quantidade": {
+          "doubleValue": 0.281
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-16T15:00:57.417Z"
+        },
+        "rsi": {
+          "doubleValue": 54.32
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:38.864995"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        }
+      },
+      "createTime": "2026-04-16T15:00:57.454010Z",
+      "updateTime": "2026-04-28T18:16:22.348953Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/7nCWRr3sY2daMRnBhkkL",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "60"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-15T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "nome": {
+          "stringValue": "Constellation Energy Corporation"
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 226.75
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "valorStock": {
+          "doubleValue": 232.65
+        },
+        "ticker": {
+          "stringValue": "CEG"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        }
+      },
+      "createTime": "2026-06-15T14:27:25.537862Z",
+      "updateTime": "2026-07-01T15:26:46.541825Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/7nodJMRlxroxb2Wf5W3J",
+      "fields": {
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "precoCompra": {
+          "doubleValue": 49.21
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 52.3667
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:38.864995"
+        },
+        "rsi": {
+          "doubleValue": 54.32
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T11:52:46.453Z"
+        },
+        "quantidade": {
+          "integerValue": "13"
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "sma200": {
+          "doubleValue": 49.743626
+        },
+        "valorStock": {
+          "doubleValue": 52.43
+        }
+      },
+      "createTime": "2026-03-26T11:52:46.492385Z",
+      "updateTime": "2026-04-28T18:16:22.481709Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/8DLVzRSxyWnUrYvUNubi",
+      "fields": {
+        "nome": {
+          "stringValue": "WisdomTree Physical Silver"
+        },
+        "precoCompra": {
+          "doubleValue": 53.045
+        },
+        "setor": {
+          "stringValue": "Commodities"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-22T00:00:00Z"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "4"
+        },
+        "ticker": {
+          "stringValue": "VZLC"
+        }
+      },
+      "createTime": "2026-06-22T13:51:08.282174Z",
+      "updateTime": "2026-06-22T13:51:08.282174Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/8e4ZGl7X4Wzw7lx5Mait",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 11.578
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "sma50": {
+          "doubleValue": 10.33816
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:54.359Z"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "rsi": {
+          "doubleValue": 51.12
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-30T19:05:15.101Z"
+        },
+        "quantidade": {
+          "integerValue": "10"
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        },
+        "sma200": {
+          "doubleValue": 8.614285
+        },
+        "valorStock": {
+          "doubleValue": 10.386
+        }
+      },
+      "createTime": "2026-03-30T19:05:15.140237Z",
+      "updateTime": "2026-04-28T18:15:04.130498Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/9VQsKLAEtJKhvi7CDKkK",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T14:47:30.037Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 158.554
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 0.9649
+        }
+      },
+      "createTime": "2026-05-18T14:47:30.072654Z",
+      "updateTime": "2026-07-01T15:29:20.295889Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/9eKc3k9QgbEpZWRb1bkP",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "9"
+        },
+        "ticker": {
+          "stringValue": "VVMX"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        },
+        "precoCompra": {
+          "doubleValue": 16.459
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-15T13:40:29.648Z"
+        }
+      },
+      "createTime": "2026-05-15T13:40:29.691250Z",
+      "updateTime": "2026-05-15T13:40:29.691250Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/AEvf4vrODGX2WtcqOGbN",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "precoCompra": {
+          "doubleValue": 61.56
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-16T09:13:22.901Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:54.571Z"
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "quantidade": {
+          "doubleValue": 0.244
+        }
+      },
+      "createTime": "2026-04-16T09:13:22.931221Z",
+      "updateTime": "2026-04-28T18:15:07.063258Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/AN6WVcuGvPh5ql6aLhPi",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "20"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-15T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "nome": {
+          "stringValue": "WisdomTree Physical Silver"
+        },
+        "precoCompra": {
+          "doubleValue": 60.48
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "ticker": {
+          "stringValue": "VZLC"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        }
+      },
+      "createTime": "2026-05-15T14:04:07.211061Z",
+      "updateTime": "2026-05-15T14:04:07.211061Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/ATOuFxIMuuxj06Evi1bP",
+      "fields": {
+        "quantidade": {
+          "integerValue": "-2"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "CEG"
+        },
+        "valorStock": {
+          "doubleValue": 232.65
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "precoCompra": {
+          "doubleValue": 227.35
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Constellation Energy Corporation"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-30T13:51:08.835Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "60"
+        }
+      },
+      "createTime": "2026-06-30T13:51:08.867465Z",
+      "updateTime": "2026-07-01T15:26:46.661336Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/AjbQipjMYElER96RUmmo",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 29.3878
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B6R51Z18"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 31.3
+        },
+        "valorStock": {
+          "doubleValue": 30.1
+        },
+        "sma200": {
+          "doubleValue": 24.435974
+        },
+        "ticker": {
+          "stringValue": "IS0D"
+        },
+        "quantidade": {
+          "doubleValue": 6.5
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T14:53:50.024Z"
+        },
+        "rsi": {
+          "doubleValue": 55.06
+        },
+        "nome": {
+          "stringValue": "iShares Oil & Gas Exploration"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:54.693Z"
+        }
+      },
+      "createTime": "2026-03-26T14:53:50.072732Z",
+      "updateTime": "2026-04-28T18:15:09.960092Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/AjzdOaU8IcZNBbXQVGdH",
+      "fields": {
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:38.864995"
+        },
+        "rsi": {
+          "doubleValue": 54.32
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-24T15:00:58.562Z"
+        },
+        "quantidade": {
+          "doubleValue": -2.2011
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "sma200": {
+          "doubleValue": 49.743626
+        },
+        "valorStock": {
+          "doubleValue": 52.43
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "precoCompra": {
+          "doubleValue": 53.4616
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 52.3667
+        }
+      },
+      "createTime": "2026-04-24T15:00:58.604543Z",
+      "updateTime": "2026-04-28T18:16:22.621606Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Aw7bAWGIufsUulOKJjQn",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-06-08T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 56.59
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "quantidade": {
+          "integerValue": "14"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-06-08T07:25:54.080486Z",
+      "updateTime": "2026-07-01T15:27:31.118763Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/AwP4fPtcvelUlakaNuRZ",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 29.3878
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B6R51Z18"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 30.36
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "quantidade": {
+          "integerValue": "-6"
+        },
+        "sma200": {
+          "doubleValue": 24.435974
+        },
+        "valorStock": {
+          "doubleValue": 30.1
+        },
+        "ticker": {
+          "stringValue": "IS0D"
+        },
+        "nome": {
+          "stringValue": "iShares Oil & Gas Exploration"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:54.792Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-13T07:55:03.814Z"
+        },
+        "rsi": {
+          "doubleValue": 55.06
+        }
+      },
+      "createTime": "2026-04-13T07:55:03.861429Z",
+      "updateTime": "2026-04-28T18:15:10.115400Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/AyDJdX7mwmpogpXEyTq1",
+      "fields": {
+        "ticker": {
+          "stringValue": "SOL"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-4"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-08T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Solana"
+        },
+        "precoCompra": {
+          "integerValue": "74"
+        },
+        "setor": {
+          "stringValue": "Criptomoedas"
+        }
+      },
+      "createTime": "2026-05-08T10:21:08.947506Z",
+      "updateTime": "2026-05-08T10:21:08.947506Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/BAOb11ZjO4U8lIiMn3b8",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 15.62432
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "precoCompra": {
+          "doubleValue": 16.7
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "sma200": {
+          "doubleValue": 12.698525
+        },
+        "valorStock": {
+          "doubleValue": 16.4
+        },
+        "ticker": {
+          "stringValue": "VVMX"
+        },
+        "quantidade": {
+          "integerValue": "24"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-10T18:51:10Z"
+        },
+        "rsi": {
+          "doubleValue": 61.28
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:35.022279"
+        }
+      },
+      "createTime": "2026-04-23T18:51:10.959794Z",
+      "updateTime": "2026-05-07T16:58:19.746415Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/BDU3VHH3TLTz78znM54O",
+      "fields": {
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "roe": {
+          "doubleValue": 0
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "precoCompra": {
+          "doubleValue": 94.02
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000YU9K6K2"
+        },
+        "ticker": {
+          "stringValue": "JEDI"
+        },
+        "valorStock": {
+          "doubleValue": 88.68
+        },
+        "quantidade": {
+          "integerValue": "1"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T10:38:07.565Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "roa": {
+          "doubleValue": 0
+        },
+        "nome": {
+          "stringValue": "VanEck Space Innovators USD (Acc)"
+        }
+      },
+      "createTime": "2026-05-18T10:38:07.615718Z",
+      "updateTime": "2026-07-01T15:28:56.996132Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Bacx0sQARhQDrdmuGjrM",
+      "fields": {
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "precoCompra": {
+          "doubleValue": 158.66666666666666
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-09T16:32:12.279Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "6"
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-06-09T16:32:12.298581Z",
+      "updateTime": "2026-07-01T15:29:20.444411Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/BtgVEeKIBX86mMiUgBCT",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 49.61
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T07:34:06.277Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "quantidade": {
+          "integerValue": "-4"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        }
+      },
+      "createTime": "2026-05-18T07:34:06.322551Z",
+      "updateTime": "2026-05-18T07:34:06.322551Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/C39PxQSq5vg05bTlXvb7",
+      "fields": {
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-08T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "precoCompra": {
+          "doubleValue": 159.047
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "quantidade": {
+          "doubleValue": 0.7106
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-05-08T10:12:16.219448Z",
+      "updateTime": "2026-07-01T15:29:20.570502Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/CPVZlNLDTdhslYXNu4Tt",
+      "fields": {
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "precoCompra": {
+          "doubleValue": 58.39
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-16T14:21:56.423Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 0.8563
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-06-16T14:21:56.465140Z",
+      "updateTime": "2026-07-01T15:27:31.254876Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/D6wG0NGchwuMJS5telbd",
+      "fields": {
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-3"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-13T17:45:13.970Z"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "precoCompra": {
+          "doubleValue": 53.886
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        }
+      },
+      "createTime": "2026-05-13T17:45:13.986337Z",
+      "updateTime": "2026-05-13T17:45:13.986337Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/D9leBFMF5gIf5J3sFZ5J",
+      "fields": {
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "GZUR"
+        },
+        "valorStock": {
+          "doubleValue": 343.88
+        },
+        "quantidade": {
+          "doubleValue": -0.75
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-29T20:28:37.493Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "precoCompra": {
+          "doubleValue": 334.00666666666666
+        },
+        "setor": {
+          "stringValue": "Commodities"
+        },
+        "nome": {
+          "stringValue": "Physical Swiss Gold USD"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2026-06-29T20:28:37.529575Z",
+      "updateTime": "2026-07-01T15:27:56.815583Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/DbqNmVEShvyyxR4O9ixv",
+      "fields": {
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "precoCompra": {
+          "doubleValue": 57.54555555555555
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T08:43:14.207265Z"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 9
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-05-18T08:43:16.253773Z",
+      "updateTime": "2026-07-01T15:27:31.343368Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/DyfPbKnNcxdDAPnbx97d",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "precoCompra": {
+          "doubleValue": 164.6937
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-02T15:55:37.536Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        }
+      },
+      "createTime": "2026-06-02T15:55:37.577722Z",
+      "updateTime": "2026-07-01T15:29:20.687498Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Dzt1VBDfcIDJQGdqiIFV",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 0.08
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "setor": {
+          "stringValue": "Criptomoedas"
+        },
+        "precoCompra": {
+          "doubleValue": 76.33
+        },
+        "ticker": {
+          "stringValue": "SOL"
+        },
+        "sma200": {
+          "doubleValue": 0.22
+        },
+        "quantidade": {
+          "integerValue": "1"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T20:16:56.530Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "nome": {
+          "stringValue": "Solana"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:55.143Z"
+        }
+      },
+      "createTime": "2026-03-26T20:16:56.569131Z",
+      "updateTime": "2026-04-17T10:54:55.161904Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/E3fcQ56dKDIhv8YdSsQG",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 30.785
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B6R51Z18"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "sma50": {
+          "doubleValue": 29.3878
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:55.280Z"
+        },
+        "nome": {
+          "stringValue": "iShares Oil & Gas Exploration"
+        },
+        "rsi": {
+          "doubleValue": 55.06
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T09:06:57.666Z"
+        },
+        "quantidade": {
+          "doubleValue": -5.75
+        },
+        "sma200": {
+          "doubleValue": 24.435974
+        },
+        "valorStock": {
+          "doubleValue": 30.1
+        },
+        "ticker": {
+          "stringValue": "IS0D"
+        }
+      },
+      "createTime": "2026-04-01T09:06:57.700398Z",
+      "updateTime": "2026-04-28T18:15:10.224265Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/EBCPaFkC2vUCIBxC4Aci",
+      "fields": {
+        "nome": {
+          "stringValue": "Physical Swiss Gold USD"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "precoCompra": {
+          "doubleValue": 350.52
+        },
+        "setor": {
+          "stringValue": "Commodities"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-22T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 1.5
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "valorStock": {
+          "doubleValue": 343.88
+        },
+        "ticker": {
+          "stringValue": "GZUR"
+        }
+      },
+      "createTime": "2026-06-22T13:48:27.739710Z",
+      "updateTime": "2026-07-01T15:27:56.938649Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/ERIFdGxWlaDi0vLEb7WD",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-06-08T07:30:49.976Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "precoCompra": {
+          "doubleValue": 356.08
+        },
+        "setor": {
+          "stringValue": "Commodities"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Physical Swiss Gold USD"
+        },
+        "ticker": {
+          "stringValue": "GZUR"
+        },
+        "valorStock": {
+          "doubleValue": 343.88
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "quantidade": {
+          "integerValue": "-1"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        }
+      },
+      "createTime": "2026-06-08T07:30:50.014373Z",
+      "updateTime": "2026-07-01T15:27:57.081085Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/EcV7KsM97doCAA4odqLv",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 10.814
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        },
+        "sma50": {
+          "doubleValue": 10.33816
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T09:01:18.884Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "rsi": {
+          "doubleValue": 51.12
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:55.369Z"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "valorStock": {
+          "doubleValue": 10.386
+        },
+        "sma200": {
+          "doubleValue": 8.614285
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        },
+        "quantidade": {
+          "integerValue": "-20"
+        }
+      },
+      "createTime": "2026-04-01T09:01:18.925770Z",
+      "updateTime": "2026-04-28T18:15:04.234456Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/EofyU7jXYYBuSBP6RrsG",
+      "fields": {
+        "nome": {
+          "stringValue": "VanEck Space innovator"
+        },
+        "roa": {
+          "doubleValue": 0
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-29T00:00:00Z"
+        },
+        "quantidade": {
+          "integerValue": "4"
+        },
+        "valorStock": {
+          "doubleValue": 88.68
+        },
+        "ticker": {
+          "stringValue": "JEDI"
+        },
+        "precoCompra": {
+          "doubleValue": 84.9
+        },
+        "setor": {
+          "stringValue": "Defesa"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "roe": {
+          "doubleValue": 0
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-06-29T20:32:04.728714Z",
+      "updateTime": "2026-07-01T15:28:57.082717Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/EtnWrJz9u4qM2qZL9IWm",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 48.595111111111116
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-30T07:45:40.853Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "quantidade": {
+          "integerValue": "9"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-06-30T07:45:40.888911Z",
+      "updateTime": "2026-07-01T15:28:24.066156Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Ex1yvAbMY4B1Chap64hP",
+      "fields": {
+        "sma200": {
+          "doubleValue": 59.75128
+        },
+        "valorStock": {
+          "doubleValue": 64.1
+        },
+        "ticker": {
+          "stringValue": "EUNN"
+        },
+        "quantidade": {
+          "doubleValue": -10.47
+        },
+        "rsi": {
+          "doubleValue": 38.22
+        },
+        "mercado": {
+          "stringValue": "Asiático"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-14T11:32:49.434Z"
+        },
+        "nome": {
+          "stringValue": "Core MSCI Japan IMI"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:55.458Z"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 64.1408
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 64.33
+        }
+      },
+      "createTime": "2026-04-14T11:32:49.452530Z",
+      "updateTime": "2026-04-28T18:15:23.235690Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Ezmyv5MA2WyFZojRkNDJ",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "precoCompra": {
+          "doubleValue": 159.98
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-09T15:45:00.165Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        }
+      },
+      "createTime": "2026-06-09T15:45:00.212045Z",
+      "updateTime": "2026-07-01T15:29:20.752938Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/F3zpCDrxuw0LIkRay3Im",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "precoCompra": {
+          "doubleValue": 60.66
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "quantidade": {
+          "doubleValue": 0.247
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:55.545Z"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-09T11:04:55.997Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        }
+      },
+      "createTime": "2026-04-09T11:04:56.075114Z",
+      "updateTime": "2026-04-28T18:15:07.212393Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/FSjVfnfxcROQZkTBXmRK",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 24.94
+        },
+        "nome": {
+          "stringValue": "VanEck Quantum Computing"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-11T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "quantidade": {
+          "integerValue": "-5"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "QUTM"
+        }
+      },
+      "createTime": "2026-05-11T13:17:13.818238Z",
+      "updateTime": "2026-05-11T13:17:13.818238Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/FrKEWI0liFBld2ZhO4IH",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "ticker": {
+          "stringValue": "D"
+        },
+        "nome": {
+          "stringValue": "Dominion Energy"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "precoCompra": {
+          "doubleValue": 58.08
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "15"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-29T13:28:47.835Z"
+        }
+      },
+      "createTime": "2026-05-29T13:28:47.869701Z",
+      "updateTime": "2026-05-29T13:28:47.869701Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/G7Xra7LSXTQ2xH8fCkhR",
+      "fields": {
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B40B8R38"
+        },
+        "setor": {
+          "stringValue": "Consumo Defensivo"
+        },
+        "precoCompra": {
+          "doubleValue": 8.71
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 8.70902
+        },
+        "nome": {
+          "stringValue": "S&P 500 Consumer Defensive"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:55.689Z"
+        },
+        "rsi": {
+          "doubleValue": 56.42
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T11:48:37.184Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "quantidade": {
+          "integerValue": "21"
+        },
+        "valorStock": {
+          "doubleValue": 8.683
+        },
+        "sma200": {
+          "doubleValue": 8.252036
+        },
+        "ticker": {
+          "stringValue": "2B7D"
+        }
+      },
+      "createTime": "2026-03-26T11:48:37.239947Z",
+      "updateTime": "2026-04-28T18:15:27.987767Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/GTwNMAW1cNIQXeaGvIIE",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 47.507999999999996
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-26T09:14:59.920Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "quantidade": {
+          "integerValue": "-10"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        }
+      },
+      "createTime": "2026-06-26T09:14:59.964090Z",
+      "updateTime": "2026-07-01T15:28:24.193057Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/GigTz7lSJxM1caQxsvuM",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "precoCompra": {
+          "doubleValue": 12.12
+        },
+        "setor": {
+          "stringValue": "Consumo Cíclico"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BDDRF478"
+        },
+        "sma50": {
+          "doubleValue": 12.06492
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T11:56:04.898Z"
+        },
+        "rsi": {
+          "doubleValue": 66.97
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:55.758Z"
+        },
+        "nome": {
+          "stringValue": "S&P 500 Communication Service"
+        },
+        "ticker": {
+          "stringValue": "IU5C"
+        },
+        "sma200": {
+          "doubleValue": 11.78417
+        },
+        "valorStock": {
+          "doubleValue": 12.452
+        },
+        "quantidade": {
+          "integerValue": "8"
+        }
+      },
+      "createTime": "2026-03-26T11:56:04.940224Z",
+      "updateTime": "2026-04-28T18:17:02.415109Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Hddgg9gqOku6Lo3viPji",
+      "fields": {
+        "ticker": {
+          "stringValue": "XDW0"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-01T11:38:09.935Z"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BM67HM91#overview"
+        },
+        "nome": {
+          "stringValue": "MSCI World Energy"
+        },
+        "precoCompra": {
+          "doubleValue": 60.21
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        }
+      },
+      "createTime": "2026-06-01T11:38:09.969072Z",
+      "updateTime": "2026-06-01T11:38:09.969072Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/IBGCXcbCMKEq1ant0VKq",
+      "fields": {
+        "nome": {
+          "stringValue": "SP500 Information Tech"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 42.88444444444444
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-08T08:02:51.239Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-18"
+        },
+        "ticker": {
+          "stringValue": "QDVE"
+        }
+      },
+      "createTime": "2026-06-08T08:02:51.290850Z",
+      "updateTime": "2026-06-08T08:02:51.290850Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/IUvM8wKeB9g9UQqT7pXs",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 62.31
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "quantidade": {
+          "doubleValue": 2.7564
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-20T19:25:12.515Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        }
+      },
+      "createTime": "2026-04-20T19:25:12.557793Z",
+      "updateTime": "2026-04-28T18:15:07.343481Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/IlY2bk4kIL2YnIRuD2Aj",
+      "fields": {
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-7"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T07:37:52.896Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 49.8421
+        }
+      },
+      "createTime": "2026-05-18T07:37:52.939289Z",
+      "updateTime": "2026-05-18T07:37:52.939289Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/IzkGnclgigyVyuDMGQQ9",
+      "fields": {
+        "quantidade": {
+          "integerValue": "-8"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        },
+        "precoCompra": {
+          "doubleValue": 19.915
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000I8KRLL9"
+        },
+        "nome": {
+          "stringValue": "MSCI Global Semiconductors"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-15T23:06:37.386Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        }
+      },
+      "createTime": "2026-06-15T23:06:37.443588Z",
+      "updateTime": "2026-06-15T23:06:37.443588Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/JGjmeHKkwtm6PJ02SbfT",
+      "fields": {
+        "quantidade": {
+          "integerValue": "-10"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "2B76"
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 16.882
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "iShares Automation & Robotics"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-15T09:03:23.203Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        }
+      },
+      "createTime": "2026-05-15T09:03:23.222269Z",
+      "updateTime": "2026-05-15T09:03:23.222269Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/JyrZephQHn7ZzbOp7rs8",
+      "fields": {
+        "sma200": {
+          "doubleValue": 8.96
+        },
+        "valorStock": {
+          "doubleValue": 10.215
+        },
+        "ticker": {
+          "stringValue": "DRH"
+        },
+        "quantidade": {
+          "integerValue": "120"
+        },
+        "rsi": {
+          "doubleValue": 63.66
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T11:57:56.631Z"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-24T13:58:49.330Z"
+        },
+        "nome": {
+          "stringValue": "DroneShield Ltd"
+        },
+        "sma50": {
+          "doubleValue": 9.9
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "source_sma": {
+          "stringValue": "finviz"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "60"
+        },
+        "precoCompra": {
+          "doubleValue": 2.39
+        },
+        "setor": {
+          "stringValue": "Defesa"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2026-03-26T11:57:56.676268Z",
+      "updateTime": "2026-05-11T14:17:28.686731Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/LkDvSBmTjdBjaklkFZcP",
+      "fields": {
+        "ticker": {
+          "stringValue": "QUTM"
+        },
+        "quantidade": {
+          "integerValue": "1"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-08T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "precoCompra": {
+          "doubleValue": 26.04
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "nome": {
+          "stringValue": "VanEck Quantum Computing"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2026-05-08T18:23:23.467213Z",
+      "updateTime": "2026-05-08T18:23:23.467213Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/MLEujFwNaxDfKZqGw21u",
+      "fields": {
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-15T15:40:37.976Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "precoCompra": {
+          "doubleValue": 19.725
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000I8KRLL9"
+        },
+        "nome": {
+          "stringValue": "MSCI Global Semiconductors"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        },
+        "quantidade": {
+          "integerValue": "-8"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        }
+      },
+      "createTime": "2026-06-15T15:40:38.022387Z",
+      "updateTime": "2026-06-15T15:40:38.022387Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/MfUMxlz3pO1e6XKEmlWh",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-03-26T11:50:48.553Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "rsi": {
+          "doubleValue": 72.79
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:56.213Z"
+        },
+        "nome": {
+          "stringValue": "S&P 500 Consumer Ciclycal"
+        },
+        "ticker": {
+          "stringValue": "QDVK"
+        },
+        "sma200": {
+          "doubleValue": 14.0395
+        },
+        "valorStock": {
+          "doubleValue": 14.238
+        },
+        "quantidade": {
+          "integerValue": "4"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "precoCompra": {
+          "doubleValue": 13.34
+        },
+        "setor": {
+          "stringValue": "Consumo Cíclico"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B4MCHD36"
+        },
+        "sma50": {
+          "doubleValue": 13.70424
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-03-26T11:50:48.578548Z",
+      "updateTime": "2026-04-28T18:17:06.517996Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/MiKmzKYDInQdrkoufYVM",
+      "fields": {
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-30T21:00:51.587Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "precoCompra": {
+          "doubleValue": 9.719000000000001
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        },
+        "quantidade": {
+          "integerValue": "-25"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        }
+      },
+      "createTime": "2026-06-30T21:00:51.873313Z",
+      "updateTime": "2026-06-30T21:00:51.873313Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/N2YiSdqK8LF1senh0d6K",
+      "fields": {
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-29T15:40:26.049Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 52.25
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        }
+      },
+      "createTime": "2026-04-29T15:40:26.094031Z",
+      "updateTime": "2026-04-29T15:40:26.094031Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/N97MQv7j0e7y5hJb4WS4",
+      "fields": {
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:56.372Z"
+        },
+        "nome": {
+          "stringValue": "Core MSCI Japan IMI"
+        },
+        "rsi": {
+          "doubleValue": 38.22
+        },
+        "mercado": {
+          "stringValue": "Asiático"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T09:08:33.807Z"
+        },
+        "quantidade": {
+          "integerValue": "10"
+        },
+        "sma200": {
+          "doubleValue": 59.75128
+        },
+        "valorStock": {
+          "doubleValue": 64.1
+        },
+        "ticker": {
+          "stringValue": "EUNN"
+        },
+        "precoCompra": {
+          "doubleValue": 64.3
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "sma50": {
+          "doubleValue": 64.1408
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-04-01T09:08:33.846826Z",
+      "updateTime": "2026-04-28T18:15:23.306886Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/NZekmlyqpc66lmeABPOU",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-03-26T11:53:39.142Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:56.452Z"
+        },
+        "nome": {
+          "stringValue": "MSCI World Financials"
+        },
+        "ticker": {
+          "stringValue": "XDWF"
+        },
+        "sma200": {
+          "doubleValue": 42.3
+        },
+        "quantidade": {
+          "integerValue": "7"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "setor": {
+          "stringValue": "ETF Finance"
+        },
+        "precoCompra": {
+          "doubleValue": 35.45
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "sma50": {
+          "doubleValue": 41.59
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-03-26T11:53:39.185165Z",
+      "updateTime": "2026-05-08T16:05:51.882705Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/NlcRphfDq91jYU1GPUCM",
+      "fields": {
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 56.88666666666666
+        },
+        "nome": {
+          "stringValue": "Dominion Energy"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-01T11:30:13.195Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "15"
+        },
+        "quantidade": {
+          "integerValue": "-3"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "D"
+        }
+      },
+      "createTime": "2026-06-01T11:30:13.240065Z",
+      "updateTime": "2026-06-01T11:30:13.240065Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/NuBimxsEWbSiJ2z6hHer",
+      "fields": {
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "valorStock": {
+          "doubleValue": 343.88
+        },
+        "ticker": {
+          "stringValue": "GZUR"
+        },
+        "quantidade": {
+          "integerValue": "1"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-26T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "precoCompra": {
+          "doubleValue": 374.29
+        },
+        "setor": {
+          "stringValue": "Commodities"
+        },
+        "nome": {
+          "stringValue": "Physical Swiss Gold USD"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2026-05-26T09:19:04.473106Z",
+      "updateTime": "2026-07-01T15:27:57.202797Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/O6NzCSyyJsBBMPfq6KqJ",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 42.572
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "S&P 500 Technology"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T13:03:31.602Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        },
+        "quantidade": {
+          "doubleValue": 2.7248
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "QDVE"
+        }
+      },
+      "createTime": "2026-05-18T10:33:40.537981Z",
+      "updateTime": "2026-05-18T13:03:31.630210Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/O8txzcMOTioXqMWXx4Wi",
+      "fields": {
+        "sma50": {
+          "doubleValue": 52.3667
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "precoCompra": {
+          "doubleValue": 54.29
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "sma200": {
+          "doubleValue": 49.743626
+        },
+        "valorStock": {
+          "doubleValue": 52.43
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:38.864995"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "rsi": {
+          "doubleValue": 54.32
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-16T09:13:49.535Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        }
+      },
+      "createTime": "2026-04-16T09:13:49.573870Z",
+      "updateTime": "2026-04-28T18:16:22.709603Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Oe4BS08ODr2gN6kx5Pai",
+      "fields": {
+        "sma50": {
+          "doubleValue": 147.9164
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 151.95
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "quantidade": {
+          "integerValue": "6"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "sma200": {
+          "doubleValue": 143.3022
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:40.768701"
+        },
+        "yield": {
+          "doubleValue": 0
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-16T09:10:37.005Z"
+        },
+        "rsi": {
+          "doubleValue": 76.79
+        }
+      },
+      "createTime": "2026-04-16T09:10:37.047513Z",
+      "updateTime": "2026-07-01T15:29:20.822590Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/P1onF86bgwmad4AT1j4U",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 11.634
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "sma50": {
+          "doubleValue": 10.33816
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:56.680Z"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-30T12:10:48.457Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "rsi": {
+          "doubleValue": 51.12
+        },
+        "quantidade": {
+          "integerValue": "-10"
+        },
+        "sma200": {
+          "doubleValue": 8.614285
+        },
+        "valorStock": {
+          "doubleValue": 10.386
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        }
+      },
+      "createTime": "2026-03-30T12:10:48.497564Z",
+      "updateTime": "2026-04-28T18:15:04.352642Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/PN1wMwXQubktTzV1sYZk",
+      "fields": {
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "doubleValue": -3.0799000000000003
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T07:40:28.525Z"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "precoCompra": {
+          "doubleValue": 48.4
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        }
+      },
+      "createTime": "2026-05-18T07:40:28.542935Z",
+      "updateTime": "2026-05-18T07:40:28.542935Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/PNAHsE9C2fq7hvbozmpY",
+      "fields": {
+        "nome": {
+          "stringValue": "VanEck Space Innovators USD (Acc)"
+        },
+        "roa": {
+          "doubleValue": 0
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-29T13:40:16.082Z"
+        },
+        "quantidade": {
+          "integerValue": "-1"
+        },
+        "ticker": {
+          "stringValue": "JEDI"
+        },
+        "valorStock": {
+          "doubleValue": 88.68
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000YU9K6K2"
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 112.12
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "roe": {
+          "doubleValue": 0
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-05-29T13:40:16.117927Z",
+      "updateTime": "2026-07-01T15:28:57.209405Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/QIeActvKVDY6i6Exnq1B",
+      "fields": {
+        "quantidade": {
+          "doubleValue": 0.5
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "LYP6"
+        },
+        "precoCompra": {
+          "integerValue": "311"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-27T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "30"
+        }
+      },
+      "createTime": "2026-05-27T10:05:03.588411Z",
+      "updateTime": "2026-05-27T10:05:03.588411Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/RXBd6EnuJO3iwKJa3CAk",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "5"
+        },
+        "ticker": {
+          "stringValue": "VVMX"
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "precoCompra": {
+          "doubleValue": 17.97
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-08T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        }
+      },
+      "createTime": "2026-05-08T08:06:48.016892Z",
+      "updateTime": "2026-05-08T08:07:18.524166Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/RvZL9haqtYUuNDJYODM5",
+      "fields": {
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "sma200": {
+          "doubleValue": 49.743626
+        },
+        "valorStock": {
+          "doubleValue": 52.43
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "rsi": {
+          "doubleValue": 54.32
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T14:56:14.100Z"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:38.864995"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 52.3667
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "precoCompra": {
+          "integerValue": "49"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        }
+      },
+      "createTime": "2026-03-26T14:56:14.135154Z",
+      "updateTime": "2026-04-28T18:16:22.832707Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/SSNwt9tP8BkdE1wcuA9i",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 59.28
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:56.806Z"
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T09:10:27.404Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "quantidade": {
+          "integerValue": "15"
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        }
+      },
+      "createTime": "2026-04-01T09:10:27.437930Z",
+      "updateTime": "2026-04-28T18:15:07.458518Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/TDrl90dvsWA2ZmjYO3j4",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-30T07:46:09.654Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "precoCompra": {
+          "doubleValue": 58.06666666666666
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "6"
+        }
+      },
+      "createTime": "2026-06-30T07:46:09.691631Z",
+      "updateTime": "2026-07-01T15:27:31.463486Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/TlKqkgVQ1J84FrluQ4wA",
+      "fields": {
+        "ticker": {
+          "stringValue": "QDVE"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 12.8
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T11:20:19.545Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "nome": {
+          "stringValue": "S&P 500 Technology"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "precoCompra": {
+          "doubleValue": 37.9
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        }
+      },
+      "createTime": "2026-05-18T08:43:16.553873Z",
+      "updateTime": "2026-05-18T12:03:26.422588Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/UnTAWMN2BLQfkxssEtjO",
+      "fields": {
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Berkshire Hathaway Inc Class B"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "integerValue": "413"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-27T13:08:39.963Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-1"
+        },
+        "ticker": {
+          "stringValue": "BRK.B"
+        }
+      },
+      "createTime": "2026-05-27T13:08:40.005069Z",
+      "updateTime": "2026-05-27T13:08:40.005069Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/UrSrMNysvcHOOgso6SjF",
+      "fields": {
+        "ticker": {
+          "stringValue": "VZLC"
+        },
+        "quantidade": {
+          "integerValue": "-4"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-24T17:45:06.984Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "20"
+        },
+        "precoCompra": {
+          "doubleValue": 47.298
+        },
+        "setor": {
+          "stringValue": "Commodities"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "WisdomTree Physical Silver"
+        }
+      },
+      "createTime": "2026-06-24T17:45:07.028439Z",
+      "updateTime": "2026-06-24T17:45:07.028439Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/UrdSsfjxplsPx2CyqBbj",
+      "fields": {
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T10:35:08.206Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "precoCompra": {
+          "doubleValue": 158.56
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "quantidade": {
+          "doubleValue": 2.8822
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-05-18T10:32:56.189493Z",
+      "updateTime": "2026-07-01T15:29:20.894388Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/VNnSQpnxe87JlTdkXaVm",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 57.535215181920655
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-28T10:50:38.667Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "quantidade": {
+          "doubleValue": -5.4117
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        }
+      },
+      "createTime": "2026-05-28T10:50:38.729065Z",
+      "updateTime": "2026-07-01T15:27:31.560612Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/VZCPoamMgOr67cnRB04d",
+      "fields": {
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "valorStock": {
+          "doubleValue": 101.28
+        },
+        "ticker": {
+          "stringValue": "CCJ"
+        },
+        "quantidade": {
+          "doubleValue": 2.8126
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-30T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "12"
+        },
+        "precoCompra": {
+          "doubleValue": 89.24
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "nome": {
+          "stringValue": "Cameco"
+        }
+      },
+      "createTime": "2026-06-30T21:14:54.364167Z",
+      "updateTime": "2026-07-01T15:26:22.238718Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/X3iObgiWtCkwW0n01tIi",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 13.70424
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B4MCHD36"
+        },
+        "precoCompra": {
+          "doubleValue": 13.5
+        },
+        "setor": {
+          "stringValue": "Consumo Cíclico"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "quantidade": {
+          "integerValue": "-4"
+        },
+        "sma200": {
+          "doubleValue": 14.0395
+        },
+        "valorStock": {
+          "doubleValue": 14.238
+        },
+        "ticker": {
+          "stringValue": "QDVK"
+        },
+        "nome": {
+          "stringValue": "S&P 500 Consumer Ciclycal"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:56.874Z"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-27T11:49:29.520Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "rsi": {
+          "doubleValue": 72.79
+        }
+      },
+      "createTime": "2026-03-27T11:49:29.563536Z",
+      "updateTime": "2026-04-28T18:17:06.583518Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/XEEkvJBjog584pFZ8BcS",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-03-27T11:50:35.877Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "rsi": {
+          "doubleValue": 56.42
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:56.949Z"
+        },
+        "nome": {
+          "stringValue": "S&P 500 Consumer Defensive"
+        },
+        "ticker": {
+          "stringValue": "2B7D"
+        },
+        "sma200": {
+          "doubleValue": 8.252036
+        },
+        "valorStock": {
+          "doubleValue": 8.683
+        },
+        "quantidade": {
+          "integerValue": "-21"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "Consumo Defensivo"
+        },
+        "precoCompra": {
+          "doubleValue": 8.57
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B40B8R38"
+        },
+        "sma50": {
+          "doubleValue": 8.70902
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        }
+      },
+      "createTime": "2026-03-27T11:50:35.919330Z",
+      "updateTime": "2026-04-28T18:15:28.058652Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/XQAEmZYZkEonoldkdons",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 33.281
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B6R51Z18"
+        },
+        "sma50": {
+          "doubleValue": 29.3878
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-30T12:08:29.065Z"
+        },
+        "rsi": {
+          "doubleValue": 55.06
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.006Z"
+        },
+        "nome": {
+          "stringValue": "iShares Oil & Gas Exploration"
+        },
+        "sma200": {
+          "doubleValue": 24.435974
+        },
+        "valorStock": {
+          "doubleValue": 30.1
+        },
+        "ticker": {
+          "stringValue": "IS0D"
+        },
+        "quantidade": {
+          "integerValue": "15"
+        }
+      },
+      "createTime": "2026-03-30T12:08:29.106549Z",
+      "updateTime": "2026-04-28T18:15:10.399900Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/XRiFd3UbtGnM6Ktdv7Eq",
+      "fields": {
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "sma200": {
+          "doubleValue": 143.3022
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "quantidade": {
+          "integerValue": "4"
+        },
+        "rsi": {
+          "doubleValue": 76.79
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-20T18:38:45.627Z"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "yield": {
+          "doubleValue": 0
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:40.768701"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 147.9164
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 153.25
+        }
+      },
+      "createTime": "2026-04-20T18:38:45.662668Z",
+      "updateTime": "2026-07-01T15:29:20.961305Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/XsxEqlqE3WN96DCPUYCe",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T07:36:33.734Z"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "precoCompra": {
+          "doubleValue": 50.433
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "3"
+        }
+      },
+      "createTime": "2026-05-18T07:36:33.782420Z",
+      "updateTime": "2026-05-18T07:36:33.782420Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/XwwkfdjWRB32bRmAzf92",
+      "fields": {
+        "quantidade": {
+          "integerValue": "6"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "XDWF"
+        },
+        "precoCompra": {
+          "doubleValue": 36.7429
+        },
+        "setor": {
+          "stringValue": "ETF Finance"
+        },
+        "nome": {
+          "stringValue": "MSCI World Financials"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-08T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        }
+      },
+      "createTime": "2026-05-08T10:43:47.813537Z",
+      "updateTime": "2026-05-08T16:05:51.657113Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/ZJE2jhT6iFuWRpORgo61",
+      "fields": {
+        "ticker": {
+          "stringValue": "QDVG"
+        },
+        "quantidade": {
+          "integerValue": "-20"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-30T21:00:24.981Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "20"
+        },
+        "precoCompra": {
+          "doubleValue": 11.112
+        },
+        "setor": {
+          "stringValue": "Saúde"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Health Care Sector"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2026-06-30T21:00:25.016414Z",
+      "updateTime": "2026-06-30T21:00:25.016414Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/ZNuemzjIaLMFh6nSPGfQ",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 155.46
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-04T15:21:00.576Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "quantidade": {
+          "doubleValue": 0.2895
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        }
+      },
+      "createTime": "2026-05-04T15:21:00.620590Z",
+      "updateTime": "2026-07-01T15:29:21.092798Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/Znh7d6Qu4j1i5XgMT8aH",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-08T07:34:43.241Z"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BM67HM91#overview"
+        },
+        "nome": {
+          "stringValue": "MSCI World Energy"
+        },
+        "precoCompra": {
+          "doubleValue": 61.755
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "ticker": {
+          "stringValue": "XDW0"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-8"
+        }
+      },
+      "createTime": "2026-06-08T07:34:43.282171Z",
+      "updateTime": "2026-06-08T07:34:43.282171Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/ZpSLOPGehyM8Fo9IIYOg",
+      "fields": {
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BDDRF478"
+        },
+        "precoCompra": {
+          "doubleValue": 11.71
+        },
+        "setor": {
+          "stringValue": "Consumo Cíclico"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 12.06492
+        },
+        "nome": {
+          "stringValue": "S&P 500 Communication Service"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.075Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T08:58:45.472Z"
+        },
+        "rsi": {
+          "doubleValue": 66.97
+        },
+        "quantidade": {
+          "integerValue": "-18"
+        },
+        "valorStock": {
+          "doubleValue": 12.452
+        },
+        "sma200": {
+          "doubleValue": 11.78417
+        },
+        "ticker": {
+          "stringValue": "IU5C"
+        }
+      },
+      "createTime": "2026-04-01T08:58:45.509896Z",
+      "updateTime": "2026-04-28T18:17:02.488907Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/a42RjwBgt9dglclmrPRV",
+      "fields": {
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 304.8
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "30"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-01T11:30:48.051Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "doubleValue": -0.5
+        },
+        "ticker": {
+          "stringValue": "LYP6"
+        }
+      },
+      "createTime": "2026-06-01T11:30:48.089873Z",
+      "updateTime": "2026-06-01T11:30:48.089873Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/a5mzW6wdJMGFhL6h0BYp",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-5"
+        },
+        "ticker": {
+          "stringValue": "QDVE"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "S&P 500 Technology"
+        },
+        "precoCompra": {
+          "doubleValue": 42.519999999999996
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-22T08:20:43.813Z"
+        }
+      },
+      "createTime": "2026-05-22T08:20:43.855602Z",
+      "updateTime": "2026-05-22T08:20:43.855602Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/a7VdkQEZJSkdpo3CgNAJ",
+      "fields": {
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-17T13:24:12.130Z"
+        },
+        "quantidade": {
+          "integerValue": "-2"
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "precoCompra": {
+          "doubleValue": 61.82
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        }
+      },
+      "createTime": "2026-04-17T13:24:12.177403Z",
+      "updateTime": "2026-04-28T18:15:07.596781Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/a81W1KxXBWomyhvIfY99",
+      "fields": {
+        "valorStock": {
+          "doubleValue": 10.386
+        },
+        "sma200": {
+          "doubleValue": 8.614285
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        },
+        "quantidade": {
+          "integerValue": "20"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-30T12:10:07.578Z"
+        },
+        "rsi": {
+          "doubleValue": 51.12
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.170Z"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "sma50": {
+          "doubleValue": 10.33816
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 11.67
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        }
+      },
+      "createTime": "2026-03-30T12:10:07.613950Z",
+      "updateTime": "2026-04-28T18:15:04.554215Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/aHBTmls4rvr7p54Tlb6I",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-06-24T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "20"
+        },
+        "precoCompra": {
+          "doubleValue": 10.97
+        },
+        "setor": {
+          "stringValue": "Saúde"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Health Care Sector"
+        },
+        "ticker": {
+          "stringValue": "QDVG"
+        },
+        "quantidade": {
+          "integerValue": "20"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-06-24T14:53:08.866505Z",
+      "updateTime": "2026-06-24T14:53:08.866505Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/aQ5OvQ61pZ2Hc3jzeAWq",
+      "fields": {
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "precoCompra": {
+          "doubleValue": 84.69
+        },
+        "setor": {
+          "stringValue": "Criptomoedas"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 0.08
+        },
+        "nome": {
+          "stringValue": "Solana"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.241Z"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T12:05:57.355Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "ticker": {
+          "stringValue": "SOL"
+        },
+        "sma200": {
+          "doubleValue": 0.22
+        }
+      },
+      "createTime": "2026-03-26T12:05:57.413894Z",
+      "updateTime": "2026-04-17T10:54:57.263257Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/ayuDqMwBkLoqLW4FxmR0",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 46.02011111111111
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-09T16:04:49.916Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "quantidade": {
+          "integerValue": "9"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-06-09T16:04:49.939368Z",
+      "updateTime": "2026-07-01T15:28:24.274188Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/azdlGB65sSjEwVpoWPEJ",
+      "fields": {
+        "ticker": {
+          "stringValue": "VVMX"
+        },
+        "quantidade": {
+          "integerValue": "3"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-14T13:45:47.008Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "precoCompra": {
+          "doubleValue": 17.333
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        }
+      },
+      "createTime": "2026-05-14T13:45:47.051622Z",
+      "updateTime": "2026-05-14T13:45:47.051622Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/b2jf02uOYFuC0yMJEYxd",
+      "fields": {
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-16T09:01:24.708Z"
+        },
+        "nome": {
+          "stringValue": "MSCI World Financials"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.335Z"
+        },
+        "ticker": {
+          "stringValue": "XDWF"
+        },
+        "sma200": {
+          "doubleValue": 42.3
+        },
+        "quantidade": {
+          "integerValue": "-7"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "setor": {
+          "stringValue": "ETF Finance"
+        },
+        "precoCompra": {
+          "doubleValue": 37.177
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 41.59
+        }
+      },
+      "createTime": "2026-04-16T09:01:24.765120Z",
+      "updateTime": "2026-05-08T16:05:52.180906Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/bIa23zFLxWEJACOMAjC2",
+      "fields": {
+        "ticker": {
+          "stringValue": "BRK.B"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "precoCompra": {
+          "doubleValue": 412.9
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "nome": {
+          "stringValue": "Berkshire Hathaway Inc Class B"
+        }
+      },
+      "createTime": "2026-05-18T11:47:05.421919Z",
+      "updateTime": "2026-05-18T11:47:05.421919Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/bZJAORI6VenY2EubXbxW",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-08T08:38:12.115Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 161.27585798816568
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "doubleValue": 3.38
+        }
+      },
+      "createTime": "2026-06-08T08:38:12.166194Z",
+      "updateTime": "2026-07-01T15:29:21.167983Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/bc5UZpKpgfRh5egbsBq3",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-04-27T11:13:58.046Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "precoCompra": {
+          "doubleValue": 73.551
+        },
+        "setor": {
+          "stringValue": "Criptomoedas"
+        },
+        "nome": {
+          "stringValue": "Solana"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "ticker": {
+          "stringValue": "SOL"
+        },
+        "quantidade": {
+          "integerValue": "3"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-04-27T11:13:58.093537Z",
+      "updateTime": "2026-04-27T11:13:58.093537Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/bc6ZP0qPMY7GG5zg0W9N",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "precoCompra": {
+          "doubleValue": 58.78
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "quantidade": {
+          "doubleValue": 0.2552
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.405Z"
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-02T08:23:27.693Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        }
+      },
+      "createTime": "2026-04-02T08:23:27.728940Z",
+      "updateTime": "2026-04-28T18:15:07.697759Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/d3Z51qN3J0JoUo3oFjNG",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-06-30T07:46:58.031Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 165.47222523248152
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "quantidade": {
+          "doubleValue": 1.3657
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-06-30T07:46:58.068003Z",
+      "updateTime": "2026-07-01T15:29:21.235064Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/dyPtHBsHEMC2tysjUxQQ",
+      "fields": {
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "quantidade": {
+          "doubleValue": -5.5025
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-16T09:12:22.914Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.624Z"
+        },
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "precoCompra": {
+          "doubleValue": 61.3382
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        }
+      },
+      "createTime": "2026-04-16T09:12:22.960758Z",
+      "updateTime": "2026-04-28T18:15:07.832343Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/eSVcxhJnw944I7UDYEtQ",
+      "fields": {
+        "ticker": {
+          "stringValue": "VVMX"
+        },
+        "quantidade": {
+          "integerValue": "-12"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-06T10:02:15.869Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "precoCompra": {
+          "doubleValue": 18.085
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        }
+      },
+      "createTime": "2026-05-06T10:02:15.916129Z",
+      "updateTime": "2026-05-06T10:02:15.916129Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/eeIhuCWU6MiXLgZGOe0i",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 30.77
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B6R51Z18"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "sma50": {
+          "doubleValue": 29.3878
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.702Z"
+        },
+        "nome": {
+          "stringValue": "iShares Oil & Gas Exploration"
+        },
+        "rsi": {
+          "doubleValue": 55.06
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T09:05:28.577Z"
+        },
+        "quantidade": {
+          "doubleValue": -5.75
+        },
+        "sma200": {
+          "doubleValue": 24.435974
+        },
+        "valorStock": {
+          "doubleValue": 30.1
+        },
+        "ticker": {
+          "stringValue": "IS0D"
+        }
+      },
+      "createTime": "2026-04-01T09:05:28.609582Z",
+      "updateTime": "2026-04-28T18:15:10.497827Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/eip5a2q1u2t2Wlp4wxOt",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-12T18:30:57.769Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000I8KRLL9"
+        },
+        "nome": {
+          "stringValue": "MSCI Global Semiconductors"
+        },
+        "precoCompra": {
+          "doubleValue": 19.093076923076925
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-13"
+        }
+      },
+      "createTime": "2026-06-12T18:30:57.803700Z",
+      "updateTime": "2026-06-12T18:30:57.803700Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/em2BFATdKYtpLwI5mB4L",
+      "fields": {
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "GRID"
+        },
+        "valorStock": {
+          "doubleValue": 89.79
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-8"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-26T13:33:29.807Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "nome": {
+          "stringValue": "Nasdac Clean Energy Grid"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000J80JTL1"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 56.695
+        }
+      },
+      "createTime": "2026-06-26T13:33:29.843905Z",
+      "updateTime": "2026-07-01T15:27:31.693617Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/eou7hxBpwAnyWnH0tCRm",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 17.585714285714285
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "nome": {
+          "stringValue": "MSCI Global Semiconductors"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000I8KRLL9"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-09T15:30:32.195Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "quantidade": {
+          "integerValue": "-70"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        }
+      },
+      "createTime": "2026-06-09T15:30:32.239475Z",
+      "updateTime": "2026-06-09T15:30:32.239475Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/fe0dnHTPIBvZb6rroA2E",
+      "fields": {
+        "sma200": {
+          "doubleValue": 8.614285
+        },
+        "valorStock": {
+          "doubleValue": 10.386
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        },
+        "quantidade": {
+          "integerValue": "20"
+        },
+        "rsi": {
+          "doubleValue": 51.12
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T11:49:30.608Z"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.793Z"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "sma50": {
+          "doubleValue": 10.33816
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 11.14
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        }
+      },
+      "createTime": "2026-03-26T11:49:30.645155Z",
+      "updateTime": "2026-04-28T18:15:04.703912Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/flnWLhCPJYHsIPYaCD2g",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "doubleValue": -0.5
+        },
+        "ticker": {
+          "stringValue": "ETN"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Eaton Corporation"
+        },
+        "precoCompra": {
+          "doubleValue": 338.3
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-01T11:29:40.651Z"
+        }
+      },
+      "createTime": "2026-06-01T11:29:40.688260Z",
+      "updateTime": "2026-06-01T11:29:40.688260Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/hmecYqSIr4RAXjDH8GgQ",
+      "fields": {
+        "quantidade": {
+          "integerValue": "3"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "SOL"
+        },
+        "precoCompra": {
+          "doubleValue": 74.37
+        },
+        "setor": {
+          "stringValue": "Criptomoedas"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Solana"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-20T18:29:13.217Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        }
+      },
+      "createTime": "2026-04-20T18:29:13.258339Z",
+      "updateTime": "2026-04-20T18:29:13.258339Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/hxXfYXirTFcKIJoLh8py",
+      "fields": {
+        "ticker": {
+          "stringValue": "SEC0"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "40"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-27T11:05:30.862Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "nome": {
+          "stringValue": "iShares MSCI Global Semiconductors UCITS ETF USD (Acc)"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000I8KRLL9"
+        },
+        "precoCompra": {
+          "doubleValue": 14.41
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        }
+      },
+      "createTime": "2026-04-27T11:05:30.904684Z",
+      "updateTime": "2026-04-27T11:07:22.687695Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/iPc4DoQ6gfGVc5sV3r5J",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "25"
+        },
+        "ticker": {
+          "stringValue": "QDVF"
+        },
+        "nome": {
+          "stringValue": "iShares S&P 500 Energy Sector"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B42NKQ00"
+        },
+        "precoCompra": {
+          "doubleValue": 9.99
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-24T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        }
+      },
+      "createTime": "2026-06-24T13:56:22.901480Z",
+      "updateTime": "2026-06-24T14:13:41.748417Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/iSqHzmnmvItMbrYKpy61",
+      "fields": {
+        "rsi": {
+          "doubleValue": 38.22
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-02T14:45:05.123Z"
+        },
+        "mercado": {
+          "stringValue": "Asiático"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:57.860Z"
+        },
+        "nome": {
+          "stringValue": "Core MSCI Japan IMI"
+        },
+        "ticker": {
+          "stringValue": "EUNN"
+        },
+        "sma200": {
+          "doubleValue": 59.75128
+        },
+        "valorStock": {
+          "doubleValue": 64.1
+        },
+        "quantidade": {
+          "doubleValue": 0.237
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 63.09
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "sma50": {
+          "doubleValue": 64.1408
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-04-02T14:45:05.220745Z",
+      "updateTime": "2026-04-28T18:15:23.400305Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/in9VglJ4OcZdyEBHRJ7V",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 9.9
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "precoCompra": {
+          "doubleValue": 2.387
+        },
+        "setor": {
+          "stringValue": "Defesa"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "60"
+        },
+        "source_sma": {
+          "stringValue": "finviz"
+        },
+        "quantidade": {
+          "integerValue": "-120"
+        },
+        "ticker": {
+          "stringValue": "DRH"
+        },
+        "valorStock": {
+          "doubleValue": 10.215
+        },
+        "sma200": {
+          "doubleValue": 8.96
+        },
+        "nome": {
+          "stringValue": "DroneShield Ltd"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-24T13:58:53.829Z"
+        },
+        "rsi": {
+          "doubleValue": 63.66
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T08:57:52.650Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        }
+      },
+      "createTime": "2026-04-01T08:57:52.687453Z",
+      "updateTime": "2026-05-11T14:17:28.827119Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/irgMlacxD6uv8WUwD1sb",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-1"
+        },
+        "ticker": {
+          "stringValue": "BRK.B"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Berkshire Hathaway Inc Class B"
+        },
+        "precoCompra": {
+          "doubleValue": 412.65
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-28T06:49:01.217Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        }
+      },
+      "createTime": "2026-05-28T06:49:01.264034Z",
+      "updateTime": "2026-05-28T06:49:01.264034Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/jCfvpBO1eCipPPeUDDTL",
+      "fields": {
+        "quantidade": {
+          "integerValue": "-6"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "XDWF"
+        },
+        "precoCompra": {
+          "doubleValue": 36.9283
+        },
+        "setor": {
+          "stringValue": "ETF Finance"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "MSCI World Financials"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-15T09:10:42.935Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        }
+      },
+      "createTime": "2026-05-15T09:10:42.977649Z",
+      "updateTime": "2026-05-15T09:10:42.977649Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/jTpw7QEREoyivMk0Cy3s",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "precoCompra": {
+          "doubleValue": 16.088
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T07:35:26.394Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "quantidade": {
+          "doubleValue": -12.5
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "VVMX"
+        }
+      },
+      "createTime": "2026-05-18T07:35:26.424316Z",
+      "updateTime": "2026-05-18T07:35:26.424316Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/k6XlPyrGHh7DxApZuhHK",
+      "fields": {
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:58.006Z"
+        },
+        "nome": {
+          "stringValue": "Core MSCI Japan IMI"
+        },
+        "rsi": {
+          "doubleValue": 38.22
+        },
+        "mercado": {
+          "stringValue": "Asiático"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-10T18:58:13.327Z"
+        },
+        "quantidade": {
+          "doubleValue": 0.233
+        },
+        "sma200": {
+          "doubleValue": 59.75128
+        },
+        "valorStock": {
+          "doubleValue": 64.1
+        },
+        "ticker": {
+          "stringValue": "EUNN"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 64.34
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "sma50": {
+          "doubleValue": 64.1408
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-04-10T18:58:13.360280Z",
+      "updateTime": "2026-04-28T18:15:23.481288Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/kc5cvZMIiLqYypFh3N8p",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-10"
+        },
+        "ticker": {
+          "stringValue": "QDVE"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "SP500 Information Tech"
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 42.805
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-08T08:13:55.095Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        }
+      },
+      "createTime": "2026-06-08T08:13:55.138524Z",
+      "updateTime": "2026-06-08T08:13:55.138524Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/kjJ9g8GWyouFoRegRtYG",
+      "fields": {
+        "quantidade": {
+          "doubleValue": -11.1208
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "QDVE"
+        },
+        "precoCompra": {
+          "doubleValue": 42.70507841162507
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "nome": {
+          "stringValue": "S&P 500 Technology"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-27T15:20:15.110Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        }
+      },
+      "createTime": "2026-05-27T15:20:15.164437Z",
+      "updateTime": "2026-05-27T15:20:15.164437Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/kzr3nKZVrRYbUnOmqVHX",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-27T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BM67HM91#overview"
+        },
+        "nome": {
+          "stringValue": "MSCI World Energy"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 60.52
+        },
+        "ticker": {
+          "stringValue": "XDW0"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "6"
+        }
+      },
+      "createTime": "2026-05-27T10:27:01.912080Z",
+      "updateTime": "2026-05-27T12:29:04.902949Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/l3jQJt7Sx7EvszyTdVpd",
+      "fields": {
+        "ticker": {
+          "stringValue": "QDVE"
+        },
+        "quantidade": {
+          "integerValue": "3"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-05T14:29:30.926Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 44.35333333333334
+        },
+        "nome": {
+          "stringValue": "SP500 Information Tech"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2026-06-05T14:29:30.993040Z",
+      "updateTime": "2026-06-05T14:29:30.993040Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/lV6emc6CWDy0O4I158vl",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-05-28T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 350.2
+        },
+        "nome": {
+          "stringValue": "Eaton Corporation"
+        },
+        "ticker": {
+          "stringValue": "ETN"
+        },
+        "quantidade": {
+          "doubleValue": 0.5
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-05-28T11:13:38.620245Z",
+      "updateTime": "2026-05-28T11:13:38.620245Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/mhjitUtIfAM3AfqSKdrL",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "2"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 49.5
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-01T11:37:21.687Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        }
+      },
+      "createTime": "2026-06-01T11:37:21.732238Z",
+      "updateTime": "2026-07-01T15:28:24.409727Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/nfcLcQD3DIB3moift6jO",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-2"
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "precoCompra": {
+          "doubleValue": 54.8
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-11T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        }
+      },
+      "createTime": "2026-05-11T13:58:37.424873Z",
+      "updateTime": "2026-05-11T13:58:37.424873Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/oJamLR7w5wZuemqusSgX",
+      "fields": {
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "quantidade": {
+          "doubleValue": 2.5103
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T10:35:58.778Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 46.21035876190096
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        }
+      },
+      "createTime": "2026-05-18T10:35:58.827245Z",
+      "updateTime": "2026-07-01T15:28:24.506794Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/opCZqalX90YzmYjwXFvZ",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 29.3878
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00B6R51Z18"
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 30.165
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "quantidade": {
+          "integerValue": "-4"
+        },
+        "sma200": {
+          "doubleValue": 24.435974
+        },
+        "valorStock": {
+          "doubleValue": 30.1
+        },
+        "ticker": {
+          "stringValue": "IS0D"
+        },
+        "nome": {
+          "stringValue": "iShares Oil & Gas Exploration"
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:58.199Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-01T14:18:08.731Z"
+        },
+        "rsi": {
+          "doubleValue": 55.06
+        }
+      },
+      "createTime": "2026-04-01T14:18:08.766879Z",
+      "updateTime": "2026-04-28T18:15:10.736786Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/p0B4PzRDKtYTYxxR1Kf4",
+      "fields": {
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "precoCompra": {
+          "doubleValue": 46.21
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-07T00:00:00Z"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-2"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        }
+      },
+      "createTime": "2026-05-07T18:49:29.738452Z",
+      "updateTime": "2026-07-01T15:28:24.618624Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/pTLBxse6Wg6sT8Dm7DJJ",
+      "fields": {
+        "nome": {
+          "stringValue": "STOXX Europe 600 EUR (Dist)"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-27T11:06:48.733Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "rsi": {
+          "doubleValue": 43.42
+        },
+        "quantidade": {
+          "doubleValue": -9.0001
+        },
+        "ticker": {
+          "stringValue": "EXSA"
+        },
+        "sma200": {
+          "doubleValue": 57.85585
+        },
+        "valorStock": {
+          "doubleValue": 60.48
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=DE0002635307"
+        },
+        "precoCompra": {
+          "doubleValue": 60.81
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "75"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 60.2114
+        }
+      },
+      "createTime": "2026-04-27T11:06:48.775409Z",
+      "updateTime": "2026-04-28T18:15:07.923780Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/q3FRcZnZRI85iUswcyZ9",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 25.075
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "VanEck Quantum Computing"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-08T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "25"
+        },
+        "quantidade": {
+          "integerValue": "4"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "QUTM"
+        }
+      },
+      "createTime": "2026-05-08T10:32:38.579390Z",
+      "updateTime": "2026-05-08T10:44:30.360203Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/rrawK8ZP9NSkErIPMvtL",
+      "fields": {
+        "ticker": {
+          "stringValue": "QDVE"
+        },
+        "quantidade": {
+          "doubleValue": 0.596
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-18T14:01:23.390Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "250"
+        },
+        "precoCompra": {
+          "doubleValue": 41.945
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "S&P 500 Technology"
+        }
+      },
+      "createTime": "2026-05-18T14:01:23.428296Z",
+      "updateTime": "2026-05-18T14:01:23.428296Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/skeaZX9IqNWO9fAou8u1",
+      "fields": {
+        "quantidade": {
+          "doubleValue": -2.5
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "SU"
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "precoCompra": {
+          "doubleValue": 265.15000000000003
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "Schneider Electric"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-08T08:04:31.362Z"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        }
+      },
+      "createTime": "2026-06-08T08:04:31.429741Z",
+      "updateTime": "2026-06-08T08:04:31.429741Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/sxgkE2eebVMnO7Yr5RUe",
+      "fields": {
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000I8KRLL9"
+        },
+        "nome": {
+          "stringValue": "iShares MSCI Global Semiconductors UCITS ETF USD (Acc)"
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 14.28
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-27T13:38:34.291Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "quantidade": {
+          "integerValue": "-40"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        }
+      },
+      "createTime": "2026-04-27T13:38:34.301789Z",
+      "updateTime": "2026-04-27T13:38:34.301789Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/tNUTAiZZyWT01zCAI6TG",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "70"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "MSCI Global Semiconductors"
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "precoCompra": {
+          "doubleValue": 17.44
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-08T07:26:57.544Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        }
+      },
+      "createTime": "2026-06-08T07:24:36.166657Z",
+      "updateTime": "2026-06-08T07:26:57.592248Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/tauboM5hGKpLPWXxVpuw",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "precoCompra": {
+          "doubleValue": 49.39
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "sma50": {
+          "doubleValue": 52.3667
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-13T13:50:03.233Z"
+        },
+        "rsi": {
+          "doubleValue": 54.32
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:38.864995"
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "sma200": {
+          "doubleValue": 49.743626
+        },
+        "valorStock": {
+          "doubleValue": 52.43
+        },
+        "quantidade": {
+          "integerValue": "-7"
+        }
+      },
+      "createTime": "2026-04-13T13:50:03.287376Z",
+      "updateTime": "2026-04-28T18:16:22.936661Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/uo7jQ4l8pQZ4I6N78X10",
+      "fields": {
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "setor": {
+          "stringValue": "Consumo Cíclico"
+        },
+        "precoCompra": {
+          "integerValue": "12"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BDDRF478"
+        },
+        "sma50": {
+          "doubleValue": 12.06492
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-03-26T13:41:16.158Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "rsi": {
+          "doubleValue": 66.97
+        },
+        "lastSmaUpdate": {
+          "timestampValue": "2026-04-17T10:54:58.371Z"
+        },
+        "nome": {
+          "stringValue": "S&P 500 Communication Service"
+        },
+        "sma200": {
+          "doubleValue": 11.78417
+        },
+        "valorStock": {
+          "doubleValue": 12.452
+        },
+        "ticker": {
+          "stringValue": "IU5C"
+        },
+        "quantidade": {
+          "integerValue": "10"
+        }
+      },
+      "createTime": "2026-03-26T13:41:16.195591Z",
+      "updateTime": "2026-04-28T18:17:02.565872Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/vCEOFrfn8WAIPUg5Qt2n",
+      "fields": {
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "quantidade": {
+          "integerValue": "6"
+        },
+        "ticker": {
+          "stringValue": "NUKL"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000M7V94E1"
+        },
+        "nome": {
+          "stringValue": "VanEck ETFs-Uran.Nuclear"
+        },
+        "precoCompra": {
+          "doubleValue": 55.5466
+        },
+        "setor": {
+          "stringValue": "ETF Energia"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-11T00:00:00Z"
+        }
+      },
+      "createTime": "2026-05-11T14:25:16.039904Z",
+      "updateTime": "2026-05-11T14:25:16.039904Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/vORSCmlIHxoro5KU3QEm",
+      "fields": {
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 50.59557124304268
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-22T13:47:04.365Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "quantidade": {
+          "doubleValue": -5.39
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        }
+      },
+      "createTime": "2026-06-22T13:47:04.405602Z",
+      "updateTime": "2026-07-01T15:28:24.708372Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/wGK1loipn9yvW1PLsRuj",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 19.4695
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "nome": {
+          "stringValue": "MSCI Global Semiconductors"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000I8KRLL9"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-16T15:01:56.318Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "150"
+        },
+        "quantidade": {
+          "integerValue": "-16"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "ticker": {
+          "stringValue": "SEC0"
+        }
+      },
+      "createTime": "2026-06-16T15:01:56.342706Z",
+      "updateTime": "2026-06-16T15:01:56.342706Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/wY971iYz8ZFwDUmUySnw",
+      "fields": {
+        "ticker": {
+          "stringValue": "JEDI"
+        },
+        "quantidade": {
+          "integerValue": "-4"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-07-02T10:10:02.311Z"
+        },
+        "mercado": {
+          "stringValue": "Americano"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        },
+        "setor": {
+          "stringValue": "Defesa"
+        },
+        "precoCompra": {
+          "doubleValue": 85.67
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE000YU9K6K2"
+        },
+        "nome": {
+          "stringValue": "VanEck Space innovator"
+        }
+      },
+      "createTime": "2026-07-02T10:10:02.351334Z",
+      "updateTime": "2026-07-02T10:10:02.351334Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/wabZmBVCQRehZOLLqi9k",
+      "fields": {
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-16T14:45:47.325Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "precoCompra": {
+          "doubleValue": 48.941
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "quantidade": {
+          "doubleValue": 1.4303
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-06-16T14:45:47.370377Z",
+      "updateTime": "2026-07-01T15:28:24.830977Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/wb1KSVyNrAT5fLViCpsg",
+      "fields": {
+        "dataCompra": {
+          "timestampValue": "2026-05-07T16:54:59.634Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "100"
+        },
+        "precoCompra": {
+          "doubleValue": 17.32
+        },
+        "setor": {
+          "stringValue": "ETF Materiais"
+        },
+        "linkExterno": {
+          "stringValue": ""
+        },
+        "nome": {
+          "stringValue": "VanEck Rare Earth and Strategic Metals"
+        },
+        "ticker": {
+          "stringValue": "VVMX"
+        },
+        "quantidade": {
+          "integerValue": "-4"
+        },
+        "tipoAcao": {
+          "stringValue": "venda"
+        }
+      },
+      "createTime": "2026-05-07T16:54:59.675628Z",
+      "updateTime": "2026-05-07T16:54:59.675628Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/wru83X0GdrWKTRv2c3BK",
+      "fields": {
+        "quantidade": {
+          "doubleValue": 0.5
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "EPA:SU"
+        },
+        "valorStock": {
+          "doubleValue": 274.15
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "precoCompra": {
+          "doubleValue": 269.11
+        },
+        "setor": {
+          "stringValue": "Energia"
+        },
+        "nome": {
+          "stringValue": "Schneider Electric"
+        },
+        "mercado": {
+          "stringValue": "Europeu"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-05-28T00:00:00Z"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "50"
+        }
+      },
+      "createTime": "2026-05-28T11:12:48.091530Z",
+      "updateTime": "2026-07-01T15:33:54.143238Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/wt625e3kX6HI8YTkBcfs",
+      "fields": {
+        "quantidade": {
+          "integerValue": "14"
+        },
+        "valorStock": {
+          "doubleValue": 48.06
+        },
+        "sma200": {
+          "doubleValue": 38.707443
+        },
+        "ticker": {
+          "stringValue": "IS3N"
+        },
+        "nome": {
+          "stringValue": "iShares Core MSCI EM IMI UCITS ETF USD (Acc)"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:40.114024"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-28T08:14:31.508Z"
+        },
+        "rsi": {
+          "doubleValue": 67.75
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "sma50": {
+          "doubleValue": 41.86088
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BKM4GZ66#overview"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 44.49
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        }
+      },
+      "createTime": "2026-04-28T08:14:31.594488Z",
+      "updateTime": "2026-07-01T15:28:24.919767Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/xxEVkgMiUz3NLXJdZ1gu",
+      "fields": {
+        "precoCompra": {
+          "doubleValue": 46.34
+        },
+        "setor": {
+          "stringValue": "ETF iTech"
+        },
+        "nome": {
+          "stringValue": "SP500 Information Tech"
+        },
+        "dataCompra": {
+          "timestampValue": "2026-06-03T00:00:00Z"
+        },
+        "mercado": {
+          "stringValue": "Americano SP500"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "200"
+        },
+        "quantidade": {
+          "integerValue": "25"
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        },
+        "ticker": {
+          "stringValue": "QDVE"
+        }
+      },
+      "createTime": "2026-06-03T12:28:23.925865Z",
+      "updateTime": "2026-06-03T12:28:23.925865Z"
+    },
+    {
+      "name": "projects/appfinance-812b2/databases/(default)/documents/ativos/zmBm7la0oRLB6FbN6xl6",
+      "fields": {
+        "rsi": {
+          "doubleValue": 76.79
+        },
+        "dataCompra": {
+          "timestampValue": "2026-04-17T13:09:49.347Z"
+        },
+        "mercado": {
+          "stringValue": "Mundial"
+        },
+        "lastSmaUpdate": {
+          "stringValue": "2026-04-28T14:42:40.768701"
+        },
+        "nome": {
+          "stringValue": "Vanguard FTSE All-World"
+        },
+        "yield": {
+          "doubleValue": 0
+        },
+        "valorStock": {
+          "doubleValue": 165.35
+        },
+        "sma200": {
+          "doubleValue": 143.3022
+        },
+        "ticker": {
+          "stringValue": "VWCE"
+        },
+        "quantidade": {
+          "integerValue": "4"
+        },
+        "objetivoFinanceiro": {
+          "integerValue": "300"
+        },
+        "setor": {
+          "stringValue": "ETF Múltiplos Setores"
+        },
+        "precoCompra": {
+          "doubleValue": 153.01
+        },
+        "linkExterno": {
+          "stringValue": "https://www.justetf.com/en/etf-profile.html?isin=IE00BK5BQT80#overview"
+        },
+        "priceChange_1d": {
+          "doubleValue": 0
+        },
+        "sma50": {
+          "doubleValue": 147.9164
+        },
+        "tipoAcao": {
+          "stringValue": "compra"
+        }
+      },
+      "createTime": "2026-04-17T13:09:49.387502Z",
+      "updateTime": "2026-07-01T15:29:21.313059Z"
+    }
+  ]
+}

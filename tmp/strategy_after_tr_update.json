@@ -1,0 +1,388 @@
+{
+  "name": "projects/appfinance-812b2/databases/(default)/documents/config/strategy",
+  "fields": {
+    "availableCash": {
+      "doubleValue": 2479.46
+    },
+    "sectorAlloc": {
+      "mapValue": {
+        "fields": {
+          "energy": {
+            "integerValue": "17"
+          },
+          "materials": {
+            "integerValue": "3"
+          },
+          "tech": {
+            "integerValue": "25"
+          },
+          "fin": {
+            "integerValue": "4"
+          },
+          "defensive": {
+            "integerValue": "14"
+          },
+          "reits": {
+            "integerValue": "0"
+          },
+          "health": {
+            "integerValue": "6"
+          },
+          "industrial": {
+            "integerValue": "16"
+          },
+          "cyclical": {
+            "integerValue": "15"
+          }
+        }
+      }
+    },
+    "tickers": {
+      "mapValue": {
+        "fields": {
+          "SU": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "20"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "QDVF": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "CORE"
+                },
+                "target": {
+                  "integerValue": "7"
+                }
+              }
+            }
+          },
+          "VZLC": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "doubleValue": 2.5
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "CEG": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "4"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "D": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "3"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "IS3N": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "CORE"
+                },
+                "target": {
+                  "integerValue": "10"
+                }
+              }
+            }
+          },
+          "LYP6": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "SATELLITE"
+                },
+                "target": {
+                  "integerValue": "6"
+                }
+              }
+            }
+          },
+          "SOL": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "SATELLITE"
+                },
+                "target": {
+                  "integerValue": "5"
+                }
+              }
+            }
+          },
+          "BRK.B": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "8"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "SEC0": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "SATELLITE"
+                },
+                "target": {
+                  "integerValue": "8"
+                }
+              }
+            }
+          },
+          "XDWF": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "9"
+                },
+                "category": {
+                  "stringValue": "CORE"
+                }
+              }
+            }
+          },
+          "VVMX": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "5"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "2B76": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "8"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "JEDI": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "5"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "GZUR": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "CORE"
+                },
+                "target": {
+                  "integerValue": "5"
+                }
+              }
+            }
+          },
+          "QDVE": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "SATELLITE"
+                },
+                "target": {
+                  "integerValue": "17"
+                }
+              }
+            }
+          },
+          "NUKL": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "8"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "GRID": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "CORE"
+                },
+                "target": {
+                  "integerValue": "12"
+                }
+              }
+            }
+          },
+          "QUTM": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "SATELLITE"
+                },
+                "target": {
+                  "integerValue": "4"
+                }
+              }
+            }
+          },
+          "XDW0": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "10"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "EXSA": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "10"
+                },
+                "category": {
+                  "stringValue": "CORE"
+                }
+              }
+            }
+          },
+          "ETN": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "2"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "QDVG": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "doubleValue": 2.5
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          },
+          "VWCE": {
+            "mapValue": {
+              "fields": {
+                "category": {
+                  "stringValue": "CORE"
+                },
+                "target": {
+                  "integerValue": "63"
+                }
+              }
+            }
+          },
+          "CCJ": {
+            "mapValue": {
+              "fields": {
+                "target": {
+                  "integerValue": "3"
+                },
+                "category": {
+                  "stringValue": "SATELLITE"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "monthlyBase": {
+      "integerValue": "600"
+    },
+    "allocStocks": {
+      "integerValue": "3"
+    },
+    "allocEtfs": {
+      "integerValue": "97"
+    },
+    "satelliteWeight": {
+      "integerValue": "30"
+    },
+    "cashReservePct": {
+      "integerValue": "20"
+    },
+    "styleAlloc": {
+      "mapValue": {
+        "fields": {
+          "growth": {
+            "integerValue": "40"
+          },
+          "qual": {
+            "integerValue": "30"
+          },
+          "value": {
+            "integerValue": "25"
+          },
+          "div": {
+            "integerValue": "5"
+          }
+        }
+      }
+    },
+    "allocBonds": {
+      "integerValue": "0"
+    },
+    "coreWeight": {
+      "integerValue": "70"
+    }
+  },
+  "createTime": "2026-04-16T11:15:38.209176Z",
+  "updateTime": "2026-07-02T14:33:43.518633Z"
+}
