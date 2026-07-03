@@ -27,6 +27,7 @@ import { parseSma, getAssetType, canon, cleanTicker, normalizeSector } from "../
 import * as CapitalManager from "../utils/capitalManager.js";
 import { Treemap } from "../components/treemap.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
+import { subscribeMarketData, getMarketDataSnapshot, getLastUpdatedAt } from "../utils/marketDataStore.js";
 import { checkAlerts, notifyAlert } from "../utils/alerts.js";
 
 // ===============================
@@ -775,16 +776,16 @@ function renderBubbleChart(abertos, totalInvestido) {
 let byTickerGlobal = new Map();
 let _allMovimentos = [];
 let _eventsWired = false;
-let _lastPriceUpdateTime = null;
 
 function updatePriceFreshness() {
   const el = document.getElementById("priceUpdateIndicator");
   if (!el) return;
-  if (!_lastPriceUpdateTime) {
+  const lastUpdate = getLastUpdatedAt();
+  if (!lastUpdate) {
     el.innerHTML = `<i class="fas fa-circle" style="font-size:0.45rem;color:#94a3b8;"></i> Sem dados`;
     return;
   }
-  const diffMs = Date.now() - _lastPriceUpdateTime;
+  const diffMs = Date.now() - lastUpdate;
   const diffMin = Math.floor(diffMs / 60000);
   const diffH = Math.floor(diffMin / 60);
   let text, color;
@@ -793,11 +794,11 @@ function updatePriceFreshness() {
   else if (diffH < 6)     { text = `Preços: há ${diffH}h`;  color = "#f59e0b"; }
   else if (diffH < 24)    { text = `Preços: há ${diffH}h`;  color = "#ef4444"; }
   else {
-    text = `Preços: ${_lastPriceUpdateTime.toLocaleDateString("pt-PT")}`;
+    text = `Preços: ${lastUpdate.toLocaleDateString("pt-PT")}`;
     color = "#ef4444";
   }
   el.innerHTML = `<i class="fas fa-circle" style="font-size:0.45rem;color:${color};"></i> ${text}`;
-  el.title = `Última atualização: ${_lastPriceUpdateTime.toLocaleString("pt-PT")}`;
+  el.title = `Última atualização: ${lastUpdate.toLocaleString("pt-PT")}`;
 }
 
 // Expor globalmente para onclick no HTML
@@ -1878,7 +1879,6 @@ function showPortfolioHelp(force = false) {
   // ===============================
   let _lastAtivosSnap = null;
   let _lastAcoesSnap = null;
-  let _lastEtfHoldingsSnap = null;
   let _lastStrategySnap = null;
   let _currentTotalInvested = 0;
   let _currentGruposArr = [];
@@ -2118,34 +2118,6 @@ function showPortfolioHelp(force = false) {
     });
 
 
-    const refreshMarketDataMap = () => {
-      const mktMap = new Map();
-      _lastAcoesSnap?.forEach(d => {
-        const x = d.data();
-        if (x.ticker) mktMap.set(String(x.ticker).toUpperCase(), x);
-      });
-
-      _lastEtfHoldingsSnap?.forEach(d => {
-        const x = d.data();
-        const rawTicker = String(x.ticker || d.id || "").toUpperCase();
-        if (!rawTicker) return;
-        const cleanT = cleanTicker(rawTicker).toUpperCase();
-        const patch = {
-          holdings: Array.isArray(x.holdings) ? x.holdings : undefined,
-          sectors: Array.isArray(x.sectors) ? x.sectors : undefined,
-          geography: Array.isArray(x.geography) ? x.geography : undefined,
-          holdings_count: Array.isArray(x.holdings) ? x.holdings.length : undefined,
-          _etfHoldingsDoc: x
-        };
-
-        [rawTicker, cleanT].filter(Boolean).forEach(key => {
-          const existing = mktMap.get(key) || mktMap.get(cleanT) || {};
-          mktMap.set(key, { ...existing, ...patch, ticker: existing.ticker || cleanT || rawTicker });
-        });
-      });
-
-      window._marketDataMap = mktMap;
-    };
     const handleUpdate = async () => {
       if (!_lastAtivosSnap || !_lastAcoesSnap) return;
       await processAndRender(_lastAtivosSnap, _lastAcoesSnap, _lastStrategySnap);
@@ -2160,17 +2132,9 @@ function showPortfolioHelp(force = false) {
       },
     );
 
-    onSnapshot(collection(db, "acoesDividendos"), (snap) => {
+    subscribeMarketData((_map, snap) => {
       _lastAcoesSnap = snap;
-      _lastPriceUpdateTime = new Date();
       updatePriceFreshness();
-      refreshMarketDataMap();
-      handleUpdate();
-    });
-
-    onSnapshot(collection(db, "etfHoldings"), (snap) => {
-      _lastEtfHoldingsSnap = snap;
-      refreshMarketDataMap();
       handleUpdate();
     });
 
@@ -4176,12 +4140,11 @@ async function renderGlobalHoldingsMap(gruposArr) {
     }, 0);
     
     // (NOVO) Obter mapa global de setores para as holdings com fallback inteligente
-    const acoesSnap = await getDocs(collection(db, "acoesDividendos"));
+    const acoesMap = await getMarketDataSnapshot();
     const tickerSectorMap = new Map();
     const nameSectorMap = new Map();
-    
-    acoesSnap.forEach(doc => {
-      const d = doc.data();
+
+    acoesMap.forEach((d) => {
       const sector = normalizeSector(d);
       if (d.ticker) tickerSectorMap.set(cleanTicker(d.ticker), sector);
       if (d.nome) nameSectorMap.set(d.nome.toUpperCase(), sector);
@@ -4699,11 +4662,10 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
       return;
     }
 
-    const acoesSnap = await getDocs(collection(db, "acoesDividendos"));
+    const acoesMap = await getMarketDataSnapshot();
     const tickerSectorMap = new Map();
     const nameSectorMap = new Map();
-    acoesSnap.forEach(doc => {
-      const d = doc.data();
+    acoesMap.forEach((d) => {
       const sector = normalizeSector(d);
       if (d.ticker) tickerSectorMap.set(cleanTicker(d.ticker), sector);
       if (d.nome) nameSectorMap.set(String(d.nome).toUpperCase(), sector);

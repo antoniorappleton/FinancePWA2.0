@@ -25,6 +25,7 @@ import { Treemap } from "../components/treemap.js";
 import { canonicalTicker, getAssetCategory } from "../utils/normalize.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
+import { subscribeMarketData } from "../utils/marketDataStore.js";
 import { checkAlerts, loadAlerts } from "../utils/alerts.js";
 import { portfolioHealth } from "../engines/portfolio-health.js";
 import { stressTest } from "../engines/stress-test.js";
@@ -208,7 +209,7 @@ export async function initScreen() {
     if (lastAtivosSnap) carregarAtividadeRecenteSimplificada(lastAtivosSnap);
   };
 
-  unsubAcoes = onSnapshot(collection(db, "acoesDividendos"), (snap) => {
+  unsubAcoes = subscribeMarketData((_map, snap) => {
     lastAcoesSnap = snap;
     atualizarKPIs();
     // Se o modal de oportunidades estiver aberto, atualizamos o treemap em tempo real

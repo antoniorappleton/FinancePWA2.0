@@ -8,6 +8,7 @@ import { db } from "../firebase-config.js";
 import { doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { calculateLucroMaximoScore, getAssetType, normalizeSector } from "../utils/scoring.js";
 import { loadAlerts, addAlert, deleteAlert, resetAlert, requestNotificationPermission } from "../utils/alerts.js";
+import { getMarketDataList } from "../utils/marketDataStore.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -476,9 +477,7 @@ export function initScreen() {
       let html = "";
 
       try {
-        const snap = await getDocs(collection(db, "acoesDividendos"));
-        const allData = [];
-        snap.forEach(d => allData.push({ ...d.data(), id: d.id }));
+        const allData = await getMarketDataList();
 
         const totalCash = Number(elAvailCash.value) || 0;
         const targets = {

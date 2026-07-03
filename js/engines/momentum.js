@@ -126,7 +126,7 @@ function scoreTrendStructure(asset) {
 }
 
 function scoreRSI(asset) {
-  const rsi = safeMetric(asset, "rsi_14", "rsi14", "RSI");
+  const rsi = safeMetric(asset, "rsi", "rsi_14", "rsi14", "RSI");
   if (!isFinite(rsi)) return { score: 0.5, available: false, zone: "unknown" };
 
   let s, zone, warnings = [];

@@ -133,7 +133,7 @@ function scoreROIC(asset, profile) {
 
 function scoreMargins(asset, profile) {
   const gross = safePercent(asset, "gross_margin", "grossMargin");
-  const oper  = safePercent(asset, "oper_margin", "operMargin", "operating_margin");
+  const oper  = safePercent(asset, "operatingMargin", "oper_margin", "operMargin", "operating_margin");
   const net   = safePercent(asset, "profit_margin", "profitMargin", "net_margin", "net_profit_margin", "lucro_liquido_margem");
   
   let total = 0, count = 0;
@@ -203,7 +203,7 @@ function scoreGrowthQuality(asset) {
   const epsYoY  = safePercent(asset, "epsYoY", "eps_yoy", "earnings_growth");
   const epsNext = safePercent(asset, "epsNextY", "eps_next_y", "earnings_growth_next");
   const eps5y   = safePercent(asset, "eps_next_5y", "eps_growth_5y");
-  const sales   = safePercent(asset, "sales_y_y_ttm", "revenue_growth", "salesGrowth");
+  const sales   = safePercent(asset, "revenueGrowth", "sales_y_y_ttm", "revenue_growth", "salesGrowth");
 
   let total = 0, count = 0;
   const breakdown = {};

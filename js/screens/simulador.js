@@ -574,11 +574,10 @@ async function carregarSimulacoesGuardadas() {
   container.innerHTML = `<div class="card"><p class="muted">A sincronizar dados de mercado...</p></div>`;
 
   // 1. Listener para Preços e Dados de Mercado (sempre atualizado)
-  const qAcoes = query(collection(db, "acoesDividendos"));
-  _unsubPrices = onSnapshot(qAcoes, (snap) => {
-    _cachedAcoes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  _unsubPrices = subscribeMarketData((mktMap) => {
+    _cachedAcoes = Array.from(mktMap.entries()).map(([id, x]) => ({ id, ...x }));
     _cachedPrices = new Map(_cachedAcoes.map(a => [cleanTicker(a.ticker), Number(a.valorStock || 0)]));
-    
+
     if (!_unsubGuardadas) iniciarListenerSimulacoes();
   });
 
@@ -728,7 +727,7 @@ async function carregarSimulacoesGuardadas() {
 
 import { annualizeRate, anualPreferido, calculateLucroMaximoScore, cleanTicker } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
-import { enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
+import { subscribeMarketData, getMarketDataList } from "../utils/marketDataStore.js";
 
 function calcularMetricasBase_TOP(
   acao,
@@ -962,15 +961,11 @@ function distribuirInteiros_porScore_capped_TOP(cands, invest) {
 }
 
 async function fetchAcoesBase() {
-  const snap = await getDocs(collection(db, "acoesDividendos"));
-  const allAssetsMap = new Map();
-  snap.forEach(doc => { const x = doc.data(); if (x.ticker) allAssetsMap.set(String(x.ticker).toUpperCase(), x); });
+  const assets = await getMarketDataList();
 
   const out = [];
-  snap.forEach((doc) => {
-    const d = doc.data();
+  assets.forEach((d) => {
     if (!d || !d.ticker) return;
-    if (isKnownETF(d.ticker)) enrichETFAsset(d, allAssetsMap);
     out.push({
       ...d, // Spread all fields (pe, evebitda, sma, etc) for the scoring engine
       nome: d.nome || d.ticker,

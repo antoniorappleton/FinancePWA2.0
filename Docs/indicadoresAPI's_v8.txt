@@ -8,10 +8,8 @@
  * ║              ORDEM DE EXECUÇÃO (PRIMEIRA CONFIGURAÇÃO)           ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║  PASSO 1 — (indicadoresAPI's_v8.gs)                              ║
- * ║    ► Em Project Settings > Script Properties, define              ║
- * ║      FMP_API_KEY manualmente (não vai no código-fonte).          ║
  * ║    ► Executar: setupAPIKeys()                                    ║
- * ║      Só valida que a chave está configurada.                     ║
+ * ║      Guarda a chave FMP nas PropertiesService do projeto.        ║
  * ║                                                                  ║
  * ║  PASSO 2 — (indicadoresAPI's_v8.gs)                              ║
  * ║    ► Executar: ENG_setupTriggers()                               ║
@@ -44,7 +42,7 @@
  */
 
 const ENG_PROPS = PropertiesService.getScriptProperties();
-const ENG_FMP_KEY = (ENG_PROPS.getProperty("FMP_API_KEY") || "").trim();
+const ENG_FMP_KEY = (ENG_PROPS.getProperty("FMP_API_KEY") || "Altd2Re1BJ5Z8tod4rVIq040c9gWZNTL").trim();
 const ENG_AV_KEY = (ENG_PROPS.getProperty("ALPHAVANTAGE_API_KEY") || "").trim();
 
 const ENG_SHEET_NAME = "Firebase";
@@ -73,16 +71,10 @@ const ENG_SKIP_TICKERS = ["BTC", "ETH", "EUR", "USD", "GBP", "ADA", "XRP", "SOL"
 
 /**
  * PASSO 1 — Guardar chave API da FMP
- * Define FMP_API_KEY diretamente em Project Settings > Script Properties
- * no editor do Apps Script (NÃO colar a chave aqui no código-fonte).
  */
 function setupAPIKeys() {
-  if (!ENG_PROPS.getProperty("FMP_API_KEY")) {
-    throw new Error(
-      "FMP_API_KEY não definida. Configura-a em Project Settings > Script Properties no editor do Apps Script."
-    );
-  }
-  Logger.log("✅ Chave FMP já configurada em Script Properties.");
+  ENG_PROPS.setProperty("FMP_API_KEY", "Altd2Re1BJ5Z8tod4rVIq040c9gWZNTL");
+  Logger.log("✅ Chave FMP configurada.");
 }
 
 /**

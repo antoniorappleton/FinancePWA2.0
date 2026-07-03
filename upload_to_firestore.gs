@@ -387,7 +387,7 @@ function UP_sanitizeCell_(v, d) {
   const raw = (d !== null && d !== undefined && String(d).trim() !== "") ? d : v;
 
   if (raw === null || raw === undefined || String(raw).trim() === "") {
-    return { ok: true, value: "" }; // Guarda string vazia
+    return { ok: false }; // Vazio: omite o campo em vez de gravar string vazia
   }
 
   if (raw instanceof Date) return { ok: true, value: raw };
@@ -395,10 +395,10 @@ function UP_sanitizeCell_(v, d) {
   if (typeof raw === "boolean") return { ok: true, value: raw };
 
   const s = String(raw).trim();
-  
-  // Se for #N/A, NA, etc, enviaremos a string original em vez de omitir
+
+  // #N/A, NA, etc: omite o campo em vez de gravar a string literal
   if (s.startsWith("#") || ["n/a", "na", "n.a.", "não aplicável", "nao aplicavel", "-", "—", "--"].includes(s.toLowerCase())) {
-    return { ok: true, value: s };
+    return { ok: false };
   }
 
   // Tenta extrair percentagens, valores pt, datas - se não der, envia como string

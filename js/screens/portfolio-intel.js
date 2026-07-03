@@ -19,6 +19,7 @@ import { cleanTicker } from "../utils/scoring.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 import { generatePortfolioReport } from "../utils/reportGenerator.js";
 import { calculatePortfolioAssessment } from "../utils/portfolioAssessment.js";
+import { getMarketDataSnapshot } from "../utils/marketDataStore.js";
 
 const db = getFirestore(app);
 const readAssetPrice = (asset) =>
@@ -107,16 +108,15 @@ async function runFullAnalysis() {
 
   try {
     // ── 1. Load data ──
-    const [ativosSnap, acoesSnap, stratSnap, etfHoldingsSnap] = await Promise.all([
+    const [ativosSnap, acoesSnapMap, stratSnap, etfHoldingsSnap] = await Promise.all([
       getDocs(collection(db, "ativos")),
-      getDocs(collection(db, "acoesDividendos")),
+      getMarketDataSnapshot(),
       getDoc(doc(db, "config", "strategy")),
       getDocs(collection(db, "etfHoldings"))
     ]);
 
     const acoesMap = new Map();
-    acoesSnap.forEach(d => {
-      const x = d.data();
+    acoesSnapMap.forEach((x) => {
       if (x.ticker) {
         const ct = canonicalTicker(x.ticker);
         // Se houver duplicados, preferimos o que tiver mais dados (confidenceScore)

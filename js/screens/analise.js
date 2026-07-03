@@ -25,11 +25,6 @@
 // screens/analise.js
 import { db } from "../firebase-config.js";
 import {
-  collection,
-  onSnapshot,
-  query,
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
   calculateLucroMaximoScore,
   annualizeRate,
   anualPreferido,
@@ -40,7 +35,7 @@ import {
 import { technicalSignal } from "../engines/technical-signal.js";
 import { INDICATOR_INFO } from "../utils/indicator-info.js";
 import { repairFirestoreData } from "../utils/maintenance.js";
-import { enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
+import { subscribeMarketData } from "../utils/marketDataStore.js";
 
 /* =========================================================
 Carregamento "on-demand" de libs (Chart.js, html2canvas, jsPDF)
@@ -1064,20 +1059,15 @@ let unsubAcoes = null;
 function fetchAcoes() {
   if (unsubAcoes) unsubAcoes();
 
-  unsubAcoes = onSnapshot(query(collection(db, "acoesDividendos")), (snap) => {
-    // Build map first so ETF holdings can be looked up during enrichment
-    const allAssetsMap = new Map();
-    snap.forEach(doc => { const x = doc.data(); if (x.ticker) allAssetsMap.set(String(x.ticker).toUpperCase(), x); });
-    window._marketDataMap = allAssetsMap;
+  unsubAcoes = subscribeMarketData((allAssetsMap, snap) => {
+    if (!snap) return;
 
     const rows = [];
     snap.forEach((doc) => {
-      const d = doc.data();
-      const tickerRaw = String(d.ticker || "").toUpperCase();
+      const tickerRaw = String(doc.data().ticker || "").toUpperCase();
       if (!tickerRaw) return;
+      const d = allAssetsMap.get(tickerRaw) || doc.data();
       const ticker = cleanTicker(tickerRaw);
-
-      if (isKnownETF(d.ticker)) enrichETFAsset(d, allAssetsMap);
 
       const valor = toNum(d.valorStock);
       const annual = toNum(d.dividendoMedio24m) || anualPreferido(d);
@@ -1134,6 +1124,7 @@ function fetchAcoes() {
         market_cap: Number(d.marketCap || d.market_cap || d["Market Cap"] || 0),
 
         evEbitda:
+          Number(d.ev_ebitda) ||
           Number(d.evEbitda) ||
           Number(d["EV/Ebitda"]) ||
           (() => {
