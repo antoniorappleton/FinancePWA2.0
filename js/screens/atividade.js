@@ -165,6 +165,35 @@ function toNumStrict(v) {
 function isFiniteNum(v) {
   return typeof v === "number" && isFinite(v);
 }
+
+// ===============================
+// Simulador de recuperação (Posições Fechadas)
+// Dado o prejuízo realizado e um crescimento esperado (%),
+// calcula quanto seria preciso investir agora (ao preço atual)
+// e o TP2 (preço-alvo) correspondente para recuperar essa perda.
+// ===============================
+function calcRecSimHtml(precoAtual, loss, growthPct) {
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  if (!isFiniteNum(precoAtual) || precoAtual <= 0) {
+    return `<span style="color: var(--muted-foreground);">Sem preço atual disponível para simular.</span>`;
+  }
+  const g = Number(growthPct);
+  if (!isFiniteNum(g) || g <= 0) {
+    return `<span style="color: var(--muted-foreground);">Indica um crescimento (%) válido.</span>`;
+  }
+  const growthFrac = g / 100;
+  const investimento = loss / growthFrac;
+  const tp2 = precoAtual * (1 + growthFrac);
+  return `💶 Investir agora: <strong>${fmtEUR.format(investimento)}</strong> &nbsp;|&nbsp; 🎯 TP2 necessário: <strong>${fmtEUR.format(tp2)}</strong>`;
+}
+window.calcRecSim = function (simId, precoAtual, loss) {
+  const input = document.getElementById(`${simId}_g`);
+  const out = document.getElementById(`${simId}_out`);
+  if (out) out.innerHTML = calcRecSimHtml(precoAtual, loss, input?.value);
+};
+window.toggleRecSim = function (simId) {
+  document.getElementById(simId)?.classList.toggle("hidden");
+};
 function formatNum(n) {
   return Number(n || 0).toLocaleString("pt-PT");
 }
@@ -2735,21 +2764,44 @@ function showPortfolioHelp(force = false) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${fechadas.sort((a, b) => (b.realizado || 0) - (a.realizado || 0)).map(g => {
+                    ${fechadas.sort((a, b) => (b.realizado || 0) - (a.realizado || 0)).map((g, idx) => {
                       const realizado = g.realizado || 0;
                       const cor = realizado >= 0 ? "#22c55e" : "#ef4444";
                       const nLotes = (_allMovimentos || []).filter(m => m.ticker === g.ticker && m.qtd > 0).length;
                       const retPct = (g.totalBuyValue || 0) > 0
                         ? (realizado / g.totalBuyValue) * 100
                         : null;
+                      const isLoss = realizado < 0;
+                      const simId = `recSim_${idx}`;
+                      const precoAtual = isFiniteNum(g.precoAtual) ? g.precoAtual : null;
+                      const lossAbs = Math.abs(realizado);
+                      const defaultGrowth = 10;
                       return `
                         <tr style="border-bottom: 1px solid var(--border);" onclick="window.openDetails('${g.ticker}')" class="cursor-pointer">
                           <td style="padding: 10px 14px; font-weight: 800; font-family: monospace;">${g.ticker}</td>
                           <td style="padding: 10px 14px; color: var(--muted-foreground);">${g.nome}</td>
                           <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${realizado >= 0 ? "+" : ""}${fmtEUR.format(realizado)}</td>
                           <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${retPct !== null ? `${retPct >= 0 ? "+" : ""}${retPct.toFixed(2)}%` : "—"}</td>
-                          <td style="padding: 10px 14px; text-align: center; color: var(--muted-foreground);">${nLotes}</td>
-                        </tr>`;
+                          <td style="padding: 10px 14px; text-align: center; color: var(--muted-foreground);">
+                            ${nLotes}
+                            ${isLoss ? `<button type="button" title="Simular recuperação" onclick="event.stopPropagation(); window.toggleRecSim('${simId}')" style="margin-left: 8px; background: none; border: none; cursor: pointer; color: var(--muted-foreground); padding: 2px;"><i class="fas fa-bullseye"></i></button>` : ""}
+                          </td>
+                        </tr>
+                        ${isLoss ? `
+                        <tr id="${simId}" class="hidden">
+                          <td colspan="5" style="padding: 12px 14px; background: var(--card);">
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.78rem;">
+                              <span>Preço atual: <strong>${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</strong></span>
+                              <label>Crescimento esperado (%):
+                                <input type="number" id="${simId}_g" value="${defaultGrowth}" min="0.01" step="0.5"
+                                  style="width: 70px; margin-left: 4px;"
+                                  onclick="event.stopPropagation();"
+                                  oninput="window.calcRecSim('${simId}', ${precoAtual || 0}, ${lossAbs})">
+                              </label>
+                              <span id="${simId}_out">${calcRecSimHtml(precoAtual, lossAbs, defaultGrowth)}</span>
+                            </div>
+                          </td>
+                        </tr>` : ""}`;
                     }).join("")}
                   </tbody>
                 </table>
