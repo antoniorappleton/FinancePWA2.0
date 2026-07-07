@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v58";
+const CACHE_NAME = "finance-pwa-v59";
 
 const ASSETS = [
   "./",
@@ -82,6 +82,12 @@ self.addEventListener("activate", (event) => {
     }),
   );
   self.clients.claim(); // Garante que o SW controla todas as abas abertas imediatamente
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 // Estratégia: Network-First para HTML/JS (garante atualizações), Cache-First para imagens/CSS

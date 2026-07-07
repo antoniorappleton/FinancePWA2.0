@@ -50,7 +50,7 @@ window.navigateTo = navigateTo;
 
 // Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 APPFinance v2.8.0 (Dev mode SW bypass enabled)");
+  console.log("🚀 APPFinance v2.8.1 (Dev mode SW bypass enabled)");
   navigateTo("auth");
   initGlobalHelp();
 
@@ -78,28 +78,27 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     // Registo do Service Worker para PWA (Apenas em Produção)
     if ("serviceWorker" in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+
       navigator.serviceWorker.register("./service-worker.js")
         .then((reg) => {
           console.log("[PWA] Service Worker Registado.");
-          const swUpdateKey = "swUpdateCounter";
-          const currentCount = Number(localStorage.getItem(swUpdateKey) || 0) + 1;
-          if (currentCount >= 3) {
-            localStorage.setItem(swUpdateKey, "0");
-            console.log("[PWA] Verificação periódica de SW após 3 carregamentos.");
-            reg.update();
-          } else {
-            localStorage.setItem(swUpdateKey, String(currentCount));
-          }
+          reg.update();
 
           reg.onupdatefound = () => {
             const installingWorker = reg.installing;
+            if (!installingWorker) return;
+
             installingWorker.onstatechange = () => {
               if (installingWorker.state === "installed") {
                 if (navigator.serviceWorker.controller) {
                   console.log("[PWA] Nova versão disponível.");
-                  if (confirm("Nova versão disponível! Deseja atualizar agora?")) {
-                    window.location.reload();
-                  }
+                  installingWorker.postMessage({ type: "SKIP_WAITING" });
                 }
               }
             };
