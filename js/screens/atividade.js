@@ -305,9 +305,14 @@ function renderSetorDoughnut(map) {
   const el = document.getElementById("chartSetores");
   if (!el) return;
   if (window.__chSetores) window.__chSetores.destroy();
-  const labels = [...map.keys()],
+  const rawLabels = [...map.keys()],
     data = [...map.values()];
-  if (!labels.length) {
+  const total = data.reduce((sum, value) => sum + (Number(value) || 0), 0);
+  const labels = rawLabels.map((label, index) => {
+    const pct = total > 0 ? ((Number(data[index]) || 0) / total) * 100 : 0;
+    return `${label} (${pct.toFixed(1)}%)`;
+  });
+  if (!rawLabels.length) {
     el.getContext("2d").clearRect(0, 0, el.width, el.height);
     return;
   }
@@ -330,7 +335,7 @@ function renderSetorDoughnut(map) {
       datasets: [
         {
           data,
-          backgroundColor: labels.map((label, i) => sectorColors[label] || PALETTE[i % PALETTE.length]),
+          backgroundColor: rawLabels.map((label, i) => sectorColors[label] || PALETTE[i % PALETTE.length]),
           borderWidth: 1,
         },
       ],
@@ -345,6 +350,15 @@ function renderSetorDoughnut(map) {
           backgroundColor: chartColors().tooltipBg,
           titleColor: chartColors().tooltipFg,
           bodyColor: chartColors().tooltipFg,
+          callbacks: {
+            label: function(context) {
+              const label = rawLabels[context.dataIndex] || context.label || "";
+              const value = Number(context.parsed) || 0;
+              const pct = total > 0 ? (value / total) * 100 : 0;
+              const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+              return `${label}: ${fmtEUR.format(value)} (${pct.toFixed(1)}%)`;
+            }
+          }
         },
       },
     },
