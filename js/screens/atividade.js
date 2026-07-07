@@ -2758,6 +2758,9 @@ function showPortfolioHelp(force = false) {
                     <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground); text-align: left; background: var(--card);">
                       <th style="padding: 10px 14px;">Ticker</th>
                       <th style="padding: 10px 14px;">Nome</th>
+                      <th style="padding: 10px 14px; text-align: right;">PM</th>
+                      <th style="padding: 10px 14px; text-align: right;">Atual</th>
+                      <th style="padding: 10px 14px; text-align: right;">Dif.</th>
                       <th style="padding: 10px 14px; text-align: right;">Lucro Realizado</th>
                       <th style="padding: 10px 14px; text-align: right;">Retorno</th>
                       <th style="padding: 10px 14px; text-align: center;">Lotes</th>
@@ -2773,13 +2776,21 @@ function showPortfolioHelp(force = false) {
                         : null;
                       const isLoss = realizado < 0;
                       const simId = `recSim_${idx}`;
-                      const precoAtual = isFiniteNum(g.precoAtual) ? g.precoAtual : null;
+                      const pmHistorico = isFiniteNum(g.custoMedioHistorico) && g.custoMedioHistorico > 0 ? Number(g.custoMedioHistorico) : null;
+                      const precoAtual = isFiniteNum(g.precoAtual) ? Number(g.precoAtual) : null;
+                      const diffAtualPct = pmHistorico && precoAtual !== null
+                        ? ((precoAtual - pmHistorico) / pmHistorico) * 100
+                        : null;
+                      const corDiff = diffAtualPct === null ? "var(--muted-foreground)" : diffAtualPct >= 0 ? "#22c55e" : "#ef4444";
                       const lossAbs = Math.abs(realizado);
                       const defaultGrowth = 10;
                       return `
                         <tr style="border-bottom: 1px solid var(--border);" onclick="window.openDetails('${g.ticker}')" class="cursor-pointer">
                           <td style="padding: 10px 14px; font-weight: 800; font-family: monospace;">${g.ticker}</td>
                           <td style="padding: 10px 14px; color: var(--muted-foreground);">${g.nome}</td>
+                          <td style="padding: 10px 14px; text-align: right; font-weight: 700;">${pmHistorico !== null ? fmtEUR.format(pmHistorico) : "—"}</td>
+                          <td style="padding: 10px 14px; text-align: right; font-weight: 700;">${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</td>
+                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${corDiff};">${diffAtualPct !== null ? `${diffAtualPct >= 0 ? "+" : ""}${diffAtualPct.toFixed(2)}%` : "—"}</td>
                           <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${realizado >= 0 ? "+" : ""}${fmtEUR.format(realizado)}</td>
                           <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${retPct !== null ? `${retPct >= 0 ? "+" : ""}${retPct.toFixed(2)}%` : "—"}</td>
                           <td style="padding: 10px 14px; text-align: center; color: var(--muted-foreground);">
@@ -2789,7 +2800,7 @@ function showPortfolioHelp(force = false) {
                         </tr>
                         ${isLoss ? `
                         <tr id="${simId}" class="hidden">
-                          <td colspan="5" style="padding: 12px 14px; background: var(--card);">
+                          <td colspan="8" style="padding: 12px 14px; background: var(--card);">
                             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.78rem;">
                               <span>Preço atual: <strong>${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</strong></span>
                               <label>Crescimento esperado (%):

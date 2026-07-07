@@ -1,8 +1,8 @@
 {
   "name": "APPFinance",
   "short_name": "APPFinance",
-  "start_url": ".?v=2.8.1",
-  "version": "2.8.1",
+  "start_url": ".?v=2.8.2",
+  "version": "2.8.2",
   "display": "standalone",
   "background_color": "#f6f7f9",
   "theme_color": "#0f766e",
