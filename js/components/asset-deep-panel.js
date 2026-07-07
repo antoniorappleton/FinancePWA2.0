@@ -517,16 +517,16 @@ function _tabPosition() {
       // Quantity calculations
       const monthlyBase  = Number(window._strategyConfig?.monthlyBase || 0);
       const currentQtd   = Number(pos.qtd || 0);
-      const isDecimal    = currentQtd > 0 && currentQtd < 1; // fractional (ETFs)
-      const fmtQty = (q, price) => {
+      const isFractional = currentQtd > 0 && Math.abs(currentQtd - Math.round(currentQtd)) > 0.000001;
+      const fmtQty = (allocation, price) => {
         if (monthlyBase <= 0 || price <= 0) return null;
-        const raw = monthlyBase / price;
-        return isDecimal ? raw : Math.floor(raw);
+        const raw = (monthlyBase * allocation) / price;
+        return isFractional ? raw : Math.floor(raw);
       };
       const sellQty = (frac) => {
         if (currentQtd <= 0) return null;
         const raw = currentQtd * frac;
-        return isDecimal ? raw : Math.max(1, Math.floor(raw));
+        return isFractional ? raw : Math.max(1, Math.floor(raw));
       };
 
       const p95  = precoAtual * 0.95;
@@ -547,15 +547,15 @@ function _tabPosition() {
       return `
     <div class="adp-section-title" style="margin-top:16px">Níveis de Entrada</div>
     ${qtyNote}
-    ${_priceRow("Reforço −5%",  p95,  "var(--foreground)", fmtQty(null, p95),  "ações")}
-    ${_priceRow("Reforço −10%", p90,  "var(--foreground)", fmtQty(null, p90),  "ações")}
-    ${_priceRow("Reforço −20%", p80,  "var(--foreground)", fmtQty(null, p80),  "ações")}
+    ${_priceRow("Reforço −5%",  p95,  "var(--foreground)", fmtQty(0.25, p95),  "ações")}
+    ${_priceRow("Reforço −10%", p90,  "var(--foreground)", fmtQty(0.35, p90),  "ações")}
+    ${_priceRow("Reforço −20%", p80,  "var(--foreground)", fmtQty(0.40, p80),  "ações")}
 
     <div class="adp-section-title" style="margin-top:16px">Plano de Saída</div>
     <div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">da posição atual de ${currentQtd % 1 === 0 ? currentQtd : currentQtd.toFixed(4)} ações</div>
-    ${_priceRow("TP1 +5%",   tp1,  "#16a34a", sellQty(1/3),  "ações")}
-    ${_priceRow("TP2 +10%",  tp2,  "#16a34a", sellQty(1/3),  "ações")}
-    ${_priceRow("TP3 +15%",  tp3,  "#16a34a", sellQty(1/3),  "ações")}
+    ${_priceRow("TP1 +5%",   tp1,  "#16a34a", sellQty(0.25),  "ações")}
+    ${_priceRow("TP2 +10%",  tp2,  "#16a34a", sellQty(0.35),  "ações")}
+    ${_priceRow("TP3 +15%",  tp3,  "#16a34a", sellQty(0.40),  "ações")}
     ${_priceRow("Stop −10%", stop, "#dc2626", currentQtd > 0 ? currentQtd : null, "ações (tudo)")}
 
     ${breakEven > 0 ? `

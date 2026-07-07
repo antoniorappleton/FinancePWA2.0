@@ -37,6 +37,48 @@ import { INDICATOR_INFO } from "../utils/indicator-info.js";
 import { repairFirestoreData } from "../utils/maintenance.js";
 import { subscribeMarketData } from "../utils/marketDataStore.js";
 
+const BASE_SECTOR_OPTIONS = [
+  "Tecnologia",
+  "Comunicações",
+  "Consumo Defensivo",
+  "Finanças",
+  "Defesa",
+  "Automóvel",
+  "Energia",
+  "Saúde",
+  "ETF Mercado Asiatico",
+  "Industriais",
+  "Utilidades",
+  "Consumo Cíclico",
+  "ETF iTech",
+  "ETF Países Emergentes",
+  "ETF Energia",
+  "ETF Saúde",
+  "ETF Finanças",
+  "Mineração (Ouro)",
+  "Imobiliário",
+  "ETF Setor Comunicações",
+  "ETF Consumo Ciclico",
+  "ETF Mercado Europeu",
+  "ETF Consumo Defensivo",
+  "ETF Materiais",
+  "ETF Tecnologia",
+  "ETF Mundial",
+  "Commodities",
+  "Ouro",
+];
+
+const BASE_MARKET_OPTIONS = [
+  "Americano SP500",
+  "Europeu",
+  "Portugal",
+  "Americano",
+  "Asiático",
+  "Australiana",
+  "Mundial",
+  "Canadá",
+];
+
 /* =========================================================
 Carregamento "on-demand" de libs (Chart.js, html2canvas, jsPDF)
 ========================================================= */
@@ -1266,7 +1308,8 @@ function populateFilters() {
     if (r.setor) setSet.add(r.setor);
     if (r.mercado) merSet.add(r.mercado);
   });
-  setSet.add("Commodities");
+  BASE_SECTOR_OPTIONS.forEach((sector) => setSet.add(sector));
+  BASE_MARKET_OPTIONS.forEach((market) => merSet.add(market));
   const addOpts = (sel, values) => {
     const cur = sel.value;
     sel.innerHTML =

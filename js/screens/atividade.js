@@ -89,6 +89,48 @@ const PALETTE = [
 ];
 
 
+const BASE_SECTOR_OPTIONS = [
+  "Tecnologia",
+  "Comunicações",
+  "Consumo Defensivo",
+  "Finanças",
+  "Defesa",
+  "Automóvel",
+  "Energia",
+  "Saúde",
+  "ETF Mercado Asiatico",
+  "Industriais",
+  "Utilidades",
+  "Consumo Cíclico",
+  "ETF iTech",
+  "ETF Países Emergentes",
+  "ETF Energia",
+  "ETF Saúde",
+  "ETF Finanças",
+  "Mineração (Ouro)",
+  "Imobiliário",
+  "ETF Setor Comunicações",
+  "ETF Consumo Ciclico",
+  "ETF Mercado Europeu",
+  "ETF Consumo Defensivo",
+  "ETF Materiais",
+  "ETF Tecnologia",
+  "ETF Mundial",
+  "Commodities",
+  "Ouro",
+];
+
+const BASE_MARKET_OPTIONS = [
+  "Americano SP500",
+  "Europeu",
+  "Portugal",
+  "Americano",
+  "Asiático",
+  "Australiana",
+  "Mundial",
+  "Canadá",
+];
+
 const CRISES_HISTORY = [
   { id: "tension_lim", name: "📉 Tensão Limitada (-3% a -8%)", drop: 5.5 },
   { id: "geo_mod", name: "📉 Crise Geopolítica Moderada (-8% a -15%)", drop: 11.5 },
@@ -2682,6 +2724,7 @@ function showPortfolioHelp(force = false) {
 
         const allMarkets = [
           ...new Set([
+            ...BASE_MARKET_OPTIONS,
             ...gruposArr.map((g) => g.mercado),
             ...dbMarkets
           ].filter(m => m && m !== "—")),
@@ -2689,15 +2732,9 @@ function showPortfolioHelp(force = false) {
         
         const allSectors = [
           ...new Set([
+            ...BASE_SECTOR_OPTIONS,
             ...gruposArr.map((g) => g.setor),
-            ...dbSectors,
-            "ETF Países Emergentes",
-            "Tecnologia",
-            "Finanças",
-            "Saúde",
-            "Energia",
-            "Consumo",
-            "Commodities"
+            ...dbSectors
           ].filter(s => s && s !== "—")),
         ].sort();
 
