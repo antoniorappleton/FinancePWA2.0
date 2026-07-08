@@ -108,8 +108,7 @@ function buildHTML(state, history) {
           <div class="rp-bar-labels"><span>0</span><span>${ind.scaleMax}+</span></div>
           <div class="rp-input-row">
             <input type="text" id="rp-input-${ind.id}" placeholder="novo valor" inputmode="decimal"
-              onkeydown="if(event.key==='Enter') window._rpUpdate('${ind.id}')">
-            <button onclick="window._rpUpdate('${ind.id}')">Actualizar</button>
+              onkeydown="if(event.key==='Enter') window._rpUpdateAll()">
           </div>
           <div class="rp-meta">Última: ${updated}</div>
         </div>
@@ -154,6 +153,10 @@ function buildHTML(state, history) {
     </div>
 
     <div class="rp-cards">${cards}</div>
+    <div class="rp-update-all-row">
+      <button id="rp-update-all-btn" class="btn">Actualizar leitura completa</button>
+      <span class="rp-meta">Campos vazios mant&ecirc;m o &uacute;ltimo valor registado.</span>
+    </div>
 
     <div style="margin-top:20px">
       <div style="font-weight:600;font-size:14px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:10px">
@@ -182,7 +185,9 @@ const STYLES = `
   .rp-fetch-row input{flex:1;min-width:0;background:var(--muted);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--foreground);font-size:12px;font-family:monospace}
   .rp-fetch-row input:focus{outline:none;border-color:var(--primary)}
   .rp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  @media(max-width:640px){.rp-cards{grid-template-columns:1fr}}
+  .rp-update-all-row{display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+  .rp-update-all-row button{white-space:nowrap;padding:8px 14px;font-size:12px;font-weight:700}
+  @media(max-width:640px){.rp-cards{grid-template-columns:1fr}.rp-update-all-row{align-items:stretch}.rp-update-all-row button{width:100%}}
   .rp-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
   .rp-card-head{padding:12px 14px 8px}
   .rp-lbl{font-size:10px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.05em;font-family:monospace}
@@ -236,15 +241,24 @@ export function initRiscoPanel(mount) {
     bindEvents();
   }
 
-  function updateValue(id) {
-    const input = document.getElementById(`rp-input-${id}`);
-    if (!input) return;
-    const v = parseFloat(input.value.replace(',', '.'));
-    if (isNaN(v) || v < 0) return;
-    state[id] = v;
-    state[`${id}_updated`] = new Date().toLocaleString('pt-PT', {
+  function updateAllValues() {
+    const stamp = new Date().toLocaleString('pt-PT', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
+
+    for (const ind of INDICATORS) {
+      const input = document.getElementById(`rp-input-${ind.id}`);
+      const raw = input?.value?.trim() || '';
+      if (raw !== '') {
+        const v = parseFloat(raw.replace(',', '.'));
+        if (isNaN(v) || v < 0) return;
+        state[ind.id] = v;
+      } else if (!(ind.id in state) || state[ind.id] == null) {
+        state[ind.id] = ind.dflt;
+      }
+      state[`${ind.id}_updated`] = stamp;
+    }
+
     addHistoryEntry();
     save();
     rerender();
@@ -283,9 +297,11 @@ export function initRiscoPanel(mount) {
   }
 
   function bindEvents() {
-    window._rpUpdate = updateValue;
+    window._rpUpdate = updateAllValues;
+    window._rpUpdateAll = updateAllValues;
     window._rpResetHistory = () => { history = []; save(); rerender(); };
     document.getElementById('rp-fetch-btn')?.addEventListener('click', fetchHYOAS);
+    document.getElementById('rp-update-all-btn')?.addEventListener('click', updateAllValues);
   }
 
   rerender();
