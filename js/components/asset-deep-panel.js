@@ -513,60 +513,7 @@ function _tabPosition() {
 
     ${_strategyEditor(_asset.ticker, _position)}
 
-    ${(() => {
-      // Quantity calculations
-      const monthlyBase  = Number(window._strategyConfig?.monthlyBase || 0);
-      const currentQtd   = Number(pos.qtd || 0);
-      const isFractional = currentQtd > 0 && Math.abs(currentQtd - Math.round(currentQtd)) > 0.000001;
-      const fmtQty = (allocation, price) => {
-        if (monthlyBase <= 0 || price <= 0) return null;
-        const raw = (monthlyBase * allocation) / price;
-        return isFractional ? raw : Math.floor(raw);
-      };
-      const sellQty = (frac) => {
-        if (currentQtd <= 0) return null;
-        const raw = currentQtd * frac;
-        return isFractional ? raw : Math.max(1, Math.floor(raw));
-      };
-
-      const p95  = precoAtual * 0.95;
-      const p90  = precoAtual * 0.90;
-      const p80  = precoAtual * 0.80;
-      const tp1  = precoMedio * 1.05;
-      const tp2  = precoMedio * 1.10;
-      const tp3  = precoMedio * 1.15;
-      const stop = precoMedio * 0.90;
-      const breakEven = (pos.qtd > 0 && pos.investido > 0) ? (pos.investido + 2) / pos.qtd : 0;
-
-      const qtyNote = monthlyBase > 0
-        ? `<div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">com aporte mensal de ${new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(monthlyBase)}</div>`
-        : `<div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">Define o aporte mensal em Definições para ver quantidades</div>`;
-
-      const fmtEUR2 = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
-
-      return `
-    <div class="adp-section-title" style="margin-top:16px">Níveis de Entrada</div>
-    ${qtyNote}
-    ${_priceRow("Reforço −5%",  p95,  "var(--foreground)", fmtQty(0.25, p95),  "ações")}
-    ${_priceRow("Reforço −10%", p90,  "var(--foreground)", fmtQty(0.35, p90),  "ações")}
-    ${_priceRow("Reforço −20%", p80,  "var(--foreground)", fmtQty(0.40, p80),  "ações")}
-
-    <div class="adp-section-title" style="margin-top:16px">Plano de Saída</div>
-    <div style="font-size:.7rem;color:var(--muted-foreground);margin-bottom:4px">da posição atual de ${currentQtd % 1 === 0 ? currentQtd : currentQtd.toFixed(4)} ações</div>
-    ${_priceRow("TP1 +5%",   tp1,  "#16a34a", sellQty(0.25),  "ações")}
-    ${_priceRow("TP2 +10%",  tp2,  "#16a34a", sellQty(0.35),  "ações")}
-    ${_priceRow("TP3 +15%",  tp3,  "#16a34a", sellQty(0.40),  "ações")}
-    ${_priceRow("Stop −10%", stop, "#dc2626", currentQtd > 0 ? currentQtd : null, "ações (tudo)")}
-
-    ${breakEven > 0 ? `
-    <div style="margin-top:12px;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--muted) 60%,transparent);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:.75rem;font-weight:600;color:var(--foreground)">Ponto de Equilíbrio</div>
-        <div style="font-size:.68rem;color:var(--muted-foreground);margin-top:1px">vender tudo sem perder (incl. 2€ comissões)</div>
-      </div>
-      <div style="font-size:.9rem;font-weight:700;color:${precoAtual >= breakEven ? "#16a34a" : "#dc2626"}">${fmtEUR2(breakEven)}</div>
-    </div>` : ""}`;
-    })()}
+    ${_positionPlanningTools(pos, precoAtual, precoMedio)}
 
     <div style="margin-top:20px;display:flex;gap:8px">
       <button class="adp-action-btn adp-action-btn--buy"
@@ -853,6 +800,183 @@ function _tabTechnical() {
 
 // ── Micro helpers ─────────────────────────────────────────
 
+function _positionPlanningTools(pos, precoAtual, precoMedio) {
+  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
+  const qty = Number(pos.qtd || 0);
+  const invested = Number(pos.investido || 0);
+  const dropPct = precoMedio > 0 && precoAtual > 0 ? ((precoAtual / precoMedio) - 1) * 100 : 0;
+  const targetDefault = precoMedio > 0 ? Math.max(precoAtual * 1.01, precoMedio * 0.95) : 0;
+  const breakeven = qty > 0 && invested > 0 ? (invested + 2) / qty : 0;
+  const plannerId = `adp-plan-${String(pos.ticker || "asset").replace(/[^a-z0-9_-]/gi, "")}`;
+
+  setTimeout(() => _wirePositionPlanner(plannerId), 0);
+
+  return `
+    <div class="adp-section-title" style="margin-top:16px">Plano Interativo</div>
+    <div class="adp-plan-shell" id="${plannerId}"
+      data-price="${Number(precoAtual || 0)}"
+      data-avg="${Number(precoMedio || 0)}"
+      data-qty="${qty}"
+      data-invested="${invested}">
+      <div class="adp-plan-status">
+        <span>Pre&ccedil;o atual: <strong>${fmtEUR(precoAtual)}</strong></span>
+        <span>PM: <strong>${fmtEUR(precoMedio)}</strong></span>
+        <span class="${dropPct < 0 ? "neg" : "pos"}">${dropPct >= 0 ? "+" : ""}${dropPct.toFixed(1)}% vs PM</span>
+      </div>
+
+      <div class="adp-plan-card adp-plan-card--buy">
+        <div class="adp-plan-card-head">
+          <div>
+            <div class="adp-plan-title">Refor&ccedil;o por capital</div>
+            <div class="adp-plan-sub">Escolhe a fatia do capital investido que queres usar agora.</div>
+          </div>
+          <span class="adp-plan-pill">Compra</span>
+        </div>
+        <div class="adp-plan-grid">
+          <label class="adp-plan-field">
+            <span>Capital base</span>
+            <input class="adp-plan-input" data-plan-input="base" type="number" min="0" step="1" value="${invested > 0 ? invested.toFixed(2) : "252.00"}">
+          </label>
+          <label class="adp-plan-field">
+            <span>% para refor&ccedil;o</span>
+            <input class="adp-plan-input" data-plan-input="buyPct" type="number" min="0" step="0.5" value="10">
+          </label>
+        </div>
+        <div class="adp-plan-chips" data-chip-target="buyPct">
+          ${[5, 10, 15, 20].map(v => `<button type="button" class="adp-plan-chip ${v === 10 ? "active" : ""}" data-value="${v}">${v}%</button>`).join("")}
+        </div>
+        <div class="adp-plan-result" data-plan-result="buy"></div>
+      </div>
+
+      <div class="adp-plan-card adp-plan-card--avg">
+        <div class="adp-plan-card-head">
+          <div>
+            <div class="adp-plan-title">Baixar pre&ccedil;o m&eacute;dio</div>
+            <div class="adp-plan-sub">Define o PM final desejado e v&ecirc; o capital necess&aacute;rio.</div>
+          </div>
+          <span class="adp-plan-pill">PM</span>
+        </div>
+        <label class="adp-plan-field">
+          <span>Novo PM desejado</span>
+          <input class="adp-plan-input" data-plan-input="targetAvg" type="number" min="0" step="0.01" value="${targetDefault > 0 ? targetDefault.toFixed(2) : ""}">
+        </label>
+        <div class="adp-plan-result" data-plan-result="avg"></div>
+      </div>
+
+      <div class="adp-plan-card adp-plan-card--sell">
+        <div class="adp-plan-card-head">
+          <div>
+            <div class="adp-plan-title">Sa&iacute;da parcial</div>
+            <div class="adp-plan-sub">Escolhe a percentagem da posi&ccedil;&atilde;o para vender a um pre&ccedil;o alvo.</div>
+          </div>
+          <span class="adp-plan-pill">Venda</span>
+        </div>
+        <div class="adp-plan-grid">
+          <label class="adp-plan-field">
+            <span>% da posi&ccedil;&atilde;o</span>
+            <input class="adp-plan-input" data-plan-input="sellPct" type="number" min="0" max="100" step="1" value="25">
+          </label>
+          <label class="adp-plan-field">
+            <span>Pre&ccedil;o alvo</span>
+            <input class="adp-plan-input" data-plan-input="sellPrice" type="number" min="0" step="0.01" value="${precoAtual > 0 ? (precoAtual * 1.10).toFixed(2) : ""}">
+          </label>
+        </div>
+        <div class="adp-plan-chips" data-chip-target="sellPct">
+          ${[10, 25, 50, 100].map(v => `<button type="button" class="adp-plan-chip ${v === 25 ? "active" : ""}" data-value="${v}">${v}%</button>`).join("")}
+        </div>
+        <div class="adp-plan-result" data-plan-result="sell"></div>
+      </div>
+
+      ${breakeven > 0 ? `
+      <div class="adp-plan-breakeven">
+        <span>Ponto de equil&iacute;brio com 2&euro; comiss&otilde;es</span>
+        <strong class="${precoAtual >= breakeven ? "pos" : "neg"}">${fmtEUR(breakeven)}</strong>
+      </div>` : ""}
+    </div>`;
+}
+
+function _wirePositionPlanner(id) {
+  const root = document.getElementById(id);
+  if (!root) return;
+
+  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
+  const fmtQty = v => {
+    const n = Number(v) || 0;
+    return `${n % 1 === 0 ? n.toFixed(0) : n.toFixed(4)} a&ccedil;&otilde;es`;
+  };
+  const read = name => Number(root.querySelector(`[data-plan-input="${name}"]`)?.value || 0);
+  const writeResult = (name, html) => {
+    const el = root.querySelector(`[data-plan-result="${name}"]`);
+    if (el) el.innerHTML = html;
+  };
+
+  const price = Number(root.dataset.price || 0);
+  const avg = Number(root.dataset.avg || 0);
+  const qty = Number(root.dataset.qty || 0);
+  const invested = Number(root.dataset.invested || 0);
+
+  const recalc = () => {
+    const base = read("base");
+    const buyPct = read("buyPct");
+    const buyAmount = Math.max(0, base * buyPct / 100);
+    const buyQty = price > 0 ? buyAmount / price : 0;
+    const newAvg = qty + buyQty > 0 ? (invested + buyAmount) / (qty + buyQty) : 0;
+
+    writeResult("buy", price > 0 && buyAmount > 0 ? `
+      <div><span>Investir</span><strong>${fmtEUR(buyAmount)}</strong></div>
+      <div><span>Comprar aprox.</span><strong>${fmtQty(buyQty)}</strong></div>
+      <div><span>Novo PM estimado</span><strong>${fmtEUR(newAvg)}</strong></div>
+    ` : `<div class="adp-plan-empty">Preenche capital e percentagem para simular.</div>`);
+
+    const targetAvg = read("targetAvg");
+    let avgHTML = "";
+    if (!price || !avg || !qty || !invested || !targetAvg) {
+      avgHTML = `<div class="adp-plan-empty">Dados insuficientes para calcular o PM alvo.</div>`;
+    } else if (price >= avg) {
+      avgHTML = `<div class="adp-plan-empty">O pre&ccedil;o atual est&aacute; igual ou acima do PM; comprar agora n&atilde;o baixa o PM.</div>`;
+    } else if (targetAvg <= price) {
+      avgHTML = `<div class="adp-plan-empty">O PM alvo tem de ficar acima do pre&ccedil;o atual (${fmtEUR(price)}).</div>`;
+    } else if (targetAvg >= avg) {
+      avgHTML = `<div class="adp-plan-empty">Esse PM j&aacute; est&aacute; atingido. Escolhe um valor abaixo de ${fmtEUR(avg)}.</div>`;
+    } else {
+      const neededQty = (invested - targetAvg * qty) / (targetAvg - price);
+      const neededAmount = neededQty * price;
+      avgHTML = `
+        <div><span>Capital necess&aacute;rio</span><strong>${fmtEUR(neededAmount)}</strong></div>
+        <div><span>Comprar aprox.</span><strong>${fmtQty(neededQty)}</strong></div>
+        <div><span>Posi&ccedil;&atilde;o final</span><strong>${fmtQty(qty + neededQty)}</strong></div>
+      `;
+    }
+    writeResult("avg", avgHTML);
+
+    const sellPct = Math.min(100, Math.max(0, read("sellPct")));
+    const sellPrice = read("sellPrice") || price;
+    const sellQty = qty * sellPct / 100;
+    const proceeds = sellQty * sellPrice;
+    const costBasis = sellQty * avg;
+    const pnl = proceeds - costBasis;
+    writeResult("sell", qty > 0 && sellQty > 0 ? `
+      <div><span>Vender aprox.</span><strong>${fmtQty(sellQty)}</strong></div>
+      <div><span>Receber estimado</span><strong>${fmtEUR(proceeds)}</strong></div>
+      <div><span>Resultado estimado</span><strong class="${pnl >= 0 ? "pos" : "neg"}">${fmtEUR(pnl)}</strong></div>
+    ` : `<div class="adp-plan-empty">Escolhe a percentagem da posi&ccedil;&atilde;o.</div>`);
+  };
+
+  root.querySelectorAll(".adp-plan-input").forEach(input => input.addEventListener("input", recalc));
+  root.querySelectorAll(".adp-plan-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const wrap = btn.closest(".adp-plan-chips");
+      const target = wrap?.dataset.chipTarget;
+      const input = target ? root.querySelector(`[data-plan-input="${target}"]`) : null;
+      if (!input) return;
+      input.value = btn.dataset.value;
+      wrap.querySelectorAll(".adp-plan-chip").forEach(chip => chip.classList.toggle("active", chip === btn));
+      recalc();
+    });
+  });
+
+  recalc();
+}
 function _bar(label, value, color, sub = "") {
   const pct = Math.min(100, Math.max(0, Number(value) || 0));
   return `

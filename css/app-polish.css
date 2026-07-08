@@ -755,3 +755,191 @@ tbody tr:hover,
   text-align: center; padding: 32px 16px;
   color: var(--muted-foreground); font-size: .85rem;
 }
+
+/* Interactive position planner */
+.adp-plan-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adp-plan-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: .72rem;
+  color: var(--muted-foreground);
+}
+
+.adp-plan-status span {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--muted);
+}
+
+.adp-plan-status .pos,
+.adp-plan-result .pos,
+.adp-plan-breakeven .pos { color: #16a34a; }
+.adp-plan-status .neg,
+.adp-plan-result .neg,
+.adp-plan-breakeven .neg { color: #dc2626; }
+
+.adp-plan-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--background) 88%, var(--muted));
+}
+
+.adp-plan-card--buy { border-left: 3px solid #2563eb; }
+.adp-plan-card--avg { border-left: 3px solid #7c3aed; }
+.adp-plan-card--sell { border-left: 3px solid #16a34a; }
+
+.adp-plan-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.adp-plan-title {
+  font-size: .86rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.adp-plan-sub {
+  font-size: .7rem;
+  color: var(--muted-foreground);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.adp-plan-pill {
+  flex: 0 0 auto;
+  font-size: .62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.adp-plan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.adp-plan-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adp-plan-field span {
+  font-size: .66rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.adp-plan-input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input);
+  color: var(--foreground);
+  padding: 7px 8px;
+  font-size: .82rem;
+  font-weight: 650;
+}
+
+.adp-plan-input:focus {
+  outline: 2px solid color-mix(in srgb, var(--primary) 32%, transparent);
+  border-color: var(--primary);
+}
+
+.adp-plan-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.adp-plan-chip {
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: .76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.adp-plan-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.adp-plan-result {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.adp-plan-result > div:not(.adp-plan-empty) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: .78rem;
+}
+
+.adp-plan-result span {
+  color: var(--muted-foreground);
+}
+
+.adp-plan-result strong {
+  color: var(--foreground);
+  font-size: .86rem;
+  text-align: right;
+}
+
+.adp-plan-empty {
+  color: var(--muted-foreground);
+  font-size: .76rem;
+  line-height: 1.35;
+}
+
+.adp-plan-breakeven {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--muted);
+  font-size: .76rem;
+  color: var(--muted-foreground);
+}
+
+.adp-plan-breakeven strong {
+  font-size: .9rem;
+}
+
+@media (max-width: 420px) {
+  .adp-plan-grid { grid-template-columns: 1fr; }
+  .adp-plan-card-head { align-items: stretch; }
+  .adp-plan-pill { align-self: flex-start; }
+}
