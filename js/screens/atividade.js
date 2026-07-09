@@ -3971,6 +3971,42 @@ let _holdingsGlobalViewData = null;
 let _holdingsViewSubtitle = "";
 let _holdingsEventsWired = false;
 
+const HOLDINGS_SECTOR_ALIASES = [
+  { label: "Financeiro", tokens: ["FINANC", "BANK", "INSURANCE"] },
+  { label: "Tecnologia", tokens: ["TECNOLOG", "TECH", "INFORMATION TECHNOLOGY", "ITECH", "SEMICONDUTOR", "SEMICONDUCTOR", "SOFTWARE"] },
+  { label: "Comunicações", tokens: ["COMUNIC", "COMMUNICATION", "TELECOM", "MEDIA", "ENTERTAINMENT"] },
+  { label: "Consumo Cíclico", tokens: ["CONSUMO CICLIC", "CONSUMO DISCRICION", "CONSUMER CYCLICAL", "CONSUMER DISCRETIONARY"] },
+  { label: "Automóvel", tokens: ["AUTOMOV", "AUTO"] },
+  { label: "Consumo Defensivo", tokens: ["CONSUMO DEFENS", "CONSUMO BASICO", "CONSUMER DEFENSIVE", "CONSUMER STAPLES", "ALIMENT"] },
+  { label: "Saúde", tokens: ["SAUDE", "HEALTH", "HEALTHCARE", "PHARMA", "BIOTECH"] },
+  { label: "Industriais", tokens: ["INDUSTR", "INDUSTRIAL"] },
+  { label: "Energia", tokens: ["ENERG", "OIL", "GAS"] },
+  { label: "Utilidades", tokens: ["UTILIDAD", "UTILITY", "UTILITIES"] },
+  { label: "Imobiliário", tokens: ["IMOBILI", "REAL ESTATE", "REIT"] },
+  { label: "Mineração (Ouro)", tokens: ["MINERACAO OURO", "MINERACAO (OURO)", "GOLD MINING", "GOLD MINER"] },
+  { label: "Ouro", tokens: ["OURO", "GOLD"] },
+  { label: "Commodities", tokens: ["COMMODIT", "MATERIAIS", "MATERIALS", "BASIC MATERIALS", "MATERIAS PRIMAS", "MATÉRIAS PRIMAS", "MINERACAO", "MINING"] },
+  { label: "Defesa", tokens: ["DEFESA", "DEFENSE", "DEFENCE", "AEROSPACE"] },
+  { label: "Criptomoedas", tokens: ["CRIPTO", "CRYPTO"] },
+  { label: "Países Emergentes", tokens: ["EMERGENTE", "EMERGING"] },
+  { label: "Big CAP", tokens: ["MUNDIAL", "MULT", "MIX", "BIG CAP", "LARGE CAP"] }
+];
+
+function normalizeHoldingsSector(raw) {
+  const sector = String(raw || "").trim();
+  if (!sector) return "";
+  const key = sector
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+
+  for (const { label, tokens } of HOLDINGS_SECTOR_ALIASES) {
+    if (tokens.some(token => key.includes(token.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()))) {
+      return label;
+    }
+  }
+  return sector;
+}
 function clearHoldingsTreemap() {
   document.getElementById("treemap-tooltip")?.remove();
   const container = document.getElementById("holdingsMapContainer");
@@ -4421,13 +4457,13 @@ async function renderGlobalHoldingsMap(gruposArr) {
         
         if (eS.includes("ENERGIA")) sector = "Energia";
         else if (eS.includes("TECNOLOGIA") || eS.includes("ITECH")) sector = "Tecnologia";
-        else if (eS.includes("MATERIAIS") || eS.includes("MATERIAS")) sector = "Materias Primas";
-        else if (eS.includes("FINANCEIRO") || eS.includes("FINANÇAS")) sector = "Finanças";
-        else if (eS.includes("EMERGENTES")) sector = "Paises Emergentes";
+        else if (eS.includes("MATERIAIS") || eS.includes("MATERIAS")) sector = "Commodities";
+        else if (eS.includes("FINANCEIRO") || eS.includes("FINAN")) sector = "Financeiro";
+        else if (eS.includes("EMERGENTES")) sector = "Países Emergentes";
         else if (eS.includes("MUNDIAL") || eS.includes("MULT") || eS.includes("MIX")) sector = "Big CAP";
       }
       
-      sector = sector || "Big CAP"; // Default final para holdings de ETFs
+      sector = normalizeHoldingsSector(sector || "Big CAP"); // Default final para holdings de ETFs
       
       if (!groupedBySector.has(sector)) {
         groupedBySector.set(sector, {
@@ -4982,3 +5018,4 @@ function initTreemap(container, chartData, contextTitle, isAlreadyGrouped = fals
   // Renderizar (altura dinâmica baseada no container ou fixo)
   treemap.render(formattedData, Math.max(container.clientHeight, 500));
 }
+

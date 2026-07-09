@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v64";
+const CACHE_NAME = "finance-pwa-v65";
 
 const ASSETS = [
   "./",
@@ -57,6 +57,7 @@ const ASSETS = [
   "./screens/portfolio-intel.html",
   "./screens/simulador.html",
   "./icons/icon-192.png",
+  "./icons/icon-512.png",
 ];
 
 // Instalação do Service Worker
