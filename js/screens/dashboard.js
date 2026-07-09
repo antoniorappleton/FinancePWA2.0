@@ -771,7 +771,12 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
   // Valores do utilizador vindos do Firestore
   const availableCash = lastConfigData?.availableCash || 0;
   const monthlyBase = lastConfigData?.monthlyBase || 0;
-
+  const portfolioValue = positions.reduce((sum, p) => {
+    const price = Number(valorAtualMap.get(p.ticker) || p.custoMedio || 0);
+    return sum + Number(p.qtd || 0) * price;
+  }, 0);
+  const totalWithCash = portfolioValue + availableCash;
+  const cashSharePct = totalWithCash > 0 ? (availableCash / totalWithCash) * 100 : 0;
   const recommendation = CapitalManager.getWarChestRecommendation(state, availableCash);
   const smartDca = CapitalManager.getSmartDCA(monthlyBase, state);
 
@@ -825,7 +830,7 @@ function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
           <div style="border-top: 1px dashed var(--border); padding-top: 10px; font-size: 0.75rem; color: var(--muted-foreground);">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <span>Liquidez Total:</span>
-              <strong>${fmtEUR.format(availableCash)}</strong>
+              <strong>${fmtEUR.format(availableCash)} (${cashSharePct.toFixed(1)}%)</strong>
             </div>
             <div style="display: flex; justify-content: space-between;">
               <span>Autonomia Estimada:</span>

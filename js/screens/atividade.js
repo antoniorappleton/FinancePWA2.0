@@ -2530,7 +2530,7 @@ function showPortfolioHelp(force = false) {
             const gapEl  = document.getElementById("prtReservaGap");
             const apoEl  = document.getElementById("prtReservaAporte");
             if (alvoEl) alvoEl.textContent = fmtEUR.format(cp.targetReserve) + ` (${cashReservePct}%)`;
-            if (cashEl) cashEl.textContent  = fmtEUR.format(cp.currentCash);
+            if (cashEl) cashEl.textContent  = `${fmtEUR.format(cp.currentCash)} (${cp.totalWealth > 0 ? ((cp.currentCash / cp.totalWealth) * 100).toFixed(1) : "0.0"}%)`;
             if (gapEl) {
               gapEl.textContent = cp.gapToReserve > 0
                 ? `Falta ${fmtEUR.format(cp.gapToReserve)}`
@@ -3812,6 +3812,8 @@ function renderAnnualDcaPlan(plan) {
     .filter(g => Number.isFinite(g.qtd) && g.qtd > 0)
     .reduce((sum, g) => sum + ((g.precoAtual || 0) * (g.qtd || 0)), 0);
   const reservePct = plan.cashTargetPct || 0;
+  const initialCashPct = currentValue + plan.cash > 0 ? (plan.cash / (currentValue + plan.cash)) * 100 : 0;
+  const finalCashPct = plan.projectedPortfolioTotal > 0 ? (plan.reserveAmount / plan.projectedPortfolioTotal) * 100 : 0;
   const autoMonthlyText = (plan.autoSavingsPlans || [])
     .map(p => `${p.ticker} ${fmtEUR.format(p.amount)}`)
     .join(" + ");
@@ -3831,7 +3833,7 @@ function renderAnnualDcaPlan(plan) {
         : "Proporcional aos targets elegíveis";
 
   if (narrative) {
-    narrative.textContent = `${fmtEUR.format(plan.cash)} em cash + ${fmtEUR.format(plan.monthlyDca)}/mes de DCA. Auto: ${fmtEUR.format(plan.autoMonthlyTotal || 0)}/mes. Manual: ${fmtEUR.format(plan.perPeriod)} por periodo.`;
+    narrative.textContent = `${fmtEUR.format(plan.cash)} em cash (${initialCashPct.toFixed(1)}% do total atual) + ${fmtEUR.format(plan.monthlyDca)}/mes de DCA. Auto: ${fmtEUR.format(plan.autoMonthlyTotal || 0)}/mes. Manual: ${fmtEUR.format(plan.perPeriod)} por periodo.`;
   }
   if (statusBadge) statusBadge.textContent = ctx.state?.label || "DCA";
   if (reviewLabel) reviewLabel.textContent = plan.months >= 12 ? "Trimestral + anual" : "No fecho";
@@ -3845,12 +3847,12 @@ function renderAnnualDcaPlan(plan) {
     });
 
   summary.innerHTML = [
-    ["Cash inicial", fmtEUR.format(plan.cash)],
+    ["Cash inicial", `${fmtEUR.format(plan.cash)} (${initialCashPct.toFixed(1)}%)`],
     ["DCA total", fmtEUR.format(plan.dcaTotal)],
     ["Savings auto", `${fmtEUR.format(plan.autoTotal || 0)} (${fmtEUR.format(plan.autoMonthlyTotal || 0)}/mes)`],
     ["Portfolio final", fmtEUR.format(plan.projectedPortfolioTotal)],
     ["Reserva minima", `${fmtEUR.format(plan.targetReserveAmount)} (${reservePct.toFixed(0)}%)`],
-    ["Cash final", fmtEUR.format(plan.reserveAmount)],
+    ["Cash final", `${fmtEUR.format(plan.reserveAmount)} (${finalCashPct.toFixed(1)}%)`],
     ["Cash extra gaps", fmtEUR.format(plan.excessCashFromCaps || 0)],
     ["A distribuir", fmtEUR.format(plan.investableTotal)],
     ["Prioridade", escapeHtml(topTargets)]
@@ -3913,7 +3915,7 @@ function renderAnnualDcaPlan(plan) {
         </div>
         <p>${autoLine}</p>
         <p>${manualLine}${reviewText}</p>
-        <p>Manual acumulado: ${fmtEUR.format(investedSoFar)}. Cash final preservado: ${fmtEUR.format(plan.reserveAmount)}</p>
+        <p>Manual acumulado: ${fmtEUR.format(investedSoFar)}. Cash final preservado: ${fmtEUR.format(plan.reserveAmount)} (${finalCashPct.toFixed(1)}%)</p>
       </div>
     `;
   });
@@ -3922,7 +3924,7 @@ function renderAnnualDcaPlan(plan) {
   _lastInvPlanCopyText = [
     "Plano de Investimento DCA",
     "",
-    `Cash inicial: ${fmtEUR.format(plan.cash)}`,
+    `Cash inicial: ${fmtEUR.format(plan.cash)} (${initialCashPct.toFixed(1)}% do total atual)`,
     `DCA mensal: ${fmtEUR.format(plan.monthlyDca)}`,
     `Savings automaticos/mês: ${autoMonthlyText || "sem savings definidos"}`,
     `Savings automaticos no periodo: ${fmtEUR.format(plan.autoTotal || 0)}`,
@@ -3930,7 +3932,7 @@ function renderAnnualDcaPlan(plan) {
     `Cash alvo: ${reservePct.toFixed(0)}%`,
     `Portfolio projetado no fim: ${fmtEUR.format(plan.projectedPortfolioTotal)}`,
     `Reserva minima alvo: ${fmtEUR.format(plan.targetReserveAmount)}`,
-    `Cash final preservado: ${fmtEUR.format(plan.reserveAmount)}`,
+    `Cash final preservado: ${fmtEUR.format(plan.reserveAmount)} (${finalCashPct.toFixed(1)}% do total final)`,
     `Cash adicional a preservar: ${fmtEUR.format(plan.cashToPreserveFromNewCapital || 0)}`,
     `Cash extra por falta de gaps/caps: ${fmtEUR.format(plan.excessCashFromCaps || 0)}`,
     `Capital manual a distribuir: ${fmtEUR.format(plan.investableTotal)}`,
@@ -3948,9 +3950,9 @@ function renderAnnualDcaPlan(plan) {
 
   const midMonth = Math.max(1, Math.ceil(plan.months / 2));
   projection.innerHTML = [
-    ["Hoje", fmtEUR.format(currentValue + plan.cash), `Investido + cash inicial`],
+    ["Hoje", fmtEUR.format(currentValue + plan.cash), `Investido + cash inicial (${initialCashPct.toFixed(1)}% cash)`],
     [`${midMonth} meses`, fmtEUR.format(currentValue + plan.cash + (plan.monthlyDca * midMonth)), "Sem valorizacao de mercado"],
-    [`${plan.months} meses`, fmtEUR.format(plan.projectedPortfolioTotal), `Cash final preservado: ${fmtEUR.format(plan.reserveAmount)}`]
+    [`${plan.months} meses`, fmtEUR.format(plan.projectedPortfolioTotal), `Cash final preservado: ${fmtEUR.format(plan.reserveAmount)} (${finalCashPct.toFixed(1)}%)`]
   ].map(([label, value, sub]) => `
     <div class="inv-plan-kpi">
       <span>${label}</span>

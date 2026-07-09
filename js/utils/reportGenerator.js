@@ -719,20 +719,22 @@ async function exportPortfolioToPDF(data) {
   section("4.3 Exposicoes e rebalanceamento");
   const availCash = Number(strategy?.availableCash || 0);
   const monthlyBase = Number(strategy?.monthlyBase || 0);
+  const totalWithCash = totalValue + availCash;
+  const cashSharePct = totalWithCash > 0 ? (availCash / totalWithCash) * 100 : 0;
   currY = bulletList([
     `CORE ${pct(diag.corePct)}, Satellite ${pct(diag.satPct)}, Cripto ${pct(diag.cryPct)}.`,
     `DNA principal: ${analysis.dna?.primary?.name || "Personalizado"}.`,
     `Resumo de rebalanceamento: ${analysis.rebalance?.summary || "n/d"}.`,
-    availCash > 0 ? `Liquidez disponivel para alocar: ${fmtEUR(availCash)}.` : "Liquidez disponivel: nao configurada (define em Settings).",
+    availCash > 0 ? `Liquidez disponivel para alocar: ${fmtEUR(availCash)} (${pct(cashSharePct)} do total carteira + cash).` : "Liquidez disponivel: nao configurada (define em Settings).",
     monthlyBase > 0 ? `Investimento mensal base (DCA): ${fmtEUR(monthlyBase)}/mes.` : null,
-    monthlyBase > 0 && availCash > 0 ? `Com DCA de ${fmtEUR(monthlyBase)}/mes + liquidez de ${fmtEUR(availCash)}, tens ${fmtEUR(availCash + monthlyBase)} para redistribuir ja.` : null
+    monthlyBase > 0 && availCash > 0 ? `Com DCA de ${fmtEUR(monthlyBase)}/mes + liquidez de ${fmtEUR(availCash)} (${pct(cashSharePct)}), tens ${fmtEUR(availCash + monthlyBase)} para redistribuir ja.` : null
   ].filter(Boolean), margin, currY, pageWidth - margin * 2) + 18;
 
   section("4.4 Projecoes de cash e patrimonio");
   const cashRate = 0.0225;
   const portfolioRate = estimatePortfolioProjectionRate(enriched);
   const projectionRows = [
-    ["Cash", "Hoje", fmtEUR(availCash), "Capital configurado em Settings"],
+    ["Cash", "Hoje", `${fmtEUR(availCash)} (${pct(cashSharePct)})`, "Capital configurado em Settings vs carteira + cash"],
     ["Cash", "5 anos", fmtEUR(compound(availCash, cashRate, 5)), "2,25% bruto/ano"],
     ["Cash", "10 anos", fmtEUR(compound(availCash, cashRate, 10)), "2,25% bruto/ano"],
     ["Portfolio", "5 anos", fmtEUR(compound(totalValue, portfolioRate, 5)), `${pct(portfolioRate * 100)}/ano estimado`],

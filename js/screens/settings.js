@@ -6,9 +6,10 @@
 import { doLogout } from "./auth.js";
 import { db } from "../firebase-config.js";
 import { doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { calculateLucroMaximoScore, getAssetType, normalizeSector } from "../utils/scoring.js";
+import { calculateLucroMaximoScore, getAssetType, normalizeSector, cleanTicker } from "../utils/scoring.js";
 import { loadAlerts, addAlert, deleteAlert, resetAlert, requestNotificationPermission } from "../utils/alerts.js";
 import { getMarketDataList } from "../utils/marketDataStore.js";
+import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -113,6 +114,13 @@ export function initScreen() {
   const allocStatus = document.getElementById("cfgAllocStatus");
 
   const fmtEUR = (v) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v || 0);
+  let currentPortfolioValue = 0;
+
+  function cashShareText(cash, portfolioValue = currentPortfolioValue) {
+    const total = Number(cash || 0) + Number(portfolioValue || 0);
+    if (total <= 0) return "0.0% do total";
+    return `${((Number(cash || 0) / total) * 100).toFixed(1)}% do total`;
+  }
 
   function calculateAllocations() {
     const totalCash = Number(elAvailCash.value) || 0;
@@ -140,9 +148,15 @@ export function initScreen() {
     if (valCashReserveCalc) {
       if (cash > 0) {
         const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v);
-        // We don't know portfolioValue here (no Firestore read), so we estimate
-        // just showing how to read the number — the actual calc is in atividade.js
-        valCashReserveCalc.textContent = `Reserve alvo: ${pct}% do portfólio · Cash atual: ${fmtEUR(cash)} · Aporte: ${fmtEUR(mon)}/mês`;
+        const totalWithCash = currentPortfolioValue + cash;
+        const targetCash = totalWithCash > 0 ? totalWithCash * (pct / 100) : 0;
+        const gap = targetCash - cash;
+        const gapText = Math.abs(gap) < 0.01
+          ? "alinhado"
+          : gap > 0
+            ? `faltam ${fmtEUR(gap)}`
+            : `excesso ${fmtEUR(Math.abs(gap))}`;
+        valCashReserveCalc.textContent = `Reserva alvo: ${pct}% = ${fmtEUR(targetCash)} em cash · Cash atual: ${fmtEUR(cash)} (${cashShareText(cash)}) · ${gapText} · Aporte: ${fmtEUR(mon)}/mês`;
       } else {
         valCashReserveCalc.textContent = `Define primeiro a Liquidez Disponível para ver o cálculo.`;
       }
@@ -167,6 +181,26 @@ export function initScreen() {
     el?.addEventListener("input", calculateAllocations);
   });
   [elAvailCash, elMonthlyBase].forEach(el => el?.addEventListener("input", updateCashReserveCalc));
+
+  Promise.all([
+    getDocs(collection(db, "ativos")),
+    getDocs(collection(db, "acoesDividendos"))
+  ]).then(([ativosSnap, acoesSnap]) => {
+    const priceMap = new Map();
+    acoesSnap.forEach(docu => {
+      const d = docu.data();
+      const ticker = d.ticker ? cleanTicker(String(d.ticker).toUpperCase().trim()) : "";
+      const price = Number(d.valorStock || d.price || d.precoAtual || 0);
+      if (ticker && price > 0) priceMap.set(ticker, price);
+    });
+    const { openPositions } = aggregatePortfolioPositions(ativosSnap);
+    currentPortfolioValue = openPositions.reduce((sum, p) => {
+      const ticker = cleanTicker(String(p.ticker || "").toUpperCase().trim());
+      const price = priceMap.get(ticker) || Number(p.custoMedio || 0);
+      return sum + Number(p.qtd || 0) * price;
+    }, 0);
+    updateCashReserveCalc();
+  }).catch(err => console.warn("settings: erro ao calcular percentagem de cash", err));
 
   if (elCoreW && elSatW) {
     elCoreW.addEventListener("input", () => {

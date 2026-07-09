@@ -800,6 +800,33 @@ function _tabTechnical() {
 
 // ── Micro helpers ─────────────────────────────────────────
 
+function _priceLevelsVsAvg(precoAtual, precoMedio) {
+  const price = Number(precoAtual || 0);
+  if (price <= 0) return "";
+  const avg = Number(precoMedio || 0);
+  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
+  const levels = [-5, -10, -15, -20, 10, 15];
+  return `
+    <div class="adp-section-title" style="margin-top:16px">Niveis face ao pre&ccedil;o atual</div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+      ${levels.map(level => {
+        const target = price * (1 + level / 100);
+        const diff = avg > 0 ? target - avg : 0;
+        const diffPct = avg > 0 ? ((target / avg) - 1) * 100 : null;
+        const cls = diff >= 0 ? "pos" : "neg";
+        return `
+          <div style="border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--card);">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;">
+              <span style="font-size:.72rem;color:var(--muted-foreground);font-weight:700;">${level > 0 ? "+" : ""}${level}%</span>
+              <strong style="font-size:.82rem;">${fmtEUR(target)}</strong>
+            </div>
+            <div class="${cls}" style="font-size:.7rem;font-weight:700;">
+              ${avg > 0 ? `${diff >= 0 ? "+" : ""}${fmtEUR(diff)} vs PM (${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(1)}%)` : "PM indisponivel"}
+            </div>
+          </div>`;
+      }).join("")}
+    </div>`;
+}
 function _positionPlanningTools(pos, precoAtual, precoMedio) {
   const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
   const qty = Number(pos.qtd || 0);
@@ -823,6 +850,8 @@ function _positionPlanningTools(pos, precoAtual, precoMedio) {
         <span>PM: <strong>${fmtEUR(precoMedio)}</strong></span>
         <span class="${dropPct < 0 ? "neg" : "pos"}">${dropPct >= 0 ? "+" : ""}${dropPct.toFixed(1)}% vs PM</span>
       </div>
+
+      ${_priceLevelsVsAvg(precoAtual, precoMedio)}
 
       <div class="adp-plan-card adp-plan-card--buy">
         <div class="adp-plan-card-head">
