@@ -1090,8 +1090,11 @@ export function initScreen() {
     saveSettings(state);
 
     if (elCoreW && elSatW) {
+      const origHTML = btnSave.innerHTML;
+      btnSave.disabled = true;
+      btnSave.innerHTML = `<i class="fas fa-spinner fa-spin"></i> A guardar...`;
       try {
-        await setDoc(doc(db, "config", "strategy"), {
+        const strategyPayload = {
           coreWeight: Number(elCoreW.value),
           satelliteWeight: Number(elSatW.value),
           availableCash: Number(elAvailCash.value),
@@ -1099,6 +1102,12 @@ export function initScreen() {
           allocStocks: Number(elAllocStocks.value),
           allocEtfs: Number(elAllocEtfs.value),
           allocBonds: Number(elAllocBonds.value),
+          // Configuração de Risco e Regime (mesmos campos que "Guardar Estratégia" guarda —
+          // este botão tem de os incluir também, senão fica sempre a desfazer o que o outro guardou).
+          singleStockCapPct: Number(elSingleStockCapPct?.value || 10),
+          sectorConcentrationLimitPct: Number(elSectorConcentrationLimitPct?.value || 35),
+          minConfidencePct: Number(elMinConfidencePct?.value || 50),
+          macroRegime: elMacroRegime?.value || "high_rates",
           sectorAlloc: (() => {
             const sa = {};
             const SECTOR_KEYS = ["tech","health","fin","energy","cyclical","defensive","industrial","materials","reits"];
@@ -1122,13 +1131,33 @@ export function initScreen() {
             });
             return sta;
           })()
-        }, { merge: true });
+        };
+
+        let crisisLadderError = "";
+        if (elCrisisLadder) {
+          if (elCrisisLadderError) elCrisisLadderError.textContent = "";
+          try {
+            const parsed = JSON.parse(elCrisisLadder.value);
+            if (Array.isArray(parsed)) strategyPayload.crisisLadder = parsed;
+            else crisisLadderError = "Crisis Ladder tem de ser um array JSON — mantido o valor anterior.";
+          } catch (err) {
+            crisisLadderError = "Crisis Ladder: JSON inválido — mantido o valor anterior.";
+          }
+          if (crisisLadderError && elCrisisLadderError) elCrisisLadderError.textContent = crisisLadderError;
+        }
+
+        await setDoc(doc(db, "config", "strategy"), strategyPayload, { merge: true });
+
+        if (window.showToast) window.showToast(crisisLadderError ? "Configurações guardadas, Crisis Ladder ignorado (JSON inválido)" : "Configurações guardadas!");
       } catch (err) {
         console.error("Strategy save error:", err);
+        if (window.showToast) window.showToast("Erro ao guardar configurações — tenta novamente.", "warning");
       }
+      btnSave.disabled = false;
+      btnSave.innerHTML = origHTML;
+    } else {
+      if (window.showToast) window.showToast("Configurações guardadas!");
     }
-
-    if (window.showToast) window.showToast("Configurações guardadas!");
   });
 
   btnCancel.addEventListener("click", () => {
