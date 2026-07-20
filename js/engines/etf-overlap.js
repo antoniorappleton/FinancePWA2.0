@@ -5,6 +5,7 @@
 // Example: VWCE + SEC0 + QDVE = massive exposure to MSFT, NVDA, AAPL
 // ═══════════════════════════════════════════════════════════════════
 import { qualityScore } from "./quality.js";
+import { getConcentrationLimits } from "../utils/normalize.js";
 
 // ── Known ETF Holdings (top holdings with approximate weights) ──
 // In production, this would come from an API. For now, static top-20 per ETF.
@@ -290,9 +291,11 @@ export function enrichETFAsset(etfAsset, allAssetsMap) {
 /**
  * Analyze overlap between ETFs in the portfolio.
  * @param {Array} portfolio - Array of { ticker, valAtual }
+ * @param {Object} [strategy={}] - config/strategy (usa singleStockCapPct para o limiar de concentração efetiva)
  * @returns {{ overlaps: Array, effectiveExposure: Object, hiddenConcentration: Array, warnings: Array }}
  */
-export function analyzeETFOverlap(portfolio) {
+export function analyzeETFOverlap(portfolio, strategy = {}) {
+  const singleStockLimitPct = getConcentrationLimits(strategy)["Single Stock"] * 100;
   const etfPositions = [];
   const stockPositions = [];
   const totalValue = portfolio.reduce((s, p) => s + (p.valAtual || 0), 0) || 1;
@@ -374,15 +377,26 @@ export function analyzeETFOverlap(portfolio) {
     }));
 
   // ── 4. Warnings ──
+  // Threshold de aviso fica um pouco abaixo do limite de posição única (D9 audit):
+  // sem isso, a mensagem só dizia "X% de exposição" sem indicar se isso é ou não um
+  // problema — obrigava o leitor a saber de cor o limite ideal. Agora compara
+  // explicitamente com o limite configurado e só soa alarme quando o excede.
   const warnings = [];
   for (const h of hiddenConcentration) {
-    if (h.totalPct > 8) {
-      warnings.push(`⚠️ ${h.ticker}: exposição total de ${h.totalPct.toFixed(1)}% (${h.directPct.toFixed(1)}% direto + ${h.indirectPct.toFixed(1)}% via ETFs)`);
+    if (h.totalPct > singleStockLimitPct * 0.8) {
+      const overLimit = h.totalPct > singleStockLimitPct;
+      const viaETFs = h.indirectPct > 0.05
+        ? ` (${h.directPct.toFixed(1)}% direto + ${h.indirectPct.toFixed(1)}% via ETFs que o replicam)`
+        : "";
+      const verdict = overLimit
+        ? `acima do limite de ${singleStockLimitPct.toFixed(0)}% por posição única — considerar reduzir a posição direta e/ou os ETFs que o sobreponham`
+        : `perto do limite de ${singleStockLimitPct.toFixed(0)}% por posição única — vigiar antes de reforçar`;
+      warnings.push(`${h.ticker}: exposição efetiva de ${h.totalPct.toFixed(1)}%${viaETFs} — ${verdict}`);
     }
   }
   for (const o of overlaps) {
     if (o.overlapPct > 60) {
-      warnings.push(`ETFs ${o.etf1} e ${o.etf2} têm ${o.overlapPct}% de sobreposição — considerar consolidar`);
+      warnings.push(`ETFs ${o.etf1} e ${o.etf2} partilham ${o.overlapPct}% das principais posições (${o.commonHoldings.slice(0, 5).join(", ")}) — a diversificação entre eles é menor do que parece; considerar consolidar num só`);
     }
   }
 

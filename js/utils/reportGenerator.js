@@ -206,7 +206,7 @@ async function buildCombinedReportData() {
   const themes = thematicExposure(enriched, totalValue);
   const dna = portfolioDNA(enriched, totalValue);
   const economicDrivers = calculateEconomicDrivers(enriched, totalValue);
-  const etfOverlap = analyzeETFOverlap(enriched);
+  const etfOverlap = analyzeETFOverlap(enriched, strategy);
   const rebalance = rebalanceSuggestions(enriched, totalValue, { riskContrib, sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });
   const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap });
   const analysis = { corr, factors, health, riskDecomp, riskContrib, wrChart, stress, themes, dna, economicDrivers, etfOverlap, rebalance, portfolioObs };
@@ -662,7 +662,7 @@ async function exportPortfolioToPDF(data) {
   let currY = 0;
   const line = y => { doc.setDrawColor(241, 245, 249); doc.setLineWidth(1); doc.line(margin, y, pageWidth - margin, y); };
   const section = title => { doc.setFontSize(12); doc.setTextColor(30); doc.setFont("helvetica", "bold"); doc.text(title, margin, currY); currY += 10; line(currY); currY += 20; };
-  const bulletList = (items, x, y, maxWidth, color = [70, 80, 95]) => { doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...color); let yy = y; items.forEach(item => { const lines = doc.splitTextToSize(`- ${item}`, maxWidth); doc.text(lines, x, yy); yy += lines.length * 10 + 4; }); return yy; };
+  const bulletList = (items, x, y, maxWidth, color = [70, 80, 95]) => { doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...color); let yy = y; items.forEach(item => { const lines = doc.splitTextToSize(`- ${sanitizePdfText(item)}`, maxWidth); doc.text(lines, x, yy); yy += lines.length * 10 + 4; }); return yy; };
 
   doc.setFillColor(30, 41, 59); doc.rect(0, 0, pageWidth, 100, 'F');
   const logoB64 = await getBase64Image("icons/icon-192.png");
@@ -803,4 +803,22 @@ function portfolioRows(enriched) { return [...enriched].sort((a, b) => b.valAtua
 function positionProfitPct(p) { return Number(p.investido || 0) > 0 ? ((Number(p.valAtual || 0) - Number(p.investido || 0)) / Number(p.investido || 0)) * 100 : 0; }
 function topEntries(obj, limit = 3) { if (!obj || typeof obj !== "object") return []; return Object.entries(obj).filter(([, v]) => typeof v === "number" && Number.isFinite(v)).sort((a, b) => b[1] - a[1]).slice(0, limit); }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>'"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[ch])); }
+
+// jsPDF's built-in fonts (helvetica/times/courier) only support WinAnsiEncoding
+// (roughly Latin-1). Emoji and other symbols used in engine-generated warnings/
+// observations (e.g. "⚠️ MSFT: exposição...") fall outside that range: jsPDF can't
+// measure their width, which corrupts splitTextToSize() into one-character-per-line
+// wrapping and desyncs every Y-position computed afterwards — the whole rest of the
+// PDF then overlaps. Strip/replace anything outside safe Latin-1 before it reaches
+// doc.text()/splitTextToSize(), keeping common punctuation equivalents readable.
+function sanitizePdfText(value) {
+  return String(value ?? "")
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "-")
+    .replace(/[•●▪]/g, "-")
+    .replace(/[^\x00-\xFF]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 const getBase64Image = async path => { try { const response = await fetch(path); const blob = await response.blob(); return new Promise(resolve => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); }); } catch (e) { return null; } };

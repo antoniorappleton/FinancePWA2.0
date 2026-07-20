@@ -10,6 +10,8 @@ import { calculateLucroMaximoScore, getAssetType, normalizeSector, cleanTicker }
 import { loadAlerts, addAlert, deleteAlert, resetAlert, requestNotificationPermission } from "../utils/alerts.js";
 import { getMarketDataList } from "../utils/marketDataStore.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
+import { getAllRegimes } from "../engines/macro.js";
+import { DEFAULT_CRISIS_LADDER } from "../utils/capitalManager.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -100,6 +102,12 @@ export function initScreen() {
   const valCashReservePct   = document.getElementById("valCashReservePct");
   const valCashReserveCalc  = document.getElementById("valCashReserveCalc");
 
+  const elSingleStockCapPct = document.getElementById("cfgSingleStockCapPct");
+  const elSectorConcentrationLimitPct = document.getElementById("cfgSectorConcentrationLimitPct");
+  const elMinConfidencePct = document.getElementById("cfgMinConfidencePct");
+  const elMacroRegime = document.getElementById("cfgMacroRegime");
+  const elCrisisLadder = document.getElementById("cfgCrisisLadder");
+
   // Estratégia
   const elCoreW = document.getElementById("cfgCoreWeight");
   const elSatW = document.getElementById("cfgSatelliteWeight");
@@ -182,6 +190,16 @@ export function initScreen() {
   });
   [elAvailCash, elMonthlyBase].forEach(el => el?.addEventListener("input", updateCashReserveCalc));
 
+  if (elMacroRegime) {
+    elMacroRegime.innerHTML = `<option value="">Selecione um regime</option>`;
+    getAllRegimes().forEach(reg => {
+      const opt = document.createElement("option");
+      opt.value = reg.key;
+      opt.textContent = `${reg.icon} ${reg.name}`;
+      elMacroRegime.appendChild(opt);
+    });
+  }
+
   Promise.all([
     getDocs(collection(db, "ativos")),
     getDocs(collection(db, "acoesDividendos"))
@@ -224,6 +242,12 @@ export function initScreen() {
             if (elCashReserveSlider) elCashReserveSlider.value = d.cashReservePct;
             if (elCashReserveNum)    elCashReserveNum.value    = d.cashReservePct;
           }
+          if (typeof d.singleStockCapPct === "number" && elSingleStockCapPct) elSingleStockCapPct.value = d.singleStockCapPct;
+          if (typeof d.sectorConcentrationLimitPct === "number" && elSectorConcentrationLimitPct) elSectorConcentrationLimitPct.value = d.sectorConcentrationLimitPct;
+          if (typeof d.minConfidencePct === "number" && elMinConfidencePct) elMinConfidencePct.value = d.minConfidencePct;
+          if (typeof d.macroRegime === "string" && elMacroRegime) elMacroRegime.value = d.macroRegime;
+          if (Array.isArray(d.crisisLadder) && elCrisisLadder) elCrisisLadder.value = JSON.stringify(d.crisisLadder, null, 2);
+          else if (elCrisisLadder) elCrisisLadder.value = JSON.stringify(DEFAULT_CRISIS_LADDER, null, 2);
           updateCashReserveCalc();
           
           if (typeof d.allocStocks === "number") elAllocStocks.value = d.allocStocks;
@@ -259,8 +283,20 @@ export function initScreen() {
             allocBonds: Number(elAllocBonds.value),
             availableCash: Number(elAvailCash.value),
             monthlyBase: Number(elMonthlyBase.value),
-            cashReservePct: Number(elCashReserveSlider?.value || 0)
+            cashReservePct: Number(elCashReserveSlider?.value || 0),
+            singleStockCapPct: Number(elSingleStockCapPct?.value || 10),
+            sectorConcentrationLimitPct: Number(elSectorConcentrationLimitPct?.value || 35),
+            minConfidencePct: Number(elMinConfidencePct?.value || 50),
+            macroRegime: elMacroRegime?.value || "high_rates"
           };
+          if (elCrisisLadder) {
+            try {
+              const parsed = JSON.parse(elCrisisLadder.value);
+              if (Array.isArray(parsed)) classPayload.crisisLadder = parsed;
+            } catch (err) {
+              console.warn("Invalid crisis ladder JSON, preserving existing config", err);
+            }
+          }
 
           // --- Alocação por Setor ---
           const sectorAlloc = {};

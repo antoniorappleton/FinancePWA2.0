@@ -2,7 +2,7 @@
 // Risk contribution analysis.
 // Shows which assets contribute most to estimated portfolio risk, not just weight.
 
-import { safeMetric, getAssetCategory } from "../utils/normalize.js";
+import { safeMetric, getAssetCategory, validBeta } from "../utils/normalize.js";
 
 /**
  * Calculate risk contribution of each asset in the portfolio.
@@ -23,8 +23,8 @@ export function riskContribution(portfolio, totalValue) {
 
   const items = portfolio.map(p => {
     const ticker = String(p.ticker || "").toUpperCase();
-    const beta = safeMetric(p.mkt || p, "beta", "Beta");
-    const effectiveBeta = isFinite(beta) && beta > 0 ? beta : 1.0;
+    const beta = validBeta(p.mkt || p) ?? 1.0;
+    const effectiveBeta = beta;
     const weight = (p.valAtual || 0) / total;
     const nome = String(p.nome || p.mkt?.nome || "").toUpperCase();
     const category = getAssetCategory(p.mkt || p);

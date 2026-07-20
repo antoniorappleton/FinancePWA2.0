@@ -157,10 +157,62 @@ const EN_TO_PT_SECTOR = {
   "Commodities":            "Commodities",
 };
 
+// ── Raw `setor` values as actually stored in acoesDividendos (D9 audit) ──
+// The Firestore data uses many labels that are NOT canonical PT sector names
+// ("Finanças" ≠ "Financeiros", "Indústria" ≠ "Industriais", "ETF Energia", "ETF
+// Mundial", etc). Before this table, any unmapped value fell through this
+// function UNCHANGED (`|| s`) and therefore never matched a key in
+// SECTOR_CORR/SECTOR_PE/sectorDrops/SECTOR_PROFILES — every engine silently used
+// its generic fallback for these assets instead of the sector-tailored one. This
+// affected a large fraction of the universe (10 "Finanças", 7 "Criptomoedas", 7
+// "ETF Energia", 6 "ETF iTech", and the sole broad-market label "ETF Mundial" —
+// which is usually the single largest position, e.g. VWCE — among others).
+// "ETF <Região/Multi>" labels (Mundial, Mercado Europeu/Asiatico, Países
+// Emergentes, Multiplo(s)) mark genuinely diversified index funds — mapped to
+// "Múltiplos Setores", not to any single sector.
+const PT_RAW_SECTOR_ALIASES = {
+  "Finanças":                    "Financeiros",
+  "ETF Finanças":                "Financeiros",
+  "ETF Finance":                 "Financeiros",
+  "Indústria":                   "Industriais",
+  "Defesa":                      "Industriais", // GICS: Aerospace & Defense é sub-indústria de Industrials
+  "Automóvel":                   "Consumo Cíclico", // GICS: Automobiles é sub-indústria de Consumer Discretionary
+  "Bens Consumidor":             "Consumo Defensivo",
+  "Alimentação":                 "Consumo Defensivo",
+  "Telecomunicações":            "Comunicações",
+  "ETF Setor Comunicações":      "Comunicações",
+  "ETF Energia":                 "Energia",
+  "Infraestruturas / Energia":   "Energia",
+  "ETF Tecnologia":              "Tecnologia",
+  "ETF iTech":                   "Tecnologia",
+  "ETF Blockchain Innovators":   "Tecnologia",
+  "ETF Materiais":               "Materiais",
+  "Mineração (Ouro)":            "Materiais", // mineradoras/ETF de mineradoras ≠ ouro físico (ver getPreciousMetalKind)
+  "ETF Mineração (Ouro)":        "Materiais",
+  "ETF Saúde":                   "Saúde",
+  "ETF Consumo Defensivo":       "Consumo Defensivo",
+  "ETF Consumo Ciclico":         "Consumo Cíclico",
+  "Ouro":                        "Commodities", // fallback p/ engines sem tratamento especial de bullion físico
+  "ETF Mundial":                 "Múltiplos Setores",
+  "ETF Multiplo":                "Múltiplos Setores",
+  "ETF Multiplos setores":       "Múltiplos Setores",
+  "ETF Mercado Europeu":         "Múltiplos Setores",
+  "ETF Mercado Asiatico":        "Múltiplos Setores",
+  "ETF Países Emergentes":       "Múltiplos Setores",
+  // "Criptomoedas" fica deliberadamente por mapear — não existe sector-drop
+  // equity-like defensável para cripto; degrada para "Outros"/defaultDrop.
+};
+
+const CANONICAL_PT_SECTORS = new Set([
+  "Tecnologia", "Saúde", "Financeiros", "Energia", "Consumo Cíclico", "Consumo Defensivo",
+  "Industriais", "Materiais", "Imobiliário", "Comunicações", "Utilidades", "Commodities", "Múltiplos Setores"
+]);
+
 /** Translate a raw EN or PT sector string to the canonical PT name. */
 export function toCanonicalSector(raw) {
   const s = String(raw || "").trim();
-  return EN_TO_PT_SECTOR[s] || s || "Outros";
+  if (CANONICAL_PT_SECTORS.has(s)) return s;
+  return EN_TO_PT_SECTOR[s] || PT_RAW_SECTOR_ALIASES[s] || "Outros";
 }
 
 /**

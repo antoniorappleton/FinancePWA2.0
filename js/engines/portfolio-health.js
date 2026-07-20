@@ -6,7 +6,7 @@
 // Outputs: Portfolio Health Score, Hidden Risk Score, Structural Stability
 // ═══════════════════════════════════════════════════════════════════
 
-import { safeMetric, clamp, getAssetCategory } from "../utils/normalize.js";
+import { safeMetric, clamp, getAssetCategory, validBeta } from "../utils/normalize.js";
 import { getAssetType, normalizeSector } from "../utils/scoring.js";
 
 // ── Helpers ──
@@ -156,9 +156,9 @@ function scorePortfolioVolatility(portfolio) {
   let count = 0;
 
   for (const p of portfolio) {
-    const beta = safeMetric(p.mkt || p, "beta", "Beta");
+    const beta = validBeta(p.mkt || p) ?? 1.0;
     const weight = p.valAtual || 0;
-    if (isFinite(beta) && weight > 0) {
+    if (weight > 0) {
       weightedBeta += beta * weight;
       totalWeight += weight;
       count++;

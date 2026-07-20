@@ -117,6 +117,29 @@ const PRECIOUS_METAL_SHOCKS = {
   }
 };
 
+// ── Diversified index approximation ("Múltiplos Setores") ──
+// Broad/global ETFs (VWCE, IWDA, regional trackers, EM aggregates...) don't belong to
+// a single sector, so they can't use `sectorDrops` directly. Their expected drop is
+// derived from the SAME per-sector figures above, blended by the world sector-weight
+// mix already used for VWCE look-through elsewhere in the app (engines/etf-overlap.js
+// ETF_HOLDINGS.VWCE.sectors), mapped to canonical PT sector names. This keeps a single
+// source of truth for sector-level drops while giving diversified funds a realistic,
+// non-worst-case blended figure instead of the scenario's generic `defaultDrop`.
+const WORLD_SECTOR_WEIGHTS = {
+  "Tecnologia": 0.26, "Financeiros": 0.16, "Saúde": 0.12, "Consumo Cíclico": 0.11,
+  "Industriais": 0.10, "Consumo Defensivo": 0.06, "Energia": 0.05, "Comunicações": 0.04,
+  "Utilidades": 0.03, "Imobiliário": 0.03, "Materiais": 0.04
+};
+
+function diversifiedDrop(scenario) {
+  let sum = 0, weightSum = 0;
+  for (const [sector, w] of Object.entries(WORLD_SECTOR_WEIGHTS)) {
+    const d = scenario.sectorDrops[sector];
+    if (isFinite(d)) { sum += d * w; weightSum += w; }
+  }
+  return weightSum > 0 ? sum / weightSum : scenario.defaultDrop;
+}
+
 function getPreciousMetalKind(asset) {
   const ticker = cleanTicker(asset.ticker || asset.mkt?.ticker || "");
   const name = String(asset.nome || asset.name || asset.mkt?.nome || asset.mkt?.name || "").toLowerCase();
@@ -140,9 +163,10 @@ function simulateAsset(asset, scenario) {
   const beta = betaRaw ?? 1.0;
 
   const metalKind = getPreciousMetalKind(asset);
+  const sectorFallback = sector === "Múltiplos Setores" ? diversifiedDrop(scenario) : scenario.defaultDrop;
   const baseDrop = metalKind
-    ? (PRECIOUS_METAL_SHOCKS[metalKind]?.[asset.__scenarioKey] ?? scenario.sectorDrops[sector] ?? scenario.defaultDrop)
-    : (scenario.sectorDrops[sector] ?? scenario.defaultDrop);
+    ? (PRECIOUS_METAL_SHOCKS[metalKind]?.[asset.__scenarioKey] ?? scenario.sectorDrops[sector] ?? sectorFallback)
+    : (scenario.sectorDrops[sector] ?? sectorFallback);
 
   // Beta-adjust: higher beta = more sensitive to market drops
   const adjustedDrop = baseDrop * Math.max(0.5, beta);

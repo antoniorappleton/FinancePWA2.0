@@ -16,7 +16,7 @@ import { analyzeETFOverlap, smartETFAnalysis, enrichETFAsset, isKnownETF } from 
 import { rebalanceSuggestions } from "../engines/rebalance.js";
 import { dataCoverageReport } from "../engines/data-coverage.js";
 import { portfolioBubbleIndex } from "../engines/bubble.js";
-import { canonicalTicker, confidenceScore, getAssetCategory, HEALTHY_LIMITS } from "../utils/normalize.js";
+import { canonicalTicker, confidenceScore, getAssetCategory, HEALTHY_LIMITS, toCanonicalSector } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 import { generatePortfolioReport } from "../utils/reportGenerator.js";
@@ -28,8 +28,8 @@ const readAssetPrice = (asset) =>
   Number(asset?.valorStock || asset?.price || asset?.preco || asset?.precoAtual || 0);
 
 const SECTOR_RADAR_LABELS = [
-  "Tecnologia", "Financeiro", "Comunicacao", "Consumo Ciclico", "Industria", "Saude",
-  "Consumo Basico", "Energia", "Utilidades", "Imobiliario", "Materiais", "Outros"
+  "Tecnologia", "Financeiros", "Comunicações", "Consumo Cíclico", "Consumo Defensivo", "Industriais",
+  "Saúde", "Imobiliário", "Energia", "Utilidades", "Materiais", "Outros"
 ];
 
 const SECTOR_BENCHMARKS = {
@@ -37,15 +37,15 @@ const SECTOR_BENCHMARKS = {
     label: "S&P 500",
     weights: {
       "Tecnologia": 36.5,
-      "Financeiro": 12.3,
-      "Comunicacao": 10.6,
-      "Consumo Ciclico": 9.7,
-      "Industria": 8.4,
-      "Saude": 8.4,
-      "Consumo Basico": 5.3,
+      "Financeiros": 12.3,
+      "Comunicações": 10.6,
+      "Consumo Cíclico": 9.7,
+      "Consumo Defensivo": 5.3,
+      "Industriais": 8.4,
+      "Saúde": 8.4,
       "Energia": 3.0,
       "Utilidades": 2.1,
-      "Imobiliario": 1.8,
+      "Imobiliário": 1.8,
       "Materiais": 1.8,
       "Outros": 0.1
     }
@@ -53,9 +53,9 @@ const SECTOR_BENCHMARKS = {
   berkshire: {
     label: "Berkshire Hathaway",
     weights: {
-      "Financeiro": 45,
+      "Financeiros": 45,
       "Tecnologia": 22,
-      "Consumo Basico": 11,
+      "Consumo Defensivo": 11,
       "Energia": 8,
       "Outros": 14
     }
@@ -197,7 +197,7 @@ async function runFullAnalysis() {
     const themes = thematicExposure(portfolio, totalValue);
     const dna = portfolioDNA(portfolio, totalValue);
     const economicDrivers = calculateEconomicDrivers(portfolio, totalValue);
-    const etfOverlap = analyzeETFOverlap(portfolio);
+    const etfOverlap = analyzeETFOverlap(portfolio, strategy);
     const rebalance = rebalanceSuggestions(portfolio, totalValue, { riskContrib, sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });
     const bubble = portfolioBubbleIndex(portfolio, totalValue, themes, Number(strategy.bubbleWarnPct ?? 70));
     const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap, bubble });
@@ -418,17 +418,18 @@ function bindSectorBenchmarkEvents() {
 }
 
 function normalizeRadarSector(raw) {
-  const s = String(raw || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const s = String(raw || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  if (!s) return "Outros";
   if (s.includes("tech") || s.includes("tecnolog") || s.includes("itech") || s.includes("information")) return "Tecnologia";
-  if (s.includes("finan") || s.includes("bank") || s.includes("segur")) return "Financeiro";
-  if (s.includes("comunic") || s.includes("telecom") || s.includes("communication")) return "Comunicacao";
-  if (s.includes("discr") || s.includes("ciclic") || s.includes("cyclic") || s.includes("consumer cyc")) return "Consumo Ciclico";
-  if (s.includes("industr")) return "Industria";
-  if (s.includes("saude") || s.includes("health") || s.includes("pharma")) return "Saude";
-  if (s.includes("basico") || s.includes("defens") || s.includes("staples") || s.includes("consumer defensive")) return "Consumo Basico";
+  if (s.includes("finan") || s.includes("bank") || s.includes("segur")) return "Financeiros";
+  if (s.includes("comunic") || s.includes("telecom") || s.includes("communication")) return "Comunicações";
+  if (s.includes("discr") || s.includes("ciclic") || s.includes("cyclic") || s.includes("consumer cyc")) return "Consumo Cíclico";
+  if (s.includes("industr")) return "Industriais";
+  if (s.includes("saude") || s.includes("health") || s.includes("pharma")) return "Saúde";
+  if (s.includes("basico") || s.includes("defens") || s.includes("staples") || s.includes("consumer defensive")) return "Consumo Defensivo";
   if (s.includes("energ") || s.includes("oil") || s.includes("gas")) return "Energia";
   if (s.includes("utilit") || s.includes("utilities")) return "Utilidades";
-  if (s.includes("imob") || s.includes("real estate") || s.includes("reit")) return "Imobiliario";
+  if (s.includes("imob") || s.includes("real estate") || s.includes("reit")) return "Imobiliário";
   if (s.includes("mater") || s.includes("basic materials") || s.includes("minera")) return "Materiais";
   return "Outros";
 }
@@ -876,6 +877,15 @@ function renderScorecards(assets, minConfidencePct = 50) {
     const betaDisplay = (typeof betaVal === "number") ? betaVal.toFixed(2) : "—";
     const grade = v2.grade || "—";
     const gradeDisplay = lowConf ? `${grade}?` : grade;
+    const valuation = engines.valuation || {};
+    const valuationFlag = valuation.flag
+      ? valuation.flag === "value_trap"
+        ? "⚠️ Value trap"
+        : valuation.flag === "re_rating"
+          ? "↗ Re-rating"
+          : valuation.flag.replace(/_/g, " ")
+      : "";
+    const historicalConfidence = valuation.historicalConfidence ? `Histórico: ${valuation.historicalConfidence}` : "";
     return `
       <div class="pi-scorecard${lowConf ? " pi-scorecard-lowconf" : ""}" data-ticker="${a.ticker}" style="cursor:pointer" title="Ver análise completa">
         ${lowConf ? `<div class="sc-lowconf-banner">⚠ Dados insuficientes (${v2.confidence}%)</div>` : ""}
@@ -884,6 +894,7 @@ function renderScorecards(assets, minConfidencePct = 50) {
           <span class="sc-grade ${gradeClass(grade)}" title="${lowConf ? "Score provisório — dados insuficientes" : ""}">${gradeDisplay} — ${v2.finalScore ?? "—"}</span>
         </div>
         <div style="font-size:0.7rem; color:var(--muted-foreground); margin-bottom:8px;">${v2.category}</div>
+        ${valuationFlag ? `<div style="font-size:0.75rem; margin-bottom:8px; color: var(--destructive);">${valuationFlag}</div>` : ""}
         ${["quality", "momentum", "valuation", "risk"].map(k => {
           const e = engines[k] || {};
           return `
@@ -893,8 +904,9 @@ function renderScorecards(assets, minConfidencePct = 50) {
               <span class="sc-bar-val">${e.score || 0}</span>
             </div>`;
         }).join("")}
-        <div class="muted" style="font-size:0.7rem; margin-top:6px; display:flex; justify-content:space-between;">
+        <div class="muted" style="font-size:0.7rem; margin-top:6px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
            <span>Confiança: ${v2.confidence}%</span>
+           <span>${historicalConfidence}</span>
            <span>Beta: ${betaDisplay}</span>
         </div>
       </div>`;

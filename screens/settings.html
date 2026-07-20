@@ -472,6 +472,48 @@
         </div>
       </div>
 
+      <!-- CONFIGURAÇÃO DE RISCO E REGIME -->
+      <div class="card premium">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label" style="display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-tasks" style="color: var(--primary)"></i>
+              Configuração de Risco e Regime
+            </p>
+            <div class="muted" style="margin-bottom: 20px; font-size: 0.85rem;">
+              Parâmetros adicionais usados na alocação e na análise de risco do portfólio.
+            </div>
+            <div class="form-grid">
+              <label>
+                Limite por ação (%)
+                <input id="cfgSingleStockCapPct" type="number" step="1" min="1" max="50" value="10" placeholder="10" />
+              </label>
+              <label>
+                Limite por setor (%)
+                <input id="cfgSectorConcentrationLimitPct" type="number" step="1" min="1" max="100" value="35" placeholder="35" />
+              </label>
+              <label>
+                Confiança mínima (%)
+                <input id="cfgMinConfidencePct" type="number" step="1" min="0" max="100" value="50" placeholder="50" />
+              </label>
+              <label>
+                Macro Regime
+                <select id="cfgMacroRegime">
+                  <option value="">Selecione um regime</option>
+                </select>
+              </label>
+              <label style="grid-column: span 2;">
+                Crisis Ladder (JSON)
+                <textarea id="cfgCrisisLadder" rows="4" style="width: 100%; resize: vertical; font-family: monospace;">[]</textarea>
+              </label>
+            </div>
+            <div class="muted" style="margin-top: 12px; font-size: 0.75rem;">
+              Use este editor para alterar o regime macro e os limites de risco aplicados nas sugestões de rebalance e sizing.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ALOCAÇÃO POR CLASSE DE ATIVOS -->
       <div class="card premium">
         <div class="card-content">

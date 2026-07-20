@@ -5,7 +5,7 @@
 // Generates: max position rules, volatility-adjusted sizing, alerts.
 // ═══════════════════════════════════════════════════════════════════
 
-import { safeMetric, clamp } from "../utils/normalize.js";
+import { safeMetric, clamp, validBeta } from "../utils/normalize.js";
 import { normalizeSector, cleanTicker } from "../utils/scoring.js";
 
 // ── Config ──
@@ -45,7 +45,7 @@ export function calculatePositionSize(params) {
   reasoning.push(`Regra base: máx. ${(maxPct * 100).toFixed(0)}% por posição`);
 
   // ── 2. Volatility adjustment ──
-  const beta = safeMetric(asset, "beta", "Beta") || 1.0;
+  const beta = validBeta(asset) ?? 1.0;
   if (beta > 1.5) {
     maxPct *= 0.6;  // Reduce size for high-beta assets
     reasoning.push(`Beta alto (${beta.toFixed(2)}) → tamanho reduzido para ${(maxPct * 100).toFixed(1)}%`);
