@@ -196,7 +196,7 @@ async function buildCombinedReportData() {
 
   const assetAvg = totalValue > 0 ? totalScoreWeight / totalValue : 0;
   const diag = generateSmartDiagnosis(enriched, totalValue);
-  const corr = correlationMatrix(enriched);
+  const corr = correlationMatrix(enriched, regime);
   const factors = portfolioFactors(enriched, totalValue);
   const health = portfolioHealth(enriched, totalValue);
   const riskDecomp = portfolioRiskDecomposition(enriched, totalValue, corr.avgCorrelation, { sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });

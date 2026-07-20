@@ -14,6 +14,8 @@ import { calculateEconomicDrivers } from "../engines/economic-drivers.js";
 import { generateAssetObservations, generatePortfolioObservations } from "../engines/observations.js";
 import { analyzeETFOverlap, smartETFAnalysis, enrichETFAsset, isKnownETF } from "../engines/etf-overlap.js";
 import { rebalanceSuggestions } from "../engines/rebalance.js";
+import { dataCoverageReport } from "../engines/data-coverage.js";
+import { portfolioBubbleIndex } from "../engines/bubble.js";
 import { canonicalTicker, confidenceScore, getAssetCategory, HEALTHY_LIMITS } from "../utils/normalize.js";
 import { cleanTicker } from "../utils/scoring.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
@@ -182,7 +184,7 @@ async function runFullAnalysis() {
     }
     renderEntryAssetList();
 
-    const corr = correlationMatrix(portfolio);
+    const corr = correlationMatrix(portfolio, regime);
     const factors = portfolioFactors(portfolio, totalValue);
     const baseFactors = entryPlannerState.selected.size
       ? portfolioFactors(basePortfolio, baseTotalValue)
@@ -197,10 +199,13 @@ async function runFullAnalysis() {
     const economicDrivers = calculateEconomicDrivers(portfolio, totalValue);
     const etfOverlap = analyzeETFOverlap(portfolio);
     const rebalance = rebalanceSuggestions(portfolio, totalValue, { riskContrib, sectorConcentrationLimitPct: strategy.sectorConcentrationLimitPct });
-    const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap });
+    const bubble = portfolioBubbleIndex(portfolio, totalValue, themes, Number(strategy.bubbleWarnPct ?? 70));
+    const portfolioObs = generatePortfolioObservations({ health, correlation: corr, stressTest: stress, factors, dna, etfOverlap, bubble });
+    const coverage = dataCoverageReport(portfolio);
 
     // ── 3. Render everything ──
     results?.classList.remove("hidden");
+    renderDataCoverage(coverage);
     renderDNA(dna);
     renderHealth(health, riskDecomp);
     renderResilience(riskDecomp);
@@ -235,6 +240,29 @@ async function runFullAnalysis() {
 // ══════════════════════════════════════════════════════════════
 // RENDERERS
 // ══════════════════════════════════════════════════════════════
+
+function renderDataCoverage(coverage) {
+  const el = document.getElementById("piDataCoverage");
+  if (!el) return;
+
+  const pct = coverage.overallPct;
+  const color = pct >= 80 ? "#22c55e" : pct >= 55 ? "#f59e0b" : "#ef4444";
+
+  const worstRows = coverage.worstAssets.slice(0, 8).map(a => `
+    <div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.76rem;">
+      <strong style="flex:0 0 auto; min-width:56px;">${escapeHtml(a.ticker)}</strong>
+      <span class="muted" style="flex:1;">${a.missing.map(escapeHtml).join(" · ")}</span>
+      <span style="flex:0 0 auto; font-weight:700; color:${a.coveragePct >= 55 ? "#f59e0b" : "#ef4444"};">${a.coveragePct}%</span>
+    </div>`).join("");
+
+  el.innerHTML = `
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:${worstRows ? "8px" : "0"};">
+      <span style="font-weight:900; font-size:0.85rem;">📊 Qualidade de dados</span>
+      <span style="font-size:0.85rem; font-weight:900; color:${color};">${pct}%</span>
+      <span class="muted" style="font-size:0.72rem;">média ponderada por valor — % de campos críticos presentes (beta, fundamentais/composição, histórico de múltiplos)</span>
+    </div>
+    ${worstRows ? `<details><summary class="muted" style="font-size:0.74rem; cursor:pointer;">Ver ativos com dados em falta (${coverage.worstAssets.length})</summary>${worstRows}</details>` : ""}`;
+}
 
 function renderDNA(dna) {
   const el = (id) => document.getElementById(id);
@@ -997,36 +1025,6 @@ function capWeights(weights, cap) {
   }
   return w;
 }
-function protectCoreAnchorWeights(targetW, curW, portfolio) {
-  const protectedIdx = [];
-  const w = [...targetW];
-
-  for (let i = 0; i < portfolio.length; i++) {
-    const cat = getAssetCategory(portfolio[i].mkt || portfolio[i]);
-    const isCore = cat === "Broad Market ETF" && curW[i] >= 0.25;
-    if (isCore && targetW[i] < curW[i] - 0.005) {
-      protectedIdx.push(i);
-      w[i] = Math.min(curW[i], 0.70);
-    }
-  }
-
-  if (!protectedIdx.length) return { weights: targetW, protectedTickers: [] };
-
-  const protectedSet = new Set(protectedIdx);
-  const protectedSum = protectedIdx.reduce((s, i) => s + w[i], 0);
-  const remaining = Math.max(0, 1 - protectedSum);
-  const openIdx = targetW.map((_, i) => i).filter(i => !protectedSet.has(i));
-  const openSum = openIdx.reduce((s, i) => s + Math.max(0, targetW[i]), 0);
-
-  if (openIdx.length) {
-    const equal = remaining / openIdx.length;
-    for (const i of openIdx) w[i] = openSum > 1e-10 ? Math.max(0, targetW[i]) / openSum * remaining : equal;
-  }
-
-  const sum = w.reduce((s, v) => s + v, 0);
-  const weights = sum > 0 ? w.map(v => v / sum) : targetW;
-  return { weights, protectedTickers: protectedIdx.map(i => portfolio[i].ticker) };
-}
 function computeEfficientFrontierForWindow(portfolio, corrObj, windowKey, rand, weightCap) {
   const n = portfolio.length;
   if (n < 2) return null;
@@ -1396,155 +1394,6 @@ function renderEfficientFrontier(allData) {
       kpi("Retorno no Sharpe max.", fmtPct(data.best.ret), "#06b6d4") +
       kpi("Vol. no Sharpe max.", `${(data.best.vol * 100).toFixed(1)}%`, "#06b6d4");
   }
-
-  // ── Action panel ──
-  const actionsEl = document.getElementById("piEFActions");
-  if (!actionsEl || !data.best.weights || !data.curW) return;
-
-  const isFree = efState.mode === 'free';
-  const totalVal = data.portfolio.reduce((s, p) => s + (p.valAtual || 0), 0);
-  // best.weights is the theoretical Markowitz optimum. The action plan protects
-  // strategic core anchors so a short historical window cannot dismantle VWCE-like holdings.
-  const theoreticalWeights = [...data.best.weights];
-  const protectedTarget = protectCoreAnchorWeights(theoreticalWeights, data.curW, data.portfolio);
-  const targetWeights = protectedTarget.weights;
-  const protectedTickers = protectedTarget.protectedTickers;
-
-  const moves = data.portfolio
-    .map((p, i) => ({
-      ticker: p.ticker,
-      nome: p.nome || p.ticker,
-      cur: data.curW[i] * 100,
-      target: targetWeights[i] * 100,
-      delta: (targetWeights[i] - data.curW[i]) * 100,
-      curVal: (data.curW[i] || 0) * totalVal,
-      targetVal: (targetWeights[i] || 0) * totalVal,
-    }))
-    .filter(m => Math.abs(m.delta) >= 0.5)
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-
-  if (!moves.length) {
-    actionsEl.innerHTML = `<div class="pi-obs positive" style="margin-top:12px;">✅ A carteira atual já está próxima do portfolio de Sharpe máximo. Nenhum ajuste significativo necessário.</div>`;
-    return;
-  }
-
-  const increase = moves.filter(m => m.delta > 0);
-  const decrease = moves.filter(m => m.delta < 0);
-
-  const modeCap = data.effectiveWeightCap;
-  const movesWithContext = moves.map(m => {
-    const mkt = data.portfolio.find(p => p.ticker === m.ticker)?.mkt || {};
-    const cat = getAssetCategory(mkt);
-    const isCore = cat === "Broad Market ETF";
-    const overModeCap = modeCap != null && m.target / 100 > modeCap + 0.0001;
-    return { ...m, cat, isCore, overModeCap };
-  });
-
-  const renderMove = (m) => {
-    const isUp = m.delta > 0;
-    const icon = isUp ? "📈" : "📉";
-    const verb = isUp ? "Aumenta" : "Reduz";
-    const color = isUp ? "#22c55e" : "#ef4444";
-    const bg = isUp ? "rgba(34,197,94,0.07)" : "rgba(239,68,68,0.07)";
-    const border = isUp ? "#22c55e" : "#ef4444";
-    const sign = isUp ? "+" : "";
-    const amountChange = Math.abs(m.targetVal - m.curVal);
-    const action = isUp ? `Compra ~${fmtEUR(amountChange)} adicionais` : `Vende ~${fmtEUR(amountChange)}`;
-
-    const catBadge = `<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.62rem;font-weight:800;background:rgba(99,102,241,0.1);color:#6366f1;margin-left:6px;">${escapeHtml(m.cat)}</span>`;
-    const coreBadge = m.isCore && !isUp
-      ? `<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.62rem;font-weight:900;background:rgba(239,68,68,0.12);color:#dc2626;margin-left:4px;">⚓ Âncora Core</span>`
-      : "";
-    const capNote = m.overModeCap
-      ? `<div style="font-size:0.7rem;color:#d97706;margin-top:3px;">Aviso: acima do cap de ${(modeCap * 100).toFixed(0)}% por activo</div>`
-      : "";
-    return `
-      <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; background:${bg}; border-left:3px solid ${border};">
-        <span style="font-size:1.1rem;">${icon}</span>
-        <div style="flex:1; min-width:0;">
-          <div style="font-weight:900; font-size:0.88rem;">${verb} <strong>${escapeHtml(m.ticker)}</strong>${catBadge}${coreBadge}</div>
-          <div class="muted" style="font-size:0.75rem;">${escapeHtml(m.nome)}</div>
-          <div style="font-size:0.78rem; margin-top:3px;">
-            <span style="color:var(--muted-foreground);">${m.cur.toFixed(1)}%</span>
-            <span style="margin:0 4px; color:var(--muted-foreground);">→</span>
-            <span style="font-weight:800; color:${color};">${m.target.toFixed(1)}%</span>
-            <span style="color:${color}; font-weight:700; margin-left:6px;">(${sign}${m.delta.toFixed(1)}pp)</span>
-          </div>
-          ${capNote}
-        </div>
-        <div style="text-align:right; font-size:0.75rem; flex:0 0 auto;">
-          <div style="font-weight:700; color:${color};">${action}</div>
-          <div class="muted">${fmtEUR(m.targetVal)} alvo</div>
-        </div>
-      </div>`;
-  };
-
-  const sharpeGain = data.best.sharpe - data.curSharpe;
-  const hasProtectedCore = protectedTickers.length > 0;
-  const windowLabel = { '6m': '6 meses', '12m': '12 meses', '36m': '36 meses' }[efState.activeWindow] || efState.activeWindow;
-
-  // Detect structural contradictions (Core anchor being dismantled)
-  const coreReductions = decrease.filter(m => m.isCore);
-  const contradictionBanner = hasProtectedCore
-    ? `<div style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(34,197,94,0.08); border:1.5px solid #22c55e; font-size:0.78rem; color:var(--foreground); line-height:1.5;">
-        <strong style="color:#15803d;">Ancora core protegida: ${protectedTickers.map(escapeHtml).join(", ")}.</strong>
-        O ponto grafico de Sharpe maximo continua teorico; o plano abaixo preserva o peso atual do core e redistribui apenas o restante portfolio.
-      </div>`
-    : coreReductions.length > 0
-      ? `<div style="margin-bottom:10px; padding:10px 12px; border-radius:8px; background:rgba(239,68,68,0.08); border:1.5px solid #ef4444; font-size:0.78rem; color:var(--foreground); line-height:1.5;">
-          <strong style="color:#dc2626;">Atencao: o optimizador teorico reduziria ${coreReductions.map(m => m.ticker).join(", ")}.</strong>
-          Trata este resultado como diagnostico, nao como ordem de venda do core.
-        </div>`
-      : "";
-
-  // Disclaimer changes based on mode
-  const disclaimer = isFree
-    ? `<div style="margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(239,68,68,0.09); border:2px solid #ef4444; display:flex; gap:12px; align-items:flex-start;">
-        <span style="font-size:1.4rem; flex:0 0 auto; line-height:1;">🚨</span>
-        <div style="font-size:0.8rem; line-height:1.55;">
-          <div style="font-weight:900; color:#ef4444; margin-bottom:6px;">MODO SEM LIMITES ACTIVO</div>
-          <div style="color:var(--foreground);">As sugestões podem recomendar concentração extrema num único activo. Isto reflecte o histórico recente (janela: <strong>${escapeHtml(windowLabel)}</strong>), não uma garantia futura. Trata como ponto de partida de discussão, não como instrução de execução.</div>
-          <div style="margin-top:8px; color:var(--foreground);">Sem limite por activo. Resultado estocástico. Valida sempre com análise fundamental independente.</div>
-          <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
-            <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
-            Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
-            Volatilidade → tier por categoria + sinal mensal<br>
-            Correlações → estimadas por setor (fixas entre janelas) · fallback <code>0.30</code>
-          </div>
-        </div>
-      </div>`
-    : `<div style="margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(245,158,11,0.09); border:1.5px solid #f59e0b; display:flex; gap:12px; align-items:flex-start;">
-        <span style="font-size:1.3rem; flex:0 0 auto; line-height:1;">⚠️</span>
-        <div style="font-size:0.8rem; line-height:1.5;">
-          <div style="font-weight:900; color:#d97706; margin-bottom:4px;">Orientação direcional — não é instrução de execução</div>
-          <div style="color:var(--foreground);">Retornos historicos da janela <strong>${escapeHtml(windowLabel)}</strong>. Limite aplicado na simulacao: maximo de 30% por activo${hasProtectedCore ? "; no plano de acoes, a ancora core fica preservada" : ""}. Resultado estocastico. Valida com analise fundamental antes de agir.</div>
-          <div style="margin-top:8px; padding:7px 10px; border-radius:6px; background:rgba(0,0,0,0.04); font-size:0.72rem; color:var(--muted-foreground); font-family:monospace; line-height:1.6;">
-            <strong style="font-family:sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Fonte dos dados</strong><br>
-            Retorno histórico → janela ${escapeHtml(windowLabel)}<br>
-            Volatilidade → tier por categoria + sinal mensal<br>
-            Correlações → estimadas por setor (fixas entre janelas) · fallback <code>0.30</code>
-          </div>
-        </div>
-      </div>`;
-
-  actionsEl.innerHTML = `
-    <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
-        <span style="font-weight:900; font-size:0.88rem;">${hasProtectedCore ? "Plano core-protected inspirado no Sharpe maximo" : "Para mover a carteira atual para o Sharpe maximo"}</span>
-        <span style="font-size:0.75rem; padding:3px 8px; border-radius:20px; background:rgba(6,182,212,0.12); color:#06b6d4; font-weight:800;">${hasProtectedCore ? "Core preservado" : `+${sharpeGain.toFixed(2)} Sharpe`}</span>
-        <span class="muted" style="font-size:0.72rem;">Melhor das 1 200 simulacoes - janela ${escapeHtml(windowLabel)} - ${isFree ? "sem cap" : "cap 30% por activo"}${hasProtectedCore ? " - plano protege core" : ""}</span>
-      </div>
-      ${contradictionBanner}
-      ${increase.length ? `
-        <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reforçar</div>
-        <div style="display:grid; gap:6px; margin-bottom:10px;">${increase.map(renderMove).join("")}</div>
-      ` : ""}
-      ${decrease.length ? `
-        <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; color:var(--muted-foreground); margin-bottom:6px;">Reduzir</div>
-        <div style="display:grid; gap:6px;">${decrease.map(renderMove).join("")}</div>
-      ` : ""}
-      ${disclaimer}
-    </div>`;
 }
 
 function bindEFEvents() {

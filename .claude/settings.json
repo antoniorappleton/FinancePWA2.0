@@ -4,7 +4,10 @@
       "Bash(node -e ' *)",
       "Bash(grep -v \"//\\\\|console\")",
       "Bash(node --input-type=module)",
-      "Bash(grep -v \"//\\\\s*\")"
+      "Bash(grep -v \"//\\\\s*\")",
+      "Bash(node --check \"js/engines/stress-test.js\")",
+      "Bash(node --check \"js/engines/data-coverage.js\")",
+      "Bash(node \"C:\\\\Users\\\\anton\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-anton-Desktop-Programing-Projects-FinanceAPP2-2\\\\5ff50e72-c275-4f5a-a7be-f01c1564d912\\\\scratchpad\\\\test_d9_6.mjs\")"
     ]
   }
 }

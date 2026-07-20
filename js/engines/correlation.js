@@ -18,6 +18,18 @@ const SECTOR_CORR = {
   "Múltiplos Setores": { "Tecnologia": 0.4,  "Saúde": 0.4, "Financeiros": 0.4, "Energia": 0.3,  "Consumo Cíclico": 0.4,  "Consumo Defensivo": 0.4,  "Industriais": 0.4,  "Materiais": 0.3,  "Imobiliário": 0.3,  "Comunicações": 0.35, "Utilidades": 0.35, "Múltiplos Setores": 1.0 }
 };
 
+// ── D9.4: Correlação condicional ao regime ──
+// Em crise, correlações "vão para 1" — a matriz setorial (dados normais) subestima
+// o acoplamento real durante risk_off/recessão. Aplicamos um uplift que aproxima
+// cada par da correlação máxima, sem alterar a matriz base (regimes normais → k=0).
+const STRESS_REGIMES = new Set(["risk_off", "recession"]);
+const STRESS_UPLIFT_K = 0.4;
+
+function applyRegimeUplift(corr, regime) {
+  if (!STRESS_REGIMES.has(regime)) return corr;
+  return corr + (1 - corr) * STRESS_UPLIFT_K;
+}
+
 function normSector(s) {
   return toCanonicalSector(String(s || "").trim());
 }
@@ -58,8 +70,12 @@ function pairCorrelation(assetA, assetB) {
 
 /**
  * Generate a correlation matrix and detect structural clusters.
+ * @param {Array} portfolio
+ * @param {string} [regime] - macro regime key (config/strategy.macroRegime). In
+ *   risk_off/recession, pairwise correlations are uplifted toward 1 (D9.4) so
+ *   resilience/diversification scores reflect that diversification fails in a crash.
  */
-export function correlationMatrix(portfolio) {
+export function correlationMatrix(portfolio, regime = null) {
   if (!portfolio || portfolio.length === 0) return { matrix: {}, tickers: [], clusters: [], avgCorrelation: 0, warnings: [] };
 
   // 1. Deduplicate by canonical ticker
@@ -84,7 +100,7 @@ export function correlationMatrix(portfolio) {
       if (i === j) {
         matrix[tA][tB] = 1.0;
       } else {
-        const corr = Math.round(pairCorrelation(positions[i], positions[j]) * 100) / 100;
+        const corr = Math.round(clamp(applyRegimeUplift(pairCorrelation(positions[i], positions[j]), regime), -1, 1) * 100) / 100;
         matrix[tA][tB] = corr;
         if (j > i) { totalCorr += corr; pairCount++; }
       }

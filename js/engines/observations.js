@@ -121,12 +121,12 @@ export function generateAssetObservations(asset, engines, temporal = null) {
 
 /**
  * Generate portfolio-level observations.
- * @param {Object} portfolioAnalysis - { health, correlation, stressTest, factors, dna, etfOverlap }
+ * @param {Object} portfolioAnalysis - { health, correlation, stressTest, factors, dna, etfOverlap, bubble }
  * @returns {Array}
  */
 export function generatePortfolioObservations(analysis) {
   const obs = [];
-  const { health, correlation, stressTest, factors, dna, etfOverlap } = analysis || {};
+  const { health, correlation, stressTest, factors, dna, etfOverlap, bubble } = analysis || {};
 
   if (health) {
     if (health.score < 40) obs.push({ type: "warning", msg: `Saúde do portfólio em ${health.score}/100 — necessita reestruturação.`, priority: 10 });
@@ -157,6 +157,11 @@ export function generatePortfolioObservations(analysis) {
     for (const w of (etfOverlap.warnings || []).slice(0, 3)) {
       obs.push({ type: "caution", msg: w, priority: 7 });
     }
+  }
+
+  if (bubble?.warning) {
+    const themeNote = bubble.hotTheme ? ` — concentração em ${bubble.hotTheme.name} (${bubble.hotTheme.exposure}%)` : "";
+    obs.push({ type: "warning", msg: `Índice de euforia/bolha em ${bubble.overall}/100${themeNote} — sinais de valuation esticado, preço parabólico e/ou RSI extremo.`, priority: 9 });
   }
 
   obs.sort((a, b) => b.priority - a.priority);

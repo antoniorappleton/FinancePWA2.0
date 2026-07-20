@@ -133,6 +133,32 @@ function scorePriceBook(asset) {
   return { score: s, value: pb, available: true };
 }
 
+// ── D9.2: Valuation relativa ao histórico da própria empresa (time-series) ──
+// pe_percentil: onde o múltiplo actual se situa na distribuição dos últimos 5–10 anos
+// da própria empresa (0 = mais barato de sempre, 100 = mais caro de sempre).
+// Campos ainda não existem em acoesDividendos nesta base de dados (D9.2 audit,
+// nenhuma ferramenta de reconstrução P/E encontrada no repo) — a função degrada
+// automaticamente para "unavailable" até a ingestão desses campos ser construída.
+function scoreHistoricalPE(asset) {
+  const percentile = safeMetric(asset, "pe_percentil", "pe_hist_percentile");
+  const median5y = safeMetric(asset, "pe_hist_median_5y", "pe_hist_median");
+  if (!isFinite(percentile)) return { score: null, available: false };
+
+  let s;
+  if (percentile <= 20) s = 1.0;       // mais barato que o seu próprio histórico
+  else if (percentile <= 40) s = 0.75;
+  else if (percentile <= 60) s = 0.5;
+  else if (percentile <= 80) s = 0.3;
+  else s = 0.1;                        // mais caro que o seu próprio histórico
+
+  return {
+    score: s,
+    value: percentile,
+    medianPE: isFinite(median5y) ? median5y : null,
+    available: true
+  };
+}
+
 // ══════════════════════════════════════════════════════════════
 // MAIN EXPORT
 // ══════════════════════════════════════════════════════════════
@@ -190,8 +216,24 @@ export function valuationScore(asset) {
     }
   }
 
-  const raw = weightTotal > 0 ? weightedSum / weightTotal : 0.5;
+  const sectionalRaw = weightTotal > 0 ? weightedSum / weightTotal : 0.5;
+
+  // D9.2: blend cross-sectional (vs setor) with time-series (vs próprio histórico), 60/40.
+  // Sem histórico → 100% sectional, sem penalizar (rule D9 #1: degrada, nunca falha).
+  const hist = scoreHistoricalPE(asset);
+  const raw = hist.available ? (sectionalRaw * 0.6 + hist.score * 0.4) : sectionalRaw;
   const score = Math.round(clamp(raw * 100, 0, 100));
+
+  // "Esticado vs histórico": percentil alto no próprio histórico, independente do setor —
+  // pode passar despercebido se só se olhar ao PE setorial.
+  const stretchedVsHistory = hist.available && hist.value >= 80;
+  const cheapVsHistory = hist.available && hist.value <= 20;
+  const cheapVsSector = sectionalRaw >= 0.65;
+  const expensiveVsSector = sectionalRaw <= 0.35;
+
+  let flag = null;
+  if (cheapVsSector && stretchedVsHistory) flag = "value_trap";       // barato vs setor, caro vs próprio histórico
+  else if (expensiveVsSector && cheapVsHistory) flag = "re_rating";   // caro vs setor, barato vs próprio histórico
 
   let classification;
   if (score >= 80) classification = "Deep Value / Bargain";
@@ -199,10 +241,13 @@ export function valuationScore(asset) {
   else if (score >= 45) classification = "Fairly Valued";
   else if (score >= 30) classification = "Overvalued";
   else classification = "Extremely Overvalued";
+  if (stretchedVsHistory) classification += " — esticado vs histórico";
 
   return {
     score,
     classification,
+    flag,
+    historicalConfidence: hist.available ? "alta" : "reduzida (sem histórico próprio de múltiplos)",
     sectorBenchmark: sectorBounds,
     breakdown: {
       pe:     { ...pe, weight: W.pe },
@@ -211,7 +256,8 @@ export function valuationScore(asset) {
       eveb:   { ...eveb, weight: W.eveb },
       ps:     { ...ps, weight: W.ps },
       pfcf:   { ...pfcf, weight: W.pfcf },
-      pb:     { ...pb, weight: W.pb }
+      pb:     { ...pb, weight: W.pb },
+      historical: hist
     }
   };
 }

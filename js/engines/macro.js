@@ -129,21 +129,50 @@ export function getFactorBias(regimeKey) {
   return { ...regime.factorBias };
 }
 
+// ── D9.5: limiares de stress alinhados com o Painel de Risco Sistémico ──
+// (js/screens/risco-panel.js — mesma fonte que o utilizador já acompanha).
+// "Stress" = zona onde o painel muda a cor para laranja/vermelho ("Stress"/"Crise"/"Extremo").
+const REGIME_STRESS_THRESHOLDS = {
+  hyoas: 6,   // % — acima disto o painel classifica HY OAS como "Stress"
+  move:  150, // índice MOVE — acima disto "Stress"
+  vix:   30,  // CBOE VIX — acima disto "Stress" (nível clássico de pânico de mercado)
+};
+
 /**
- * Auto-detect regime from market signals (simplified heuristic).
- * In production, this would use VIX, yield curve, PMI, etc.
- * For now, it's user-selectable with a basic heuristic.
- * @param {Object} signals - { vix, yieldCurve, pmi, inflation, fedRate }
- * @returns {string} Detected regime key
+ * Auto-detect regime from the systemic risk panel (HY OAS + MOVE + VIX), with the
+ * yield curve as an optional fourth confirming signal when available.
+ *
+ * Regra dos três indicadores: só sugere um regime de stress quando os 3 indicadores
+ * (HY OAS, MOVE, VIX) estão simultaneamente em zona de stress — um único indicador
+ * elevado pode ser ruído idiossincrático (ver compositeReading em risco-panel.js).
+ * Continua editável em Definições: quando a regra não confirma, devolve `null` para
+ * que o chamador preserve o regime escolhido pelo utilizador em vez de o substituir.
+ *
+ * @param {Object} signals - { hyoas, move, vix, yieldCurve, inflation, fedRate }
+ *   hyoas: High Yield OAS spread (%); move: ICE BofA MOVE Index; vix: CBOE VIX;
+ *   yieldCurve: spread 10y-2y em pp (negativo = invertida); inflation/fedRate: legado.
+ * @returns {string|null} Regime sugerido, ou null se a regra não confirmar stress.
  */
 export function detectRegime(signals = {}) {
-  const { vix, inflation, fedRate } = signals;
-  
-  // Basic heuristic — to be expanded with real data
-  if (vix && vix > 30) return "risk_off";
-  if (inflation && inflation > 5) return "inflationary";
-  if (fedRate && fedRate > 4) return "high_rates";
-  
-  // Default: neutral/risk-on
-  return "risk_on";
+  const { hyoas, move, vix, yieldCurve, inflation, fedRate } = signals;
+
+  const hasPanelData = isFinite(hyoas) && isFinite(move) && isFinite(vix);
+  if (hasPanelData) {
+    const hyoasStress = hyoas > REGIME_STRESS_THRESHOLDS.hyoas;
+    const moveStress = move > REGIME_STRESS_THRESHOLDS.move;
+    const vixStress = vix > REGIME_STRESS_THRESHOLDS.vix;
+
+    if (hyoasStress && moveStress && vixStress) {
+      // Curva invertida (yieldCurve < 0) quando disponível reforça leitura recessiva.
+      return isFinite(yieldCurve) && yieldCurve < 0 ? "recession" : "risk_off";
+    }
+    return null; // não confirmado — o chamador mantém o regime selecionado pelo utilizador
+  }
+
+  // Legado (sem dados do painel): heurística simples anterior, mantida como fallback.
+  if (isFinite(vix) && vix > 30) return "risk_off";
+  if (isFinite(inflation) && inflation > 5) return "inflationary";
+  if (isFinite(fedRate) && fedRate > 4) return "high_rates";
+
+  return null;
 }
