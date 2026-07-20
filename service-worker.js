@@ -1,4 +1,4 @@
-const CACHE_NAME = "finance-pwa-v65";
+const CACHE_NAME = "finance-pwa-v66";
 
 const ASSETS = [
   "./",
@@ -26,6 +26,8 @@ const ASSETS = [
   "./js/utils/capitalManager.js",
   "./js/utils/decisionHelpers.js",
   "./js/utils/alerts.js",
+  "./js/utils/marketDataStore.js",
+  "./js/utils/maintenance.js",
   "./js/help-data.js",
   "./js/components/help.js",
   "./js/components/asset-deep-panel.js",
@@ -49,6 +51,9 @@ const ASSETS = [
   "./js/engines/observations.js",
   "./js/engines/rebalance.js",
   "./js/engines/economic-drivers.js",
+  "./js/engines/technical-signal.js",
+  "./js/engines/bubble.js",
+  "./js/engines/data-coverage.js",
   "./screens/auth.html",
   "./screens/dashboard.html",
   "./screens/atividade.html",
