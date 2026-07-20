@@ -10,7 +10,7 @@ import { calculateLucroMaximoScore, getAssetType, normalizeSector, cleanTicker }
 import { loadAlerts, addAlert, deleteAlert, resetAlert, requestNotificationPermission } from "../utils/alerts.js";
 import { getMarketDataList } from "../utils/marketDataStore.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
-import { getAllRegimes } from "../engines/macro.js";
+import { getAllRegimes, detectRegime, getRegime } from "../engines/macro.js";
 import { DEFAULT_CRISIS_LADDER } from "../utils/capitalManager.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
@@ -79,6 +79,17 @@ export function initScreen() {
   // ⚠️ NUNCA fazer querySelector/getElementById fora do initScreen,
   // porque o HTML do screen só existe depois da navegação injetar o markup.
 
+  // --- Modal "Como usar / configurar" (independente de dados do Firestore) ---
+  const btnShowHowToUse = document.getElementById("btnShowHowToUse");
+  const howToUseModal = document.getElementById("howToUseModal");
+  const howToUseModalClose = document.getElementById("howToUseModalClose");
+  const howToUseModalOk = document.getElementById("howToUseModalOk");
+  if (btnShowHowToUse && howToUseModal) {
+    btnShowHowToUse.addEventListener("click", () => howToUseModal.classList.remove("hidden"));
+    howToUseModalClose?.addEventListener("click", () => howToUseModal.classList.add("hidden"));
+    howToUseModalOk?.addEventListener("click", () => howToUseModal.classList.add("hidden"));
+  }
+
   // Elementos
   const elLanguage = document.getElementById("cfgLanguage");
   const elCurrency = document.getElementById("cfgCurrency");
@@ -106,7 +117,9 @@ export function initScreen() {
   const elSectorConcentrationLimitPct = document.getElementById("cfgSectorConcentrationLimitPct");
   const elMinConfidencePct = document.getElementById("cfgMinConfidencePct");
   const elMacroRegime = document.getElementById("cfgMacroRegime");
+  const elMacroRegimeSuggestion = document.getElementById("cfgMacroRegimeSuggestion");
   const elCrisisLadder = document.getElementById("cfgCrisisLadder");
+  const elCrisisLadderError = document.getElementById("cfgCrisisLadderError");
 
   // Estratégia
   const elCoreW = document.getElementById("cfgCoreWeight");
@@ -198,7 +211,35 @@ export function initScreen() {
       opt.textContent = `${reg.icon} ${reg.name}`;
       elMacroRegime.appendChild(opt);
     });
+    elMacroRegime.addEventListener("change", renderMacroRegimeSuggestion);
   }
+
+  // D9.5: sugestão de regime a partir do Painel de Risco (HY OAS/MOVE/VIX), sem
+  // nunca substituir automaticamente a escolha do utilizador — apenas um atalho
+  // "aplicar" quando os 3 indicadores confirmam stress em simultâneo.
+  function renderMacroRegimeSuggestion() {
+    if (!elMacroRegimeSuggestion || !elMacroRegime) return;
+    let panelState = null;
+    try {
+      const raw = localStorage.getItem("appfinance-risk-panel-v1");
+      if (raw) panelState = JSON.parse(raw)?.state || null;
+    } catch { /* painel de risco sem dados válidos — sem sugestão */ }
+
+    const hasPanelData = panelState && isFinite(panelState.hyoas) && isFinite(panelState.move) && isFinite(panelState.vix);
+    if (!hasPanelData) { elMacroRegimeSuggestion.innerHTML = ""; return; }
+
+    const suggested = detectRegime({ hyoas: panelState.hyoas, move: panelState.move, vix: panelState.vix });
+    if (!suggested || suggested === elMacroRegime.value) { elMacroRegimeSuggestion.innerHTML = ""; return; }
+
+    const reg = getRegime(suggested);
+    elMacroRegimeSuggestion.innerHTML = `💡 Painel de Risco sugere <strong>${reg?.icon || ""} ${reg?.name || suggested}</strong> — <a href="#" id="cfgApplyMacroRegimeSuggestion" style="color: var(--primary);">aplicar</a>`;
+    document.getElementById("cfgApplyMacroRegimeSuggestion")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      elMacroRegime.value = suggested;
+      renderMacroRegimeSuggestion();
+    });
+  }
+  renderMacroRegimeSuggestion();
 
   Promise.all([
     getDocs(collection(db, "ativos")),
@@ -246,6 +287,7 @@ export function initScreen() {
           if (typeof d.sectorConcentrationLimitPct === "number" && elSectorConcentrationLimitPct) elSectorConcentrationLimitPct.value = d.sectorConcentrationLimitPct;
           if (typeof d.minConfidencePct === "number" && elMinConfidencePct) elMinConfidencePct.value = d.minConfidencePct;
           if (typeof d.macroRegime === "string" && elMacroRegime) elMacroRegime.value = d.macroRegime;
+          renderMacroRegimeSuggestion();
           if (Array.isArray(d.crisisLadder) && elCrisisLadder) elCrisisLadder.value = JSON.stringify(d.crisisLadder, null, 2);
           else if (elCrisisLadder) elCrisisLadder.value = JSON.stringify(DEFAULT_CRISIS_LADDER, null, 2);
           updateCashReserveCalc();
@@ -289,13 +331,18 @@ export function initScreen() {
             minConfidencePct: Number(elMinConfidencePct?.value || 50),
             macroRegime: elMacroRegime?.value || "high_rates"
           };
+          let crisisLadderError = "";
           if (elCrisisLadder) {
+            if (elCrisisLadderError) elCrisisLadderError.textContent = "";
             try {
               const parsed = JSON.parse(elCrisisLadder.value);
               if (Array.isArray(parsed)) classPayload.crisisLadder = parsed;
+              else crisisLadderError = "Crisis Ladder tem de ser um array JSON — mantido o valor anterior.";
             } catch (err) {
+              crisisLadderError = "Crisis Ladder: JSON inválido — mantido o valor anterior (restante configuração foi guardada).";
               console.warn("Invalid crisis ladder JSON, preserving existing config", err);
             }
+            if (crisisLadderError && elCrisisLadderError) elCrisisLadderError.textContent = crisisLadderError;
           }
 
           // --- Alocação por Setor ---
@@ -318,11 +365,13 @@ export function initScreen() {
           }, { merge: true });
 
           if (allocStatus) {
-            allocStatus.textContent = "✅ Estratégia completa guardada!";
-            allocStatus.style.color = "var(--success)";
+            allocStatus.textContent = crisisLadderError
+              ? "⚠️ Estratégia guardada, exceto o Crisis Ladder (ver aviso acima)."
+              : "✅ Estratégia completa guardada!";
+            allocStatus.style.color = crisisLadderError ? "var(--destructive)" : "var(--success)";
             setTimeout(() => { allocStatus.textContent = ""; }, 4000);
           }
-          if (window.showToast) window.showToast("Estratégia guardada! ✅");
+          if (window.showToast) window.showToast(crisisLadderError ? "Estratégia guardada, Crisis Ladder ignorado (JSON inválido)" : "Estratégia guardada! ✅");
         } catch(err) {
           if (allocStatus) {
             allocStatus.textContent = "Erro ao guardar";

@@ -19,9 +19,14 @@ A aplicação está estruturada em torno de cinco ecrãs principais e uma suite 
 *   **Score de Saúde Estrutural:** Diagnóstico de estabilidade da carteira baseado no número de posições, diversificação setorial, categorias de ativos e cálculo de concentração.
 *   **Diagrama de Fatores (Exposição Multifactorial):** Gráfico de radar (teia de aranha) exibindo a inclinação (*tilt*) do portfólio para os fatores de mercado: *Growth*, *Value*, *Quality*, *Momentum*, *Defensive* e *Cyclical*.
 *   **Análise Temática e Drivers Económicos:** Decomposição e mapeamento de ativos a megatendências estruturais do futuro (ex.: IA & Computing Power, Eletrificação, Defesa e Automação Industrial).
-*   **Decomposição de ETFs e Sobreposição (Overlap):** Análise dos portfólios internos de ETFs (como VWCE, IWDA, VUSA) para somar as alocações diretas e indiretas dos ativos subjacentes, expondo a concentração real oculta em empresas como Apple, Microsoft e Nvidia.
-*   **Matriz de Correlação e Agrupamento (Clustering):** Geração de uma matriz de correlação inter-ativos baseada nas dinâmicas de setor e beta histórico, com deteção automática de agrupamentos redundantes (correlação $\ge 0.65$).
-*   **Simulação de Testes de Stress (Stress Testing):** Simulação de drawdowns históricos e perdas financeiras em euros perante crises como o Crash do COVID-19, Crise de 2008, Bolha Dotcom, e cenários de recessão global.
+*   **Decomposição de ETFs e Sobreposição (Overlap):** Análise dos portfólios internos de ETFs (como VWCE, IWDA, VUSA) para somar as alocações diretas e indiretas dos ativos subjacentes, expondo a concentração real oculta em empresas como Apple, Microsoft e Nvidia. Os avisos comparam sempre a exposição efetiva com o limite de posição única configurado, com um veredicto claro (acima do limite / perto do limite).
+*   **Matriz de Correlação e Agrupamento (Clustering):** Geração de uma matriz de correlação inter-ativos baseada nas dinâmicas de setor e beta histórico, com deteção automática de agrupamentos redundantes (correlação $\ge 0.65$). Em regimes de stress (*risk-off*/recessão) as correlações sobem automaticamente em direção a 1, refletindo que a diversificação tende a falhar precisamente quando mais se precisa dela.
+*   **Simulação de Testes de Stress (Stress Testing):** Simulação de drawdowns históricos e perdas financeiras em euros perante crises como o Crash do COVID-19, Crise de 2008, Bolha Dotcom, e cenários de recessão global. Fundos amplamente diversificados (ex.: VWCE, ETFs regionais/multi-setoriais) recebem uma queda esperada derivada da própria mistura setorial da economia global, em vez de serem tratados como um único setor.
+*   **Fronteira Eficiente (Simulação de Monte Carlo):** Simula 1.200 carteiras alternativas por janela histórica (6, 12 e 36 meses) para localizar o ponto de rácio de Sharpe máximo, com modo protegido (limite de 30% por ativo, âncora core preservada) e modo livre (sem limites, para exploração teórica).
+*   **Índice de Euforia/Bolha:** Pontuação de 0 a 100 por ativo e por carteira que combina valorização esticada face ao histórico próprio, preço parabólico (distância à SMA200, retorno a 1 ano) e RSI extremo — com um bónus adicional quando a carteira está concentrada num único tema "quente".
+*   **Valorização Relativa ao Histórico Próprio:** Complementa a comparação tradicional "caro/barato vs. setor" com uma segunda camada que compara o múltiplo atual (P/E) com o percentil dos últimos 5-10 anos da própria empresa, sinalizando armadilhas de valor (`value trap`) e oportunidades de recotação (`re-rating`).
+*   **Relatório de Cobertura de Dados:** Indicador de "Qualidade de dados" que mostra, por ativo, que campos críticos (beta, fundamentais, composição de ETF, histórico de múltiplos) estão em falta — para se saber quando confiar mais ou menos num resultado.
+*   **Painel de Risco Sistémico (HY OAS · MOVE · VIX):** Painel de acompanhamento manual/semi-automático dos três indicadores de stress de mercado mais seguidos por investidores institucionais, com leitura composta (Sem sinais / Sinal isolado / Confirmação parcial / Confirmação total) e sugestão automática de Regime Macro em Definições quando os três confirmam stress em simultâneo (nunca substitui a escolha manual).
 
 ### 3. 💼 Registo de Atividade e Performance Histórica
 *   **Timeline de Transações:** Registo cronológico detalhado de compras, vendas e ajustes de saldo.
@@ -50,12 +55,14 @@ FinancePWA2.0/
 │   │   └── treemap.js         # Motor de renderização do mapa visual de Holdings (Treemap)
 │   │
 │   ├── engines/               # 🧠 Motores de Cálculo Quantitativo e Analítico
-│   │   ├── correlation.js     # Matriz de correlação inter-ativos e clustering
+│   │   ├── bubble.js          # Índice de euforia/bolha por ativo e por carteira
+│   │   ├── correlation.js     # Matriz de correlação inter-ativos, clustering e uplift em regime de stress
+│   │   ├── data-coverage.js   # Relatório de campos críticos em falta por ativo ("Qualidade de dados")
 │   │   ├── dna.js             # Assinatura estrutural e características da carteira
 │   │   ├── economic-drivers.js# Exposição macroeconómica e vetores setoriais
 │   │   ├── etf-overlap.js     # Decomposição de ETFs e agregação de exposição real
 │   │   ├── factors.js         # Cálculo das pontuações multifactoriais (Growth, Value, etc.)
-│   │   ├── macro.js           # Monitorização de indicadores macro globais
+│   │   ├── macro.js           # Regimes macro, pesos de scoring por regime e deteção via Painel de Risco
 │   │   ├── momentum.js        # Lógica matemática de tendências técnicas e RSI
 │   │   ├── observations.js    # Geração automática de alertas de risco e sugestões
 │   │   ├── portfolio-health.js# Algoritmo de pontuação de saúde e estabilidade (HHI)
@@ -63,12 +70,13 @@ FinancePWA2.0/
 │   │   ├── rebalance.js       # Motor de rebalanceamento sistemático contra alvos
 │   │   ├── risk-contrib.js    # Cálculo da contribuição marginal de risco de cada ativo
 │   │   ├── risk.js            # Análise de volatilidade, desvio padrão, Sharpe e Beta
-│   │   ├── score-v2.js        # Variações e iterações do score qualitativo
+│   │   ├── score-v2.js        # Motor de scoring principal (Quality/Momentum/Valuation/Risk, ajustado por regime)
 │   │   ├── sizing.js          # Otimização do peso máximo sugerido com base no risco
 │   │   ├── stress-test.js     # Simulação matemática de crises e drawdowns históricos
+│   │   ├── technical-signal.js# Sinal técnico composto (evita gatilhos de um único indicador)
 │   │   ├── temporal.js        # Análises temporais e evolutivas da carteira
 │   │   ├── thematic.js        # Mapeamento e classificação por temas de futuro (IA, etc.)
-│   │   └── valuation.js       # Avaliação comparativa de múltiplos fundamentais
+│   │   └── valuation.js       # Avaliação comparativa de múltiplos fundamentais (vs. setor e vs. histórico próprio)
 │   │
 │   ├── screens/               # 📱 Controladores lógicos (JS) associados aos ecrãs
 │   │   ├── analise.js         # Gestão do ecrã de análise individual e fundamentais
@@ -77,7 +85,8 @@ FinancePWA2.0/
 │   │   ├── auth.js            # Controlo de sessão e autenticação via Firebase
 │   │   ├── dashboard.js       # Agregação de dados gerais, gráficos e Smart DCA
 │   │   ├── portfolio-intel.js # Orquestração da suite Portfolio Intel
-│   │   ├── settings.js        # Definições da API, alvos de ativos e Wisebudget
+│   │   ├── risco-panel.js     # Painel de Risco Sistémico (HY OAS/MOVE/VIX), embutido no ecrã de Análise
+│   │   ├── settings.js        # Definições de estratégia, limites de risco e configuração geral
 │   │   └── simulador.js       # Lógica do ecrã do simulador financeiro
 │   │
 │   ├── utils/                 # 🧮 Algoritmos base e utilitários transversais
@@ -185,6 +194,16 @@ A APPFinance conta com uma estrutura rigorosa de processamento quantitativo. Aba
     *   **Tratamento de Strings Especiais:** Mapeia de forma unificada valores nulos ou erros de grelhas como `"#N/A"`, `"- "`, `"NaN"`, `"undefined"`, transformando-os em `NaN` seguro para processamento sem interromper a execução.
     *   **Normalização de Tickers Canónicos:** Remove sufixos de mercado (ex.: `.DE`, `.AS`, `.LS`, `:EUR`) e resolve sinónimos de cotação para garantir que o mesmo ativo negociado em diferentes praças (ex.: `QDVF` e `QDVE`) é processado como uma única entidade de custódia.
     *   **Cálculo do Score de Confiança da Informação:** Analisa a densidade de preenchimento dos metadados de cada ativo, ponderando com 70% a presença de dados críticos (preço, setor, beta, múltiplos principais) e 30% a dados adicionais (margens operacionais, indicadores técnicos secundários) para atribuir uma nota de fiabilidade dos dados integrados na base de dados.
+    *   **Normalização de Setores (fonte única):** Traduz os muitos rótulos de setor efetivamente guardados na base de dados (ex.: `"Finanças"`, `"ETF Mundial"`, `"Indústria"`, `"Ouro"`) para o vocabulário canónico usado por todos os motores acima, incluindo um tratamento próprio para fundos diversificados (`"Múltiplos Setores"`) — sem esta normalização, qualquer motor que dependa do setor de um ativo (stress test, correlação, valuation) degrada silenciosamente para o seu valor genérico em vez do tratamento específico do setor real.
+
+### 8. Motor de Regime Macro e Deteção de Stress Sistémico
+*   **Ficheiro:** [`js/engines/macro.js`](js/engines/macro.js)
+*   **Funcionamento:** Mantém 7 regimes de mercado (Risk-On, Risk-Off, Inflacionário, Recessão, Taxas Altas, Expansão de Liquidez, Commodity Supercycle), cada um com pesos de scoring, viés setorial e viés fatorial próprios, usados para ajustar dinamicamente o Algoritmo V2 (`score-v2.js`) e a matriz de correlação.
+*   **`detectRegime`:** Sugere automaticamente um regime de stress (Risk-Off, ou Recessão se a curva de juros estiver invertida) apenas quando os três indicadores do Painel de Risco (HY OAS, MOVE, VIX) confirmam stress em simultâneo — um único indicador elevado é tratado como ruído. Nunca substitui a escolha do utilizador: a sugestão aparece em Definições com um botão "aplicar".
+
+### 9. Motor de Índice de Euforia/Bolha
+*   **Ficheiro:** [`js/engines/bubble.js`](js/engines/bubble.js)
+*   **Funcionamento:** Combina, por ativo, o percentil de valorização face ao histórico próprio, a distância extrema da cotação face à SMA200, o retorno excecional a 1 ano e o RSI extremo, para produzir uma pontuação de euforia de 0 a 100. Ao nível da carteira, soma um bónus quando um único tema (via `thematic.js`) domina a alocação e o seu score médio de euforia é alto — sinalizando concentração especulativa mesmo quando nenhum ativo isolado parece extremo.
 
 ---
 
@@ -221,5 +240,30 @@ Como a aplicação é uma Progressive Web App pura assente em Javascript modular
 
 *Nota de Desenvolvimento:* Quando executada a partir de `localhost` ou `127.0.0.1`, a aplicação ativa automaticamente uma rotina em `js/main.js` para limpar qualquer cache antigo e desregistar o Service Worker de produção. Isto previne conflitos com outras PWAs que tenhas ativas em desenvolvimento e garante que as tuas alterações ao código se refletem de imediato após a atualização da página (*refresh*).
 
+*Nota de Configuração:* A app espera um `js/firebase-config.js` com as credenciais do teu projeto Firebase (Firestore ativado, com as coleções `ativos` e `acoesDividendos`). Sem isso, os ecrãs carregam mas ficam sem dados.
+
 ---
-*v2.4 - Desenvolvido por Antonio Appleton • Otimizado para Análise de Fatores, Saúde de Portfólio e Inteligência Financeira Avançada*
+
+## ⚙️ Como Configurar a App (resumo rápido)
+
+A app funciona logo de início com valores por defeito, mas dá muito mais proveito depois de configurada. Dentro da própria aplicação, em **Definições → botão "Como usar / configurar"**, existe um guia interativo completo com linguagem simples. Resumo do essencial:
+
+1.  **Estratégia → Gestão de Capital:** define a Liquidez Disponível, o Aporte Mensal Base e a percentagem-alvo de reserva de oportunidade (*War Chest*) — isto alimenta o Smart DCA no Dashboard.
+2.  **Estratégia → Alocação por Classe/Setor/Estilo:** define os teus pesos-alvo (Ações/ETFs/Obrigações, setores, e o teu estilo de investimento Growth/Value/Dividendos/Qualidade) — o Estilo ajusta os pesos internos do algoritmo de scoring.
+3.  **Estratégia → Configuração de Risco e Regime:** define o limite máximo por posição única, o limite por setor, a confiança mínima de dados exigida nos scorecards, e o Regime Macro (com sugestão automática a partir do Painel de Risco, quando disponível).
+4.  **Análise → Painel de Risco Sistémico:** atualiza periodicamente HY OAS, MOVE e VIX para manter a leitura de stress sistémico e a sugestão de regime atualizadas.
+5.  **Portfolio Intelligence → "Analisar Portfólio":** corre depois de qualquer alteração relevante à carteira ou às Definições, para recalcular todos os motores com os dados mais recentes. Verifica sempre o indicador "Qualidade de dados" no topo — resultados sobre ativos com pouca cobertura de dados devem ser lidos com mais reserva.
+
+---
+
+## 📄 Documentação de Decisões
+
+Além deste README, o repositório mantém documentos vivos que registam o raciocínio por trás de mudanças estruturais aos motores de análise — úteis para perceber *porquê* um cálculo é feito de determinada forma, não só *o quê*:
+
+*   [`DECISOES.md`](DECISOES.md) — histórico de adendas de decisão de arquitetura (ex.: Adenda D9: avaliação à luz de crises, bolhas e histórico).
+*   [`RESUMO_D9.md`](RESUMO_D9.md) — resumo do que ficou parametrizado na Adenda D9, campos de dados novos necessários e lacunas de cobertura conhecidas.
+*   [`AUDIT_SCORING.md`](AUDIT_SCORING.md) — auditoria estática da camada de scoring (pontos de chamada, escalas, regimes, limites de concentração).
+*   [`PLANO_RECONCILIACAO.md`](PLANO_RECONCILIACAO.md) — plano de reconciliação de inconsistências identificadas entre motores.
+
+---
+*v2.5 - Desenvolvido por Antonio Appleton • Otimizado para Análise de Fatores, Saúde de Portfólio e Inteligência Financeira Avançada*

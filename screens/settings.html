@@ -408,7 +408,14 @@
 
 <div class="page" data-screen-title="Configurações">
   <div class="settings" style="max-width: 800px; margin: 0 auto;">
-    
+
+    <!-- BOTÃO DE AJUDA / GUIA DE UTILIZAÇÃO -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+      <button id="btnShowHowToUse" class="btn outline" style="display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-circle-question"></i> Como usar / configurar
+      </button>
+    </div>
+
     <!-- TABS NAVIGATION -->
     <div class="settings-tabs">
       <button class="tab-btn active" data-tab="tab-estrategia">
@@ -501,10 +508,12 @@
                 <select id="cfgMacroRegime">
                   <option value="">Selecione um regime</option>
                 </select>
+                <div id="cfgMacroRegimeSuggestion" class="muted" style="font-size: 0.72rem; margin-top: 4px; min-height: 1.2em;"></div>
               </label>
               <label style="grid-column: span 2;">
                 Crisis Ladder (JSON)
                 <textarea id="cfgCrisisLadder" rows="4" style="width: 100%; resize: vertical; font-family: monospace;">[]</textarea>
+                <div id="cfgCrisisLadderError" style="font-size: 0.72rem; margin-top: 4px; color: var(--destructive); min-height: 1.2em;"></div>
               </label>
             </div>
             <div class="muted" style="margin-top: 12px; font-size: 0.75rem;">
@@ -1469,6 +1478,173 @@
     </div>
     <div class="modal-footer" style="padding: 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
       <button class="btn premium" id="suggestedModalOk">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL "COMO USAR / CONFIGURAR" -->
+<style>
+  #howToUseModal .htu-section {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  #howToUseModal .htu-section summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 14px 16px;
+    font-weight: 800;
+    font-size: 0.92rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #howToUseModal .htu-section summary::-webkit-details-marker { display: none; }
+  #howToUseModal .htu-section summary::after {
+    content: "\f078";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    transition: transform 0.15s ease;
+  }
+  #howToUseModal .htu-section[open] summary::after { transform: rotate(180deg); }
+  #howToUseModal .htu-body {
+    padding: 0 16px 16px 16px;
+    font-size: 0.83rem;
+    line-height: 1.6;
+  }
+  #howToUseModal .htu-body p { margin: 0 0 10px 0; }
+  #howToUseModal .htu-body ul { margin: 0 0 10px 0; padding-left: 20px; }
+  #howToUseModal .htu-body li { margin-bottom: 6px; }
+  #howToUseModal .htu-field {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  #howToUseModal .htu-field strong { display: block; font-size: 0.82rem; margin-bottom: 2px; }
+  #howToUseModal .htu-field span { color: var(--muted-foreground); font-size: 0.8rem; }
+  #howToUseModal .htu-note {
+    background: rgba(var(--primary-rgb), 0.06);
+    border-left: 3px solid var(--primary);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    margin-top: 8px;
+  }
+</style>
+<div id="howToUseModal" class="modal hidden" style="z-index: 2003;">
+  <div class="modal-dialog" style="width: min(720px, 96vw); max-height: 90vh;">
+    <div class="modal-header">
+      <h2 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-circle-question" style="color: var(--primary);"></i>
+        Como usar e configurar a APPFinance
+      </h2>
+      <button id="howToUseModalClose" class="icon-btn"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding: 20px; overflow-y: auto;">
+
+      <p class="muted" style="margin-bottom: 16px; font-size: 0.85rem;">
+        Guia rápido, em linguagem simples, para tirar mais proveito da app. Não é preciso ler tudo de uma vez —
+        cada secção abre e fecha à parte. <strong>Nota importante:</strong> esta app é uma ferramenta de apoio à
+        decisão baseada em regras e dados históricos, não é um conselho financeiro nem uma garantia de resultado.
+      </p>
+
+      <details class="htu-section" open>
+        <summary><i class="fas fa-compass" style="color: var(--primary);"></i> Para que serve isto, no fundo</summary>
+        <div class="htu-body">
+          <p>
+            É um "centro de comando" pessoal para acompanhar os teus investimentos (ações, ETFs, obrigações,
+            cripto) e tomar decisões com mais informação e menos impulso. A ideia de base é simples:
+          </p>
+          <ul>
+            <li><strong>O núcleo da carteira mantém-se</strong> (ex.: um ETF mundial como o VWCE) — não se vende por pânico.</li>
+            <li><strong>Não se tenta adivinhar o "momento certo"</strong> do mercado — investe-se de forma regular e disciplinada.</li>
+            <li><strong>As quedas de mercado são vistas como oportunidade</strong>, não como motivo de alarme, desde que haja reserva preparada para isso.</li>
+          </ul>
+          <p>A app existe para pôr números por trás destas ideias, em vez de decisões "ao sentimento".</p>
+        </div>
+      </details>
+
+      <details class="htu-section">
+        <summary><i class="fas fa-table-cells" style="color: var(--primary);"></i> Os ecrãs principais, um a um</summary>
+        <div class="htu-body">
+          <div class="htu-field"><strong>🏠 Dashboard</strong><span>Fotografia rápida: quanto vale a carteira, lucro/prejuízo acumulado, e a sugestão do mês (Smart DCA) — quanto investir agora tendo em conta se o mercado parece caro ou barato.</span></div>
+          <div class="htu-field"><strong>🧠 Portfolio Intelligence</strong><span>O "raio-X" da carteira: saúde estrutural, risco escondido (concentração que não se vê à primeira vista), como reagiria a uma crise histórica, se está demasiado presa a um único tema, e um simulador para testar reforços antes de os fazeres a sério (Entry Planner).</span></div>
+          <div class="htu-field"><strong>📈 Análise</strong><span>Ficha individual de cada ativo — P/E, crescimento, dividendos, dívida — e o Painel de Risco Sistémico (HY OAS/MOVE/VIX) para acompanhares o "estado de nervos" do mercado em geral.</span></div>
+          <div class="htu-field"><strong>💼 Atividade</strong><span>Histórico de compras e vendas, com o preço médio recalculado automaticamente e o lucro já realizado (o que já vendeste com lucro/prejuízo).</span></div>
+          <div class="htu-field"><strong>🧮 Simulador</strong><span>Simulações de juro composto e projeções de crescimento a longo prazo.</span></div>
+          <div class="htu-field"><strong>⚙️ Definições</strong><span>É aqui que "ensinas" a app a trabalhar como tu queres — ver secção seguinte.</span></div>
+        </div>
+      </details>
+
+      <details class="htu-section">
+        <summary><i class="fas fa-sliders" style="color: var(--primary);"></i> Como configurar as Definições, passo a passo</summary>
+        <div class="htu-body">
+          <p>Sem isto configurado, a app usa valores genéricos razoáveis — mas fica muito melhor afinada à tua situação real se preencheres:</p>
+
+          <div class="htu-field"><strong>Gestão de Capital & War Chest</strong><span>Liquidez Disponível (quanto tens de parte, pronto a investir), Aporte Mensal Base (o que costumas investir por mês) e a % de Reserva de Oportunidade — quanto desse dinheiro guardar de propósito para comprar mais barato numa queda de mercado, em vez de investir tudo de uma vez.</span></div>
+
+          <div class="htu-field"><strong>Alocação por Classe / Setor / Estilo</strong><span>Os teus pesos-alvo (ex.: 70% Ações, 20% ETFs, 10% Obrigações; ou quanto queres em Tecnologia vs. Saúde vs. Financeiro). O Estilo de Investimento (Growth/Value/Dividendos/Qualidade) ajusta o "gosto" do algoritmo de pontuação — por exemplo, mais peso a Dividendos favorece ativos que pagam bem, mais peso a Growth favorece crescimento mesmo que mais caro.</span></div>
+
+          <div class="htu-field"><strong>Limite por ação (%)</strong><span>A partir de que percentagem uma única posição é considerada "concentração a mais". Serve de referência aos avisos de risco e ao relatório PDF (ex.: 10% é um valor prudente comum).</span></div>
+
+          <div class="htu-field"><strong>Limite por setor (%)</strong><span>O mesmo, mas para um setor inteiro (ex.: não ter mais de 35% só em Tecnologia).</span></div>
+
+          <div class="htu-field"><strong>Confiança mínima (%)</strong><span>Alguns ativos têm poucos dados preenchidos (falta beta, falta P/E, etc.). Este limite decide a partir de que nível de "confiança nos dados" um ativo ainda aparece nas listas de destaque — evita decidir com base em números pouco fiáveis.</span></div>
+
+          <div class="htu-field"><strong>Macro Regime</strong><span>Em que "clima" de mercado achas que estamos agora (ex.: Risk-On, Risk-Off, Recessão, Taxas Altas). Isto muda os pesos internos do algoritmo — por exemplo, em Recessão a Qualidade pesa muito mais do que o Momentum. Se tiveres o Painel de Risco preenchido, a app sugere automaticamente um regime quando os 3 indicadores confirmam stress em simultâneo — mas a escolha final é sempre tua, nunca é trocada sozinha.</span></div>
+
+          <div class="htu-field"><strong>Crisis Ladder (JSON)</strong><span>A "régua" de quanto usar da tua reserva conforme a bolsa vai caindo (ex.: caiu 10% → usar 30% da reserva; caiu 20% → usar 60%). É um campo técnico (JSON) — só vale a pena mexer se estiveres confortável com esse formato; caso contrário, deixa o valor por defeito.</span></div>
+
+          <div class="htu-note">💡 Depois de mudares qualquer uma destas definições, volta ao Portfolio Intelligence e carrega em "Analisar Portfólio" para os motores recalcularem tudo com os novos valores.</div>
+        </div>
+      </details>
+
+      <details class="htu-section">
+        <summary><i class="fas fa-gauge-high" style="color: var(--primary);"></i> Painel de Risco Sistémico</summary>
+        <div class="htu-body">
+          <p>Três indicadores que investidores profissionais seguem para perceber se o mercado está "nervoso":</p>
+          <ul>
+            <li><strong>HY OAS</strong> — quanto mais caro está a ser pedir dinheiro emprestado para empresas mais arriscadas (sobe quando há medo de incumprimentos).</li>
+            <li><strong>MOVE</strong> — volatilidade esperada no mercado de obrigações.</li>
+            <li><strong>VIX</strong> — volatilidade esperada no mercado de ações (o "índice do medo").</li>
+          </ul>
+          <p>Atualiza estes valores de vez em quando no ecrã de Análise. Quando os três estão simultaneamente numa zona de stress, isso é um sinal mais fiável do que olhar só para um deles isoladamente — um único indicador elevado pode ser só ruído.</p>
+        </div>
+      </details>
+
+      <details class="htu-section">
+        <summary><i class="fas fa-magnifying-glass-chart" style="color: var(--primary);"></i> Como ler os resultados do Portfolio Intelligence</summary>
+        <div class="htu-body">
+          <div class="htu-field"><strong>📊 Qualidade de dados</strong><span>Quanto confiar nos números. Se um ativo tem pouca informação preenchida, trata os resultados dele com mais reserva — não é o motor a "inventar", é a app a avisar-te da incerteza.</span></div>
+          <div class="htu-field"><strong>Score de Saúde</strong><span>Nota geral da estrutura da carteira: diversificação, concentração, dependência de poucas empresas gigantes e volatilidade.</span></div>
+          <div class="htu-field"><strong>Stress Test</strong><span>Simula "e se acontecesse outra vez uma crise como a de 2008 ou a da COVID" — não é uma previsão do futuro, é um exercício de "quanto doeria".</span></div>
+          <div class="htu-field"><strong>Índice de Euforia/Bolha</strong><span>Sinaliza quando um ativo (ou a carteira toda) está "esticado" — a subir depressa demais, caro face ao seu próprio histórico, ou tecnicamente sobrecomprado.</span></div>
+          <div class="htu-field"><strong>Fronteira Eficiente (Monte Carlo)</strong><span>Mostra onde estarias, em teoria, com a melhor combinação estatística de retorno/risco. É um ponto de partida para reflexão, não uma ordem de compra ou venda — sobretudo no modo "sem limites".</span></div>
+        </div>
+      </details>
+
+      <details class="htu-section">
+        <summary><i class="fas fa-triangle-exclamation" style="color: var(--primary);"></i> Boas práticas e erros comuns a evitar</summary>
+        <div class="htu-body">
+          <ul>
+            <li>Corre <strong>"Analisar Portfólio"</strong> sempre que mudares as Definições ou fizeres uma compra/venda — os motores não recalculam sozinhos.</li>
+            <li>Não tomes o modo <strong>"sem limites"</strong> da Fronteira Eficiente como instrução literal de compra/venda — é um extremo teórico para discussão.</li>
+            <li>Verifica a <strong>Qualidade de dados</strong> antes de confiar cegamente num número — dados fracos merecem mais ceticismo.</li>
+            <li>Esta app <strong>apoia</strong> a decisão, não a substitui — cruza sempre com o teu próprio critério e, se necessário, aconselhamento profissional independente.</li>
+          </ul>
+        </div>
+      </details>
+
+    </div>
+    <div class="modal-footer" style="padding: 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+      <button class="btn premium" id="howToUseModalOk">Entendido</button>
     </div>
   </div>
 </div>
