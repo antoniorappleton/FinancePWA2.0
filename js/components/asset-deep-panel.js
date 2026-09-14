@@ -9,6 +9,8 @@ import { scoreAssetV2 }           from "../engines/score-v2.js";
 import { generateAssetObservations } from "../engines/observations.js";
 import { enrichETFAsset, isKnownETF, smartETFAnalysis } from "../engines/etf-overlap.js";
 import { getAssetCategory }        from "../utils/normalize.js";
+import { db }                      from "../firebase-config.js";
+import { doc, deleteDoc }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Module state ──────────────────────────────────────────
 let _panel      = null;
@@ -515,6 +517,8 @@ function _tabPosition() {
 
     ${_positionPlanningTools(pos, precoAtual, precoMedio)}
 
+    ${_movementHistory(pos)}
+
     <div style="margin-top:20px;display:flex;gap:8px">
       <button class="adp-action-btn adp-action-btn--buy"
         onclick="window.openActionModal?.('compra','${pos.ticker}');window.closeAssetPanel?.()">
@@ -1006,6 +1010,112 @@ function _wirePositionPlanner(id) {
 
   recalc();
 }
+
+// ── Histórico de movimentos (por ticker) ─────────────────
+// Lê window._allMovimentos (exposto pelo ecrã Atividade) e mostra
+// compra/venda desse ticker, com atalhos para editar/eliminar cada
+// movimento sem precisar de ir à base de dados.
+function _movementHistory(pos) {
+  const ticker = pos?.ticker;
+  const listId = `adp-hist-${String(ticker || "asset").replace(/[^a-z0-9_-]/gi, "")}`;
+  const all = Array.isArray(window._allMovimentos) ? window._allMovimentos : null;
+
+  if (all === null) {
+    // Dados de histórico só existem depois de o ecrã Atividade carregar
+    // pelo menos uma vez nesta sessão (ainda não há um índice global).
+    return `
+      <div class="adp-section-title" style="margin-top:16px">Histórico de Movimentos</div>
+      <div class="adp-empty" style="padding:16px">Abre o ecrã Atividade pelo menos uma vez para carregar o histórico aqui.</div>`;
+  }
+
+  const movimentos = all
+    .filter(m => m.ticker === ticker)
+    .slice()
+    .sort((a, b) => (b.date?.getTime?.() ?? 0) - (a.date?.getTime?.() ?? 0));
+
+  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
+  const fmtQty = v => {
+    const n = Number(v) || 0;
+    return n % 1 === 0 ? n.toFixed(0) : n.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+  };
+
+  const warningHTML = pos?.hasOversoldMovement ? `
+    <div class="adp-obs adp-obs--caution" style="margin-bottom:10px">
+      <span class="adp-obs-icon">!</span>
+      <span class="adp-obs-msg">Detetada uma venda antiga superior à posição existente na altura. Isto pode impedir esta posição de aparecer como "fechada" mesmo depois de vender tudo — revê os movimentos abaixo e corrige/elimina o que estiver errado.</span>
+    </div>` : "";
+
+  if (movimentos.length === 0) {
+    return `
+      <div class="adp-section-title" style="margin-top:16px">Histórico de Movimentos</div>
+      ${warningHTML}
+      <div class="adp-empty" style="padding:16px">Sem movimentos registados para ${ticker}.</div>`;
+  }
+
+  const rows = movimentos.map(m => {
+    const isVenda = m.qtd < 0;
+    const absQtd = Math.abs(m.qtd);
+    const dateStr = m.date instanceof Date && !isNaN(m.date) ? m.date.toLocaleDateString("pt-PT") : "—";
+    return `
+      <div class="adp-hist-row" data-hist-id="${m.id}">
+        <div class="adp-hist-main">
+          <span class="adp-hist-tag ${isVenda ? "neg" : "pos"}">${isVenda ? "Venda" : "Compra"}</span>
+          <span class="adp-hist-date">${dateStr}</span>
+        </div>
+        <div class="adp-hist-vals">
+          <span>${fmtQty(absQtd)} un.</span>
+          <span>${fmtEUR(m.preco)}</span>
+          <span class="adp-hist-total">${fmtEUR(absQtd * (m.preco || 0))}</span>
+        </div>
+        <div class="adp-hist-actions">
+          <button type="button" class="adp-hist-btn" data-hist-edit="${m.id}" title="Editar movimento"><i class="fas fa-edit"></i></button>
+          <button type="button" class="adp-hist-btn adp-hist-btn--del" data-hist-del="${m.id}" title="Eliminar movimento"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>`;
+  }).join("");
+
+  setTimeout(() => _wireMovementHistory(listId, ticker), 0);
+
+  return `
+    <div class="adp-section-title" style="margin-top:16px">Histórico de Movimentos (${movimentos.length})</div>
+    ${warningHTML}
+    <div class="adp-hist-list" id="${listId}">${rows}</div>`;
+}
+
+function _wireMovementHistory(listId, ticker) {
+  const root = document.getElementById(listId);
+  if (!root) return;
+
+  root.querySelectorAll("[data-hist-edit]").forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const docId = btn.getAttribute("data-hist-edit");
+      if (typeof window.openEditMovementModal === "function") {
+        _panelClose();
+        await window.openEditMovementModal(docId, ticker);
+      } else {
+        window.showToast?.("Abre o ecrã Atividade para editar este movimento.", 4000);
+      }
+    };
+  });
+
+  root.querySelectorAll("[data-hist-del]").forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const docId = btn.getAttribute("data-hist-del");
+      if (!confirm("Eliminar este movimento? Esta ação não pode ser desfeita.")) return;
+      try {
+        await deleteDoc(doc(db, "ativos", docId));
+        root.querySelector(`[data-hist-id="${docId}"]`)?.remove();
+        window.showToast?.("Movimento eliminado.", 3000);
+      } catch (err) {
+        console.error("Erro ao eliminar movimento:", err);
+        window.showToast?.("Não foi possível eliminar o movimento.", 4000);
+      }
+    };
+  });
+}
+
 function _bar(label, value, color, sub = "") {
   const pct = Math.min(100, Math.max(0, Number(value) || 0));
   return `

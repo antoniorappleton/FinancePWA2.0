@@ -1467,17 +1467,11 @@ function renderMovementHistory(ticker) {
   }).join("");
 
   corpo.querySelectorAll("[data-edit-move]").forEach(btn => {
-    btn.onclick = (e) => {
+    btn.onclick = async (e) => {
       e.stopPropagation();
       const docId = btn.getAttribute("data-edit-move");
       document.getElementById("activityDetailModal")?.classList.add("hidden");
-      const dummyBtn = document.createElement("button");
-      dummyBtn.setAttribute("data-edit", docId);
-      dummyBtn.setAttribute("data-edit-ticker", ticker);
-      dummyBtn.style.display = "none";
-      document.getElementById("listaAtividades").appendChild(dummyBtn);
-      dummyBtn.click();
-      dummyBtn.remove();
+      await openEditMovementModal(docId, ticker);
     };
   });
 
@@ -1726,10 +1720,11 @@ function wireQuickActions(gruposArr) {
   });
 }
 
-function wireAtividadeListeners() {
-  const cont = document.getElementById("listaAtividades");
-  if (!cont) return;
-
+// (NOVO) Abre o modal de edição para um movimento específico.
+// Extraído para função global reutilizável para que outros componentes
+// (ex: histórico de movimentos no Asset Deep Panel) possam abrir a edição
+// sem depender do DOM/handler específico do ecrã Atividade.
+async function openEditMovementModal(docId, ticker) {
   const $ = (s) => document.querySelector(s);
   const modal = $("#pfAddModal");
   const title = $("#pfAddTitle");
@@ -1745,6 +1740,46 @@ function wireAtividadeListeners() {
   const fData = $("#pfData");
   const fObj = $("#pfObjetivo");
   const fLink = $("#pfLink");
+
+  if (!docId || !modal) return false;
+  try {
+    const ref = doc(db, "ativos", docId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return false;
+    const d = snap.data();
+
+    modal.classList.remove("hidden");
+    if (title) title.textContent = "Editar movimento";
+    if (tipoSel) tipoSel.value = "edicao";
+    const idHidden = document.getElementById("pfDocId");
+    if (idHidden) idHidden.value = docId;
+
+    if (fTicker) fTicker.value = d.ticker || ticker || "";
+    if (fNome) fNome.value = d.nome || "";
+    if (fSetor) fSetor.value = d.setor || "";
+    if (fMerc) fMerc.value = d.mercado || "";
+    if (fQtd) fQtd.value = Number(d.quantidade || 0);
+    if (fPreco) fPreco.value = Number(d.precoCompra || 0);
+    if (fData) {
+      const dtRaw = d.dataCompra && typeof d.dataCompra.toDate === "function" ? d.dataCompra.toDate() : (d.dataCompra ? new Date(d.dataCompra) : new Date());
+      fData.value = dtRaw.toISOString().split("T")[0];
+    }
+    if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
+    if (fLink) fLink.value = d.linkExterno || "";
+
+    if (labelP) labelP.textContent = "Preço (€)";
+    if (vendaTotWrap) vendaTotWrap.style.display = "none";
+    return true;
+  } catch (err) {
+    console.error("Erro ao abrir edição:", err);
+    return false;
+  }
+}
+window.openEditMovementModal = openEditMovementModal;
+
+function wireAtividadeListeners() {
+  const cont = document.getElementById("listaAtividades");
+  if (!cont) return;
 
   cont.addEventListener("click", async (e) => {
     // 1. BUY/SELL/CHART
@@ -1822,38 +1857,7 @@ function wireAtividadeListeners() {
     if (btnEdit) {
       const docId = btnEdit.getAttribute("data-edit");
       const ticker = btnEdit.getAttribute("data-edit-ticker") || "";
-      if (!docId) return;
-      try {
-        const ref = doc(db, "ativos", docId);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) return;
-        const d = snap.data();
-        
-        modal?.classList.remove("hidden");
-        if (title) title.textContent = "Editar movimento";
-        if (tipoSel) tipoSel.value = "edicao";
-        const idHidden = document.getElementById("pfDocId");
-        if (idHidden) idHidden.value = docId;
-        
-        if (fTicker) fTicker.value = d.ticker || ticker || "";
-        if (fNome) fNome.value = d.nome || "";
-        if (fSetor) fSetor.value = d.setor || "";
-        if (fMerc) fMerc.value = d.mercado || "";
-        if (fQtd) fQtd.value = Number(d.quantidade || 0);
-        if (fPreco) fPreco.value = Number(d.precoCompra || 0);
-        if (fData) {
-          const dtRaw = d.dataCompra && typeof d.dataCompra.toDate === "function" ? d.dataCompra.toDate() : (d.dataCompra ? new Date(d.dataCompra) : new Date());
-          fData.value = dtRaw.toISOString().split("T")[0];
-        }
-        if (fObj) fObj.value = Number(d.objetivoFinanceiro || 0);
-        if (fLink) fLink.value = d.linkExterno || "";
-        
-        if (labelP) labelP.textContent = "Preço (€)";
-        if (vendaTotWrap) vendaTotWrap.style.display = "none";
-      } catch (err) {
-        console.error("Erro ao abrir edição:", err);
-      }
-
+      await openEditMovementModal(docId, ticker);
     }
   });
 }
@@ -2288,6 +2292,9 @@ function showPortfolioHelp(force = false) {
       const gruposArr = portfolioAggregation.groupsArr;
       const movimentosAsc = portfolioAggregation.movimentosAsc;
       _allMovimentos = movimentosAsc;
+      // Exposto para o Asset Deep Panel (componente partilhado entre ecrãs)
+      // conseguir mostrar/editar o histórico de movimentos por ticker.
+      window._allMovimentos = movimentosAsc;
       const fmtEUR = new Intl.NumberFormat("pt-PT", {
         style: "currency",
         currency: "EUR",

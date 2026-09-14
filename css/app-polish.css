@@ -943,3 +943,68 @@ tbody tr:hover,
   .adp-plan-card-head { align-items: stretch; }
   .adp-plan-pill { align-self: flex-start; }
 }
+
+/* ── Histórico de movimentos (Posição) ── */
+.adp-hist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.adp-hist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--muted);
+  border-radius: 8px;
+  font-size: .78rem;
+  flex-wrap: wrap;
+}
+.adp-hist-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.adp-hist-tag {
+  font-size: .65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: .03em;
+}
+.adp-hist-tag.pos { background: rgba(22,163,74,.15); color: #16a34a; }
+.adp-hist-tag.neg { background: rgba(220,38,38,.15); color: #dc2626; }
+.adp-hist-date { color: var(--muted-foreground); font-size: .72rem; white-space: nowrap; }
+.adp-hist-vals {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted-foreground);
+  font-size: .72rem;
+  flex-wrap: wrap;
+}
+.adp-hist-total { font-weight: 700; color: var(--foreground); }
+.adp-hist-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.adp-hist-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--primary);
+  font-size: .8rem;
+  transition: background 150ms;
+}
+.adp-hist-btn:hover { background: rgba(var(--primary-rgb,99,102,241),.12); }
+.adp-hist-btn--del { color: #dc2626; }
+.adp-hist-btn--del:hover { background: rgba(220,38,38,.12); }
