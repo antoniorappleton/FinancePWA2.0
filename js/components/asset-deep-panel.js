@@ -831,13 +831,200 @@ function _priceLevelsVsAvg(precoAtual, precoMedio) {
       }).join("")}
     </div>`;
 }
+// ── Simulador de venda automática (take-profit para TR) ────
+// Guarda percentagens personalizadas em localStorage para reutilizar
+// entre ativos e sessões, sem precisar de calculadora externa.
+const _SELL_PRESETS_KEY = "appfinance-adp-sell-presets-v1";
+const _SELL_DEFAULT_PCTS = [-10, -5, 5, 10];
+
+function _loadCustomSellPcts() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(_SELL_PRESETS_KEY) || "[]");
+    return Array.isArray(raw)
+      ? raw.filter(n => Number.isFinite(n) && n !== 0 && !_SELL_DEFAULT_PCTS.includes(n))
+      : [];
+  } catch { return []; }
+}
+function _saveCustomSellPcts(list) {
+  try { localStorage.setItem(_SELL_PRESETS_KEY, JSON.stringify(list)); } catch {}
+}
+
+function _sellTargetSimulator(precoAtual, precoMedio, qty, invested) {
+  const price = Number(precoAtual || 0);
+  if (price <= 0) return "";
+  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
+  const customPcts = _loadCustomSellPcts();
+  const simId = `adp-sell-sim-${Math.random().toString(36).slice(2, 8)}`;
+  const qtyNum = Number(qty || 0);
+
+  setTimeout(() => _wireSellTargetSimulator(simId), 0);
+
+  const chipHTML = (p, custom) => `
+    <button type="button" class="adp-plan-chip adp-sell-chip${custom ? " adp-sell-chip--custom" : ""}${p === 5 ? " active" : ""}" data-value="${p}">
+      ${p > 0 ? "+" : ""}${p}%${custom ? ` <span class="adp-sell-chip-remove" data-remove-pct="${p}" title="Remover">&times;</span>` : ""}
+    </button>`;
+
+  return `
+    <div class="adp-section-title" style="margin-top:16px">Simulador de Venda Autom&aacute;tica (TR)</div>
+    <div class="adp-plan-card adp-plan-card--sell" id="${simId}" data-price="${price}" data-avg="${Number(precoMedio || 0)}" data-qty="${qtyNum}" data-invested="${Number(invested || 0)}">
+      <div class="adp-plan-card-head">
+        <div>
+          <div class="adp-plan-title">Pre&ccedil;o alvo para ordem de venda</div>
+          <div class="adp-plan-sub">Desliza entre -10% e +10% ou escreve uma % pr&oacute;pria para saber logo o pre&ccedil;o a colocar no TR.</div>
+        </div>
+        <span class="adp-plan-pill">Take-profit</span>
+      </div>
+
+      <div class="adp-sell-slider-row">
+        <input type="range" class="adp-sell-slider" data-sell-slider min="-10" max="10" step="0.5" value="5">
+        <div class="adp-sell-slider-val" data-sell-pct-label>+5.0%</div>
+      </div>
+
+      <div class="adp-sell-target-big">
+        <span>Pre&ccedil;o alvo</span>
+        <strong data-sell-target-price class="pos">${fmtEUR(price * 1.05)}</strong>
+      </div>
+      <div class="adp-sell-target-sub" data-sell-target-sub></div>
+
+      ${qtyNum > 0 ? `
+      <div class="adp-sell-net-row">
+        <div class="adp-sell-net-item">
+          <span>Valor l&iacute;quido da venda (${qtyNum % 1 === 0 ? qtyNum.toFixed(0) : qtyNum.toFixed(4)} a&ccedil;&otilde;es, -1,04&euro; comiss&atilde;o)</span>
+          <strong data-sell-net-value>&mdash;</strong>
+        </div>
+        <div class="adp-sell-net-item">
+          <span>Resultado estimado vs investido</span>
+          <strong data-sell-net-pnl>&mdash;</strong>
+        </div>
+      </div>` : ""}
+
+      <div class="adp-plan-grid" style="margin-top:10px">
+        <label class="adp-plan-field">
+          <span>% personalizada</span>
+          <input class="adp-plan-input" data-sell-custom-input type="number" step="0.1" placeholder="ex. 3.5">
+        </label>
+        <label class="adp-plan-field">
+          <span>&nbsp;</span>
+          <button type="button" class="adp-plan-save-btn" data-sell-save-btn>Guardar %</button>
+        </label>
+      </div>
+
+      <div class="adp-sell-chips" data-sell-chip-group>
+        ${_SELL_DEFAULT_PCTS.map(p => chipHTML(p, false)).join("")}
+        ${customPcts.map(p => chipHTML(p, true)).join("")}
+      </div>
+    </div>`;
+}
+
+function _wireSellTargetSimulator(id) {
+  const root = document.getElementById(id);
+  if (!root) return;
+
+  const price = Number(root.dataset.price || 0);
+  const avg = Number(root.dataset.avg || 0);
+  const qty = Number(root.dataset.qty || 0);
+  const invested = Number(root.dataset.invested || 0);
+  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
+
+  const slider = root.querySelector("[data-sell-slider]");
+  const pctLabel = root.querySelector("[data-sell-pct-label]");
+  const targetEl = root.querySelector("[data-sell-target-price]");
+  const subEl = root.querySelector("[data-sell-target-sub]");
+  const customInput = root.querySelector("[data-sell-custom-input]");
+  const saveBtn = root.querySelector("[data-sell-save-btn]");
+  const chipGroup = root.querySelector("[data-sell-chip-group]");
+  const netValueEl = root.querySelector("[data-sell-net-value]");
+  const netPnlEl = root.querySelector("[data-sell-net-pnl]");
+  if (!slider || !pctLabel || !targetEl || !chipGroup) return;
+
+  const applyPct = pct => {
+    pct = Number(pct);
+    if (!Number.isFinite(pct)) return;
+    const target = price * (1 + pct / 100);
+    pctLabel.textContent = `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
+    targetEl.textContent = fmtEUR(target);
+    targetEl.className = pct >= 0 ? "pos" : "neg";
+    if (pct >= -10 && pct <= 10) slider.value = pct;
+    if (subEl) {
+      subEl.textContent = avg > 0
+        ? `${((target / avg - 1) * 100 >= 0) ? "+" : ""}${((target / avg - 1) * 100).toFixed(1)}% vs PM (${fmtEUR(avg)})`
+        : "";
+    }
+    if (netValueEl && qty > 0) {
+      const netValue = Math.max(0, qty * target - 1.04);
+      netValueEl.textContent = fmtEUR(netValue);
+      if (netPnlEl) {
+        if (invested > 0) {
+          const pnl = netValue - invested;
+          const pnlPct = (pnl / invested) * 100;
+          netPnlEl.textContent = `${pnl >= 0 ? "+" : ""}${fmtEUR(pnl)} (${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(1)}%)`;
+          netPnlEl.className = pnl >= 0 ? "pos" : "neg";
+        } else {
+          netPnlEl.textContent = "—";
+          netPnlEl.className = "";
+        }
+      }
+    }
+    chipGroup.querySelectorAll(".adp-sell-chip").forEach(chip => {
+      chip.classList.toggle("active", Number(chip.dataset.value) === pct);
+    });
+  };
+
+  slider.addEventListener("input", () => applyPct(Number(slider.value)));
+
+  chipGroup.addEventListener("click", e => {
+    const removeBtn = e.target.closest("[data-remove-pct]");
+    if (removeBtn) {
+      e.stopPropagation();
+      const pct = Number(removeBtn.dataset.removePct);
+      _saveCustomSellPcts(_loadCustomSellPcts().filter(p => p !== pct));
+      removeBtn.closest(".adp-sell-chip")?.remove();
+      return;
+    }
+    const chip = e.target.closest(".adp-sell-chip");
+    if (chip) applyPct(Number(chip.dataset.value));
+  });
+
+  saveBtn?.addEventListener("click", () => {
+    const val = Number(customInput?.value);
+    if (!Number.isFinite(val) || val === 0) return;
+    if (!_SELL_DEFAULT_PCTS.includes(val)) {
+      const list = _loadCustomSellPcts();
+      if (!list.includes(val)) {
+        list.push(val);
+        list.sort((a, b) => a - b);
+        _saveCustomSellPcts(list);
+      }
+    }
+    applyPct(val);
+    if (customInput) customInput.value = "";
+    if (!chipGroup.querySelector(`[data-value="${val}"]`)) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "adp-plan-chip adp-sell-chip adp-sell-chip--custom active";
+      btn.dataset.value = val;
+      btn.innerHTML = `${val > 0 ? "+" : ""}${val}% <span class="adp-sell-chip-remove" data-remove-pct="${val}" title="Remover">&times;</span>`;
+      chipGroup.appendChild(btn);
+      chipGroup.querySelectorAll(".adp-sell-chip").forEach(c => c.classList.toggle("active", c === btn));
+    }
+  });
+
+  customInput?.addEventListener("input", () => {
+    if (customInput.value !== "" && Number.isFinite(Number(customInput.value))) {
+      applyPct(Number(customInput.value));
+    }
+  });
+
+  applyPct(5);
+}
+
 function _positionPlanningTools(pos, precoAtual, precoMedio) {
   const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
   const qty = Number(pos.qtd || 0);
   const invested = Number(pos.investido || 0);
   const dropPct = precoMedio > 0 && precoAtual > 0 ? ((precoAtual / precoMedio) - 1) * 100 : 0;
   const targetDefault = precoMedio > 0 ? Math.max(precoAtual * 1.01, precoMedio * 0.95) : 0;
-  const breakeven = qty > 0 && invested > 0 ? (invested + 2) / qty : 0;
+  const breakeven = qty > 0 && invested > 0 ? (invested + 2.08) / qty : 0;
   const plannerId = `adp-plan-${String(pos.ticker || "asset").replace(/[^a-z0-9_-]/gi, "")}`;
 
   setTimeout(() => _wirePositionPlanner(plannerId), 0);
@@ -854,6 +1041,8 @@ function _positionPlanningTools(pos, precoAtual, precoMedio) {
         <span>PM: <strong>${fmtEUR(precoMedio)}</strong></span>
         <span class="${dropPct < 0 ? "neg" : "pos"}">${dropPct >= 0 ? "+" : ""}${dropPct.toFixed(1)}% vs PM</span>
       </div>
+
+      ${_sellTargetSimulator(precoAtual, precoMedio, qty, invested)}
 
       ${_priceLevelsVsAvg(precoAtual, precoMedio)}
 
@@ -922,7 +1111,7 @@ function _positionPlanningTools(pos, precoAtual, precoMedio) {
 
       ${breakeven > 0 ? `
       <div class="adp-plan-breakeven">
-        <span>Ponto de equil&iacute;brio com 2&euro; comiss&otilde;es</span>
+        <span>Ponto de equil&iacute;brio com 2,08&euro; comiss&otilde;es</span>
         <strong class="${precoAtual >= breakeven ? "pos" : "neg"}">${fmtEUR(breakeven)}</strong>
       </div>` : ""}
     </div>`;

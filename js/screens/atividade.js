@@ -1598,8 +1598,8 @@ function wireQuickActions(gruposArr) {
     if (p > 0 && q > 0) {
       let baseCost = p * q;
       if (incluirComissao) {
-         if (tipo === "compra") baseCost += 1;
-         else if (tipo === "venda") baseCost = Math.max(0, baseCost - 1);
+         if (tipo === "compra") baseCost += 1.04;
+         else if (tipo === "venda") baseCost = Math.max(0, baseCost - 1.04);
       }
       const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
       custoTotal.textContent = fmtEUR.format(baseCost);
@@ -1690,7 +1690,7 @@ function wireQuickActions(gruposArr) {
 
         let precoFinal = preco;
         if (incluirComissao && qtdEfetiva > 0) {
-          const comissaoUnit = 1 / qtdEfetiva;
+          const comissaoUnit = 1.04 / qtdEfetiva;
           if (tipo === "compra") {
             precoFinal = preco + comissaoUnit;
           } else if (tipo === "venda") {
