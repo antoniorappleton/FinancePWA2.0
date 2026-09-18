@@ -659,8 +659,9 @@ export function initScreen() {
           S: state.weights?.Rsk,
         };
 
+        const activeRegime = elMacroRegime?.value || "high_rates";
         const scored = allData.map(d => {
-          const res = calculateLucroMaximoScore(d, "1y", styleAllocScaled, null, userWeights);
+          const res = calculateLucroMaximoScore(d, "1y", styleAllocScaled, activeRegime, userWeights);
           let type = getAssetType(d.ticker, d);
           const nomeU = String(d.nome || "").toUpperCase();
           if (nomeU.includes("BOND") || nomeU.includes("OBRIGA") || nomeU.includes("TREASURY")) {

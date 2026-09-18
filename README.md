@@ -138,9 +138,22 @@ A APPFinance conta com uma estrutura rigorosa de processamento quantitativo. Aba
     5.  **Eficiência (E):** Avalia a rentabilidade operacional recorrendo ao ROIC, ROE e Margem Operacional.
     6.  **Solvabilidade (S):** Estuda a robustez do balanço com recurso ao Current Ratio e rácio de Dívida sobre Capital Próprio.
 *   **Pesos Dinâmicos por Classe de Ativo:**
-    *   **Ações:** Aplica os pesos base (R: 10%, V: 25%, T: 15%, D: 15%, E: 25%, S: 10%) ou os multiplicadores personalizados ajustados pelo utilizador nas definições.
+    *   **Ações:** por defeito usa o blend interno do motor V2 (Quality 35% / Momentum 15% / Valuation 30% / Risk 20%, ajustado por regime macro). O **Estilo de Investimento** (Growth/Value/Dividendos/Qualidade, em Definições) ajusta esses pesos internos via multiplicadores. Nos fluxos que passam explicitamente os **"Pesos do Algoritmo"** (R/V/T/D/E/Risco de Definições) — hoje só o Portfólio Sugerido (ver 1.1) — o score final passa a ser antes a combinação ponderada dos seis componentes por esses pesos, substituindo o blend fixo do V2.
     *   **ETFs:** Pontua com base em Tendência Técnica (40%), Diversificação (25%), Custo/TER (15%), Liquidez (10%) e Volatilidade (10%).
     *   **Cripto:** Avalia sobretudo a Tendência Técnica (45%), Momentum de Curto Prazo (20%) e Volatilidade (25%).
+
+### 1.1. Portfólio Sugerido (IA) — Seleção e Alocação de Capital
+*   **Ficheiro:** [`js/screens/settings.js`](file:///c:/Users/Antonio.Appleton/Documents/ProgramingCourse/GitProjectos/FinancePWA2.0/js/screens/settings.js) (função `showSuggestedPortfolio`), acionado pelo botão **"Ver Portfólio Sugerido (IA)"** em Definições → Estratégia.
+*   **Funcionamento:** gera uma proposta de carteira completa a partir de todo o universo de ativos disponível (não só os que já tens em carteira), respeitando os alvos definidos em Definições, em 5 passos:
+    1.  **Score de cada ativo:** todo o universo é avaliado pelo Algoritmo "Lucro Máximo" (secção 1), com a taxa de crescimento a 1 ano (não mensal) e, se tiveres ajustado os "Pesos do Algoritmo", com o score final ponderado por eles.
+    2.  **Divisão por Classe:** a Liquidez Disponível é repartida primeiro pelos alvos de "Alocação por Classe" (% Ações / % ETFs / % Obrigações).
+    3.  **Seleção de Ações por Setor:** dentro da fatia de Ações, o capital é redistribuído pelos pesos de "Distribuição por Setores"; para cada setor com peso definido, entram os **2 ativos com melhor score** desse setor. Sem pesos de setor definidos, usa-se um fallback simples: top 5 ações por score, sem distinção de setor.
+    4.  **Seleção de ETFs/Obrigações:** dentro de cada classe, entram os **5 ativos com melhor score**.
+    5.  **Alocação dentro de cada grupo:** o capital de cada grupo (o par de ações do mesmo setor, ou o top-5 de ETFs/Obrigações) é dividido **proporcionalmente ao score** de cada ativo — não em partes iguais — para que o melhor ativo do grupo receba mais capital do que o mais fraco.
+*   **Métricas apresentadas:**
+    *   **Score Médio / Yield Estimado / Crescimento Anual Médio:** médias simples (por número de ativos selecionados, não ponderadas pelo capital de cada um) do score, do yield e do crescimento anualizado a 1 ano.
+    *   **Projeção a 1/3/5 anos:** aplica juro composto sobre o capital total com a taxa combinada crescimento médio + yield médio (`capital × (1 + taxa)^anos`) — é uma extrapolação do histórico recente, não uma previsão garantida.
+*   **Limitação conhecida:** a seleção por setor não tem piso mínimo de score nem teto por ativo/setor — se alocaste peso a um setor nas Definições, os 2 melhores desse setor entram sempre, mesmo com score fraco face a outros setores. É uma escolha deliberada de diversificação, mas pode diluir o retorno esperado de uma carteira puramente "melhor score primeiro".
 
 ### 2. Motor de Saúde Estrutural do Portfólio
 *   **Ficheiro:** [`js/engines/portfolio-health.js`](file:///c:/Users/Antonio.Appleton/Documents/ProgramingCourse/GitProjectos/FinancePWA2.0/js/engines/portfolio-health.js) (função `portfolioHealth`)
