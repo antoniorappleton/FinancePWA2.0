@@ -166,6 +166,118 @@
       gap: 8px;
     }
   }
+  /* Toggle "Configurações Avançadas" na tab Estratégia */
+  .settings-advanced-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--foreground);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .settings-advanced-toggle:hover {
+    border-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.04);
+  }
+
+  .settings-advanced-toggle i.fa-sliders-h {
+    color: var(--primary);
+    margin-right: 8px;
+  }
+
+  .settings-advanced-chevron {
+    transition: transform 0.25s ease;
+    color: var(--muted-foreground);
+  }
+
+  .settings-advanced-toggle[aria-expanded="true"] .settings-advanced-chevron {
+    transform: rotate(180deg);
+  }
+
+  .settings-advanced-body {
+    display: none;
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  .settings-advanced-body.is-open {
+    display: grid;
+  }
+
+  /* Label com ícone (cabeçalho de secção dentro de um cartão) */
+  .settings-label-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Alocação por Classe de Ativos (Ações / ETFs / Obrigações) */
+  .alloc-class-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 120px;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .alloc-class-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .alloc-class-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .alloc-class-input-wrap {
+    position: relative;
+  }
+
+  .alloc-class-input-wrap input {
+    padding-right: 25px;
+  }
+
+  .alloc-class-suffix {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+  }
+
+  .alloc-class-value {
+    font-weight: 700;
+    text-align: right;
+    color: var(--primary);
+  }
+
+  .alloc-class-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 550px) {
+    .alloc-class-row {
+      grid-template-columns: 1fr 80px 90px;
+      gap: 8px;
+    }
+  }
+
   /* Style Allocation */
   .style-alloc-row {
     padding: 10px;
@@ -439,7 +551,7 @@
       <div class="card">
         <div class="card-content">
           <div style="width: 100%">
-            <p class="label" style="display: flex; align-items: center; gap: 8px;">
+            <p class="label settings-label-icon">
               <i class="fas fa-shield-halved" style="color: var(--primary)"></i>
               Gestão de Capital & War Chest
             </p>
@@ -479,11 +591,84 @@
         </div>
       </div>
 
+      <!-- ALOCAÇÃO POR CLASSE DE ATIVOS -->
+      <div class="card premium">
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label settings-label-icon">
+              <i class="fas fa-chart-pie" style="color: var(--primary)"></i>
+              Estratégia de Alocação por Classe
+            </p>
+            <div class="muted" style="margin-bottom: 20px">
+              Define quanto queres alocar a cada tipo de ativo. O sistema calcula os valores com base na tua Liquidez Disponível.
+            </div>
+
+            <div style="display: grid; gap: 20px;">
+              <!-- Ações -->
+              <div class="alloc-class-row">
+                <div class="alloc-class-label">
+                  <div class="alloc-class-dot" style="background: #3b82f6;"></div>
+                  <span>Ações</span>
+                </div>
+                <div class="alloc-class-input-wrap">
+                  <input id="cfgAllocStocks" type="number" step="1" max="100" min="0" value="40" />
+                  <span class="alloc-class-suffix">%</span>
+                </div>
+                <div id="valAllocStocks" class="alloc-class-value">0,00 €</div>
+              </div>
+
+              <!-- ETFs -->
+              <div class="alloc-class-row">
+                <div class="alloc-class-label">
+                  <div class="alloc-class-dot" style="background: #22c55e;"></div>
+                  <span>ETFs</span>
+                </div>
+                <div class="alloc-class-input-wrap">
+                  <input id="cfgAllocEtfs" type="number" step="1" max="100" min="0" value="40" />
+                  <span class="alloc-class-suffix">%</span>
+                </div>
+                <div id="valAllocEtfs" class="alloc-class-value">0,00 €</div>
+              </div>
+
+              <!-- Obrigações -->
+              <div class="alloc-class-row">
+                <div class="alloc-class-label">
+                  <div class="alloc-class-dot" style="background: #f59e0b;"></div>
+                  <span>Obrigações</span>
+                </div>
+                <div class="alloc-class-input-wrap">
+                  <input id="cfgAllocBonds" type="number" step="1" max="100" min="0" value="20" />
+                  <span class="alloc-class-suffix">%</span>
+                </div>
+                <div id="valAllocBonds" class="alloc-class-value">0,00 €</div>
+              </div>
+
+              <div class="alloc-class-total-row">
+                 <div style="font-size: 0.85rem;">Total: <strong id="valAllocTotal">100%</strong></div>
+                 <div id="cfgAllocStatus" class="muted" style="font-size: 0.8rem;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOGGLE: CONFIGURAÇÕES AVANÇADAS -->
+      <button type="button" id="btnToggleAdvancedStrategy" class="settings-advanced-toggle" aria-expanded="false">
+        <span>
+          <i class="fas fa-sliders-h"></i>
+          Configurações Avançadas
+          <span class="muted" style="font-weight: 500;">— Risco, Setores, Estilo, Algoritmo</span>
+        </span>
+        <i class="fas fa-chevron-down settings-advanced-chevron"></i>
+      </button>
+
+      <div id="estrategiaAdvanced" class="settings-advanced-body">
+
       <!-- CONFIGURAÇÃO DE RISCO E REGIME -->
       <div class="card premium">
         <div class="card-content">
           <div style="width: 100%">
-            <p class="label" style="display: flex; align-items: center; gap: 8px;">
+            <p class="label settings-label-icon">
               <i class="fas fa-tasks" style="color: var(--primary)"></i>
               Configuração de Risco e Regime
             </p>
@@ -523,72 +708,11 @@
         </div>
       </div>
 
-      <!-- ALOCAÇÃO POR CLASSE DE ATIVOS -->
-      <div class="card premium">
-        <div class="card-content">
-          <div style="width: 100%">
-            <p class="label" style="display: flex; align-items: center; gap: 8px;">
-              <i class="fas fa-chart-pie" style="color: var(--primary)"></i>
-              Estratégia de Alocação por Classe
-            </p>
-            <div class="muted" style="margin-bottom: 20px">
-              Define quanto queres alocar a cada tipo de ativo. O sistema calcula os valores com base na tua Liquidez Disponível.
-            </div>
-
-            <div style="display: grid; gap: 20px;">
-              <!-- Ações -->
-              <div style="display: grid; grid-template-columns: 1fr 100px 120px; gap: 16px; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="width: 12px; height: 12px; border-radius: 3px; background: #3b82f6;"></div>
-                  <span>Ações</span>
-                </div>
-                <div style="position: relative;">
-                  <input id="cfgAllocStocks" type="number" step="1" max="100" min="0" value="40" style="padding-right: 25px;" />
-                  <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5;">%</span>
-                </div>
-                <div id="valAllocStocks" style="font-weight: 700; text-align: right; color: var(--primary);">0,00 €</div>
-              </div>
-
-              <!-- ETFs -->
-              <div style="display: grid; grid-template-columns: 1fr 100px 120px; gap: 16px; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="width: 12px; height: 12px; border-radius: 3px; background: #22c55e;"></div>
-                  <span>ETFs</span>
-                </div>
-                <div style="position: relative;">
-                  <input id="cfgAllocEtfs" type="number" step="1" max="100" min="0" value="40" style="padding-right: 25px;" />
-                  <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5;">%</span>
-                </div>
-                <div id="valAllocEtfs" style="font-weight: 700; text-align: right; color: var(--primary);">0,00 €</div>
-              </div>
-
-              <!-- Obrigações -->
-              <div style="display: grid; grid-template-columns: 1fr 100px 120px; gap: 16px; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="width: 12px; height: 12px; border-radius: 3px; background: #f59e0b;"></div>
-                  <span>Obrigações</span>
-                </div>
-                <div style="position: relative;">
-                  <input id="cfgAllocBonds" type="number" step="1" max="100" min="0" value="20" style="padding-right: 25px;" />
-                  <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); opacity: 0.5;">%</span>
-                </div>
-                <div id="valAllocBonds" style="font-weight: 700; text-align: right; color: var(--primary);">0,00 €</div>
-              </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--border);">
-                 <div style="font-size: 0.85rem;">Total: <strong id="valAllocTotal">100%</strong></div>
-                 <div id="cfgAllocStatus" class="muted" style="font-size: 0.8rem;"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- NOVA SECÇÃO: DISTRIBUIÇÃO POR SETORES -->
       <div class="card">
         <div class="card-content">
           <div style="width: 100%">
-            <p class="label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <p class="label settings-label-icon" style="margin-bottom: 6px;">
               <i class="fas fa-layer-group" style="color: var(--primary)"></i>
               Distribuição por Setores
             </p>
@@ -774,7 +898,7 @@
       <div class="card">
         <div class="card-content">
           <div style="width: 100%">
-            <p class="label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <p class="label settings-label-icon" style="margin-bottom: 6px;">
               <i class="fas fa-bullseye" style="color: var(--primary)"></i>
               Estilo de Investimento
             </p>
@@ -910,6 +1034,9 @@
         </div>
       </div>
 
+      </div>
+      <!-- /estrategiaAdvanced -->
+
       <!-- ============================================================ -->
       <!-- BLOCO FINAL: GUARDAR TUDO + VER PORTFÓLIO SUGERIDO (IA)      -->
       <!-- Aparece SEMPRE no final, depois de todas as configurações     -->
@@ -983,64 +1110,6 @@
       </div>
     </div>
 
-    <!-- 🔔 ALERTAS DE PORTFÓLIO -->
-    <div class="card" style="margin-top: 16px;">
-      <div class="card-content" style="display:block;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-          <div>
-            <p class="label" style="margin:0 0 4px;">Alertas de Portfólio</p>
-            <p class="muted" style="font-size:0.75rem; margin:0;">Dispara notificação quando as condições forem atingidas</p>
-          </div>
-          <button id="btnAddAlert" class="btn premium" style="margin:0; padding:8px 14px; font-size:0.78rem; display:flex; align-items:center; gap:6px;">
-            <i class="fas fa-bell-plus"></i> Novo Alerta
-          </button>
-        </div>
-
-        <!-- Formulário novo alerta -->
-        <div id="alertFormWrap" style="display:none; background:rgba(var(--primary-rgb),0.04); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <div>
-              <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Ticker</label>
-              <input id="alertTicker" type="text" class="pf-input" placeholder="Ex: AAPL" style="text-transform:uppercase;" />
-            </div>
-            <div>
-              <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Tipo</label>
-              <select id="alertType" class="pf-input">
-                <option value="preco_alvo">Preço alvo (≥)</option>
-                <option value="preco_queda">Preço de queda (≤)</option>
-                <option value="rsi_compra">RSI Sobrevenda (≤)</option>
-                <option value="rsi_venda">RSI Sobrecompra (≥)</option>
-                <option value="alocacao">Desvio de Alocação (%)</option>
-              </select>
-            </div>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <div>
-              <label id="alertValueLabel" style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Valor (€)</label>
-              <input id="alertValue" type="number" class="pf-input" step="0.01" placeholder="0.00" />
-            </div>
-            <div id="alertThresholdWrap" style="display:none;">
-              <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Tolerância (%)</label>
-              <input id="alertThreshold" type="number" class="pf-input" value="5" step="0.5" min="0.5" />
-            </div>
-          </div>
-          <div style="display:flex; gap:8px;">
-            <button id="btnSaveAlert" class="btn premium" style="margin:0; flex:1; font-size:0.78rem;">Guardar Alerta</button>
-            <button id="btnCancelAlert" class="btn ghost" style="margin:0; font-size:0.78rem;">Cancelar</button>
-          </div>
-        </div>
-
-        <!-- Lista de alertas ativos -->
-        <div id="alertsList" style="display:grid; gap:8px;">
-          <div class="muted" style="text-align:center; padding:20px; font-size:0.8rem;">Sem alertas configurados.</div>
-        </div>
-
-        <button id="btnRequestNotifPerm" class="btn outline" style="width:100%; margin-top:12px; font-size:0.78rem; display:none;">
-          <i class="fas fa-bell"></i> Ativar Notificações do Browser
-        </button>
-      </div>
-    </div>
-
     <!-- TAB: PREFERÊNCIAS -->
     <div id="tab-interface" class="settings-section">
       <div class="card">
@@ -1082,6 +1151,64 @@
               </label>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 🔔 ALERTAS DE PORTFÓLIO -->
+      <div class="card">
+        <div class="card-content" style="display:block;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <p class="label" style="margin:0 0 4px;">Alertas de Portfólio</p>
+              <p class="muted" style="font-size:0.75rem; margin:0;">Dispara notificação quando as condições forem atingidas</p>
+            </div>
+            <button id="btnAddAlert" class="btn premium" style="margin:0; padding:8px 14px; font-size:0.78rem; display:flex; align-items:center; gap:6px;">
+              <i class="fas fa-bell-plus"></i> Novo Alerta
+            </button>
+          </div>
+
+          <!-- Formulário novo alerta -->
+          <div id="alertFormWrap" style="display:none; background:rgba(var(--primary-rgb),0.04); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+              <div>
+                <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Ticker</label>
+                <input id="alertTicker" type="text" class="pf-input" placeholder="Ex: AAPL" style="text-transform:uppercase;" />
+              </div>
+              <div>
+                <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Tipo</label>
+                <select id="alertType" class="pf-input">
+                  <option value="preco_alvo">Preço alvo (≥)</option>
+                  <option value="preco_queda">Preço de queda (≤)</option>
+                  <option value="rsi_compra">RSI Sobrevenda (≤)</option>
+                  <option value="rsi_venda">RSI Sobrecompra (≥)</option>
+                  <option value="alocacao">Desvio de Alocação (%)</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+              <div>
+                <label id="alertValueLabel" style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Valor (€)</label>
+                <input id="alertValue" type="number" class="pf-input" step="0.01" placeholder="0.00" />
+              </div>
+              <div id="alertThresholdWrap" style="display:none;">
+                <label style="font-size:0.72rem; font-weight:700; display:block; margin-bottom:4px;">Tolerância (%)</label>
+                <input id="alertThreshold" type="number" class="pf-input" value="5" step="0.5" min="0.5" />
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="btnSaveAlert" class="btn premium" style="margin:0; flex:1; font-size:0.78rem;">Guardar Alerta</button>
+              <button id="btnCancelAlert" class="btn ghost" style="margin:0; font-size:0.78rem;">Cancelar</button>
+            </div>
+          </div>
+
+          <!-- Lista de alertas ativos -->
+          <div id="alertsList" style="display:grid; gap:8px;">
+            <div class="muted" style="text-align:center; padding:20px; font-size:0.8rem;">Sem alertas configurados.</div>
+          </div>
+
+          <button id="btnRequestNotifPerm" class="btn outline" style="width:100%; margin-top:12px; font-size:0.78rem; display:none;">
+            <i class="fas fa-bell"></i> Ativar Notificações do Browser
+          </button>
         </div>
       </div>
     </div>

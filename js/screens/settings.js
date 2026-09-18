@@ -646,8 +646,21 @@ export function initScreen() {
           qual:   userStyles.qual   * 100,
         };
 
+        // Pesos do Algoritmo (Crescimento/Valuation/Tendência/Dividendos/Eficiência/Risco),
+        // configurados em Definições > Estratégia > Avançado > "Pesos do Algoritmo".
+        // Mapeamento: state.weights usa a chave "Rsk" para risco; calculateLucroMaximoScore
+        // espera "S" (mesma convenção do SCORING_CFG.WEIGHTS).
+        const userWeights = {
+          R: state.weights?.R,
+          V: state.weights?.V,
+          T: state.weights?.T,
+          D: state.weights?.D,
+          E: state.weights?.E,
+          S: state.weights?.Rsk,
+        };
+
         const scored = allData.map(d => {
-          const res = calculateLucroMaximoScore(d, "1m", styleAllocScaled);
+          const res = calculateLucroMaximoScore(d, "1y", styleAllocScaled, null, userWeights);
           let type = getAssetType(d.ticker, d);
           const nomeU = String(d.nome || "").toUpperCase();
           if (nomeU.includes("BOND") || nomeU.includes("OBRIGA") || nomeU.includes("TREASURY")) {
@@ -680,9 +693,13 @@ export function initScreen() {
                 .slice(0, 2); // 2 melhores de cada setor
               
               if (bestInSector.length > 0) {
-                const cashPerAsset = sectorCash / bestInSector.length;
+                // Divisão proporcional ao score dentro do setor — um ativo claramente
+                // melhor que o outro no mesmo setor recebe mais capital, em vez de
+                // um split 50/50 que ignora a diferença de qualidade entre os dois.
+                const scoreSum = bestInSector.reduce((s, a) => s + Math.max(a.score, 0.01), 0);
                 bestInSector.forEach(item => {
-                  selectedAssets.push({ ...item, allocation: cashPerAsset, cat: "stock" });
+                  const share = Math.max(item.score, 0.01) / scoreSum;
+                  selectedAssets.push({ ...item, allocation: sectorCash * share, cat: "stock" });
                 });
               }
             }
@@ -696,13 +713,14 @@ export function initScreen() {
           }
         }
 
-        // 4. Adicionar ETFs e Bonds
+        // 4. Adicionar ETFs e Bonds (também ponderado por score, mesma lógica das stocks)
         ["etf", "bond"].forEach(cat => {
           const catCash = totalCash * (targets[cat] / 100);
           if (catCash > 0 && groups[cat].length > 0) {
-            const cashPerAsset = catCash / groups[cat].length;
+            const scoreSum = groups[cat].reduce((s, a) => s + Math.max(a.score, 0.01), 0);
             groups[cat].forEach(item => {
-              selectedAssets.push({ ...item, allocation: cashPerAsset, cat });
+              const share = Math.max(item.score, 0.01) / scoreSum;
+              selectedAssets.push({ ...item, allocation: catCash * share, cat });
             });
           }
         });
@@ -948,6 +966,27 @@ export function initScreen() {
     });
   });
 
+  // --- TOGGLE: CONFIGURAÇÕES AVANÇADAS (tab Estratégia) ---
+  const ADVANCED_OPEN_KEY = "appfinance-settings-advanced-open";
+  const btnToggleAdvanced = document.getElementById("btnToggleAdvancedStrategy");
+  const advancedBody = document.getElementById("estrategiaAdvanced");
+  if (btnToggleAdvanced && advancedBody) {
+    let isOpen = false;
+    try { isOpen = localStorage.getItem(ADVANCED_OPEN_KEY) === "1"; } catch {}
+
+    const applyAdvancedState = () => {
+      advancedBody.classList.toggle("is-open", isOpen);
+      btnToggleAdvanced.setAttribute("aria-expanded", String(isOpen));
+    };
+    applyAdvancedState();
+
+    btnToggleAdvanced.addEventListener("click", () => {
+      isOpen = !isOpen;
+      applyAdvancedState();
+      try { localStorage.setItem(ADVANCED_OPEN_KEY, isOpen ? "1" : "0"); } catch {}
+    });
+  }
+
   // 🔒 Logout — liga AQUI (agora o botão existe no DOM)
   if (btnLogout) {
     btnLogout.addEventListener("click", (e) => {
@@ -1088,6 +1127,20 @@ export function initScreen() {
   // Botões
   btnSave.addEventListener("click", async () => {
     saveSettings(state);
+
+    // Pesos do Algoritmo — persistidos também na chave lida por getUserWeights()
+    // (usada pelo Dashboard e pelo Portfólio Sugerido), não só no blob genérico
+    // de settings, que nenhum motor de scoring lia até agora.
+    try {
+      localStorage.setItem("userWeights", JSON.stringify({
+        R: state.weights?.R,
+        V: state.weights?.V,
+        T: state.weights?.T,
+        D: state.weights?.D,
+        E: state.weights?.E,
+        S: state.weights?.Rsk,
+      }));
+    } catch {}
 
     if (elCoreW && elSatW) {
       const origHTML = btnSave.innerHTML;

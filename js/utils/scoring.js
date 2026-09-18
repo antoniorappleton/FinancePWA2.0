@@ -179,8 +179,11 @@ function scoreDividendYield(y) {
  * @param {string} [period="1y"] - Período de referência para annualizeRate
  * @param {Object|null} [styleAlloc] - {growth,value,div,qual} em escala 0-100
  * @param {string|null} [regime] - Regime macro (ex: "high_rates", "risk_on")
+ * @param {Object|null} [userWeights] - {R,V,T,D,E,S} — quando presentes, o score final
+ *   passa a ser a combinação ponderada destes componentes em vez do blend fixo do
+ *   scoreAssetV2. Sem este parâmetro o comportamento mantém-se inalterado.
  */
-export function calculateLucroMaximoScore(acao, period = "1y", styleAlloc = null, regime = null) {
+export function calculateLucroMaximoScore(acao, period = "1y", styleAlloc = null, regime = null, userWeights = null) {
   if (!acao) return { score: 0.5, components: { R: 0, V: 0, T: 0, D: 0, E: 0, S: 0 } };
 
   const effectiveRegime = regime ?? "high_rates";
@@ -198,17 +201,31 @@ export function calculateLucroMaximoScore(acao, period = "1y", styleAlloc = null
   const eng = v2.engines || {};
   const D = scoreDividendYield(acao.yield);
 
+  const components = {
+    R: clamp((eng.momentum?.score  ?? 50) / 100, 0, 1),
+    V: clamp((eng.valuation?.score ?? 50) / 100, 0, 1),
+    T: clamp((eng.momentum?.score  ?? 50) / 100, 0, 1),
+    D,
+    E: clamp((eng.quality?.score   ?? 50) / 100, 0, 1),
+    S: clamp((eng.risk?.score      ?? 50) / 100, 0, 1),
+  };
+
+  let finalScore = clamp((v2.finalScore ?? 50) / 100, 0, 1);
+  if (userWeights) {
+    const keys = ["R", "V", "T", "D", "E", "S"];
+    const wSum = keys.reduce((s, k) => s + Math.max(0, Number(userWeights[k]) || 0), 0);
+    if (wSum > 0) {
+      finalScore = clamp(
+        keys.reduce((s, k) => s + components[k] * Math.max(0, Number(userWeights[k]) || 0), 0) / wSum,
+        0, 1
+      );
+    }
+  }
+
   return {
-    score: clamp((v2.finalScore ?? 50) / 100, 0, 1),
+    score: finalScore,
     rAnnual,
-    components: {
-      R: clamp((eng.momentum?.score  ?? 50) / 100, 0, 1),
-      V: clamp((eng.valuation?.score ?? 50) / 100, 0, 1),
-      T: clamp((eng.momentum?.score  ?? 50) / 100, 0, 1),
-      D,
-      E: clamp((eng.quality?.score   ?? 50) / 100, 0, 1),
-      S: clamp((eng.risk?.score      ?? 50) / 100, 0, 1),
-    },
+    components,
     mode: "v2",
     v2,
     readiness: getScoringReadiness(acao),
