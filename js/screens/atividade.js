@@ -2951,6 +2951,17 @@ function showPortfolioHelp(force = false) {
     if (estadoOp === "VENDER") stateColor = "#ef4444";
     if (estadoOp === "MONITORIZAR" || estadoOp === "MANTER") stateColor = "#3b82f6";
 
+    let stateIcon = "fa-clock"; // ESPERAR (default)
+    if (estadoOp === "COMPRAR") stateIcon = "fa-circle-up";
+    if (estadoOp === "REFORÇAR") stateIcon = "fa-plus";
+    if (estadoOp === "REDUZIR") stateIcon = "fa-minus";
+    if (estadoOp === "VENDER") stateIcon = "fa-circle-down";
+    if (estadoOp === "MONITORIZAR") stateIcon = "fa-eye";
+    if (estadoOp === "MANTER") stateIcon = "fa-check";
+
+    // Rótulo curto para o badge (evita quebras feias); nome completo fica no title=
+    const stateLabel = estadoOp === "MONITORIZAR" ? "MONITOR." : estadoOp;
+
     const objetivoFin = g.objetivo || 0;
     const lucroProgress = objetivoFin > 0 ? (lucroAtual / objetivoFin) * 100 : 0;
     const safeProgress = Math.min(100, Math.max(0, lucroProgress));
@@ -2972,24 +2983,24 @@ function showPortfolioHelp(force = false) {
     }
 
     return `
-    <div class="asset-card is-collapsed" id="card-${g.ticker}" style="border-top: 3px solid ${typeColor}80;">
-      <!-- HEADER: Ticker e Preço -->
+    <div class="asset-card is-collapsed" id="card-${g.ticker}" style="border-top: 3px solid ${stateColor};">
+      <!-- HEADER: Sinal, Ticker e Preço -->
       <div class="asset-header">
         <div class="asset-header-clickable" data-toggle-card data-ticker="${g.ticker}">
           <div class="asset-info-main">
-            <div class="asset-allocation-badge" title="Alocação no Portfólio">
-              ${currentW.toFixed(1)}%
+            <div class="asset-signal-badge" title="Sinal atual: ${estadoOp}" style="background: ${stateColor}18; color: ${stateColor}; border-color: ${stateColor}40;">
+              <i class="fas ${stateIcon}"></i>
+              <span>${stateLabel}</span>
             </div>
             <div class="asset-ticker-box">
-              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; flex-wrap: wrap;">
+              <div class="asset-ticker-row">
                 <span class="asset-ticker-symbol">${g.ticker}</span>
-                <span class="type-badge" style="background: ${typeColor}15; color: ${typeColor}; border: 1px solid ${typeColor}30; font-size: 0.6rem; padding: 1px 6px; border-radius: 4px; font-weight: 800; display: flex; align-items: center; gap: 3px;">
-                  <i class="fas ${typeIcon}" style="font-size: 0.55rem;"></i> ${typeLabel}
-                </span>
-                ${sInfo ? `<span class="strategy-badge strategy-badge--${sInfo.category.toLowerCase()}">${sInfo.category}</span>` : ''}
-                <span style="background: ${stateColor}18; color: ${stateColor}; border: 1px solid ${stateColor}35; font-size: 0.6rem; padding: 1px 7px; border-radius: 4px; font-weight: 800; letter-spacing: 0.03em;">${estadoOp}</span>
+                <span class="asset-alloc-inline" title="Alocação no Portfólio">${currentW.toFixed(1)}%</span>
               </div>
               <span class="asset-name" title="${g.nome}">${g.nome}</span>
+              <span class="asset-meta-line">
+                <i class="fas ${typeIcon}"></i> ${typeLabel}${sInfo ? ` · ${sInfo.category}` : ''}
+              </span>
             </div>
           </div>
           <div class="asset-price-box">
@@ -3084,52 +3095,61 @@ function showPortfolioHelp(force = false) {
       </div>
       ` : ""}
 
-      <!-- METRICS GRID -->
-      <div class="asset-metrics-grid">
-        <div class="metric-item metric-item--highlight">
-          <span class="metric-label">Capital Investido</span>
-          <span class="metric-value">${fmtEUR.format(g.investido || 0)}</span>
+      <!-- METRICS GRID: agrupado por "Posição" vs "Sinais técnicos" para leitura mais rápida -->
+      <div class="asset-metrics-group">
+        <div class="asset-metrics-group-title">Posição</div>
+        <div class="asset-metrics-grid">
+          <div class="metric-item metric-item--highlight">
+            <span class="metric-label">Capital Investido</span>
+            <span class="metric-value">${fmtEUR.format(g.investido || 0)}</span>
+          </div>
+          <div class="metric-item metric-item--highlight">
+            <span class="metric-label">Preço Médio</span>
+            <span class="metric-value">${fmtEUR.format(precoMedio)}</span>
+          </div>
+          ${assetType !== "crypto" ? `
+          <div class="metric-item">
+            <span class="metric-label">Yield (atual)</span>
+            <span class="metric-value">${yPct}</span>
+          </div>
+          ${isFiniteNum(g._divAnual) && g._divAnual > 0 && precoMedio > 0 ? `
+          <div class="metric-item" title="Yield sobre o preço médio de custo — cresce com o tempo">
+            <span class="metric-label">Yield on Cost</span>
+            <span class="metric-value" style="color:#22c55e;">${((g._divAnual / precoMedio) * 100).toFixed(2)}%</span>
+          </div>
+          ` : ""}
+          ` : ""}
+          ${assetType === "stock" ? `
+          <div class="metric-item">
+            <span class="metric-label">P/E Ratio</span>
+            <span class="metric-value">${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</span>
+          </div>
+          ` : ""}
         </div>
-        <div class="metric-item metric-item--highlight">
-          <span class="metric-label">Preço Médio</span>
-          <span class="metric-value">${fmtEUR.format(precoMedio)}</span>
-        </div>
-        ${assetType !== "crypto" ? `
-        <div class="metric-item">
-          <span class="metric-label">Yield (atual)</span>
-          <span class="metric-value">${yPct}</span>
-        </div>
-        ${isFiniteNum(g._divAnual) && g._divAnual > 0 && precoMedio > 0 ? `
-        <div class="metric-item" title="Yield sobre o preço médio de custo — cresce com o tempo">
-          <span class="metric-label">Yield on Cost</span>
-          <span class="metric-value" style="color:#22c55e;">${((g._divAnual / precoMedio) * 100).toFixed(2)}%</span>
-        </div>
-        ` : ""}
-        ` : ""}
-        ${assetType === "stock" ? `
-        <div class="metric-item">
-          <span class="metric-label">P/E Ratio</span>
-          <span class="metric-value">${isFiniteNum(g._pe) ? g._pe.toFixed(1) : "—"}</span>
-        </div>
-        ` : ""}
-        <div class="metric-item">
-          <span class="metric-label">Rácio R/R</span>
-          <span class="metric-value">
-            ${(() => {
-              const risk = precoAtual - stopTec;
-              const reward = tp2 - precoAtual;
-              if (risk > 0 && reward > 0) return `1:${(reward / risk).toFixed(1)}`;
-              return "—";
-            })()}
-          </span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-label">Δ SMA50</span>
-          <span class="metric-value">${d50Txt}</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-label">Δ SMA200</span>
-          <span class="metric-value">${d200Txt}</span>
+      </div>
+
+      <div class="asset-metrics-group">
+        <div class="asset-metrics-group-title">Sinais Técnicos</div>
+        <div class="asset-metrics-grid">
+          <div class="metric-item">
+            <span class="metric-label">Rácio R/R</span>
+            <span class="metric-value">
+              ${(() => {
+                const risk = precoAtual - stopTec;
+                const reward = tp2 - precoAtual;
+                if (risk > 0 && reward > 0) return `1:${(reward / risk).toFixed(1)}`;
+                return "—";
+              })()}
+            </span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Δ SMA50</span>
+            <span class="metric-value">${d50Txt}</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Δ SMA200</span>
+            <span class="metric-value">${d200Txt}</span>
+          </div>
         </div>
       </div>
 

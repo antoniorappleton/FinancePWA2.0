@@ -2421,31 +2421,47 @@ body.auth-screen .form-grid {
   gap: 16px;
 }
 
-.asset-allocation-badge {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  display: flex;
+/* Sinal de decisão — elemento dominante do cabeçalho do cartão
+   (substitui o antigo círculo de alocação; a alocação passa para
+   um chip discreto junto ao ticker, ver .asset-alloc-inline) */
+.asset-signal-badge {
+  display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
+  width: 58px;
+  min-height: 48px;
+  padding: 5px 4px;
+  border-radius: 12px;
+  border: 1.5px solid;
   font-weight: 800;
-  font-size: 0.85rem;
   flex-shrink: 0;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  border: 2px solid rgba(255,255,255,0.1);
+  text-align: center;
 }
 
-[data-theme="dark"] .asset-allocation-badge {
-  background: #fff;
-  color: #000;
-  border-color: rgba(0,0,0,0.1);
+.asset-signal-badge i {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.asset-signal-badge span {
+  font-size: 0.52rem;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  word-break: break-word;
 }
 
 .asset-ticker-box {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.asset-ticker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .asset-ticker-symbol {
@@ -2453,6 +2469,16 @@ body.auth-screen .form-grid {
   font-weight: 850;
   letter-spacing: -0.8px;
   color: var(--foreground);
+}
+
+.asset-alloc-inline {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  padding: 1px 7px;
+  border-radius: 5px;
+  flex-shrink: 0;
 }
 
 .asset-name {
@@ -2465,6 +2491,21 @@ body.auth-screen .form-grid {
   font-weight: 500;
 }
 
+/* Linha meta discreta: tipo de ativo + categoria estratégica.
+   Informação de contexto, não de decisão — por isso texto simples,
+   sem chrome de badge, para não competir com o sinal principal. */
+.asset-meta-line {
+  font-size: 0.68rem;
+  color: var(--muted-foreground);
+  opacity: 0.8;
+  margin-top: 1px;
+}
+
+.asset-meta-line i {
+  font-size: 0.6rem;
+  margin-right: 2px;
+}
+
 .asset-status-badge {
   padding: 4px 10px;
   border-radius: 6px;
@@ -2472,31 +2513,6 @@ body.auth-screen .form-grid {
   font-size: 0.72rem;
   letter-spacing: 0.4px;
   text-transform: uppercase;
-}
-
-/* Strategy Badges */
-.strategy-badge {
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.strategy-badge--core {
-  background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-}
-
-.strategy-badge--satellite {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .asset-allocation-box {
@@ -2508,14 +2524,19 @@ body.auth-screen .form-grid {
   border-color: rgba(var(--primary-rgb), 0.2) !important;
 }
 
-[data-theme="dark"] .strategy-badge--core {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.4);
+/* Agrupamento da grelha de métricas (Posição vs Sinais Técnicos) */
+.asset-metrics-group + .asset-metrics-group {
+  margin-top: 12px;
 }
 
-[data-theme="dark"] .strategy-badge--satellite {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: rgba(245, 158, 11, 0.4);
+.asset-metrics-group-title {
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  margin-bottom: 8px;
+  opacity: 0.75;
 }
 
 .asset-price-box {
@@ -2643,7 +2664,7 @@ body.auth-screen .form-grid {
 /* Collapsed State Visibility Control */
 .asset-card.is-collapsed .asset-goal-progress,
 .asset-card.is-collapsed .asset-allocation-box,
-.asset-card.is-collapsed .asset-metrics-grid,
+.asset-card.is-collapsed .asset-metrics-group,
 .asset-card.is-collapsed .asset-actions {
   display: none !important;
 }

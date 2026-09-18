@@ -903,30 +903,41 @@ function renderSingleCard(r) {
       </div>`;
   }
 
+  const signalBorderColor = {
+    breakout: "#22c55e",
+    bullish: "#22c55e",
+    pullback: "#3b82f6",
+    neutral: "#64748b",
+    weak: "#f59e0b",
+    downtrend: "#ef4444",
+  }[technical.key] || "#64748b";
+
   return `
-    <div class="portfolio-card" data-ticker="${ticker}">
-      <div class="card-ticker">${ticker}</div>
-      <div class="card-name">${nome || ''} <span class="muted">(${setor})</span></div>
-      
+    <div class="portfolio-card" data-ticker="${ticker}" style="border-top: 3px solid ${signalBorderColor};">
+      <div class="card-top-row">
+        <div class="card-id-box">
+          <div class="card-ticker">${ticker}</div>
+          <div class="card-name">${nome || ''} <span class="muted">(${setor})</span></div>
+        </div>
+        <div class="card-price">${fmtEUR(precoAtual)}</div>
+      </div>
+
+      <div class="card-signal-badge card-signal-badge--${technical.key}" title="${technical.tooltip || ''}">
+        <span class="card-signal-action">${technical.action}</span>
+        <span class="card-signal-score">${technical.score}</span>
+      </div>
+
       <div class="card-metrics">
         <div class="metric-row">
-          <span class="metric-label">Preço:</span>
-          <span class="metric-value">${fmtEUR(precoAtual)}</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Score:</span>
+          <span class="metric-label">Score Portfolio:</span>
           <span class="metric-value">${(portfolioScore * 100).toFixed(0)}%</span>
         </div>
         <div class="metric-row">
           <span class="metric-label">Yield:</span>
           <span class="metric-value">${yld ? yld.toFixed(1) + '%' : '—'}</span>
         </div>
-        <div class="metric-row">
-          <span class="metric-label">Tecnico:</span>
-          <span class="metric-value ${technical.className}" title="${technical.tooltip || ''}">${technical.label} ${technical.score}</span>
-        </div>
       </div>
-      
+
       <div class="drop-levels">
         <div style="font-weight:600; margin-bottom:4px;">📉 Reforço Levels</div>
         <div style="display:flex; gap:12px; font-size:0.85rem;">
@@ -934,7 +945,7 @@ function renderSingleCard(r) {
           <span>• –5.0%: ${fmtEUR(p5)}</span>
         </div>
       </div>
-      
+
       ${recoveryHTML}
     </div>`;
 }

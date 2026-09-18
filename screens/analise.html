@@ -1555,6 +1555,16 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 }
 
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.card-id-box { min-width: 0; }
+
 .card-ticker {
   font-size: 1.4rem;
   font-weight: 700;
@@ -1565,8 +1575,95 @@
 .card-name {
   font-size: 0.95rem;
   color: var(--muted-foreground, #6b7280);
-  margin: 0 0 12px 0;
+  margin: 0;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--foreground, #111827);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Sinal técnico — elemento dominante do cartão, guia a decisão
+   de compra/reforço/venda antes de qualquer outra métrica. */
+.card-signal-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+
+.card-signal-action {
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.card-signal-score {
+  font-size: 0.78rem;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.card-signal-badge--breakout,
+.card-signal-badge--bullish {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.card-signal-badge--pullback {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.card-signal-badge--neutral {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.card-signal-badge--weak {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.card-signal-badge--downtrend {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+[data-theme="dark"] .card-signal-badge--breakout,
+[data-theme="dark"] .card-signal-badge--bullish {
+  background: rgba(34, 197, 94, 0.16);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .card-signal-badge--pullback {
+  background: rgba(59, 130, 246, 0.16);
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .card-signal-badge--neutral {
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .card-signal-badge--weak {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .card-signal-badge--downtrend {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
 }
 
 .card-metrics {
