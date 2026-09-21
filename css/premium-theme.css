@@ -1,0 +1,509 @@
+/* ==========================================================================
+   APPFinance — Premium / Futuristic Theme Layer
+   Carregada DEPOIS de style.css e app-polish.css.
+   Só CSS + estilos do novo carrossel "Melhores Oportunidades" (markup em
+   screens/dashboard.html, dados em js/screens/dashboard.js).
+   Não altera lógica de negócio nem nomes de classes existentes.
+
+   Direção: "futurista, sofisticado, elegante" nas zonas de destaque (hero
+   KPIs, botões primários, badges de score, carrossel de oportunidades) —
+   glass + glow duotone (ciano/violeta) — mantendo tabelas, formulários e
+   texto denso limpos e de alto contraste para não comprometer a leitura.
+   Cores de decisão (verde=reforçar/comprar, vermelho=reduzir/vender,
+   âmbar=observar) nunca são alteradas, só reforçadas visualmente.
+   ========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+:root {
+  /* ---- Paleta base ---- */
+  --background: #f3f5f8;
+  --foreground: #0c1117;
+  --card: #ffffff;
+  --card-foreground: #0c1117;
+
+  --primary: #0ea5a4;
+  --primary-dark: #086b63;
+  --primary-rgb: 14, 165, 164;
+  --primary-foreground: #ffffff;
+
+  --accent-violet: #6d5ef2;
+  --accent-violet-rgb: 109, 94, 242;
+  --accent-gold: #a9824f;
+  --accent-gold-soft: rgba(169, 130, 79, 0.14);
+
+  --muted: #eaeef1;
+  --muted-foreground: #59636e;
+  --border: rgba(12, 17, 23, 0.10);
+
+  --surface-raised: rgba(255, 255, 255, 0.97);
+  --focus-ring: rgba(14, 165, 164, 0.18);
+
+  /* variáveis usadas em markup dinâmico que nunca estavam definidas
+     (fundos "invisíveis" em selects/inputs, hover a roxo por defeito) */
+  --input: var(--card);
+  --input-bg: var(--card);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
+
+  --shadow-card: 0 1px 1px rgba(12, 17, 23, .04), 0 14px 34px -16px rgba(12, 17, 23, .16);
+  --shadow-soft: 0 1px 1px rgba(12, 17, 23, .05), 0 22px 50px -18px rgba(14, 165, 164, .22);
+  --shadow-modal: 0 30px 80px -18px rgba(8, 12, 18, .35);
+  --glow-primary: 0 0 0 1px rgba(var(--primary-rgb), .35), 0 10px 30px -8px rgba(var(--primary-rgb), .45);
+
+  --ease-premium: cubic-bezier(.22, 1, .36, 1);
+  --transition: 200ms var(--ease-premium);
+}
+
+[data-theme="dark"] {
+  --background: #080b10;
+  --foreground: #eaf1f4;
+  --card: #10161d;
+  --card-foreground: #eaf1f4;
+
+  --primary: #22e6c9;
+  --primary-dark: #14b8a6;
+  --primary-rgb: 34, 230, 201;
+  --primary-foreground: #05201c;
+
+  --accent-violet: #a78bfa;
+  --accent-violet-rgb: 167, 139, 250;
+  --accent-gold: #d8b57f;
+  --accent-gold-soft: rgba(216, 181, 127, 0.14);
+
+  --muted: #171f27;
+  --muted-foreground: #93a2af;
+  --border: rgba(234, 241, 244, 0.10);
+
+  --surface-raised: rgba(16, 22, 29, 0.96);
+  --focus-ring: rgba(34, 230, 201, 0.22);
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 20px 50px -16px rgba(0, 0, 0, .6);
+  --shadow-soft: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 26px 60px -16px rgba(0, 0, 0, .65);
+  --shadow-modal: 0 34px 90px -18px rgba(0, 0, 0, .7);
+  --glow-primary: 0 0 0 1px rgba(var(--primary-rgb), .4), 0 0 34px -6px rgba(var(--primary-rgb), .55);
+}
+
+/* ---------- Base ---------- */
+html { background: var(--background); }
+
+body {
+  background:
+    radial-gradient(1100px 520px at 10% -10%, rgba(var(--primary-rgb), .07), transparent 60%),
+    radial-gradient(900px 460px at 100% 0%, rgba(var(--accent-violet-rgb), .06), transparent 55%),
+    var(--background);
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-theme="dark"] body {
+  background:
+    linear-gradient(rgba(var(--primary-rgb), .05) 1px, transparent 1px) 0 0 / 100% 42px,
+    radial-gradient(1200px 560px at 8% -12%, rgba(var(--primary-rgb), .10), transparent 55%),
+    radial-gradient(1000px 520px at 105% -5%, rgba(var(--accent-violet-rgb), .09), transparent 55%),
+    var(--background);
+  background-attachment: fixed, fixed, fixed, fixed;
+}
+
+::selection { background: color-mix(in srgb, var(--primary) 26%, transparent); color: var(--foreground); }
+
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--foreground) 22%, transparent) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  border-radius: 99px; border: 2px solid transparent; background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--foreground) 30%, transparent); background-clip: padding-box; }
+
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent); outline-offset: 2px; }
+
+/* ---------- Tipografia ---------- */
+h1, h2, h3, .app-header h1, .dashboard-header h1, .adp-ticker-label {
+  font-weight: 800; letter-spacing: -0.02em;
+}
+
+.value, .metric-value, .det-kpi-value, .kpi-value,
+.adp-header-score, .adp-score-big, .adp-grade-big,
+.adp-price-val, .adp-pl-val, .adp-rsi-val {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.label, .det-kpi-label, .pf-form-section-title, .help-section-title,
+.adp-section-title, thead th {
+  font-weight: 700; letter-spacing: 0.07em;
+}
+
+/* ---------- Header ---------- */
+.app-header {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: 0 1px 0 rgba(12, 17, 23, .02);
+}
+.header-logo { box-shadow: var(--shadow-card); }
+
+/* ---------- Cards / superfícies ---------- */
+.card, .panel, .asset-card, .report-card, .help-card, .det-block,
+.goal-selected, .goal-params, .pf-add-dialog, .modal-dialog, .modal-content,
+.table-responsive, .chart-card, .kpi {
+  border-radius: var(--radius) !important;
+}
+
+.card, .panel, .asset-card, .report-card, .help-card,
+.goal-selected, .goal-params {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition) !important;
+}
+
+.card:hover, .asset-card:hover, .help-card:hover, .report-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border)) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.card.premium {
+  background:
+    linear-gradient(155deg, color-mix(in srgb, var(--primary) 7%, var(--surface-raised)), var(--surface-raised) 55%) !important;
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border)) !important;
+}
+
+.icon-box {
+  border-radius: var(--radius-sm) !important;
+  background: color-mix(in srgb, var(--primary) 10%, transparent) !important;
+  color: var(--primary);
+}
+
+.card.success .icon-box { background: rgba(22, 163, 74, .12) !important; color: #16a34a; }
+.card.info .icon-box    { background: rgba(var(--accent-violet-rgb), .12) !important; color: var(--accent-violet); }
+.card.warning .icon-box { background: color-mix(in srgb, var(--accent-gold) 22%, transparent) !important; color: var(--accent-gold); }
+
+/* ---------- Botões ---------- */
+.btn, .chip, .icon-btn { border-radius: var(--radius-sm) !important; }
+
+.btn {
+  font-weight: 700; letter-spacing: -0.005em;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition), border-color var(--transition), filter var(--transition) !important;
+}
+
+.btn.premium, .btn.dark, .asset-actions .btn-primary, #btnDashBuy {
+  background: linear-gradient(160deg, var(--primary), var(--primary-dark)) !important;
+  color: var(--primary-foreground) !important;
+  border-color: var(--primary-dark) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .14) inset, 0 10px 26px -10px rgba(var(--primary-rgb), .55) !important;
+}
+.btn.premium:hover, .btn.dark:hover, .asset-actions .btn-primary:hover, #btnDashBuy:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .16) inset, 0 16px 32px -10px rgba(var(--primary-rgb), .6) !important;
+}
+
+/* style.css tem um override específico e mais forte para o modo escuro
+   deste botão (branco/borda preta) — realinhar com a paleta */
+[data-theme="dark"] #btnDashBuy {
+  background: linear-gradient(160deg, var(--primary), var(--primary-dark)) !important;
+  color: var(--primary-foreground) !important;
+  border: 1px solid var(--primary-dark) !important;
+}
+[data-theme="dark"] #btnDashBuy:hover { filter: brightness(1.08); }
+
+.btn.outline, .btn.ghost, .asset-actions .btn-secondary {
+  background: transparent !important;
+  border-color: var(--border) !important;
+}
+.btn.outline:hover, .btn.ghost:hover, .asset-actions .btn-secondary:hover {
+  background: color-mix(in srgb, var(--primary) 7%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border)) !important;
+}
+
+.btn:active, .chip:active, .icon-btn:active { transform: translateY(0) scale(.98); }
+
+.icon-btn {
+  background: var(--muted) !important;
+  transition: background var(--transition), color var(--transition), transform var(--transition) !important;
+}
+.icon-btn:hover { color: var(--primary) !important; }
+
+/* ---------- Inputs ---------- */
+input, select, textarea, .pf-input, .adp-plan-input {
+  border-radius: var(--radius-sm) !important;
+  transition: border-color var(--transition), box-shadow var(--transition) !important;
+}
+input:focus, select:focus, textarea:focus, .pf-input:focus, .adp-plan-input:focus {
+  box-shadow: 0 0 0 4px var(--focus-ring) !important;
+}
+
+/* Toggle switches (.switch/.slider existem no HTML de Settings mas nunca
+   tiveram estilo — ficavam como checkboxes nus) */
+.switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--muted); border: 1px solid var(--border); border-radius: 999px;
+  transition: background var(--transition), border-color var(--transition);
+}
+.switch .slider::before {
+  content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0, 0, 0, .22);
+  transition: transform var(--transition);
+}
+.switch input:checked + .slider { background: var(--primary); border-color: var(--primary-dark); }
+.switch input:checked + .slider::before { transform: translateX(18px); }
+.switch input:focus-visible + .slider { outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent); outline-offset: 2px; }
+
+/* ---------- Tags / badges / chips ---------- */
+.tag, .chip, .icon-btn, .icon-box, .asset-allocation-badge, .strategy-badge { border-radius: 999px !important; }
+.adp-grade-badge, .adp-badge, .adp-plan-pill { border-radius: 999px; }
+
+/* ---------- Footer nav ---------- */
+.footer-nav {
+  background: color-mix(in srgb, var(--card) 90%, transparent) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-soft) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+.footer-nav button {
+  border-radius: var(--radius-sm) !important;
+  transition: background var(--transition), color var(--transition), transform var(--transition) !important;
+}
+.footer-nav button:hover { transform: translateY(-1px); }
+
+/* ---------- Tabelas ---------- */
+.table-responsive, .table-scroll, .tabela-scroll-wrapper { border-radius: var(--radius) !important; }
+thead th, .analysis-table thead th, .fine-table thead th {
+  background: color-mix(in srgb, var(--card) 85%, var(--muted)) !important;
+}
+tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: background var(--transition); }
+
+/* ---------- Modais ---------- */
+.modal-dialog, .modal-content { box-shadow: var(--shadow-modal) !important; }
+
+/* ---------- Asset Deep Panel — refinos pontuais ---------- */
+.adp-panel { border-radius: 22px 22px 0 0; box-shadow: var(--shadow-modal); }
+.adp-score-hero {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--primary) 8%, var(--muted)), var(--muted)) !important;
+  border-radius: var(--radius) !important;
+}
+.adp-action-btn--buy  { background: linear-gradient(160deg, #16a34a, #138a3d) !important; }
+.adp-action-btn--sell { background: linear-gradient(160deg, #dc2626, #b91c1c) !important; }
+
+/* ---------- Toast ---------- */
+.toast { border-radius: 999px !important; box-shadow: var(--shadow-modal) !important; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   MELHORES OPORTUNIDADES — carrossel (Dashboard)
+   Markup: screens/dashboard.html (#oppTrack .opp-card)
+   Dados:  js/screens/dashboard.js → renderBestOpportunities()
+   ══════════════════════════════════════════════════════════════════════ */
+
+.opp-section {
+  margin-bottom: 2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-card);
+  padding: 18px 0 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+[data-theme="dark"] .opp-section {
+  background:
+    linear-gradient(155deg, rgba(var(--primary-rgb), .06), transparent 60%),
+    var(--surface-raised);
+}
+
+.opp-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 20px 14px;
+}
+
+.opp-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+.opp-title i {
+  color: var(--primary);
+  filter: drop-shadow(0 0 8px rgba(var(--primary-rgb), .5));
+}
+
+.opp-subtitle {
+  margin: 3px 0 0;
+  font-size: .78rem;
+  color: var(--muted-foreground);
+}
+
+.opp-nav { display: flex; gap: 6px; flex-shrink: 0; }
+.opp-nav-btn {
+  width: 34px; height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+}
+.opp-nav-btn:hover {
+  background: color-mix(in srgb, var(--primary) 12%, var(--muted));
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+.opp-nav-btn:active { transform: translateY(0) scale(.94); }
+
+.opp-track {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 2px 20px 6px;
+  scrollbar-width: none;
+}
+.opp-track::-webkit-scrollbar { display: none; }
+
+.opp-card {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: 236px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 14px 15px 15px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+.opp-card::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--opp-accent, var(--primary));
+  box-shadow: 0 0 12px -1px var(--opp-accent, var(--primary));
+}
+.opp-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--opp-accent, var(--primary)) 45%, var(--border));
+  box-shadow: 0 16px 34px -16px color-mix(in srgb, var(--opp-accent, var(--primary)) 55%, transparent);
+}
+
+.opp-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.opp-ticker {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.opp-name {
+  font-size: .72rem;
+  color: var(--muted-foreground);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+.opp-score {
+  flex-shrink: 0;
+  font-size: .8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--opp-accent, var(--primary));
+  background: color-mix(in srgb, var(--opp-accent, var(--primary)) 14%, transparent);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.opp-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--opp-accent, var(--primary));
+  margin-bottom: 10px;
+}
+.opp-signal::before {
+  content: "";
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--opp-accent, var(--primary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--opp-accent, var(--primary)) 22%, transparent);
+}
+
+.opp-prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.opp-prices > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.opp-price-label {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.opp-price-val {
+  font-size: .92rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.opp-price-entry { color: var(--opp-accent, var(--primary)); }
+
+.opp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: .68rem;
+  color: var(--muted-foreground);
+}
+.opp-yield {
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.opp-empty, .opp-skeleton {
+  padding: 24px 20px;
+  font-size: .82rem;
+  color: var(--muted-foreground);
+  text-align: center;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .opp-section-head { padding: 0 14px 12px; }
+  .opp-track { padding: 2px 14px 6px; }
+  .opp-card { width: 208px; }
+}
+
+/* ---------- Redução de movimento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .card, .asset-card, .btn, .chip, .icon-btn, .footer-nav button,
+  .switch .slider, .switch .slider::before, .opp-card, .opp-nav-btn {
+    transition: none !important;
+  }
+}

@@ -26,6 +26,7 @@ import { canonicalTicker, getAssetCategory } from "../utils/normalize.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 import { subscribeMarketData } from "../utils/marketDataStore.js";
+import { technicalSignal } from "../engines/technical-signal.js";
 import { checkAlerts, loadAlerts } from "../utils/alerts.js";
 import { portfolioHealth } from "../engines/portfolio-health.js";
 import { stressTest } from "../engines/stress-test.js";
@@ -167,6 +168,7 @@ export async function initScreen() {
     // --- NOVA LÓGICA: Capital Manager ---
     renderCapitalStrategy(agrupadoPorTicker, valorAtualMap);
     renderStartupPortfolioBrief(agrupadoPorTicker, valorAtualMap);
+    renderBestOpportunities();
   };
 
   // Se já tivermos dados de uma navegação anterior, mostramos logo
@@ -235,6 +237,13 @@ export async function initScreen() {
     ?.addEventListener("click", closeOportunidades);
   document.getElementById("opModal")?.addEventListener("click", (e) => {
     if (e.target.id === "opModal") closeOportunidades();
+  });
+
+  document.getElementById("oppPrev")?.addEventListener("click", () => {
+    document.getElementById("oppTrack")?.scrollBy({ left: -320, behavior: "smooth" });
+  });
+  document.getElementById("oppNext")?.addEventListener("click", () => {
+    document.getElementById("oppTrack")?.scrollBy({ left: 320, behavior: "smooth" });
   });
 
   setupStartupBriefModal();
@@ -1125,6 +1134,131 @@ function renderAtividades(cont, limitItems) {
     };
     cont.appendChild(btn);
   }
+}
+
+/* =========================
+   DASHBOARD: MELHORES OPORTUNIDADES (carrossel)
+   Reaproveita o mesmo motor de scoring do popup "Analisar Oportunidades"
+   (calculateLucroMaximoScore) e o technicalSignal (preço de entrada
+   sugerido) já usado no ecrã Mercado, sem duplicar lógica de negócio.
+   ========================= */
+const OPP_SIGNAL_COLOR = {
+  breakout: "#22c55e",
+  bullish: "#22c55e",
+  pullback: "#3b82f6",
+  neutral: "#64748b",
+  weak: "#f59e0b",
+  downtrend: "#ef4444",
+};
+
+function computeBestOpportunities(limitN = 12) {
+  if (!lastAcoesSnap) return [];
+  const regime = lastConfigData?.macroRegime ?? null;
+  const seen = new Set();
+  const rows = [];
+
+  lastAcoesSnap.forEach((docSnap) => {
+    const d = docSnap.data();
+    const tickerRaw = String(d.ticker || "").toUpperCase();
+    if (!tickerRaw) return;
+    const ticker = cleanTicker(tickerRaw);
+    if (seen.has(ticker)) return;
+
+    const precoAtual = toNumStrict(d.valorStock) || 0;
+    if (!precoAtual) return;
+
+    let scoreResult;
+    try {
+      scoreResult = calculateLucroMaximoScore(d, "1m", null, regime);
+    } catch (err) {
+      return;
+    }
+    const portfolioScore = scoreResult.score || 0;
+    if (portfolioScore <= 0) return;
+
+    seen.add(ticker);
+
+    let rawYield = Number(d["Dividend Yield"] || d.yield || 0);
+    const yieldPct =
+      Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1 ? rawYield * 100 : rawYield;
+
+    rows.push({
+      ticker,
+      nome: d.nome || ticker,
+      setor: normalizeSector(d) || "—",
+      precoAtual,
+      portfolioScore,
+      grade: scoreResult.v2?.grade || null,
+      yieldPct: Number.isFinite(yieldPct) ? yieldPct : null,
+      technical: technicalSignal(d),
+    });
+  });
+
+  return rows.sort((a, b) => b.portfolioScore - a.portfolioScore).slice(0, limitN);
+}
+
+function renderBestOpportunities() {
+  const track = document.getElementById("oppTrack");
+  if (!track) return;
+
+  let items;
+  try {
+    items = computeBestOpportunities(12);
+  } catch (err) {
+    console.warn("[dashboard] renderBestOpportunities falhou:", err);
+    return;
+  }
+
+  if (!items.length) {
+    track.innerHTML = `<div class="opp-empty">Sem dados de mercado suficientes para calcular oportunidades.</div>`;
+    return;
+  }
+
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  const esc = (v) =>
+    String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  track.innerHTML = items
+    .map((it) => {
+      const color = OPP_SIGNAL_COLOR[it.technical.key] || "#64748b";
+      const entry = it.technical.support1 || it.precoAtual;
+      return `
+      <div class="opp-card" data-ticker="${esc(it.ticker)}" style="--opp-accent:${color};">
+        <div class="opp-card-top">
+          <div>
+            <div class="opp-ticker">${esc(it.ticker)}</div>
+            <div class="opp-name">${esc(it.nome)}</div>
+          </div>
+          <div class="opp-score">${Math.round(it.portfolioScore * 100)}</div>
+        </div>
+        <div class="opp-signal">${esc(it.technical.action)}</div>
+        <div class="opp-prices">
+          <div>
+            <span class="opp-price-label">Preço Atual</span>
+            <span class="opp-price-val">${fmtEUR.format(it.precoAtual)}</span>
+          </div>
+          <div>
+            <span class="opp-price-label">Entrada Sugerida</span>
+            <span class="opp-price-val opp-price-entry">${fmtEUR.format(entry)}</span>
+          </div>
+        </div>
+        <div class="opp-foot">
+          <span class="opp-sector">${esc(it.setor)}</span>
+          ${it.yieldPct ? `<span class="opp-yield">${it.yieldPct.toFixed(1)}% yield</span>` : "<span></span>"}
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  track.querySelectorAll(".opp-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const ticker = card.dataset.ticker;
+      if (typeof window.openAssetPanel === "function") window.openAssetPanel(ticker);
+    });
+  });
 }
 
 /* =========================
