@@ -12,6 +12,7 @@ import { getMarketDataList } from "../utils/marketDataStore.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 import { getAllRegimes, detectRegime, getRegime } from "../engines/macro.js";
 import { DEFAULT_CRISIS_LADDER } from "../utils/capitalManager.js";
+import { analyzeETFOverlap } from "../engines/etf-overlap.js";
 
 const SETTINGS_STORAGE_KEY = "app.settings";
 
@@ -575,25 +576,38 @@ export function initScreen() {
     const sugOk = document.getElementById("suggestedModalOk");
     const sugLoader = document.getElementById("suggestedLoader");
     const sugContent = document.getElementById("suggestedContent");
+    const sugPicker = document.getElementById("suggestedPicker");
+    const sugResults = document.getElementById("suggestedResults");
     const sugTableBody = document.getElementById("suggestedTableBody");
+    const sugResultTableBody = document.getElementById("sugResultTableBody");
+    const sugPickAll = document.getElementById("sugPickAll");
+    const sugPickCount = document.getElementById("sugPickCount");
+    const btnRunSuggestedSim = document.getElementById("btnRunSuggestedSim");
+    const btnBackToPicker = document.getElementById("btnBackToPicker");
+    const sugSimSummary = document.getElementById("sugSimSummary");
 
     let chartClass = null;
     let chartSector = null;
+    let sugCandidates = []; // ativos candidatos calculados no passo 1 (antes da escolha do utilizador)
+
+    function updateSugPickCount() {
+      const boxes = sugTableBody.querySelectorAll(".sugPick");
+      const checked = sugTableBody.querySelectorAll(".sugPick:checked").length;
+      if (sugPickCount) sugPickCount.textContent = `(${checked}/${boxes.length} selecionados)`;
+      if (sugPickAll) sugPickAll.checked = boxes.length > 0 && checked === boxes.length;
+    }
 
     async function showSuggestedPortfolio() {
       if (!sugModal) return;
       sugModal.classList.remove("hidden");
       sugLoader.classList.remove("hidden");
       sugContent.classList.add("hidden");
+      if (sugResults) sugResults.classList.add("hidden");
+      if (sugPicker) sugPicker.classList.remove("hidden");
 
       // Destruir gráficos anteriores se existirem
       if (chartClass) { chartClass.destroy(); chartClass = null; }
       if (chartSector) { chartSector.destroy(); chartSector = null; }
-
-      let count = 0;
-      let classData = { Stocks: 0, ETFs: 0, Bonds: 0 };
-      let sectorData = {};
-      let html = "";
 
       try {
         const allData = await getMarketDataList();
@@ -726,102 +740,29 @@ export function initScreen() {
           }
         });
 
-        let totalScore = 0;
-        let totalYield = 0;
-        let totalGrowth = 0;
-        let sumPE = 0, sumROIC = 0, sumDebtEq = 0, countFundamental = 0;
-
-        selectedAssets.forEach(item => {
-          const pctOfTotal = (item.allocation / totalCash) * 100;
-          const y = Number(item.yield) || 0;
-          const g = Number(item.rAnnual) || 0;
-          
-          // Fundamental metrics for snapshot
-          if (item.cat === "stock") {
-            const pe = Number(item.pe || item.p_e || 0);
-            const roic = Number(item.roic || 0);
-            const de = Number(item.debt_eq || 0);
-            if (pe > 0) sumPE += pe;
-            if (roic > 0) sumROIC += roic;
-            if (de > 0) sumDebtEq += de;
-            countFundamental++;
+        // 5. Detetar sobreposição entre os ETFs candidatos (holdings em comum),
+        // para assinalar na tabela antes do utilizador escolher — ex.: dois ETFs
+        // que partilham a maioria das posições top não acrescentam diversificação real.
+        const overlapByTicker = new Map();
+        try {
+          const etfPositionsForOverlap = selectedAssets
+            .filter(a => a.cat === "etf")
+            .map(a => ({ ticker: a.ticker, valAtual: a.allocation }));
+          if (etfPositionsForOverlap.length > 1) {
+            const { overlaps } = analyzeETFOverlap(etfPositionsForOverlap, {});
+            overlaps.forEach(o => {
+              if (!overlapByTicker.has(o.etf1)) overlapByTicker.set(o.etf1, []);
+              if (!overlapByTicker.has(o.etf2)) overlapByTicker.set(o.etf2, []);
+              overlapByTicker.get(o.etf1).push({ with: o.etf2, pct: o.overlapPct });
+              overlapByTicker.get(o.etf2).push({ with: o.etf1, pct: o.overlapPct });
+            });
           }
-
-          // Dados para gráficos
-          const clsName = item.cat === "stock" ? "Stocks" : item.cat === "etf" ? "ETFs" : "Bonds";
-          classData[clsName] += item.allocation;
-          
-          const sector = item.setor || item.sector || "Outros";
-          sectorData[sector] = (sectorData[sector] || 0) + item.allocation;
-
-          html += `
-            <tr style="border-bottom: 1px solid var(--border);">
-              <td style="padding: 10px;">
-                <div style="font-weight: 700;">${item.ticker}</div>
-                <div class="muted" style="font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-                  ${item.nome || item.ticker}
-                </div>
-              </td>
-              <td><span class="badge" style="background: var(--muted); color: var(--foreground); font-size: 0.6rem;">${item.cat.toUpperCase()}</span></td>
-              <td style="font-size: 0.7rem; color: var(--muted-foreground);">${sector}</td>
-              <td style="text-align: right; font-weight: 700;">${fmtEUR(item.allocation)}</td>
-              <td style="text-align: right; color: var(--muted-foreground);">${pctOfTotal.toFixed(1)}%</td>
-              <td style="text-align: right;">
-                <span class="badge ${item.score > 0.7 ? "ok" : item.score > 0.5 ? "warn" : "danger"}">
-                  ${(item.score * 10).toFixed(1)}
-                </span>
-              </td>
-            </tr>
-          `;
-          totalScore += item.score;
-          totalYield += y;
-          totalGrowth += g;
-          count++;
-        });
-
-        sugTableBody.innerHTML = html || '<tr><td colspan="6" style="text-align:center; padding:30px;" class="muted">Sem dados suficientes.</td></tr>';
-        
-        const avgGrowth = count > 0 ? (totalGrowth / count) : 0;
-        const avgYield = count > 0 ? (totalYield / count) : 0;
-
-        document.getElementById("sugTotalCapital").textContent = fmtEUR(totalCash);
-        document.getElementById("sugAvgScore").textContent = count > 0 ? (totalScore / count * 10).toFixed(1) : "0.0";
-        document.getElementById("sugEstYield").textContent = avgYield.toFixed(2) + "%";
-        document.getElementById("sugAvgGrowth").textContent = (avgGrowth * 100).toFixed(2) + "%";
-
-        // Update fundamental highlights
-        if (countFundamental > 0) {
-          const elPE = document.querySelector("#metPE span");
-          const elROIC = document.querySelector("#metROIC span");
-          const elSolv = document.querySelector("#metSolv span");
-          const elDiv = document.querySelector("#metDiv span");
-          if (elPE) elPE.textContent = (sumPE / countFundamental).toFixed(1) + "x";
-          if (elROIC) elROIC.textContent = (sumROIC / countFundamental * 100).toFixed(1) + "%";
-          if (elSolv) elSolv.textContent = (sumDebtEq / countFundamental).toFixed(2);
-          if (elDiv) elDiv.textContent = avgYield.toFixed(1) + "%";
+        } catch (ovErr) {
+          console.warn("Análise de sobreposição de ETFs falhou:", ovErr);
         }
 
-        // Projeções ...
-        const rTotal = avgGrowth + (avgYield / 100);
-        const proj = (years) => totalCash * Math.pow(1 + rTotal, years);
-
-        const updateProj = (id, years) => {
-          const val = proj(years);
-          const profit = val - totalCash;
-          const el = document.getElementById(id);
-          if (el) {
-            el.innerHTML = `
-              <div>${fmtEUR(val)}</div>
-              <div style="font-size: 0.65rem; color: var(--success); margin-top: 2px;">
-                +${fmtEUR(profit)} Lucro
-              </div>
-            `;
-          }
-        };
-
-        updateProj("proj1y", 1);
-        updateProj("proj3y", 3);
-        updateProj("proj5y", 5);
+        sugCandidates = selectedAssets;
+        renderSuggestedPicker(selectedAssets, overlapByTicker, totalCash);
 
       } catch (err) {
         console.error("Error generating suggestion:", err);
@@ -830,6 +771,169 @@ export function initScreen() {
         if (sugLoader) sugLoader.classList.add("hidden");
         if (sugContent) sugContent.classList.remove("hidden");
       }
+    }
+
+    // Passo 1: mostra os candidatos com checkbox, para o utilizador escolher antes de simular
+    function renderSuggestedPicker(items, overlapByTicker, totalCash) {
+      const html = items.map((item, idx) => {
+        const pctOfTotal = totalCash > 0 ? (item.allocation / totalCash) * 100 : 0;
+        const overlaps = overlapByTicker.get(item.ticker) || [];
+        const overlapBadge = overlaps.length
+          ? `<i class="fas fa-triangle-exclamation" style="color:#f59e0b; margin-left:6px;" title="Sobreposição de holdings com ${overlaps.map(o => `${o.with} (${o.pct}%)`).join(", ")}"></i>`
+          : "";
+        return `
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px; text-align: center;">
+              <input type="checkbox" class="sugPick" data-idx="${idx}" checked style="width:15px; height:15px;">
+            </td>
+            <td style="padding: 10px;">
+              <div style="font-weight: 700; display: flex; align-items: center;">${item.ticker}${overlapBadge}</div>
+              <div class="muted" style="font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                ${item.nome || item.ticker}
+              </div>
+            </td>
+            <td><span class="badge" style="background: var(--muted); color: var(--foreground); font-size: 0.6rem;">${item.cat.toUpperCase()}</span></td>
+            <td style="font-size: 0.7rem; color: var(--muted-foreground);">${item.setor || item.sector || "Outros"}</td>
+            <td style="text-align: right; font-weight: 700;">${fmtEUR(item.allocation)}</td>
+            <td style="text-align: right; color: var(--muted-foreground);">${pctOfTotal.toFixed(1)}%</td>
+            <td style="text-align: right;">
+              <span class="badge ${item.score > 0.7 ? "ok" : item.score > 0.5 ? "warn" : "danger"}">
+                ${(item.score * 10).toFixed(1)}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      sugTableBody.innerHTML = html || '<tr><td colspan="7" style="text-align:center; padding:30px;" class="muted">Sem dados suficientes.</td></tr>';
+      sugTableBody.querySelectorAll(".sugPick").forEach(cb => cb.addEventListener("change", updateSugPickCount));
+      updateSugPickCount();
+    }
+
+    // Passo 2: com os ativos escolhidos pelo utilizador, corre a simulação (totais, gráficos, projeções)
+    function runSuggestedSimulation() {
+      const totalCash = Number(elAvailCash.value) || 0;
+      const checkedIdx = new Set(
+        Array.from(sugTableBody.querySelectorAll(".sugPick:checked")).map(cb => Number(cb.dataset.idx))
+      );
+      const chosen = sugCandidates.filter((_, idx) => checkedIdx.has(idx));
+
+      if (!chosen.length) {
+        if (window.showToast) window.showToast("Seleciona pelo menos um ativo.", "error");
+        return;
+      }
+
+      // Redistribui o capital total (liquidez configurada em Definições) pelos ativos
+      // escolhidos, mantendo os pesos relativos que o algoritmo (score-weighted) já
+      // tinha atribuído — assim, desmarcar um ETF sobreposto não deixa capital por
+      // investir, só passa esse peso para os restantes ativos selecionados.
+      const chosenSum = chosen.reduce((s, a) => s + a.allocation, 0);
+      const scaleFactor = chosenSum > 0 ? totalCash / chosenSum : 0;
+      const finalItems = chosen.map(item => ({ ...item, allocation: item.allocation * scaleFactor }));
+
+      let count = 0;
+      let classData = { Stocks: 0, ETFs: 0, Bonds: 0 };
+      let sectorData = {};
+      let html = "";
+      let totalScore = 0, totalYield = 0, totalGrowth = 0;
+      let sumPE = 0, sumROIC = 0, sumDebtEq = 0, countFundamental = 0;
+
+      finalItems.forEach(item => {
+        const pctOfTotal = totalCash > 0 ? (item.allocation / totalCash) * 100 : 0;
+        const y = Number(item.yield) || 0;
+        const g = Number(item.rAnnual) || 0;
+
+        if (item.cat === "stock") {
+          const pe = Number(item.pe || item.p_e || 0);
+          const roic = Number(item.roic || 0);
+          const de = Number(item.debt_eq || 0);
+          if (pe > 0) sumPE += pe;
+          if (roic > 0) sumROIC += roic;
+          if (de > 0) sumDebtEq += de;
+          countFundamental++;
+        }
+
+        const clsName = item.cat === "stock" ? "Stocks" : item.cat === "etf" ? "ETFs" : "Bonds";
+        classData[clsName] += item.allocation;
+
+        const sector = item.setor || item.sector || "Outros";
+        sectorData[sector] = (sectorData[sector] || 0) + item.allocation;
+
+        html += `
+          <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 10px;">
+              <div style="font-weight: 700;">${item.ticker}</div>
+              <div class="muted" style="font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                ${item.nome || item.ticker}
+              </div>
+            </td>
+            <td><span class="badge" style="background: var(--muted); color: var(--foreground); font-size: 0.6rem;">${item.cat.toUpperCase()}</span></td>
+            <td style="font-size: 0.7rem; color: var(--muted-foreground);">${sector}</td>
+            <td style="text-align: right; font-weight: 700;">${fmtEUR(item.allocation)}</td>
+            <td style="text-align: right; color: var(--muted-foreground);">${pctOfTotal.toFixed(1)}%</td>
+            <td style="text-align: right;">
+              <span class="badge ${item.score > 0.7 ? "ok" : item.score > 0.5 ? "warn" : "danger"}">
+                ${(item.score * 10).toFixed(1)}
+              </span>
+            </td>
+          </tr>
+        `;
+        totalScore += item.score;
+        totalYield += y;
+        totalGrowth += g;
+        count++;
+      });
+
+      sugResultTableBody.innerHTML = html || '<tr><td colspan="6" style="text-align:center; padding:30px;" class="muted">Sem dados suficientes.</td></tr>';
+
+      const avgGrowth = count > 0 ? (totalGrowth / count) : 0;
+      const avgYield = count > 0 ? (totalYield / count) : 0;
+
+      document.getElementById("sugTotalCapital").textContent = fmtEUR(totalCash);
+      document.getElementById("sugAvgScore").textContent = count > 0 ? (totalScore / count * 10).toFixed(1) : "0.0";
+      document.getElementById("sugEstYield").textContent = avgYield.toFixed(2) + "%";
+      document.getElementById("sugAvgGrowth").textContent = (avgGrowth * 100).toFixed(2) + "%";
+
+      if (sugSimSummary) {
+        sugSimSummary.textContent = `Simulação com ${count} de ${sugCandidates.length} ativos sugeridos selecionados.`;
+      }
+
+      // Update fundamental highlights
+      if (countFundamental > 0) {
+        const elPE = document.querySelector("#metPE span");
+        const elROIC = document.querySelector("#metROIC span");
+        const elSolv = document.querySelector("#metSolv span");
+        const elDiv = document.querySelector("#metDiv span");
+        if (elPE) elPE.textContent = (sumPE / countFundamental).toFixed(1) + "x";
+        if (elROIC) elROIC.textContent = (sumROIC / countFundamental * 100).toFixed(1) + "%";
+        if (elSolv) elSolv.textContent = (sumDebtEq / countFundamental).toFixed(2);
+        if (elDiv) elDiv.textContent = avgYield.toFixed(1) + "%";
+      }
+
+      // Projeções ...
+      const rTotal = avgGrowth + (avgYield / 100);
+      const proj = (years) => totalCash * Math.pow(1 + rTotal, years);
+
+      const updateProj = (id, years) => {
+        const val = proj(years);
+        const profit = val - totalCash;
+        const el = document.getElementById(id);
+        if (el) {
+          el.innerHTML = `
+            <div>${fmtEUR(val)}</div>
+            <div style="font-size: 0.65rem; color: var(--success); margin-top: 2px;">
+              +${fmtEUR(profit)} Lucro
+            </div>
+          `;
+        }
+      };
+
+      updateProj("proj1y", 1);
+      updateProj("proj3y", 3);
+      updateProj("proj5y", 5);
+
+      if (sugPicker) sugPicker.classList.add("hidden");
+      if (sugResults) sugResults.classList.remove("hidden");
 
       // Criar Gráficos (atraso maior para garantir renderização estável)
       setTimeout(() => {
@@ -859,11 +963,11 @@ export function initScreen() {
                 maintainAspectRatio: false,
                 cutout: "70%",
                 animation: { duration: 1000, easing: 'easeOutQuart' },
-                plugins: { 
-                  legend: { 
-                    position: "bottom", 
-                    labels: { color: "#888", font: { size: 10, weight: "bold" }, padding: 15 } 
-                  } 
+                plugins: {
+                  legend: {
+                    position: "bottom",
+                    labels: { color: "#888", font: { size: 10, weight: "bold" }, padding: 15 }
+                  }
                 }
               }
             });
@@ -883,8 +987,8 @@ export function initScreen() {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 1200, easing: 'easeOutQuart' },
-                plugins: { 
-                  legend: { display: false } 
+                plugins: {
+                  legend: { display: false }
                 }
               }
             });
@@ -899,6 +1003,15 @@ export function initScreen() {
     if (sugClose) sugClose.addEventListener("click", () => sugModal.classList.add("hidden"));
     if (sugOk) sugOk.addEventListener("click", () => sugModal.classList.add("hidden"));
     if (sugModal) sugModal.addEventListener("click", (e) => { if (e.target === sugModal) sugModal.classList.add("hidden"); });
+    if (sugPickAll) sugPickAll.addEventListener("change", () => {
+      sugTableBody.querySelectorAll(".sugPick").forEach(cb => { cb.checked = sugPickAll.checked; });
+      updateSugPickCount();
+    });
+    if (btnRunSuggestedSim) btnRunSuggestedSim.addEventListener("click", runSuggestedSimulation);
+    if (btnBackToPicker) btnBackToPicker.addEventListener("click", () => {
+      if (sugResults) sugResults.classList.add("hidden");
+      if (sugPicker) sugPicker.classList.remove("hidden");
+    });
   }
 
   // Botões de Perfil

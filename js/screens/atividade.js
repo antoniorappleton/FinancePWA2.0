@@ -236,6 +236,148 @@ window.calcRecSim = function (simId, precoAtual, loss) {
 window.toggleRecSim = function (simId) {
   document.getElementById(simId)?.classList.toggle("hidden");
 };
+
+// ===============================
+// Posições Fechadas: filtro por ticker + "eliminar da lista" (só na UI,
+// nunca na base de dados — persistido no browser via localStorage).
+// ===============================
+function persistFechadasHidden() {
+  try {
+    localStorage.setItem("atividade_fechadas_hidden", JSON.stringify([..._fechadasHidden]));
+  } catch (_) { /* localStorage indisponível — ignora */ }
+}
+
+function renderPosicoesFechadas(gruposArrAll) {
+  const fechadasCont = document.getElementById("listaFechadas");
+  if (!fechadasCont) return;
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+  const allFechadas = (gruposArrAll || []).filter(g => (g.qtd || 0) <= 0 && Math.abs(g.realizado || 0) > 0.001);
+  if (allFechadas.length === 0) {
+    fechadasCont.innerHTML = "";
+    return;
+  }
+
+  const wasOpen = fechadasCont.querySelector("details")?.hasAttribute("open") ?? false;
+  const hiddenCount = allFechadas.filter(g => _fechadasHidden.has(g.ticker)).length;
+  const filterText = _fechadasFilterText.trim().toUpperCase();
+  const fechadas = allFechadas
+    .filter(g => !_fechadasHidden.has(g.ticker) && (!filterText || g.ticker.toUpperCase().includes(filterText)))
+    .sort((a, b) => (b.realizado || 0) - (a.realizado || 0));
+
+  const totalRealizado = fechadas.reduce((s, g) => s + (g.realizado || 0), 0);
+  const corTotal = totalRealizado >= 0 ? "#22c55e" : "#ef4444";
+
+  const linhas = fechadas.length
+    ? fechadas.map((g, idx) => {
+        const realizado = g.realizado || 0;
+        const cor = realizado >= 0 ? "#22c55e" : "#ef4444";
+        const nLotes = (_allMovimentos || []).filter(m => m.ticker === g.ticker && m.qtd > 0).length;
+        const retPct = (g.totalBuyValue || 0) > 0
+          ? (realizado / g.totalBuyValue) * 100
+          : null;
+        const isLoss = realizado < 0;
+        const simId = `recSim_${idx}`;
+        const pmHistorico = isFiniteNum(g.custoMedioHistorico) && g.custoMedioHistorico > 0 ? Number(g.custoMedioHistorico) : null;
+        const precoAtual = isFiniteNum(g.precoAtual) ? Number(g.precoAtual) : null;
+        const diffAtualPct = pmHistorico && precoAtual !== null
+          ? ((precoAtual - pmHistorico) / pmHistorico) * 100
+          : null;
+        const corDiff = diffAtualPct === null ? "var(--muted-foreground)" : diffAtualPct >= 0 ? "#22c55e" : "#ef4444";
+        const lossAbs = Math.abs(realizado);
+        const defaultGrowth = 10;
+        return `
+          <tr style="border-bottom: 1px solid var(--border);" onclick="window.openDetails('${g.ticker}')" class="cursor-pointer">
+            <td style="padding: 10px 14px; font-weight: 800; font-family: monospace;">${g.ticker}</td>
+            <td style="padding: 10px 14px; color: var(--muted-foreground);">${g.nome}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700;">${pmHistorico !== null ? fmtEUR.format(pmHistorico) : "—"}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700;">${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${corDiff};">${diffAtualPct !== null ? `${diffAtualPct >= 0 ? "+" : ""}${diffAtualPct.toFixed(2)}%` : "—"}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${realizado >= 0 ? "+" : ""}${fmtEUR.format(realizado)}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${retPct !== null ? `${retPct >= 0 ? "+" : ""}${retPct.toFixed(2)}%` : "—"}</td>
+            <td style="padding: 10px 14px; text-align: center; color: var(--muted-foreground); white-space: nowrap;">
+              ${nLotes}
+              ${isLoss ? `<button type="button" title="Simular recuperação" onclick="event.stopPropagation(); window.toggleRecSim('${simId}')" style="margin-left: 8px; background: none; border: none; cursor: pointer; color: var(--muted-foreground); padding: 2px;"><i class="fas fa-bullseye"></i></button>` : ""}
+              <button type="button" title="Remover desta lista (não apaga da base de dados)" onclick="event.stopPropagation(); window.__hideFechada('${g.ticker}')" style="margin-left: 8px; background: none; border: none; cursor: pointer; color: var(--muted-foreground); padding: 2px;"><i class="fas fa-eye-slash"></i></button>
+            </td>
+          </tr>
+          ${isLoss ? `
+          <tr id="${simId}" class="hidden">
+            <td colspan="8" style="padding: 12px 14px; background: var(--card);">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.78rem;">
+                <span>Preço atual: <strong>${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</strong></span>
+                <label>Crescimento esperado (%):
+                  <input type="number" id="${simId}_g" value="${defaultGrowth}" min="0.01" step="0.5"
+                    style="width: 70px; margin-left: 4px;"
+                    onclick="event.stopPropagation();"
+                    oninput="window.calcRecSim('${simId}', ${precoAtual || 0}, ${lossAbs})">
+                </label>
+                <span id="${simId}_out">${calcRecSimHtml(precoAtual, lossAbs, defaultGrowth)}</span>
+              </div>
+            </td>
+          </tr>` : ""}`;
+      }).join("")
+    : `<tr><td colspan="8" style="padding: 24px 14px; text-align: center; color: var(--muted-foreground);">Nenhuma posição fechada corresponde ao filtro.</td></tr>`;
+
+  fechadasCont.innerHTML = `
+    <details ${wasOpen ? "open" : ""} style="border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+      <summary style="padding: 14px 18px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; list-style: none; background: var(--card);">
+        <span><i class="fas fa-archive" style="color: var(--muted-foreground); margin-right: 8px;"></i>Posições Fechadas <span style="font-weight: 500; color: var(--muted-foreground);">(${allFechadas.length})</span></span>
+        <span style="color: ${corTotal}; font-size: 0.9rem;">${totalRealizado >= 0 ? "+" : ""}${fmtEUR.format(totalRealizado)} realizados</span>
+      </summary>
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 18px; border-bottom: 1px solid var(--border); background: var(--card);">
+        <input type="text" id="fechadasSearchInput" placeholder="Filtrar por ticker..." value="${_fechadasFilterText.replace(/"/g, "&quot;")}"
+          style="flex: 1; min-width: 140px; padding: 6px 10px; font-size: 0.78rem;"
+          onclick="event.stopPropagation();"
+          oninput="window.__filterFechadas(this.value)">
+        ${hiddenCount > 0 ? `<button type="button" onclick="event.stopPropagation(); window.__restoreFechadas()" class="btn outline" style="font-size: 0.7rem; padding: 5px 10px; white-space: nowrap;">
+          <i class="fas fa-rotate-left"></i> Repor ${hiddenCount} oculta${hiddenCount > 1 ? "s" : ""}
+        </button>` : ""}
+      </div>
+      <div style="overflow: auto;">
+        <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground); text-align: left; background: var(--card);">
+              <th style="padding: 10px 14px;">Ticker</th>
+              <th style="padding: 10px 14px;">Nome</th>
+              <th style="padding: 10px 14px; text-align: right;">PM</th>
+              <th style="padding: 10px 14px; text-align: right;">Atual</th>
+              <th style="padding: 10px 14px; text-align: right;">Dif.</th>
+              <th style="padding: 10px 14px; text-align: right;">Lucro Realizado</th>
+              <th style="padding: 10px 14px; text-align: right;">Retorno</th>
+              <th style="padding: 10px 14px; text-align: center;">Lotes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhas}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  `;
+}
+
+window.__filterFechadas = function (val) {
+  _fechadasFilterText = val || "";
+  renderPosicoesFechadas(window._currentGruposArr || []);
+  const inp = document.getElementById("fechadasSearchInput");
+  if (inp) {
+    inp.focus();
+    const pos = inp.value.length;
+    inp.setSelectionRange(pos, pos);
+  }
+};
+window.__hideFechada = function (ticker) {
+  _fechadasHidden.add(ticker);
+  persistFechadasHidden();
+  renderPosicoesFechadas(window._currentGruposArr || []);
+};
+window.__restoreFechadas = function () {
+  _fechadasHidden.clear();
+  persistFechadasHidden();
+  renderPosicoesFechadas(window._currentGruposArr || []);
+};
+
 function formatNum(n) {
   return Number(n || 0).toLocaleString("pt-PT");
 }
@@ -639,6 +781,51 @@ function renderTop5YieldBar(rows) {
     },
   });
 }
+// Estado do filtro temporal do gráfico "Evolução (Investido vs Avaliação Atual)".
+// A filtragem é um "zoom" sobre a série cumulativa já calculada (não recalcula
+// o investido acumulado a partir de zero na janela escolhida).
+let _timelinePointsFull = [];
+let _timelineRange = "all";
+
+function computeTimelineRangeCutoff(range) {
+  if (range === "all") return null;
+  const cutoff = new Date();
+  if (range === "1m") cutoff.setMonth(cutoff.getMonth() - 1);
+  else if (range === "3m") cutoff.setMonth(cutoff.getMonth() - 3);
+  else if (range === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
+  else return null;
+  return cutoff;
+}
+
+function filterTimelinePointsByRange(points, range) {
+  const cutoff = computeTimelineRangeCutoff(range);
+  if (!cutoff) return points;
+  const filtered = points.filter((p) => p.date instanceof Date && !isNaN(p.date) && p.date >= cutoff);
+  return filtered.length ? filtered : points;
+}
+
+function wireTimelineRangeButtons() {
+  const btns = document.querySelectorAll(".timeline-range-btn");
+  if (!btns.length) return;
+  const setActive = (activeBtn) => {
+    btns.forEach((b) => {
+      const active = b === activeBtn;
+      b.classList.toggle("active", active);
+      b.style.background = active ? "var(--primary)" : "";
+      b.style.color = active ? "#fff" : "";
+      b.style.borderColor = active ? "var(--primary)" : "";
+    });
+  };
+  btns.forEach((btn) => {
+    if (btn.dataset.range === _timelineRange) setActive(btn);
+    btn.addEventListener("click", () => {
+      _timelineRange = btn.dataset.range;
+      setActive(btn);
+      renderTimeline(filterTimelinePointsByRange(_timelinePointsFull, _timelineRange));
+    });
+  });
+}
+
 function renderTimeline(points) {
   const el = document.getElementById("chartTimeline");
   if (!el) return;
@@ -861,6 +1048,14 @@ function renderBubbleChart(abertos, totalInvestido) {
 let byTickerGlobal = new Map();
 let _allMovimentos = [];
 let _eventsWired = false;
+
+// Estado da lista "Posições Fechadas": filtro de texto e ocultação local
+// (nunca apaga nada na base de dados — só esconde na UI, persistido no browser).
+let _fechadasFilterText = "";
+let _fechadasHidden = new Set();
+try {
+  _fechadasHidden = new Set(JSON.parse(localStorage.getItem("atividade_fechadas_hidden") || "[]"));
+} catch (_) { /* localStorage indisponível ou corrompido — segue com set vazio */ }
 
 function updatePriceFreshness() {
   const el = document.getElementById("priceUpdateIndicator");
@@ -2254,6 +2449,7 @@ function showPortfolioHelp(force = false) {
 
     // Inicializar eventos estáticos do Mapa de Holdings (uma única vez)
     wireHoldingsMapEvents();
+    wireTimelineRangeButtons();
   }
 
   async function processAndRender(snap, aSnap, stratSnap) {
@@ -2629,6 +2825,7 @@ function showPortfolioHelp(force = false) {
               day: "2-digit",
             }).format(m.date)
             : "",
+          date: m.date,
           cumInvest,
           valueNow,
         });
@@ -2641,7 +2838,8 @@ function showPortfolioHelp(force = false) {
       renderMercadoDoughnut(mercadosMap);
       renderTop5Bar(gruposArr);
       renderTop5YieldBar(rowsForYield);
-      renderTimeline(timelinePoints);
+      _timelinePointsFull = timelinePoints;
+      renderTimeline(filterTimelinePointsByRange(_timelinePointsFull, _timelineRange));
       renderDividendoCalendario12m(eurosMes);
 
       // 3.1) Pré-cálculo de métricas operacionais para filtros/ordenação
@@ -2798,89 +2996,8 @@ function showPortfolioHelp(force = false) {
       if (!document.getElementById("allocationPlannerModal")?.classList.contains("hidden")) renderAllocationPlanner();
 
       // 🗂️ Posições Fechadas (P&L Realizado)
-      const fechadasCont = document.getElementById("listaFechadas");
-      if (fechadasCont) {
-        const fechadas = gruposArr.filter(g => (g.qtd || 0) <= 0 && Math.abs(g.realizado || 0) > 0.001);
-        if (fechadas.length > 0) {
-          const totalRealizado = fechadas.reduce((s, g) => s + (g.realizado || 0), 0);
-          const corTotal = totalRealizado >= 0 ? "#22c55e" : "#ef4444";
-          fechadasCont.innerHTML = `
-            <details style="border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
-              <summary style="padding: 14px 18px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; list-style: none; background: var(--card);">
-                <span><i class="fas fa-archive" style="color: var(--muted-foreground); margin-right: 8px;"></i>Posições Fechadas <span style="font-weight: 500; color: var(--muted-foreground);">(${fechadas.length})</span></span>
-                <span style="color: ${corTotal}; font-size: 0.9rem;">${totalRealizado >= 0 ? "+" : ""}${fmtEUR.format(totalRealizado)} realizados</span>
-              </summary>
-              <div style="overflow: auto;">
-                <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
-                  <thead>
-                    <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground); text-align: left; background: var(--card);">
-                      <th style="padding: 10px 14px;">Ticker</th>
-                      <th style="padding: 10px 14px;">Nome</th>
-                      <th style="padding: 10px 14px; text-align: right;">PM</th>
-                      <th style="padding: 10px 14px; text-align: right;">Atual</th>
-                      <th style="padding: 10px 14px; text-align: right;">Dif.</th>
-                      <th style="padding: 10px 14px; text-align: right;">Lucro Realizado</th>
-                      <th style="padding: 10px 14px; text-align: right;">Retorno</th>
-                      <th style="padding: 10px 14px; text-align: center;">Lotes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${fechadas.sort((a, b) => (b.realizado || 0) - (a.realizado || 0)).map((g, idx) => {
-                      const realizado = g.realizado || 0;
-                      const cor = realizado >= 0 ? "#22c55e" : "#ef4444";
-                      const nLotes = (_allMovimentos || []).filter(m => m.ticker === g.ticker && m.qtd > 0).length;
-                      const retPct = (g.totalBuyValue || 0) > 0
-                        ? (realizado / g.totalBuyValue) * 100
-                        : null;
-                      const isLoss = realizado < 0;
-                      const simId = `recSim_${idx}`;
-                      const pmHistorico = isFiniteNum(g.custoMedioHistorico) && g.custoMedioHistorico > 0 ? Number(g.custoMedioHistorico) : null;
-                      const precoAtual = isFiniteNum(g.precoAtual) ? Number(g.precoAtual) : null;
-                      const diffAtualPct = pmHistorico && precoAtual !== null
-                        ? ((precoAtual - pmHistorico) / pmHistorico) * 100
-                        : null;
-                      const corDiff = diffAtualPct === null ? "var(--muted-foreground)" : diffAtualPct >= 0 ? "#22c55e" : "#ef4444";
-                      const lossAbs = Math.abs(realizado);
-                      const defaultGrowth = 10;
-                      return `
-                        <tr style="border-bottom: 1px solid var(--border);" onclick="window.openDetails('${g.ticker}')" class="cursor-pointer">
-                          <td style="padding: 10px 14px; font-weight: 800; font-family: monospace;">${g.ticker}</td>
-                          <td style="padding: 10px 14px; color: var(--muted-foreground);">${g.nome}</td>
-                          <td style="padding: 10px 14px; text-align: right; font-weight: 700;">${pmHistorico !== null ? fmtEUR.format(pmHistorico) : "—"}</td>
-                          <td style="padding: 10px 14px; text-align: right; font-weight: 700;">${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</td>
-                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${corDiff};">${diffAtualPct !== null ? `${diffAtualPct >= 0 ? "+" : ""}${diffAtualPct.toFixed(2)}%` : "—"}</td>
-                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${realizado >= 0 ? "+" : ""}${fmtEUR.format(realizado)}</td>
-                          <td style="padding: 10px 14px; text-align: right; font-weight: 700; color: ${cor};">${retPct !== null ? `${retPct >= 0 ? "+" : ""}${retPct.toFixed(2)}%` : "—"}</td>
-                          <td style="padding: 10px 14px; text-align: center; color: var(--muted-foreground);">
-                            ${nLotes}
-                            ${isLoss ? `<button type="button" title="Simular recuperação" onclick="event.stopPropagation(); window.toggleRecSim('${simId}')" style="margin-left: 8px; background: none; border: none; cursor: pointer; color: var(--muted-foreground); padding: 2px;"><i class="fas fa-bullseye"></i></button>` : ""}
-                          </td>
-                        </tr>
-                        ${isLoss ? `
-                        <tr id="${simId}" class="hidden">
-                          <td colspan="8" style="padding: 12px 14px; background: var(--card);">
-                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.78rem;">
-                              <span>Preço atual: <strong>${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</strong></span>
-                              <label>Crescimento esperado (%):
-                                <input type="number" id="${simId}_g" value="${defaultGrowth}" min="0.01" step="0.5"
-                                  style="width: 70px; margin-left: 4px;"
-                                  onclick="event.stopPropagation();"
-                                  oninput="window.calcRecSim('${simId}', ${precoAtual || 0}, ${lossAbs})">
-                              </label>
-                              <span id="${simId}_out">${calcRecSimHtml(precoAtual, lossAbs, defaultGrowth)}</span>
-                            </div>
-                          </td>
-                        </tr>` : ""}`;
-                    }).join("")}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          `;
-        } else {
-          fechadasCont.innerHTML = "";
-        }
-      }
+      window._currentGruposArr = gruposArr;
+      renderPosicoesFechadas(gruposArr);
 
       wireQuickActions(gruposArr);
       wirePortfolioHelpModal();
