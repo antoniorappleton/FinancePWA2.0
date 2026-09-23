@@ -439,7 +439,7 @@ function _strategyEditor(ticker, pos) {
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <button id="${btnId}" style="flex:1;padding:7px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:.8rem;font-weight:700;cursor:pointer">
+        <button id="${btnId}" style="flex:1;padding:7px;background:var(--primary);color:var(--primary-foreground);border:none;border-radius:6px;font-size:.8rem;font-weight:700;cursor:pointer">
           Guardar
         </button>
         <span id="${statusId}" style="font-size:.72rem"></span>

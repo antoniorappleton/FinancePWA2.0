@@ -61,6 +61,8 @@ function saveSettings(s) {
 }
 
 /* ---------------- tema (light/dark) ---------------- */
+let systemThemeHandler = null; // listener de prefers-color-scheme (um só, entre visitas)
+
 function applyTheme(dark) {
   const mode = dark ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", mode);
@@ -1159,7 +1161,14 @@ export function initScreen() {
   });
   elDark.addEventListener("change", () => {
     state.darkMode = !!elDark.checked;
+    state.userForcedTheme = true;
     applyTheme(state.darkMode); // aplica imediatamente
+    // Persiste já a alternância (só o tema — o resto continua à espera de "Guardar"),
+    // para que o modo escolhido se mantenha até ser mudado outra vez.
+    const saved = loadSettings();
+    saved.darkMode = state.darkMode;
+    saved.userForcedTheme = true;
+    saveSettings(saved);
   });
 
   elEmailN?.addEventListener("change", () => {
@@ -1487,22 +1496,18 @@ export function initScreen() {
   // (Opcional) Seguir alterações do sistema se o user nunca "forçou"
   try {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (e) => {
+    // initScreen corre a cada visita ao ecrã: troca o handler anterior em vez de acumular
+    if (systemThemeHandler) mq.removeEventListener?.("change", systemThemeHandler);
+    systemThemeHandler = (e) => {
       // só respeita o sistema se o utilizador nunca mudou manualmente
       const saved = loadSettings();
-      if (!("userForcedTheme" in saved) || !saved.userForcedTheme) {
-        state.darkMode = e.matches;
-        applyTheme(state.darkMode);
-        saveSettings(state);
-        elDark.checked = state.darkMode;
-      }
+      if (saved.userForcedTheme) return;
+      saved.darkMode = e.matches;
+      saveSettings(saved);
+      state.darkMode = e.matches;
+      applyTheme(e.matches);
+      if (elDark.isConnected) elDark.checked = e.matches;
     };
-    // marca que o user escolheu manualmente quando mexer no switch
-    elDark.addEventListener("change", () => {
-      const s = loadSettings();
-      s.userForcedTheme = true;
-      saveSettings(s);
-    });
-    mq.addEventListener?.("change", handler);
+    mq.addEventListener?.("change", systemThemeHandler);
   } catch {}
 }

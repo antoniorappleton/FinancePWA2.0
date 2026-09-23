@@ -3,6 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      // Aplica o tema guardado (Configurações → Modo Escuro) antes do primeiro paint,
+      // para que o modo escolhido persista entre sessões em todos os ecrãs.
+      (function () {
+        var dark = false;
+        try {
+          var s = JSON.parse(localStorage.getItem("app.settings") || "{}");
+          dark = s.darkMode === true;
+        } catch (e) {}
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      })();
+    </script>
     <link rel="stylesheet" href="style.css" />
     <link
       rel="stylesheet"

@@ -664,7 +664,7 @@ async function carregarSimulacoesGuardadas() {
           </div>
         </div>
 
-        <div style="height:6px; background:#eee; border-radius:3px; margin-top:1rem; overflow:hidden;">
+        <div style="height:6px; background:var(--muted, #eee); border-radius:3px; margin-top:1rem; overflow:hidden;">
           <div style="height:100%; width:${Math.min(100, Math.abs(lucroPct))}%; background:${lucroAbs >= 0 ? "#22c55e" : "#ef4444"}; transition: width 0.5s;"></div>
         </div>
         

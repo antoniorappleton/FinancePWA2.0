@@ -123,12 +123,16 @@ Aparência / helpers
 ========================================================= */
 const isDark = () =>
   document.documentElement.getAttribute("data-theme") === "dark";
-const chartColors = () => ({
-  grid: isDark() ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)",
-  ticks: isDark() ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.75)",
-  tooltipBg: isDark() ? "rgba(17,17,17,.95)" : "rgba(255,255,255,.95)",
-  tooltipFg: isDark() ? "#fff" : "#111",
-});
+// Os modais ficam sempre claros (também no modo escuro) — um gráfico lá dentro usa a paleta clara.
+const chartColors = (el) => {
+  const dark = isDark() && !el?.closest?.(".modal-dialog, .modal-content");
+  return {
+    grid: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)",
+    ticks: dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.75)",
+    tooltipBg: dark ? "rgba(17,17,17,.95)" : "rgba(255,255,255,.95)",
+    tooltipFg: dark ? "#fff" : "#111",
+  };
+};
 const PALETTE = [
   "#4F46E5",
   "#22C55E",
@@ -1882,11 +1886,11 @@ async function renderSelectedSectorChart(rowsSelecionadas) {
       cutout: "62%",
       animation: false,
       plugins: {
-        legend: { position: "bottom", labels: { color: chartColors().ticks } },
+        legend: { position: "bottom", labels: { color: chartColors(el).ticks } },
         tooltip: {
-          backgroundColor: chartColors().tooltipBg,
-          titleColor: chartColors().tooltipFg,
-          bodyColor: chartColors().tooltipFg,
+          backgroundColor: chartColors(el).tooltipBg,
+          titleColor: chartColors(el).tooltipFg,
+          bodyColor: chartColors(el).tooltipFg,
           callbacks: {
             label: (ctx) => {
               const total = data.reduce((a, b) => a + b, 0) || 1;
@@ -2270,18 +2274,19 @@ async function renderReportPreview(data, { horizonte }) {
         : undefined,
     },
   };
+  const repCc = chartColors(document.getElementById("repChartLucro"));
   const barCommon = {
     responsive: false,
     animation: false,
     maintainAspectRatio: false,
     scales: {
       x: {
-        ticks: { color: chartColors().ticks },
-        grid: { color: chartColors().grid },
+        ticks: { color: repCc.ticks },
+        grid: { color: repCc.grid },
       },
       y: {
-        ticks: { color: chartColors().ticks },
-        grid: { color: chartColors().grid },
+        ticks: { color: repCc.ticks },
+        grid: { color: repCc.grid },
       },
     },
     plugins: { legend: { display: false }, tooltip: { enabled: true } },

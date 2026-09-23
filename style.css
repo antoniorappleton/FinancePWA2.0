@@ -1174,17 +1174,30 @@ body.auth-screen .form-grid {
   color: #222222 !important;
 }
 
-[data-theme="dark"] .modal-dialog {
+[data-theme="dark"] .modal-dialog,
+[data-theme="dark"] .modal-content {
   /* No dark mode, mantemos o fundo branco como pedido */
   background: #ffffff !important;
   color: #111111 !important;
-  /* Sobrepomos variáveis internas para que elementos dentro do modal (como borders) usem cores escuras */
-  --primary: #4f46e5;
-  --border: rgba(0, 0, 0, 0.1);
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --foreground: #111111;
+  color-scheme: light;
+  /* O modal é uma "ilha clara": repomos TODA a paleta clara (premium-theme.css :root),
+     senão o .modal-body (var(--background)) e os cartões internos ficam escuros com
+     texto escuro forçado (#111/#222 !important) → ilegível. */
+  --background: #f3f5f8;
+  --foreground: #0c1117;
   --card: #ffffff;
+  --card-foreground: #0c1117;
+  --primary: #0ea5a4;
+  --primary-dark: #086b63;
+  --primary-rgb: 14, 165, 164;
+  --primary-foreground: #ffffff;
+  --muted: #eaeef1;
+  --muted-foreground: #59636e;
+  --border: rgba(12, 17, 23, 0.10);
+  --surface-raised: rgba(255, 255, 255, 0.97);
+  --focus-ring: rgba(14, 165, 164, 0.18);
+  --input: #ffffff;
+  --input-bg: #ffffff;
 }
 
 [data-theme="dark"] .modal-header {
@@ -2117,12 +2130,7 @@ body.auth-screen .form-grid {
   margin: 8px 0 0 16px
 }
 
-/* Dark mode (opcional) */
-:root[data-theme="dark"] .modal-content {
-  background: #111827;
-  color: #E5E7EB;
-  border: 1px solid rgba(255, 255, 255, .06);
-}
+/* Dark mode: .modal-content segue a "ilha clara" definida junto a .modal-dialog */
 
 :root[data-theme="dark"] .chart-card,
 :root[data-theme="dark"] .kpi {
@@ -2823,7 +2831,7 @@ body.auth-screen .form-grid {
   width: 50px;
   height: 50px;
   background: var(--primary);
-  color: white;
+  color: var(--primary-foreground);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2953,7 +2961,7 @@ body.auth-screen .form-grid {
   width: 32px;
   height: 32px;
   background: var(--primary);
-  color: white;
+  color: var(--primary-foreground);
   border-radius: 8px;
   display: flex;
   align-items: center;

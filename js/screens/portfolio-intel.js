@@ -1221,6 +1221,10 @@ function renderEfficientFrontier(allData) {
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   const tickColor = isDark ? "rgba(255,255,255,.8)" : "rgba(0,0,0,.7)";
   const gridColor = isDark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)";
+  // Pontos de 2px com alpha baixo desaparecem sobre fundo escuro — mais opacos/maiores no dark.
+  const cloud = isDark
+    ? { low: "rgba(248,113,113,0.60)", mid: "rgba(251,191,36,0.70)", high: "rgba(74,222,128,0.85)", r: 2.5 }
+    : { low: "rgba(239,68,68,0.30)",   mid: "rgba(245,158,11,0.40)", high: "rgba(34,197,94,0.50)",  r: 2 };
 
   const maxS = Math.max(...data.sims.map(s => s.sharpe));
   const minS = Math.min(...data.sims.map(s => s.sharpe));
@@ -1309,9 +1313,9 @@ function renderEfficientFrontier(allData) {
           pointRadius: 7,
           pointStyle: "crossRot",
         },
-        { label: "Baixo Sharpe", data: grouped.low,  backgroundColor: "rgba(239,68,68,0.30)",  pointRadius: 2 },
-        { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: "rgba(245,158,11,0.40)", pointRadius: 2 },
-        { label: "Alto Sharpe",  data: grouped.high, backgroundColor: "rgba(34,197,94,0.50)",  pointRadius: 2 },
+        { label: "Baixo Sharpe", data: grouped.low,  backgroundColor: cloud.low,  borderColor: cloud.low,  pointRadius: cloud.r },
+        { label: "Médio Sharpe", data: grouped.mid,  backgroundColor: cloud.mid,  borderColor: cloud.mid,  pointRadius: cloud.r },
+        { label: "Alto Sharpe",  data: grouped.high, backgroundColor: cloud.high, borderColor: cloud.high, pointRadius: cloud.r },
         {
           label: "_halo",
           data: [{ x: +(data.curVol * 100).toFixed(2), y: +(data.curRet * 100).toFixed(2) }],
@@ -1325,8 +1329,9 @@ function renderEfficientFrontier(allData) {
           label: "★ Carteira Atual",
           data: [{ x: +(data.curVol * 100).toFixed(2), y: +(data.curRet * 100).toFixed(2) }],
           backgroundColor: "#8b5cf6",
-          borderColor: "#ffffff",
-          borderWidth: 2,
+          // "star" do Chart.js só desenha contorno — branco ficava invisível no tema claro
+          borderColor: isDark ? "#c4b5fd" : "#7c3aed",
+          borderWidth: 3,
           pointRadius: 16,
           pointStyle: "star",
         },

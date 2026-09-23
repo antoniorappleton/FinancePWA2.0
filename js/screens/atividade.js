@@ -64,8 +64,9 @@ async function ensureECharts() {
 function isDark() {
   return document.documentElement.getAttribute("data-theme") === "dark";
 }
-function chartColors() {
-  const dark = isDark();
+// Os modais ficam sempre claros (também no modo escuro) — um gráfico lá dentro usa a paleta clara.
+function chartColors(el) {
+  const dark = isDark() && !el?.closest?.(".modal-dialog, .modal-content");
   return {
     grid: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)",
     ticks: dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.7)",
@@ -3495,21 +3496,21 @@ function showPortfolioHelp(force = false) {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { ticks: { color: chartColors().ticks }, grid: { display: false } },
+          x: { ticks: { color: chartColors(el).ticks }, grid: { display: false } },
           y: { 
             ticks: { 
-              color: chartColors().ticks,
+              color: chartColors(el).ticks,
               callback: (val) => "€" + val.toFixed(2)
             }, 
-            grid: { color: chartColors().grid } 
+            grid: { color: chartColors(el).grid } 
           }
         },
         plugins: {
-          legend: { display: true, position: "top", labels: { color: chartColors().ticks, boxWidth: 12, font: { size: 11 } } },
+          legend: { display: true, position: "top", labels: { color: chartColors(el).ticks, boxWidth: 12, font: { size: 11 } } },
           tooltip: {
-            backgroundColor: chartColors().tooltipBg,
-            titleColor: chartColors().tooltipFg,
-            bodyColor: chartColors().tooltipFg,
+            backgroundColor: chartColors(el).tooltipBg,
+            titleColor: chartColors(el).tooltipFg,
+            bodyColor: chartColors(el).tooltipFg,
             callbacks: {
               label: (ctx) => ` ${ctx.dataset.label}: €${ctx.parsed.y.toFixed(2)}`
             }

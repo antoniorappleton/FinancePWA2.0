@@ -473,6 +473,7 @@
   transition: transform 0.2s;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
+:root[data-theme="dark"] .ef-toggle-track { background: rgba(255,255,255,0.22); }
 .ef-toggle-wrap input:checked ~ .ef-toggle-track { background: #f59e0b; }
 .ef-toggle-wrap input:checked ~ .ef-toggle-track .ef-toggle-thumb { transform: translateX(18px); }
 
@@ -491,7 +492,7 @@
 .ef-win-tab:hover { background: rgba(var(--primary-rgb),0.08); color: var(--foreground); }
 .ef-win-tab.active {
   background: var(--primary);
-  color: white;
+  color: var(--primary-foreground, #fff);
   border-color: var(--primary);
 }
 

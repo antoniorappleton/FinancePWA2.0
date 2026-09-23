@@ -1354,23 +1354,7 @@
   margin-left: auto;
 }
 
-[data-theme="dark"] .modal-dialog {
-  background: #111;
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .modal-header {
-  background: #111;
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] #anlSimModal .form-grid input,
-[data-theme="dark"] #anlSimModal .form-grid select {
-  background: #1a1a1a;
-  color: #eee;
-  border-color: rgba(255, 255, 255, 0.12);
-}
+/* Dark mode: os modais mantêm-se claros (ver [data-theme="dark"] .modal-dialog em style.css) */
 
 .tabela-scroll-wrapper {
   overflow: auto;
@@ -1747,7 +1731,7 @@
 
 .card-filter-toggle button.active {
   background: var(--primary, #4f46e5);
-  color: #fff;
+  color: var(--primary-foreground, #fff);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
 }
 
