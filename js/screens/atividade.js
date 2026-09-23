@@ -4619,16 +4619,11 @@ async function renderGlobalHoldingsMap(gruposArr) {
       if (match && match.data.holdings && Array.isArray(match.data.holdings)) {
         const data = match.data;
         console.log(`✅ [HoldingsMap] Match encontrado: ${cleanT} <-> ${match.ticker}`);
+        const weightScale = holdingsWeightScale(data.holdings);
         data.holdings.forEach(h => {
           const symbol = h.symbol || h.ticker || h.name || "Unknown";
-          let hWeight = Number(h.weight) || Number(h.Weight) || 0;
-          // Normalizar recursivamente para fração (0-1) - com trava de segurança
-          let safety = 0;
-          while (isFinite(hWeight) && Math.abs(hWeight) > 1.0001 && safety < 10) {
-            hWeight /= 100;
-            safety++;
-          }
-          
+          const hWeight = normalizeHoldingWeight(h, weightScale);
+
           const contrib = hWeight * weightInPortfolio;
 
           if (aggregated.has(symbol)) {
@@ -4803,8 +4798,26 @@ function normalizeGeoWeight(value) {
   return weight;
 }
 
+// Pesos de holdings podem vir em fração (0.0215) ou em % (2.15). A escala é decidida
+// pela lista inteira: decidir holding a holding faz 0.94% virar 94%.
+function holdingsWeightScale(holdings) {
+  const sum = (holdings || []).reduce((acc, h) => acc + Math.abs(Number(h?.weight) || Number(h?.Weight) || 0), 0);
+  return sum > 1.0001 ? 100 : 1;
+}
+
+function normalizeHoldingWeight(h, scale) {
+  let w = (Number(h?.weight) || Number(h?.Weight) || 0) / scale;
+  let safety = 0;
+  while (isFinite(w) && Math.abs(w) > 1.0001 && safety < 10) {
+    w /= 100;
+    safety++;
+  }
+  return w;
+}
+
 function normalizeGeoName(name) {
-  const raw = String(name || "").trim();
+  // Remove sufixo de código (ex: "United States, US", "Other, OTHER")
+  const raw = String(name || "").trim().replace(/\s*,\s*[A-Za-z]{2,5}$/, "");
   if (!raw) return "";
   const key = raw.toUpperCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -5033,13 +5046,9 @@ async function renderIndividualHoldingsMap(ticker, etfName) {
       return;
     }
 
+    const weightScale = holdingsWeightScale(data.holdings);
     const rawHoldings = data.holdings.map(h => {
-      let w = Number(h.weight) || Number(h.Weight) || 0;
-      let safety = 0;
-      while (isFinite(w) && Math.abs(w) > 1.0001 && safety < 10) {
-        w /= 100;
-        safety++;
-      }
+      const w = normalizeHoldingWeight(h, weightScale);
       return {
         name: h.symbol || h.ticker || h.name || "??",
         value: w * 100,
