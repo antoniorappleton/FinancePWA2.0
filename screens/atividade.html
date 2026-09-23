@@ -1,392 +1,264 @@
 <!doctype html>
-<div class="page" data-screen-title="Portfólio">
-  <div
-    class="dashboard-header"
-    style="
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-    "
-  >
-    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
-      <p class="subtitle" style="margin: 0">Todos os ativos em carteira</p>
-      <span
-        id="priceUpdateIndicator"
-        style="
-          font-size: 0.65rem;
-          color: var(--muted-foreground);
-          background: var(--glass-bg);
-          padding: 3px 9px;
-          border-radius: 999px;
-          border: 1px solid var(--border);
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-        "
-      >
+<div class="page prt-terminal" data-screen-title="Portfólio">
+  <!-- 🧭 BARRA SUPERIOR -->
+  <header class="dashboard-header prt-topbar">
+    <div class="prt-topbar-left">
+      <p class="subtitle prt-topbar-title">Todos os ativos em carteira</p>
+      <span id="priceUpdateIndicator" class="prt-live-pill">
         <i class="fas fa-circle" style="font-size: 0.45rem; color: #94a3b8"></i>
         A carregar...
       </span>
     </div>
-    <div style="display: flex; gap: 8px; align-items: center">
+    <div class="prt-topbar-actions">
       <button
         id="btnOpenGlobalHoldingsMap"
-        class="btn premium"
-        style="
-          margin-top: 0;
-          padding: 0 14px;
-          height: 36px;
-          font-size: 0.75rem;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          border-radius: 20px;
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        "
+        class="btn premium prt-btn prt-btn--violet"
       >
         <i class="fas fa-th-large"></i> <span>Big Mapa de Holdings</span>
       </button>
-      <button
-        id="btnOpenInvPlan"
-        class="btn premium"
-        style="
-          margin-top: 0;
-          padding: 0 14px;
-          height: 36px;
-          font-size: 0.75rem;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          border-radius: 20px;
-        "
-      >
+      <button id="btnOpenInvPlan" class="btn premium prt-btn">
         <i class="fas fa-magic"></i> <span>Plano IA</span>
       </button>
-      <button
-        id="btnPrtHelp"
-        class="icon-btn"
-        title="Ajuda"
-        style="
-          background: var(--glass-bg);
-          padding: 8px;
-          border-radius: 50%;
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-color);
-          border: 1px solid var(--border);
-        "
-      >
+      <button id="btnPrtHelp" class="icon-btn prt-btn-icon" title="Ajuda">
         <i class="fas fa-question-circle"></i>
       </button>
     </div>
-  </div>
+  </header>
 
   <!-- 🧭 KPIs -->
-  <div class="portfolio-summary">
-    <div class="card premium">
-      <div class="card-content">
-        <div>
-          <p class="label">Valor Total Investido</p>
-          <p class="value" id="prtTotalInvestido">€0,00</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-coins"></i></div>
-      </div>
+  <section class="prt-section">
+    <div class="prt-section-head">
+      <h2>Resumo da carteira</h2>
     </div>
-
-    <div class="card success">
-      <div class="card-content">
-        <div>
-          <p class="label">Dividendos anuais esperado</p>
-          <p class="value" id="prtRendimentoAnual">€0,00</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-wallet"></i></div>
-      </div>
-    </div>
-
-    <div class="card info">
-      <div class="card-content">
-        <div>
-          <p class="label">Lucro Atual (aberto)</p>
-          <p class="value" id="prtLucroTotal">€0,00</p>
-          <p id="prtLucroAcumulado" class="subvalue muted">—</p>
-        </div>
-        <div class="icon-box"><i class="fas fa-wallet"></i></div>
-      </div>
-    </div>
-
-    <div class="card info">
-      <div class="card-content">
-        <div>
-          <p class="label">Retorno global (P/L%)</p>
-          <p class="value" id="prtRetorno">0%</p>
-          <p
-            id="prtXIRR"
-            class="subvalue muted"
-            style="font-size: 0.7rem; margin-top: 4px; font-weight: 600"
-          >
-            XIRR: —
-          </p>
-        </div>
-        <div class="icon-box"><i class="fas fa-chart-line"></i></div>
-      </div>
-    </div>
-
-    <div class="card default">
-      <div class="card-content">
-        <div>
-          <p class="label">Exposição acima da SMA200</p>
-          <p class="value" id="prtExpSMA200">0%</p>
-          <p
-            id="prtExpSMA200Comment"
-            class="subvalue muted"
-            style="font-size: 0.7rem; margin-top: 4px; font-weight: 600"
-          >
-            A aguardar dados...
-          </p>
-        </div>
-        <div class="icon-box"><i class="fas fa-trending-up"></i></div>
-      </div>
-    </div>
-
-    <div class="card info">
-      <div class="card-content">
-        <div>
-          <p class="label">Cobertura da Estratégia</p>
-          <p class="value" id="prtAllocTotal">0%</p>
-          <p
-            id="prtAllocComment"
-            class="subvalue muted"
-            style="font-size: 0.7rem; margin-top: 4px"
-          >
-            Indefinido
-          </p>
-        </div>
-        <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
-      </div>
-    </div>
-
-    <div
-      class="card info"
-      style="
-        border-left: 4px solid #ef4444;
-        background: rgba(239, 68, 68, 0.03);
-      "
-    >
-      <div class="card-content">
-        <div>
-          <p class="label">Reforço Necessário (€)</p>
-          <p class="value" id="prtWarChest">€0,00</p>
-          <p class="subvalue muted">Capital para atingir 100% dos alvos</p>
-        </div>
-        <div
-          class="icon-box"
-          style="color: #ef4444; background: rgba(239, 68, 68, 0.08)"
-        >
-          <i class="fas fa-bullseye"></i>
+    <div class="portfolio-summary prt-kpis">
+      <div class="card premium prt-kpi">
+        <div class="card-content">
+          <div>
+            <p class="label">Valor Total Investido</p>
+            <p class="value" id="prtTotalInvestido">€0,00</p>
+          </div>
+          <div class="icon-box"><i class="fas fa-coins"></i></div>
         </div>
       </div>
-    </div>
 
-    <div
-      id="prtCashReserveCard"
-      class="card"
-      style="
-        border-left: 4px solid #6366f1;
-        background: rgba(99, 102, 241, 0.03);
-        display: none;
-      "
-    >
-      <div class="card-content">
-        <div style="width: 100%">
-          <p class="label" style="display: flex; align-items: center; gap: 6px">
-            <i
-              class="fas fa-shield-alt"
-              style="color: #6366f1; font-size: 0.9rem"
-            ></i>
-            Reserva Estratégica
-          </p>
-          <div
-            style="
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 6px 16px;
-              margin-top: 8px;
-              font-size: 0.78rem;
-            "
-          >
-            <div style="color: var(--muted-foreground)">Reserva alvo</div>
-            <div
-              id="prtReservaAlvo"
-              style="font-weight: 700; text-align: right"
-            >
-              —
+      <div class="card info prt-kpi">
+        <div class="card-content">
+          <div>
+            <p class="label">Lucro Atual (aberto)</p>
+            <p class="value" id="prtLucroTotal">€0,00</p>
+            <p id="prtLucroAcumulado" class="subvalue muted">—</p>
+          </div>
+          <div class="icon-box"><i class="fas fa-wallet"></i></div>
+        </div>
+      </div>
+
+      <div class="card info prt-kpi">
+        <div class="card-content">
+          <div>
+            <p class="label">Retorno global (P/L%)</p>
+            <p class="value" id="prtRetorno">0%</p>
+            <p id="prtXIRR" class="subvalue muted prt-kpi-note">XIRR: —</p>
+          </div>
+          <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+        </div>
+      </div>
+
+      <div class="card success prt-kpi">
+        <div class="card-content">
+          <div>
+            <p class="label">Dividendos anuais esperado</p>
+            <p class="value" id="prtRendimentoAnual">€0,00</p>
+          </div>
+          <div class="icon-box"><i class="fas fa-hand-holding-dollar"></i></div>
+        </div>
+      </div>
+
+      <div class="card default prt-kpi">
+        <div class="card-content">
+          <div>
+            <p class="label">Exposição acima da SMA200</p>
+            <p class="value" id="prtExpSMA200">0%</p>
+            <p id="prtExpSMA200Comment" class="subvalue muted prt-kpi-note">
+              A aguardar dados...
+            </p>
+          </div>
+          <div class="icon-box"><i class="fas fa-arrow-trend-up"></i></div>
+        </div>
+      </div>
+
+      <div class="card info prt-kpi">
+        <div class="card-content">
+          <div>
+            <p class="label">Cobertura da Estratégia</p>
+            <p class="value" id="prtAllocTotal">0%</p>
+            <p id="prtAllocComment" class="subvalue muted prt-kpi-note">
+              Indefinido
+            </p>
+          </div>
+          <div class="icon-box"><i class="fas fa-chart-pie"></i></div>
+        </div>
+      </div>
+
+      <div class="card info prt-kpi prt-kpi--alert">
+        <div class="card-content">
+          <div>
+            <p class="label">Reforço Necessário (€)</p>
+            <p class="value" id="prtWarChest">€0,00</p>
+            <p class="subvalue muted">Capital para atingir 100% dos alvos</p>
+          </div>
+          <div class="icon-box"><i class="fas fa-bullseye"></i></div>
+        </div>
+      </div>
+
+      <div
+        id="prtCashReserveCard"
+        class="card prt-kpi prt-kpi--reserve"
+        style="display: none"
+      >
+        <div class="card-content">
+          <div style="width: 100%">
+            <p class="label prt-reserve-title">
+              <i class="fas fa-shield-alt"></i>
+              Reserva Estratégica
+            </p>
+            <div class="prt-reserve-grid">
+              <div class="prt-reserve-k">Reserva alvo</div>
+              <div id="prtReservaAlvo" class="prt-reserve-v">—</div>
+              <div class="prt-reserve-k">Cash atual</div>
+              <div id="prtReservaCash" class="prt-reserve-v">—</div>
+              <div class="prt-reserve-k">Gap</div>
+              <div id="prtReservaGap" class="prt-reserve-v">—</div>
+              <div class="prt-reserve-k prt-reserve-sep">Aporte mensal</div>
+              <div id="prtReservaAporte" class="prt-reserve-v prt-reserve-sep">
+                —
+              </div>
             </div>
-            <div style="color: var(--muted-foreground)">Cash atual</div>
-            <div
-              id="prtReservaCash"
-              style="font-weight: 700; text-align: right"
-            >
-              —
-            </div>
-            <div style="color: var(--muted-foreground)">Gap</div>
-            <div id="prtReservaGap" style="font-weight: 700; text-align: right">
-              —
-            </div>
-            <div
-              style="
-                color: var(--muted-foreground);
-                border-top: 1px solid var(--border);
-                padding-top: 6px;
-              "
-            >
-              Aporte mensal
-            </div>
-            <div
-              id="prtReservaAporte"
-              style="
-                font-weight: 700;
-                text-align: right;
-                border-top: 1px solid var(--border);
-                padding-top: 6px;
-              "
-            >
-              —
+            <div class="prt-reserve-available">
+              <span>Disponível para investir</span>
+              <span id="prtReservaDisponivel">—</span>
             </div>
           </div>
-          <div
-            style="
-              margin-top: 10px;
-              padding: 10px 12px;
-              background: rgba(99, 102, 241, 0.1);
-              border-radius: 8px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            "
-          >
-            <span style="font-size: 0.75rem; color: var(--muted-foreground)"
-              >Disponível para investir</span
-            >
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 📈 PERFORMANCE (Timeline + Calendário Dividendos) -->
+  <section class="prt-section">
+    <div class="prt-section-head">
+      <h2>Performance</h2>
+    </div>
+    <div class="prt-grid prt-grid--perf">
+      <div class="card prt-panel">
+        <div class="prt-panel-head">
+          <h3>Evolução (Investido vs Avaliação Atual)</h3>
+          <div class="prt-panel-tools">
             <span
-              id="prtReservaDisponivel"
-              style="font-size: 1.1rem; font-weight: 800; color: #6366f1"
+              id="prtTimelineDelta"
+              class="prt-delta-pill"
+              title="Diferença atual entre a avaliação e o investido acumulado"
               >—</span
             >
+            <div id="timelineRangeButtons" class="prt-range">
+              <button type="button" class="btn outline timeline-range-btn" data-range="1m">1M</button>
+              <button type="button" class="btn outline timeline-range-btn" data-range="3m">3M</button>
+              <button type="button" class="btn outline timeline-range-btn" data-range="1y">1A</button>
+              <button type="button" class="btn outline timeline-range-btn active" data-range="all">Tudo</button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 📈 GRÁFICOS (linha 0: Estratégia + Ativos) -->
-  <div class="portfolio-charts">
-    <div class="card">
-      <h3>Distribuição Estratégica (Core vs Satélite)</h3>
-      <div class="chart-wrap"><canvas id="chartEstrategia"></canvas></div>
-    </div>
-    <div class="card">
-      <h3>Distribuição por Ativo</h3>
-      <div class="chart-wrap"><canvas id="chartAtivos"></canvas></div>
-    </div>
-  </div>
-
-  <!-- 📈 GRÁFICOS (linha 1: Setores + Mercado) -->
-  <div class="portfolio-charts">
-    <div class="card">
-      <h3>Distribuição por Setores</h3>
-      <div class="chart-wrap"><canvas id="chartSetores"></canvas></div>
-    </div>
-
-    <div class="card">
-      <h3>Distribuição por Mercado</h3>
-      <div class="chart-wrap"><canvas id="chartMercados"></canvas></div>
-    </div>
-  </div>
-
-  <!-- 📈 GRÁFICOS (linha 2: Top5 Investido + Top5 Yield) -->
-  <div class="portfolio-charts">
-    <div class="card">
-      <h3>Top 5 por Valor Investido</h3>
-      <div class="chart-wrap"><canvas id="chartTop5"></canvas></div>
-    </div>
-
-    <div class="card">
-      <h3>Top 5 por Yield</h3>
-      <div class="chart-wrap"><canvas id="chartTop5Yield"></canvas></div>
-    </div>
-  </div>
-
-  <!-- ☁️ NUVEM DE POSIÇÕES (Bubble Chart) -->
-  <div class="card" style="margin-top: 12px">
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 4px;
-      "
-    >
-      <h3 style="margin: 0">Nuvem de Posições — P&amp;L vs Momento Técnico</h3>
-      <span style="font-size: 0.7rem; color: var(--muted-foreground)"
-        >Tamanho = peso no portfólio · Cor = sinal de ação</span
-      >
-    </div>
-    <div
-      style="
-        font-size: 0.7rem;
-        color: var(--muted-foreground);
-        margin-bottom: 8px;
-      "
-    >
-      <span style="color: #22c55e; font-weight: 700">● COMPRAR/REFORÇAR</span>
-      &nbsp;
-      <span style="color: #3b82f6; font-weight: 700">● MANTER/MONITORIZAR</span>
-      &nbsp;
-      <span style="color: #f59e0b; font-weight: 700">● REDUZIR</span> &nbsp;
-      <span style="color: #ef4444; font-weight: 700">● VENDER</span> &nbsp;
-      <span style="color: #64748b; font-weight: 700">● ESPERAR</span>
-    </div>
-    <div class="chart-wrap" style="height: 340px">
-      <canvas id="chartBubble"></canvas>
-    </div>
-  </div>
-
-  <!-- 📈 GRÁFICOS (linha 3: Timeline + Calendário Dividendos) -->
-  <div class="portfolio-charts">
-    <div class="card">
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-        <h3 style="margin: 0;">Evolução (Investido vs Avaliação Atual)</h3>
-        <div id="timelineRangeButtons" style="display: flex; gap: 4px; flex-wrap: wrap;">
-          <button type="button" class="btn outline timeline-range-btn" data-range="1m" style="font-size: 0.7rem; padding: 4px 10px;">1M</button>
-          <button type="button" class="btn outline timeline-range-btn" data-range="3m" style="font-size: 0.7rem; padding: 4px 10px;">3M</button>
-          <button type="button" class="btn outline timeline-range-btn" data-range="1y" style="font-size: 0.7rem; padding: 4px 10px;">1A</button>
-          <button type="button" class="btn outline timeline-range-btn active" data-range="all" style="font-size: 0.7rem; padding: 4px 10px;">Tudo</button>
+        <div class="chart-wrap prt-chart-lg">
+          <canvas id="chartTimeline"></canvas>
         </div>
       </div>
-      <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
+
+      <div class="card prt-panel">
+        <div class="prt-panel-head">
+          <h3>Calendário de Dividendos (12 meses)</h3>
+        </div>
+        <div class="chart-wrap prt-chart-lg">
+          <canvas id="chartDivCalendario"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🥧 COMPOSIÇÃO (Estratégia + Ativos + Setores + Mercado) -->
+  <section class="prt-section">
+    <div class="prt-section-head">
+      <h2>Composição</h2>
+    </div>
+    <div class="prt-grid prt-grid--4">
+      <div class="card prt-panel">
+        <div class="prt-panel-head">
+          <h3>Distribuição Estratégica (Core vs Satélite)</h3>
+        </div>
+        <div class="chart-wrap"><canvas id="chartEstrategia"></canvas></div>
+      </div>
+      <div class="card prt-panel">
+        <div class="prt-panel-head"><h3>Distribuição por Ativo</h3></div>
+        <div class="chart-wrap"><canvas id="chartAtivos"></canvas></div>
+      </div>
+      <div class="card prt-panel">
+        <div class="prt-panel-head"><h3>Distribuição por Setores</h3></div>
+        <div class="chart-wrap"><canvas id="chartSetores"></canvas></div>
+      </div>
+      <div class="card prt-panel">
+        <div class="prt-panel-head"><h3>Distribuição por Mercado</h3></div>
+        <div class="chart-wrap"><canvas id="chartMercados"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🏆 RANKINGS (Top5 Investido + Top5 Yield) + Nuvem de posições -->
+  <section class="prt-section">
+    <div class="prt-section-head">
+      <h2>Rankings &amp; Sinais</h2>
+    </div>
+    <div class="prt-grid prt-grid--2">
+      <div class="card prt-panel">
+        <div class="prt-panel-head"><h3>Top 5 por Valor Investido</h3></div>
+        <div class="chart-wrap"><canvas id="chartTop5"></canvas></div>
+      </div>
+      <div class="card prt-panel">
+        <div class="prt-panel-head"><h3>Top 5 por Yield</h3></div>
+        <div class="chart-wrap"><canvas id="chartTop5Yield"></canvas></div>
+      </div>
     </div>
 
-    <div class="card">
-      <h3>Calendário de Dividendos (12 meses)</h3>
-      <div class="chart-wrap"><canvas id="chartDivCalendario"></canvas></div>
+    <!-- ☁️ NUVEM DE POSIÇÕES (Bubble Chart) -->
+    <div class="card prt-panel" style="margin-top: 12px">
+      <div class="prt-panel-head">
+        <h3>Nuvem de Posições — P&amp;L vs Momento Técnico</h3>
+        <span class="prt-panel-hint"
+          >Tamanho = peso no portfólio · Cor = sinal de ação</span
+        >
+      </div>
+      <div class="prt-legend">
+        <span style="--dot: #22c55e">COMPRAR/REFORÇAR</span>
+        <span style="--dot: #3b82f6">MANTER/MONITORIZAR</span>
+        <span style="--dot: #f59e0b">REDUZIR</span>
+        <span style="--dot: #ef4444">VENDER</span>
+        <span style="--dot: #64748b">ESPERAR</span>
+      </div>
+      <div class="chart-wrap" style="height: 340px">
+        <canvas id="chartBubble"></canvas>
+      </div>
     </div>
+  </section>
+
+  <!-- 💼 POSIÇÕES -->
+  <div class="prt-section-head prt-section-head--positions">
+    <h2>Posições abertas</h2>
+    <span id="prtPositionsCount" class="prt-count-pill">—</span>
   </div>
 
   <!-- 🔎 FILTROS OPERACIONAIS -->
-  <div
-    class="card analysis-toolbar"
-    style="margin-top: 12px; margin-bottom: 12px; padding: 12px"
-  >
-    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+  <div class="card analysis-toolbar prt-filterbar">
+    <div class="prt-filterbar-row">
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
-          >Estado</label
-        >
-        <select id="fltEstado" style="padding: 6px 10px; min-width: 120px">
+        <label>Estado</label>
+        <select id="fltEstado">
           <option value="">Todos</option>
           <option value="REFORÇAR">REFORÇAR</option>
           <option value="COMPRAR">COMPRAR</option>
@@ -398,10 +270,8 @@
         </select>
       </div>
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
-          >Estratégia</label
-        >
-        <select id="fltEstrategia" style="padding: 6px 10px; min-width: 120px">
+        <label>Estratégia</label>
+        <select id="fltEstrategia">
           <option value="">Todas</option>
           <option value="CORE">Core</option>
           <option value="SATELLITE">Satélite</option>
@@ -409,26 +279,20 @@
         </select>
       </div>
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
-          >Mercado</label
-        >
-        <select id="fltMercado" style="padding: 6px 10px; min-width: 120px">
+        <label>Mercado</label>
+        <select id="fltMercado">
           <option value="">Todos</option>
         </select>
       </div>
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
-          >Setor</label
-        >
-        <select id="fltSetor" style="padding: 6px 10px; min-width: 120px">
+        <label>Setor</label>
+        <select id="fltSetor">
           <option value="">Todos</option>
         </select>
       </div>
       <div class="filter-group">
-        <label style="font-size: 0.8rem; color: var(--muted-foreground)"
-          >Ordenar por</label
-        >
-        <select id="fltSort" style="padding: 6px 10px; min-width: 160px">
+        <label>Ordenar por</label>
+        <select id="fltSort">
           <option value="ticker">Ticker (A-Z)</option>
           <option value="queda" selected>Maior queda % (Drawdown)</option>
           <option value="lucro">P/L € (Menores primeiro)</option>
@@ -535,6 +399,432 @@
 </div>
 <!-- ======== Estilos locais (collapse + modal simples) ======== -->
 <style>
+  /* ======== Layout "terminal de trading" (Portfólio) ======== */
+  .prt-terminal {
+    --prt-up: #16a34a;
+    --prt-down: #dc2626;
+    --prt-panel-bg: var(--card);
+    --prt-head-bg: color-mix(in srgb, var(--card) 88%, var(--muted));
+  }
+  [data-theme="dark"] .prt-terminal {
+    --prt-up: #22c55e;
+    --prt-down: #f87171;
+  }
+  .prt-terminal .value,
+  .prt-terminal .prt-reserve-v,
+  .prt-terminal .prt-delta-pill,
+  .prt-terminal .prt-count-pill,
+  .prt-terminal .asset-price,
+  .prt-terminal .asset-change,
+  .prt-terminal .metric-value {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Barra superior */
+  .prt-topbar {
+    flex-direction: row !important;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    margin-bottom: 18px !important;
+    background: var(--prt-panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .prt-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .prt-topbar-title {
+    margin: 0;
+    font-weight: 700;
+    color: var(--foreground) !important;
+    font-size: 0.9rem;
+  }
+  .prt-live-pill {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    background: var(--prt-head-bg);
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .prt-topbar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .prt-btn {
+    margin-top: 0 !important;
+    padding: 0 14px !important;
+    height: 34px;
+    font-size: 0.75rem !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+  }
+  .prt-btn--violet {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  }
+  .prt-btn-icon {
+    width: 34px;
+    height: 34px;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--prt-head-bg);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+  }
+
+  /* Secções */
+  .prt-section {
+    margin-bottom: 22px;
+  }
+  .prt-section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .prt-section-head h2 {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted-foreground);
+  }
+  .prt-section-head--positions {
+    margin-top: 6px;
+  }
+  .prt-count-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--prt-head-bg);
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+  }
+
+  /* KPIs compactos */
+  .prt-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 10px !important;
+    margin-bottom: 0 !important;
+  }
+  .prt-kpi.card {
+    min-height: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .prt-kpi .card-content {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .prt-kpi .label {
+    margin: 0 0 6px;
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .prt-kpi .value {
+    margin: 0;
+    font-size: 1.3rem;
+    line-height: 1.15;
+  }
+  .prt-kpi .subvalue {
+    margin: 4px 0 0;
+    font-size: 0.7rem;
+  }
+  .prt-kpi-note {
+    font-weight: 600;
+  }
+  .prt-kpi .icon-box {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+    flex: 0 0 auto;
+  }
+  .prt-kpi.is-up .value {
+    color: var(--prt-up);
+  }
+  .prt-kpi.is-down .value {
+    color: var(--prt-down);
+  }
+  .prt-kpi.is-up::before,
+  .prt-kpi.is-down::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--prt-up);
+  }
+  .prt-kpi.is-down::before {
+    background: var(--prt-down);
+  }
+  .prt-kpi--alert {
+    border-left: 3px solid #ef4444 !important;
+  }
+  .prt-kpi--alert .icon-box {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+  .prt-kpi--reserve {
+    border-left: 3px solid #6366f1 !important;
+  }
+  .prt-reserve-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .prt-reserve-title i {
+    color: #6366f1;
+    font-size: 0.8rem;
+  }
+  .prt-reserve-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 16px;
+    margin-top: 6px;
+    font-size: 0.76rem;
+  }
+  .prt-reserve-k {
+    color: var(--muted-foreground);
+  }
+  .prt-reserve-v {
+    font-weight: 700;
+    text-align: right;
+  }
+  .prt-reserve-sep {
+    border-top: 1px solid var(--border);
+    padding-top: 5px;
+  }
+  .prt-reserve-available {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--muted-foreground);
+  }
+  #prtReservaDisponivel {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #6366f1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Painéis de gráficos */
+  .prt-grid {
+    display: grid;
+    gap: 12px;
+  }
+  .prt-grid--perf {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+  .prt-grid--4 {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .prt-grid--2 {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+  .prt-panel.card {
+    padding: 0 14px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: none;
+    min-width: 0;
+  }
+  .prt-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0 -14px 12px;
+    padding: 10px 14px;
+    background: var(--prt-head-bg);
+    border-bottom: 1px solid var(--border);
+    border-radius: 10px 10px 0 0;
+  }
+  .prt-panel-head h3 {
+    margin: 0 !important;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--foreground);
+  }
+  .prt-panel-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .prt-range {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+  }
+  .prt-range .timeline-range-btn {
+    margin: 0 !important;
+    padding: 3px 9px !important;
+    font-size: 0.68rem !important;
+    font-weight: 700;
+    border: 0 !important;
+    border-radius: 6px !important;
+    background: transparent;
+    color: var(--muted-foreground);
+    min-height: 0;
+    height: auto;
+  }
+  .prt-panel-hint {
+    font-size: 0.68rem;
+    color: var(--muted-foreground);
+  }
+  .prt-chart-lg {
+    height: 340px;
+  }
+  .prt-delta-pill {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+    background: var(--card);
+    white-space: nowrap;
+  }
+  .prt-delta-pill.is-up {
+    color: var(--prt-up);
+    border-color: color-mix(in srgb, var(--prt-up) 35%, transparent);
+    background: color-mix(in srgb, var(--prt-up) 10%, transparent);
+  }
+  .prt-delta-pill.is-down {
+    color: var(--prt-down);
+    border-color: color-mix(in srgb, var(--prt-down) 35%, transparent);
+    background: color-mix(in srgb, var(--prt-down) 10%, transparent);
+  }
+  .prt-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--muted-foreground);
+    margin-bottom: 8px;
+  }
+  .prt-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .prt-legend span::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dot);
+  }
+
+  /* Barra de filtros fixa */
+  .prt-filterbar.card {
+    position: sticky;
+    top: 72px;
+    z-index: 5;
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
+    background: var(--surface-raised, var(--card));
+    backdrop-filter: blur(10px);
+  }
+  .prt-filterbar-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .prt-filterbar .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+  .prt-filterbar label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+  }
+  .prt-filterbar select {
+    width: 100%;
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    border-radius: 7px;
+  }
+
+  @media (max-width: 900px) {
+    .prt-grid--perf {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 600px) {
+    .prt-topbar-actions .prt-btn span {
+      display: none;
+    }
+    .prt-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    .prt-kpi .icon-box {
+      display: none;
+    }
+    .prt-kpi .value {
+      font-size: 1.05rem;
+    }
+    .prt-kpi--reserve {
+      grid-column: 1 / -1;
+    }
+    .prt-chart-lg {
+      height: 280px;
+    }
+    .prt-filterbar.card {
+      position: static;
+    }
+    .prt-filterbar .filter-group {
+      flex: 1 1 calc(50% - 10px);
+    }
+  }
+
   .activity-item.collapsed .activity-details {
     display: none;
   }

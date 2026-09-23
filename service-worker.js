@@ -1,10 +1,11 @@
-const CACHE_NAME = "finance-pwa-v74";
+const CACHE_NAME = "finance-pwa-v75";
 
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./css/app-polish.css",
+  "./css/premium-theme.css",
   "./manifest.json",
   "./js/main.js",
   "./js/firebase-config.js",

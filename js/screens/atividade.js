@@ -830,13 +830,41 @@ function renderTimeline(points) {
   const el = document.getElementById("chartTimeline");
   if (!el) return;
   if (window.__chTimeline) window.__chTimeline.destroy();
+  const deltaPill = document.getElementById("prtTimelineDelta");
   if (!points.length) {
     el.getContext("2d").clearRect(0, 0, el.width, el.height);
+    if (deltaPill) {
+      deltaPill.textContent = "—";
+      deltaPill.classList.remove("is-up", "is-down");
+    }
     return;
   }
+  const fmtEUR = new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+  });
+  const fmtEURShort = new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
   const labels = points.map((p) => p.label),
     invested = points.map((p) => p.cumInvest),
-    valueNow = points.map((p) => p.valueNow);
+    valueNow = points.map((p) => p.valueNow),
+    diff = points.map((p) => p.valueNow - p.cumInvest);
+
+  // Pill com a diferença mais recente (valor + % sobre o investido)
+  if (deltaPill) {
+    const last = points[points.length - 1];
+    const d = last.valueNow - last.cumInvest;
+    const pct = last.cumInvest > 0 ? (d / last.cumInvest) * 100 : 0;
+    deltaPill.textContent = `${d >= 0 ? "+" : ""}${fmtEUR.format(d)} (${d >= 0 ? "+" : ""}${pct.toFixed(1)}%)`;
+    deltaPill.classList.toggle("is-up", d >= 0);
+    deltaPill.classList.toggle("is-down", d < 0);
+  }
+
+  const c = chartColors();
   window.__chTimeline = new Chart(el, {
     type: "line",
     data: {
@@ -845,32 +873,81 @@ function renderTimeline(points) {
         {
           label: "Investido acumulado (€)",
           data: invested,
+          borderColor: "#3B82F6",
+          backgroundColor: "rgba(59, 130, 246, 0.12)",
           tension: 0.25,
           borderWidth: 2,
+          yAxisID: "y",
+          order: 2,
         },
         {
           label: "Avaliação atual (€)",
           data: valueNow,
+          borderColor: "#A855F7",
+          backgroundColor: "rgba(168, 85, 247, 0.12)",
           tension: 0.25,
           borderWidth: 2,
+          yAxisID: "y",
+          order: 3,
+        },
+        {
+          label: "Diferença (Avaliação − Investido) (€)",
+          data: diff,
+          borderColor: "#22C55E",
+          backgroundColor: "rgba(34, 197, 94, 0.2)",
+          tension: 0.25,
+          borderWidth: 2,
+          yAxisID: "yDiff",
+          order: 1,
+          fill: {
+            target: { value: 0 },
+            above: "rgba(34, 197, 94, 0.15)",
+            below: "rgba(239, 68, 68, 0.15)",
+          },
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      elements: { point: { radius: 0 } },
+      interaction: { mode: "index", intersect: false },
+      elements: { point: { radius: 0, hoverRadius: 4 } },
       scales: {
         x: {
-          ticks: { color: chartColors().ticks },
-          grid: { color: chartColors().grid },
+          ticks: { color: c.ticks, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          grid: { display: false },
         },
         y: {
-          ticks: { color: chartColors().ticks },
-          grid: { color: chartColors().grid },
+          position: "left",
+          ticks: { color: c.ticks, callback: (v) => fmtEURShort.format(v) },
+          grid: { color: c.grid },
+        },
+        yDiff: {
+          position: "right",
+          ticks: { color: "#22C55E", callback: (v) => fmtEURShort.format(v) },
+          grid: {
+            drawOnChartArea: true,
+            color: (ctx) => (ctx.tick?.value === 0 ? "rgba(34, 197, 94, 0.55)" : "transparent"),
+          },
+          title: { display: true, text: "Diferença", color: "#22C55E", font: { size: 10, weight: "bold" } },
         },
       },
-      plugins: { legend: { labels: { color: chartColors().ticks } } },
+      plugins: {
+        legend: { labels: { color: c.ticks, boxWidth: 12, usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.y;
+              if (ctx.dataset.yAxisID === "yDiff") {
+                const inv = invested[ctx.dataIndex];
+                const pct = inv > 0 ? ` (${v >= 0 ? "+" : ""}${((v / inv) * 100).toFixed(1)}%)` : "";
+                return ` Diferença: ${v >= 0 ? "+" : ""}${fmtEUR.format(v)}${pct}`;
+              }
+              return ` ${ctx.dataset.label.replace(" (€)", "")}: ${fmtEUR.format(v)}`;
+            },
+          },
+        },
+      },
     },
   });
 }
@@ -2678,6 +2755,14 @@ function showPortfolioHelp(force = false) {
       if (elLA) elLA.textContent = `Acumulado: ${fmtEUR.format(lucroTotal)}`;
       if (elRA) elRA.textContent = fmtEUR.format(rendimentoAnual);
       if (elRP) elRP.textContent = totalInvestido > 0 ? `${retornoPct.toFixed(1)}%` : "---";
+      const setKpiTrend = (el, v) => {
+        const card = el?.closest(".prt-kpi");
+        if (!card) return;
+        card.classList.toggle("is-up", v > 0);
+        card.classList.toggle("is-down", v < 0);
+      };
+      setKpiTrend(elLT, lucroAberto);
+      setKpiTrend(elRP, totalInvestido > 0 ? retornoPct : 0);
 
       // XIRR — retorno anualizado real (considera timing das compras/vendas)
       try {
@@ -2817,18 +2902,22 @@ function showPortfolioHelp(force = false) {
           const p = priceNow.get(tk);
           if (isFiniteNum(p)) valueNow += q * Number(p);
         });
-        timelinePoints.push({
-          label: isFinite(m.date?.getTime?.())
-            ? new Intl.DateTimeFormat("pt-PT", {
-              year: "numeric",
-              month: "short",
-              day: "2-digit",
-            }).format(m.date)
-            : "",
-          date: m.date,
-          cumInvest,
-          valueNow,
-        });
+        const label = isFinite(m.date?.getTime?.())
+          ? new Intl.DateTimeFormat("pt-PT", {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+          }).format(m.date)
+          : "";
+        // Vários movimentos no mesmo dia → um só ponto (estado no fim do dia)
+        const prev = timelinePoints[timelinePoints.length - 1];
+        if (prev && label && prev.label === label) {
+          prev.cumInvest = cumInvest;
+          prev.valueNow = valueNow;
+          prev.date = m.date;
+        } else {
+          timelinePoints.push({ label, date: m.date, cumInvest, valueNow });
+        }
       }
 
       // 3) Render gráficos
@@ -2988,6 +3077,14 @@ function showPortfolioHelp(force = false) {
           return renderAssetCard(g, info, fmtEUR, tp2NecessarioCalc(g));
         })
         .join("");
+
+      const elPosCount = document.getElementById("prtPositionsCount");
+      if (elPosCount) {
+        const totalAbertas = gruposArr.filter((g) => Number.isFinite(g.qtd) && g.qtd > 0).length;
+        elPosCount.textContent = filtered.length === totalAbertas
+          ? `${totalAbertas}`
+          : `${filtered.length} / ${totalAbertas}`;
+      }
 
       cont.innerHTML =
         finalHtml ||
