@@ -136,13 +136,19 @@ export function getMarketDataList() {
   return new Promise((resolve) => {
     const cb = (map, snap) => {
       subscribers.delete(cb);
-      const list = [];
+      // Dedupe by canonical ticker: the same asset can exist under two doc
+      // IDs (e.g. "ELI:SON" and "ELI_SON") — keep the most recently updated.
+      const byCanon = new Map();
       snap?.forEach((d) => {
         const tickerRaw = String(d.data()?.ticker || "").toUpperCase();
         if (!tickerRaw) return;
-        list.push(map.get(tickerRaw) || d.data());
+        const asset = map.get(tickerRaw) || d.data();
+        const key = cleanTicker(tickerRaw).toUpperCase() || tickerRaw;
+        const prev = byCanon.get(key);
+        const newer = (toDateSafe(asset.updatedAt)?.getTime() || 0) > (toDateSafe(prev?.updatedAt)?.getTime() || 0);
+        if (!prev || newer) byCanon.set(key, asset);
       });
-      resolve(list);
+      resolve([...byCanon.values()]);
     };
     subscribers.add(cb);
     if (acoesSnap) cb(marketDataMap, acoesSnap);

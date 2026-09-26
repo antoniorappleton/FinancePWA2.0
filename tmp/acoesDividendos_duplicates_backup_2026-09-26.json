@@ -1,0 +1,4093 @@
+{
+ "ELI_SON": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI_SON",
+  "fields": {
+   "sma200": {
+    "doubleValue": 1.99
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-06T00:00:00Z"
+   },
+   "marketCap": {
+    "integerValue": "4260868306"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.0394
+   },
+   "nome": {
+    "stringValue": "Sonae SGPS SA"
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.0048
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "periodicidade": {
+    "stringValue": "Anual"
+   },
+   "dividendo": {
+    "doubleValue": 2.11
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.5865
+   },
+   "setor": {
+    "stringValue": "Consumo Defensivo"
+   },
+   "observacoes": {
+    "stringValue": "Justa — P/E desfavorável ao setor · EV/EBITDA baixo face ao setor"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.570Z"
+   },
+   "pe": {
+    "doubleValue": 9.26
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "roic": {
+    "doubleValue": 0.133
+   },
+   "mes": {
+    "stringValue": "Maio"
+   },
+   "mercado": {
+    "stringValue": "Portugal"
+   },
+   "yield": {
+    "integerValue": "1"
+   },
+   "ticker": {
+    "stringValue": "ELI:SON"
+   },
+   "evEbitda": {
+    "integerValue": "6"
+   },
+   "sma50": {
+    "doubleValue": 2.03
+   },
+   "valorStock": {
+    "doubleValue": 2.11
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.838409Z",
+  "updateTime": "2026-09-26T11:22:26.501771Z"
+ },
+ "ELI:SON": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI:SON",
+  "fields": {
+   "sma20": {
+    "doubleValue": 2.0312
+   },
+   "priceChange_1y": {
+    "doubleValue": 57.99
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:39:43.648Z"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "euronext"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:39:43.648Z"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "sma_vol20": {
+    "doubleValue": 1753128.5
+   },
+   "ticker": {
+    "stringValue": "ELI:SON"
+   },
+   "sma200": {
+    "doubleValue": 1.9169
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "priceChange_1w": {
+    "doubleValue": 3.2
+   },
+   "priceChange_1m": {
+    "doubleValue": 4.49
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:39:31.707297"
+   },
+   "sma100": {
+    "doubleValue": 2.0016
+   },
+   "sma50": {
+    "doubleValue": 2.0354
+   },
+   "valorStock": {
+    "doubleValue": 2.095
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "rsi": {
+    "doubleValue": 63.26
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "nome": {
+    "stringValue": "SONAE"
+   }
+  },
+  "createTime": "2026-09-21T20:39:43.661958Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "ELI_BCP": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI_BCP",
+  "fields": {
+   "ebitda": {
+    "stringValue": ""
+   },
+   "sma200": {
+    "integerValue": "1"
+   },
+   "yield": {
+    "doubleValue": 0.0248
+   },
+   "mercado": {
+    "stringValue": "Portugal"
+   },
+   "sma50": {
+    "doubleValue": 1.14
+   },
+   "periodicidade": {
+    "stringValue": "Anual"
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   },
+   "observacoes": {
+    "stringValue": "Justa"
+   },
+   "valorStock": {
+    "doubleValue": 1.21
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.0901
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-05T00:00:00Z"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.6133
+   },
+   "marketCap": {
+    "integerValue": "17948732103"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.565Z"
+   },
+   "setor": {
+    "stringValue": "Finanças"
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "ticker": {
+    "stringValue": "ELI:BCP"
+   },
+   "dividendo": {
+    "doubleValue": 0.03
+   },
+   "mes": {
+    "stringValue": "Junho"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "nome": {
+    "stringValue": "Banco Comercial Portugues SA"
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.0168
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.831637Z",
+  "updateTime": "2026-09-26T11:22:26.499047Z"
+ },
+ "ELI:BCP": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI:BCP",
+  "fields": {
+   "priceChange_1y": {
+    "doubleValue": 60.62
+   },
+   "sma200": {
+    "doubleValue": 0.9586
+   },
+   "nome": {
+    "stringValue": "B.COM.PORTUGUES"
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "rsi": {
+    "doubleValue": 71.57
+   },
+   "sma20": {
+    "doubleValue": 1.153
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.34
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "euronext"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "sma_vol20": {
+    "doubleValue": 47270679.4
+   },
+   "sma50": {
+    "doubleValue": 1.1055
+   },
+   "sma100": {
+    "doubleValue": 1.042
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:38:44.985Z"
+   },
+   "ticker": {
+    "stringValue": "ELI:BCP"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:38:44.985Z"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:38:32.427937"
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "priceChange_1m": {
+    "doubleValue": 8.06
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "valorStock": {
+    "doubleValue": 1.186
+   }
+  },
+  "createTime": "2026-09-21T20:38:45.013790Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "ELI_CTT": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI_CTT",
+  "fields": {
+   "priceChange_1m": {
+    "doubleValue": -0.045700000000000005
+   },
+   "dividendo": {
+    "doubleValue": 0.17
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "sma50": {
+    "doubleValue": 6.39
+   },
+   "valorStock": {
+    "doubleValue": 6.26
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.014199999999999999
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "marketCap": {
+    "integerValue": "849777802"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-16T00:00:00Z"
+   },
+   "yield": {
+    "doubleValue": 0.027200000000000002
+   },
+   "sma200": {
+    "doubleValue": 6.23
+   },
+   "periodicidade": {
+    "stringValue": "Anual"
+   },
+   "observacoes": {
+    "stringValue": "Justa"
+   },
+   "mercado": {
+    "stringValue": "Portugal"
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "ticker": {
+    "stringValue": "ELI:CTT"
+   },
+   "mes": {
+    "stringValue": "Maio"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.566Z"
+   },
+   "priceChange_1y": {
+    "doubleValue": -0.1413
+   },
+   "nome": {
+    "stringValue": "CTT Correios de Portugal SA"
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "setor": {
+    "stringValue": "Industriais"
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.776237Z",
+  "updateTime": "2026-09-26T11:22:26.498934Z"
+ },
+ "ELI:CTT": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI:CTT",
+  "fields": {
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:38:47.880337"
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "sma20": {
+    "doubleValue": 6.4367
+   },
+   "sma_vol20": {
+    "doubleValue": 305926.35
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "sma200": {
+    "doubleValue": 6.5251
+   },
+   "priceChange_1y": {
+    "doubleValue": -12.89
+   },
+   "sma100": {
+    "doubleValue": 6.1562
+   },
+   "ticker": {
+    "stringValue": "ELI:CTT"
+   },
+   "valorStock": {
+    "doubleValue": 6.35
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "priceChange_1w": {
+    "doubleValue": 1.68
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:38:59.747Z"
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.94
+   },
+   "golden_cross": {
+    "booleanValue": false
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:38:59.747Z"
+   },
+   "sma50": {
+    "doubleValue": 6.2517
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "euronext"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "rsi": {
+    "doubleValue": 37.01
+   },
+   "nome": {
+    "stringValue": "CTT CORREIOS PORT"
+   },
+   "above_sma200": {
+    "booleanValue": false
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   }
+  },
+  "createTime": "2026-09-21T20:38:59.767652Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "ELI_EGL": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI_EGL",
+  "fields": {
+   "marketCap": {
+    "integerValue": "1723210322"
+   },
+   "setor": {
+    "stringValue": "Industriais"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.568Z"
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "observacoes": {
+    "stringValue": "Subvalorizada"
+   },
+   "mercado": {
+    "stringValue": "Portugal"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-06T00:00:00Z"
+   },
+   "yield": {
+    "doubleValue": 0.028399999999999998
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.0313
+   },
+   "ticker": {
+    "stringValue": "ELI:EGL"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.0455
+   },
+   "mes": {
+    "stringValue": "Junho"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.1379
+   },
+   "periodicidade": {
+    "stringValue": "Anual"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "sma200": {
+    "doubleValue": 4.69
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "sma50": {
+    "doubleValue": 4.79
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "nome": {
+    "stringValue": "Mota Engil SGPS SA"
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "valorStock": {
+    "doubleValue": 5.28
+   },
+   "dividendo": {
+    "doubleValue": 0.15
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.800032Z",
+  "updateTime": "2026-09-26T11:22:26.495907Z"
+ },
+ "ELI:EGL": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI:EGL",
+  "fields": {
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:39:14.542Z"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "euronext"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "sma200": {
+    "doubleValue": 4.7359
+   },
+   "sma20": {
+    "doubleValue": 4.8608
+   },
+   "priceChange_1y": {
+    "doubleValue": -0.58
+   },
+   "rsi": {
+    "doubleValue": 64.49
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:39:02.581576"
+   },
+   "sma_vol20": {
+    "doubleValue": 2246086.95
+   },
+   "priceChange_1w": {
+    "doubleValue": 6.56
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "sma100": {
+    "doubleValue": 4.6889
+   },
+   "priceChange_1m": {
+    "doubleValue": 13.21
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:39:14.542Z"
+   },
+   "golden_cross": {
+    "booleanValue": false
+   },
+   "sma50": {
+    "doubleValue": 4.6781
+   },
+   "ticker": {
+    "stringValue": "ELI:EGL"
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "valorStock": {
+    "doubleValue": 5.115
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "nome": {
+    "stringValue": "MOTA ENGIL"
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   }
+  },
+  "createTime": "2026-09-21T20:39:14.563869Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "ELI_JMT": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI_JMT",
+  "fields": {
+   "priceChange_1w": {
+    "integerValue": "0"
+   },
+   "nome": {
+    "stringValue": "Jerónimo Martins SGPS"
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   },
+   "periodicidade": {
+    "stringValue": "Anual"
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.0149
+   },
+   "sma200": {
+    "doubleValue": 18.5
+   },
+   "mes": {
+    "stringValue": "Maio"
+   },
+   "setor": {
+    "stringValue": "Consumo Defensivo"
+   },
+   "mercado": {
+    "stringValue": "Portugal"
+   },
+   "priceChange_1y": {
+    "doubleValue": -0.1213
+   },
+   "marketCap": {
+    "integerValue": "11157151600"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.568Z"
+   },
+   "valorStock": {
+    "doubleValue": 17.89
+   },
+   "sma50": {
+    "doubleValue": 17.77
+   },
+   "yield": {
+    "doubleValue": 0.033
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-06T00:00:00Z"
+   },
+   "ticker": {
+    "stringValue": "ELI:JMT"
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "dividendo": {
+    "doubleValue": 0.59
+   },
+   "observacoes": {
+    "stringValue": "Justa"
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.806303Z",
+  "updateTime": "2026-09-26T11:22:26.497745Z"
+ },
+ "ELI:JMT": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/ELI:JMT",
+  "fields": {
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:39:29.193Z"
+   },
+   "sma_vol20": {
+    "doubleValue": 1379019.45
+   },
+   "sma20": {
+    "doubleValue": 18.0115
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "euronext"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "valorStock": {
+    "doubleValue": 17.89
+   },
+   "sma200": {
+    "doubleValue": 19.2042
+   },
+   "nome": {
+    "stringValue": "J.MARTINS,SGPS"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:39:17.426113"
+   },
+   "above_sma200": {
+    "booleanValue": false
+   },
+   "rsi": {
+    "doubleValue": 46.21
+   },
+   "priceChange_1y": {
+    "doubleValue": -13.07
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:39:29.193Z"
+   },
+   "golden_cross": {
+    "booleanValue": false
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "sma100": {
+    "doubleValue": 17.6527
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "ticker": {
+    "stringValue": "ELI:JMT"
+   },
+   "priceChange_1m": {
+    "doubleValue": 2
+   },
+   "sma50": {
+    "doubleValue": 17.4768
+   },
+   "priceChange_1w": {
+    "doubleValue": 1.3
+   }
+  },
+  "createTime": "2026-09-21T20:39:29.208658Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "EPA_SU": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/EPA_SU",
+  "fields": {
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.570Z"
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   },
+   "sma50": {
+    "doubleValue": 294.05
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.0274
+   },
+   "marketCap": {
+    "integerValue": "169531000408"
+   },
+   "valorStock": {
+    "integerValue": "291"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.237
+   },
+   "periodicidade": {
+    "stringValue": "Anual"
+   },
+   "nome": {
+    "stringValue": "Schneider Electric"
+   },
+   "setor": {
+    "stringValue": "Industriais"
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "dividendo": {
+    "doubleValue": 4.2
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-05-28T00:00:00Z"
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.013600000000000001
+   },
+   "mercado": {
+    "stringValue": "Europeu"
+   },
+   "observacoes": {
+    "stringValue": "Justa"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "yield": {
+    "doubleValue": 0.0144
+   },
+   "ticker": {
+    "stringValue": "EPA:SU"
+   },
+   "mes": {
+    "stringValue": "Maio"
+   },
+   "sma200": {
+    "doubleValue": 274.15
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   }
+  },
+  "createTime": "2026-05-28T09:42:28.078839Z",
+  "updateTime": "2026-09-26T11:22:26.502822Z"
+ },
+ "EPA:SU": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/EPA:SU",
+  "fields": {
+   "sma50": {
+    "doubleValue": 287.432
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:52:46.903Z"
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:52:30.282389"
+   },
+   "nome": {
+    "stringValue": "SCHNEIDER ELECTRIC"
+   },
+   "ticker": {
+    "stringValue": "EPA:SU"
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.61
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:52:46.903Z"
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "sma100": {
+    "doubleValue": 280.4165
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "rsi": {
+    "doubleValue": 54.54
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "portfolioPriority": {
+    "booleanValue": true
+   },
+   "priceChange_1y": {
+    "doubleValue": 26.94
+   },
+   "priceChange_1w": {
+    "doubleValue": 8.44
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "euronext"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "sma200": {
+    "doubleValue": 264.5903
+   },
+   "sma_vol20": {
+    "doubleValue": 799926.1
+   },
+   "marketCap": {
+    "doubleValue": 0
+   },
+   "sma20": {
+    "doubleValue": 289.8775
+   },
+   "portfolioQuantity": {
+    "doubleValue": 0.5
+   },
+   "valorStock": {
+    "doubleValue": 295
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   }
+  },
+  "createTime": "2026-07-01T15:33:53.827166Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "EPA_CS": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/EPA_CS",
+  "fields": {
+   "pe": {
+    "stringValue": ""
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "valorStock": {
+    "doubleValue": 39.18
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "setor": {
+    "stringValue": "Consumo Defensivo"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "marketCap": {
+    "integerValue": "82288140802"
+   },
+   "mercado": {
+    "stringValue": "Portugal"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-05-17T10:32:49.181Z"
+   },
+   "priceChange_1y": {
+    "doubleValue": -0.059800000000000006
+   },
+   "yield": {
+    "doubleValue": 0.054900000000000004
+   },
+   "periodicidade": {
+    "stringValue": "Anual"
+   },
+   "sma200": {
+    "doubleValue": 39.42
+   },
+   "sma50": {
+    "doubleValue": 40.8
+   },
+   "mes": {
+    "stringValue": "Maio"
+   },
+   "ticker": {
+    "stringValue": "EPA:CS"
+   },
+   "observacoes": {
+    "stringValue": "Justa\n[2026-02-28] Sem histórico 24m de dividendos (endpoint não devolveu eventos)."
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-16T00:00:00Z"
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.008100000000000001
+   },
+   "roic": {
+    "stringValue": "#N/A"
+   },
+   "dividendo": {
+    "doubleValue": 2.15
+   },
+   "nome": {
+    "stringValue": "Axa SA"
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.0735
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.790321Z",
+  "updateTime": "2026-09-21T20:12:59.781243Z"
+ },
+ "EPA:CS": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/EPA:CS",
+  "fields": {
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "sma50": {
+    "doubleValue": 44.3232
+   },
+   "valorStock": {
+    "doubleValue": 44.84
+   },
+   "priceChange_1m": {
+    "doubleValue": 2.56
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:39:59.502Z"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "rsi": {
+    "doubleValue": 59.28
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "priceChange_1w": {
+    "doubleValue": 2.68
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "nome": {
+    "stringValue": "AXA"
+   },
+   "priceChange_1y": {
+    "doubleValue": 12.66
+   },
+   "sma100": {
+    "doubleValue": 42.8814
+   },
+   "sma_vol20": {
+    "doubleValue": 3323673.85
+   },
+   "ticker": {
+    "stringValue": "EPA:CS"
+   },
+   "sma20": {
+    "doubleValue": 43.797
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "euronext"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "sma200": {
+    "doubleValue": 41.2743
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:39:59.502Z"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:39:47.799340"
+   }
+  },
+  "createTime": "2026-09-21T20:39:59.530690Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "LON_VOD": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LON_VOD",
+  "fields": {
+   "setor": {
+    "stringValue": "Consumo Defensivo"
+   },
+   "observacoes": {
+    "stringValue": "Justa"
+   },
+   "yield": {
+    "doubleValue": 0.0009
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "marketCap": {
+    "integerValue": "26043177175"
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.036000000000000004
+   },
+   "dividendoMedio24m": {
+    "doubleValue": 5.7
+   },
+   "roic": {
+    "stringValue": "#N/A"
+   },
+   "mercado": {
+    "stringValue": "Portugal"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "periodicidade": {
+    "stringValue": "Semestral"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-05-28T09:32:41.436Z"
+   },
+   "ticker": {
+    "stringValue": "LON:VOD"
+   },
+   "sma50": {
+    "doubleValue": 115.23
+   },
+   "dividendo": {
+    "doubleValue": 0.05
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-17T00:00:00Z"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.4424
+   },
+   "mes": {
+    "stringValue": "Junho"
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.0076
+   },
+   "nome": {
+    "stringValue": "Vodafone Group plc"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "valorStock": {
+    "doubleValue": 97.01
+   },
+   "sma200": {
+    "doubleValue": 106.66
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.788848Z",
+  "updateTime": "2026-09-21T20:12:59.781243Z"
+ },
+ "LON:VOD": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LON:VOD",
+  "fields": {
+   "rsi": {
+    "doubleValue": 68.56
+   },
+   "priceChange_1y": {
+    "doubleValue": 49.91
+   },
+   "nome": {
+    "stringValue": "Vodafone Group Public Limited Company"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "method_used": {
+    "stringValue": "chart"
+   },
+   "sma100": {
+    "doubleValue": 115.1567
+   },
+   "sma200": {
+    "doubleValue": 111.3182
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:41:24.897Z"
+   },
+   "priceChange_1w": {
+    "doubleValue": -1.88
+   },
+   "ticker": {
+    "stringValue": "LON:VOD"
+   },
+   "sma20": {
+    "doubleValue": 124.635
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "valorStock": {
+    "doubleValue": 127.9
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:41:24.897Z"
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "sma_vol20": {
+    "doubleValue": 60778099.5
+   },
+   "priceChange_1m": {
+    "doubleValue": 8.39
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:41:21.467313"
+   },
+   "sma50": {
+    "doubleValue": 120.415
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   }
+  },
+  "createTime": "2026-09-21T20:41:24.914929Z",
+  "updateTime": "2026-09-21T20:41:24.914929Z"
+ },
+ "LYM9_FRA_EUR": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LYM9_FRA_EUR",
+  "fields": {
+   "valorStock": {
+    "doubleValue": 44.76
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.048600000000000004
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-06T00:00:00Z"
+   },
+   "ticker": {
+    "stringValue": "LYM9:FRA:EUR"
+   },
+   "yield": {
+    "integerValue": "0"
+   },
+   "marketCap": {
+    "stringValue": ""
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.157
+   },
+   "roic": {
+    "stringValue": "#N/A"
+   },
+   "mercado": {
+    "stringValue": "Europeu"
+   },
+   "nome": {
+    "stringValue": "Amundi MSCI New Energy"
+   },
+   "ebitda": {
+    "integerValue": "24463000000"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.66
+   },
+   "observacoes": {
+    "stringValue": "Neutro"
+   },
+   "dividendoMedio24m": {
+    "integerValue": "2"
+   },
+   "dividaLiquida": {
+    "integerValue": "93318000000"
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "dividendo": {
+    "integerValue": "0"
+   },
+   "setor": {
+    "stringValue": "ETF Energia"
+   },
+   "sma50": {
+    "stringValue": "#N/A"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "updatedAt": {
+    "timestampValue": "2026-05-08T08:25:48.141Z"
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "sma200": {
+    "stringValue": "#N/A"
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.802424Z",
+  "updateTime": "2026-09-21T20:12:59.781243Z"
+ },
+ "LYM9:FRA:EUR": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LYM9:FRA:EUR",
+  "fields": {
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   },
+   "marketCap": {
+    "stringValue": "940.54m GBPAs of Aug 31 2026"
+   },
+   "priceChange_1w": {
+    "doubleValue": 0
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      }
+     ]
+    }
+   },
+   "valorStock": {
+    "doubleValue": 40.87
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T21:03:39.554Z"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T21:03:39.554Z"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:03:18.638293"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "ticker": {
+    "stringValue": "LYM9:FRA:EUR"
+   },
+   "sma_vol20": {
+    "doubleValue": 0
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0
+   },
+   "nome": {
+    "stringValue": "Amundi MSCI New Energy UCITS ETF Dist"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0
+   }
+  },
+  "createTime": "2026-09-21T21:03:39.568055Z",
+  "updateTime": "2026-09-21T21:03:39.568055Z"
+ },
+ "LON_JEDI": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LON_JEDI",
+  "fields": {
+   "observacoes": {
+    "stringValue": "Neutro"
+   },
+   "roic": {
+    "stringValue": ""
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "nome": {
+    "stringValue": "VanEck Space Innovators USD (Acc)"
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "mercado": {
+    "stringValue": "Europeu"
+   },
+   "marketCap": {
+    "stringValue": ""
+   },
+   "sma200": {
+    "doubleValue": 93.09
+   },
+   "setor": {
+    "stringValue": "ETF Tecnologia"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.570Z"
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.0066
+   },
+   "dividendo": {
+    "integerValue": "0"
+   },
+   "yield": {
+    "integerValue": "0"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.0141
+   },
+   "ebitda": {
+    "integerValue": "6439000000"
+   },
+   "dividaLiquida": {
+    "integerValue": "14043000000"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.45770000000000005
+   },
+   "valorStock": {
+    "doubleValue": 72.5
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-16T00:00:00Z"
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "ticker": {
+    "stringValue": "LON:JEDI"
+   },
+   "sma50": {
+    "doubleValue": 83.01
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.807570Z",
+  "updateTime": "2026-09-26T11:22:26.495288Z"
+ },
+ "LON:JEDI": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LON:JEDI",
+  "fields": {
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "sma200": {
+    "doubleValue": 87.9659
+   },
+   "above_sma200": {
+    "booleanValue": false
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T21:02:36.723Z"
+   },
+   "sma50": {
+    "doubleValue": 82.6585
+   },
+   "sma_vol20": {
+    "doubleValue": 38885.25
+   },
+   "sma100": {
+    "doubleValue": 94.4147
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "rsi": {
+    "doubleValue": 60.51
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "sma20": {
+    "doubleValue": 79.8995
+   },
+   "above_sma50": {
+    "booleanValue": false
+   },
+   "priceChange_1m": {
+    "doubleValue": -2.84
+   },
+   "valorStock": {
+    "doubleValue": 82.04
+   },
+   "priceChange_1y": {
+    "doubleValue": 47.53
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T21:02:36.723Z"
+   },
+   "method_used": {
+    "stringValue": "chart"
+   },
+   "ticker": {
+    "stringValue": "LON:JEDI"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "nome": {
+    "stringValue": "VanEck Space Innovators UCITS ETF A USD Acc"
+   },
+   "golden_cross": {
+    "booleanValue": false
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:02:35.503710"
+   },
+   "priceChange_1w": {
+    "doubleValue": 4.68
+   }
+  },
+  "createTime": "2026-09-21T21:02:36.744467Z",
+  "updateTime": "2026-09-21T21:02:36.744467Z"
+ },
+ "JEDI": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/JEDI",
+  "fields": {
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "priceChange_1m": {
+    "doubleValue": -6.35
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "rsi": {
+    "doubleValue": 50.54
+   },
+   "sma50": {
+    "doubleValue": 26.3676
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "isin": {
+    "stringValue": "IE000YU9K6K2"
+   },
+   "roe": {
+    "doubleValue": 0
+   },
+   "sma_vol20": {
+    "doubleValue": 186471.75
+   },
+   "roi": {
+    "doubleValue": 0
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:00:58.576875"
+   },
+   "golden_cross": {
+    "booleanValue": false
+   },
+   "priceChange_1y": {
+    "doubleValue": 0
+   },
+   "marketCap": {
+    "stringValue": "2.22bn GBPAs of May 31 2026"
+   },
+   "above_sma200": {
+    "booleanValue": false
+   },
+   "portfolioPriority": {
+    "booleanValue": true
+   },
+   "ebitda": {
+    "doubleValue": 0
+   },
+   "roa": {
+    "doubleValue": 0
+   },
+   "nome": {
+    "stringValue": "Defiance Drone and Modern Warfare ETF"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "yahoo"
+      },
+      {
+       "stringValue": "finviz"
+      }
+     ]
+    }
+   },
+   "valorStock": {
+    "doubleValue": 26.39
+   },
+   "method_used": {
+    "stringValue": "chart"
+   },
+   "roic": {
+    "doubleValue": 0
+   },
+   "sma20": {
+    "doubleValue": 26.0535
+   },
+   "portfolioQuantity": {
+    "doubleValue": 4
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T21:01:03.765Z"
+   },
+   "holdings": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 9.91
+         },
+         "name": {
+          "stringValue": "Rocket Lab Corp"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 8.12
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Planet Labs PBC"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 6.55
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Intuitive Machines"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "ViaSat"
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 6.48
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 6.39
+         },
+         "name": {
+          "stringValue": "AST Spacemobile"
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Firefly Aerospace"
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 5.55
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 5.01
+         },
+         "name": {
+          "stringValue": "EchoStar Corp"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "WNC Corp."
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 4.85
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "MDA Space"
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 4.57
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Globalstar"
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 4.54
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "priceChange_1w": {
+    "doubleValue": 3.13
+   },
+   "ticker": {
+    "stringValue": "JEDI"
+   },
+   "sma100": {
+    "doubleValue": 28.7285
+   },
+   "ev_ebitda": {
+    "doubleValue": 0
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T21:01:03.765Z"
+   },
+   "sma200": {
+    "doubleValue": 27.7476
+   }
+  },
+  "createTime": "2026-07-01T15:28:56.792822Z",
+  "updateTime": "2026-09-21T21:01:03.789904Z"
+ },
+ "XDWF": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/XDWF",
+  "fields": {
+   "broker": {
+    "stringValue": "Rating"
+   },
+   "countryAllocation": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "United States"
+         },
+         "weight": {
+          "doubleValue": 0.5157
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Canada"
+         },
+         "weight": {
+          "doubleValue": 0.0836
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Japan"
+         },
+         "weight": {
+          "doubleValue": 0.0654
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0575
+         },
+         "name": {
+          "stringValue": "United Kingdom"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Other"
+         },
+         "weight": {
+          "doubleValue": 0.2778
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "nome": {
+    "stringValue": "MSCI World Financials"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:21:16.485328"
+   },
+   "setor": {
+    "stringValue": "ETF Finanças"
+   },
+   "sma_vol20": {
+    "doubleValue": 0
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.020099999999999996
+   },
+   "evEbitda": {
+    "integerValue": "23"
+   },
+   "sma200": {
+    "doubleValue": 45.52
+   },
+   "observacoes": {
+    "stringValue": "Neutro"
+   },
+   "market": {
+    "stringValue": "EU"
+   },
+   "sectorAllocation": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Finance"
+         },
+         "weight": {
+          "doubleValue": 0.9736
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Technology"
+         },
+         "weight": {
+          "doubleValue": 0.0149
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.011000000000000001
+         },
+         "name": {
+          "stringValue": "Business Services"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0006
+         },
+         "name": {
+          "stringValue": "Other"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "ev_ebitda": {
+    "doubleValue": 0
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-06T00:00:00Z"
+   },
+   "ebitda": {
+    "integerValue": "6466705000"
+   },
+   "marketCap": {
+    "stringValue": "1.10bn GBPAs of Aug 31 2026"
+   },
+   "pe": {
+    "doubleValue": 39.16
+   },
+   "dividendo": {
+    "doubleValue": 4.04
+   },
+   "sma50": {
+    "doubleValue": 48.76
+   },
+   "isin": {
+    "stringValue": "IE00BM67HL84"
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.568Z"
+   },
+   "yield": {
+    "doubleValue": 0.3908
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      },
+      {
+       "stringValue": "justetf"
+      }
+     ]
+    }
+   },
+   "mercado": {
+    "stringValue": "Mundial"
+   },
+   "holdings": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "JPMorgan Chase & Co."
+         },
+         "weight": {
+          "doubleValue": 0.0637
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.047400000000000005
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Berkshire Hathaway, Inc."
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Visa, Inc."
+         },
+         "weight": {
+          "doubleValue": 0.0409
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 0.0282
+         },
+         "name": {
+          "stringValue": "Bank of America Corp."
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "HSBC Holdings Plc"
+         },
+         "weight": {
+          "doubleValue": 0.0235
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 0.0202
+         },
+         "name": {
+          "stringValue": "The Goldman Sachs Group, Inc."
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0197
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Royal Bank of Canada"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0177
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Wells Fargo & Co."
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0166
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Morgan Stanley"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "ticker": {
+    "stringValue": "XDWF"
+   },
+   "rsi": {
+    "doubleValue": 0
+   },
+   "roic": {
+    "doubleValue": 0.362
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.13419999999999999
+   },
+   "roa": {
+    "doubleValue": 0
+   },
+   "top10Weight": {
+    "doubleValue": 0.27790000000000004
+   },
+   "periodicidade": {
+    "stringValue": "Trimestral"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "company": {
+    "stringValue": "Xtrackers MSCI World Financials UCITS ETF 1C"
+   },
+   "mes": {
+    "stringValue": "Março"
+   },
+   "dividaLiquida": {
+    "integerValue": "30175977000"
+   },
+   "roe": {
+    "doubleValue": 0
+   },
+   "roi": {
+    "doubleValue": 0
+   },
+   "dividendoMedio24m": {
+    "doubleValue": 0.8
+   },
+   "valorStock": {
+    "doubleValue": 41.35
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.043
+   }
+  },
+  "createTime": "2026-03-20T19:52:33.199619Z",
+  "updateTime": "2026-09-26T11:22:26.497490Z"
+ },
+ "LON:XDWF": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LON:XDWF",
+  "fields": {
+   "above_sma50": {
+    "booleanValue": false
+   },
+   "priceChange_1y": {
+    "doubleValue": 15.49
+   },
+   "valorStock": {
+    "doubleValue": 48.14
+   },
+   "nome": {
+    "stringValue": "Xtrackers MSCI World Financials UCITS ETF 1C"
+   },
+   "sma_vol20": {
+    "doubleValue": 15182
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "sma200": {
+    "doubleValue": 44.8218
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T21:02:51.553Z"
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "sma50": {
+    "doubleValue": 48.6603
+   },
+   "rsi": {
+    "doubleValue": 41.65
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:02:47.713143"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T21:02:51.553Z"
+   },
+   "sma100": {
+    "doubleValue": 46.6851
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.95
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "method_used": {
+    "stringValue": "chart"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "priceChange_1w": {
+    "doubleValue": -1.27
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "ticker": {
+    "stringValue": "LON:XDWF"
+   },
+   "sma20": {
+    "doubleValue": 48.896
+   }
+  },
+  "createTime": "2026-09-21T21:02:51.574361Z",
+  "updateTime": "2026-09-21T21:02:51.574361Z"
+ },
+ "LON_XDWF": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LON_XDWF",
+  "fields": {
+   "observacoes": {
+    "stringValue": "Neutro"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-05-08T07:52:25.436Z"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-06T00:00:00Z"
+   },
+   "yield": {
+    "integerValue": "0"
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.0023
+   },
+   "marketCap": {
+    "stringValue": ""
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.061799999999999994
+   },
+   "mercado": {
+    "stringValue": "Americano"
+   },
+   "sma200": {
+    "doubleValue": 42.42
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "roic": {
+    "stringValue": "#N/A"
+   },
+   "dividendo": {
+    "integerValue": "0"
+   },
+   "valorStock": {
+    "doubleValue": 37.13
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.18170000000000003
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "setor": {
+    "stringValue": "ETF Finance"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "ticker": {
+    "stringValue": "LON:XDWF"
+   },
+   "sma50": {
+    "doubleValue": 41.88
+   },
+   "nome": {
+    "stringValue": "iShares MSCI Europe Financials ETF"
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.803156Z",
+  "updateTime": "2026-09-21T20:12:59.781243Z"
+ },
+ "VZLC": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/VZLC",
+  "fields": {
+   "ebitda": {
+    "stringValue": ""
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      },
+      {
+       "stringValue": "justetf"
+      }
+     ]
+    }
+   },
+   "dividendo": {
+    "stringValue": "n/A"
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   },
+   "valorStock": {
+    "doubleValue": 51.23
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:20:00.582812"
+   },
+   "marketCap": {
+    "stringValue": "2.35bn GBPAs of Aug 31 2026"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-05T00:00:00Z"
+   },
+   "yield": {
+    "stringValue": "n/A"
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.0115
+   },
+   "ticker": {
+    "stringValue": "VZLC"
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.0461
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.46740000000000004
+   },
+   "nome": {
+    "stringValue": "WisdomTree Physical Silver"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "sma50": {
+    "stringValue": "#N/A"
+   },
+   "sma_vol20": {
+    "doubleValue": 0
+   },
+   "observacoes": {
+    "stringValue": "Justa"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "mercado": {
+    "stringValue": "Mundial"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.570Z"
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "setor": {
+    "stringValue": "Commodities"
+   },
+   "sma200": {
+    "stringValue": "#N/A"
+   }
+  },
+  "createTime": "2026-05-15T14:00:49.559411Z",
+  "updateTime": "2026-09-26T11:22:26.499484Z"
+ },
+ "LSE_VZLC": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LSE_VZLC",
+  "fields": {
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "observacoes": {
+    "stringValue": "Neutro"
+   },
+   "nome": {
+    "stringValue": "WisdomTree Physical Silver"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "valorStock": {
+    "doubleValue": 58.86
+   },
+   "setor": {
+    "stringValue": "ETF Materiais"
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "ticker": {
+    "stringValue": "LSE:VZLC"
+   },
+   "marketCap": {
+    "stringValue": ""
+   },
+   "sma50": {
+    "stringValue": "#N/A"
+   },
+   "yield": {
+    "stringValue": "n/A"
+   },
+   "priceChange_1y": {
+    "doubleValue": 1.08
+   },
+   "roic": {
+    "stringValue": "#N/A"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-04-27T11:02:56.364Z"
+   },
+   "dividendo": {
+    "stringValue": "n/A"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.36
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "sma200": {
+    "stringValue": "#N/A"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-05T00:00:00Z"
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.05
+   },
+   "mercado": {
+    "stringValue": "Americano"
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.774162Z",
+  "updateTime": "2026-09-21T20:12:59.781243Z"
+ },
+ "VVMX": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/VVMX",
+  "fields": {
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "valorStock": {
+    "doubleValue": 11.54
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "setor": {
+    "stringValue": "ETF Materiais"
+   },
+   "top10Weight": {
+    "doubleValue": 0.5491
+   },
+   "nome": {
+    "stringValue": "VanEck Rare Earth and Strategic Metals"
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.1303
+   },
+   "countryAllocation": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "China"
+         },
+         "weight": {
+          "doubleValue": 0.32299999999999995
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.2468
+         },
+         "name": {
+          "stringValue": "Australia"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.22260000000000002
+         },
+         "name": {
+          "stringValue": "United States"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.057699999999999994
+         },
+         "name": {
+          "stringValue": "Chile"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Other"
+         },
+         "weight": {
+          "doubleValue": 0.1499
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "sma50": {
+    "doubleValue": 15.62432
+   },
+   "ticker": {
+    "stringValue": "VVMX"
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "sma_vol20": {
+    "doubleValue": 0
+   },
+   "rsi": {
+    "doubleValue": 61.28
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "lastSmaUpdate": {
+    "stringValue": "2026-04-28T19:16:24.962745"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "mercado": {
+    "stringValue": "Europeu"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.570Z"
+   },
+   "marketCap": {
+    "stringValue": "1.00bn GBPAs of Aug 31 2026"
+   },
+   "observacoes": {
+    "stringValue": "Neutro (sob pressão)"
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "holdings": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0817
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Albemarle"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "China Northern Rare Earth (Group) High-Tech Co., Ltd."
+         },
+         "weight": {
+          "doubleValue": 0.0757
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0737
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "PLS Group"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Lynas Rare Earths"
+         },
+         "weight": {
+          "doubleValue": 0.0694
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.057699999999999994
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Sociedad Quimica y Minera de Chile SA"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 0.0575
+         },
+         "name": {
+          "stringValue": "Jinduicheng Molybdenum"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0521
+         },
+         "name": {
+          "stringValue": "Xiamen Tungsten"
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0416
+         },
+         "name": {
+          "stringValue": "Almonty Industries"
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Lianyou Metals"
+         },
+         "weight": {
+          "doubleValue": 0.0397
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:19:17.101520"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      },
+      {
+       "stringValue": "justetf"
+      }
+     ]
+    }
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   },
+   "sectorAllocation": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.9179
+         },
+         "name": {
+          "stringValue": "Non-Energy Materials"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Industrials"
+         },
+         "weight": {
+          "doubleValue": 0.026600000000000002
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Utilities"
+         },
+         "weight": {
+          "doubleValue": 0.015300000000000001
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.04019999999999999
+         },
+         "name": {
+          "stringValue": "Other"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "sma100": {
+    "doubleValue": 0
+   },
+   "yield": {
+    "integerValue": "0"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.027999999999999997
+   },
+   "dividendo": {
+    "integerValue": "0"
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "sma20": {
+    "doubleValue": 0
+   },
+   "sma200": {
+    "doubleValue": 12.698525
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.0225
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-05T00:00:00Z"
+   },
+   "above_sma200": {
+    "booleanValue": true
+   }
+  },
+  "createTime": "2026-04-01T10:32:33.618278Z",
+  "updateTime": "2026-09-26T11:22:26.498495Z"
+ },
+ "XETR_VVMX": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/XETR_VVMX",
+  "fields": {
+   "sma_vol20": {
+    "doubleValue": 0
+   },
+   "observacoes": {
+    "stringValue": "Neutro"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T21:22:30.611Z"
+   },
+   "holdings": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0817
+         },
+         "name": {
+          "stringValue": "Albemarle"
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "China Northern Rare Earth (Group) High-Tech Co., Ltd."
+         },
+         "weight": {
+          "doubleValue": 0.0757
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0737
+         },
+         "name": {
+          "stringValue": "PLS Group"
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0694
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Lynas Rare Earths"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Sociedad Quimica y Minera de Chile SA"
+         },
+         "weight": {
+          "doubleValue": 0.057699999999999994
+         },
+         "symbol": {
+          "stringValue": ""
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.0575
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "name": {
+          "stringValue": "Jinduicheng Molybdenum"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 0.0521
+         },
+         "name": {
+          "stringValue": "Xiamen Tungsten"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 0.0416
+         },
+         "name": {
+          "stringValue": "Almonty Industries"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Lianyou Metals"
+         },
+         "symbol": {
+          "stringValue": ""
+         },
+         "weight": {
+          "doubleValue": 0.0397
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "roic": {
+    "stringValue": "#N/A"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0
+   },
+   "priceChange_1y": {
+    "doubleValue": 0
+   },
+   "priceChange_1w": {
+    "doubleValue": 0
+   },
+   "yield": {
+    "integerValue": "0"
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "valorStock": {
+    "doubleValue": 12.03
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "countryAllocation": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.32299999999999995
+         },
+         "name": {
+          "stringValue": "China"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Australia"
+         },
+         "weight": {
+          "doubleValue": 0.2468
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "United States"
+         },
+         "weight": {
+          "doubleValue": 0.22260000000000002
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "name": {
+          "stringValue": "Chile"
+         },
+         "weight": {
+          "doubleValue": 0.057699999999999994
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.1499
+         },
+         "name": {
+          "stringValue": "Other"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "setor": {
+    "stringValue": "ETF Materiais"
+   },
+   "marketCap": {
+    "stringValue": "1.00bn GBPAs of Aug 31 2026"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      },
+      {
+       "stringValue": "justetf"
+      }
+     ]
+    }
+   },
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "mercado": {
+    "stringValue": "Australiana"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:22:10.733010"
+   },
+   "sma50": {
+    "doubleValue": 15.6455
+   },
+   "nome": {
+    "stringValue": "VanEck Rare Earth and Strategic Metals UCITS ETF A USD Acc"
+   },
+   "dividendo": {
+    "integerValue": "0"
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "top10Weight": {
+    "doubleValue": 0.5491
+   },
+   "ebitda": {
+    "stringValue": ""
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T21:22:30.611Z"
+   },
+   "ticker": {
+    "stringValue": "XETR_VVMX"
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "sma200": {
+    "doubleValue": 12.5517
+   },
+   "sectorAllocation": {
+    "arrayValue": {
+     "values": [
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.9179
+         },
+         "name": {
+          "stringValue": "Non-Energy Materials"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.026600000000000002
+         },
+         "name": {
+          "stringValue": "Industrials"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.015300000000000001
+         },
+         "name": {
+          "stringValue": "Utilities"
+         }
+        }
+       }
+      },
+      {
+       "mapValue": {
+        "fields": {
+         "weight": {
+          "doubleValue": 0.04019999999999999
+         },
+         "name": {
+          "stringValue": "Other"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.812186Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "G2X": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/G2X",
+  "fields": {
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "priceChange_1w": {
+    "doubleValue": 0
+   },
+   "ebitda": {
+    "doubleValue": 0
+   },
+   "mes": {
+    "stringValue": ""
+   },
+   "yield": {
+    "doubleValue": 0
+   },
+   "setor": {
+    "stringValue": ""
+   },
+   "priceChange_1m": {
+    "doubleValue": 0
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   },
+   "isin": {
+    "stringValue": "--"
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "priceChange_1y": {
+    "doubleValue": 0
+   },
+   "rsi": {
+    "doubleValue": 0
+   },
+   "pe": {
+    "doubleValue": 0
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "sma_vol20": {
+    "doubleValue": 0
+   },
+   "observacoes": {
+    "stringValue": ""
+   },
+   "mercado": {
+    "stringValue": ""
+   },
+   "marketCap": {
+    "stringValue": "--"
+   },
+   "roi": {
+    "doubleValue": 0
+   },
+   "nome": {
+    "stringValue": "VanEck Gold Miners UCITS ETF USD A"
+   },
+   "sma50": {
+    "stringValue": ""
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T20:56:29.028Z"
+   },
+   "dividendo": {
+    "stringValue": ""
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T20:56:29.028Z"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      }
+     ]
+    }
+   },
+   "periodicidade": {
+    "stringValue": ""
+   },
+   "roic": {
+    "doubleValue": 0
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "roa": {
+    "doubleValue": 0
+   },
+   "valorStock": {
+    "doubleValue": 87.94
+   },
+   "roe": {
+    "doubleValue": 0
+   },
+   "sma200": {
+    "stringValue": ""
+   },
+   "ticker": {
+    "stringValue": "G2X"
+   },
+   "dividaLiquida": {
+    "stringValue": ""
+   },
+   "ev_ebitda": {
+    "doubleValue": 0
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:56:27.041720"
+   }
+  },
+  "createTime": "2026-03-20T19:52:33.188927Z",
+  "updateTime": "2026-09-21T20:56:29.040267Z"
+ },
+ "LON_G2X": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/LON_G2X",
+  "fields": {
+   "dividendoMedio24m": {
+    "stringValue": ""
+   },
+   "nome": {
+    "stringValue": "VanEck Gold Miners ETF"
+   },
+   "sma50": {
+    "stringValue": "#N/A"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-05T00:00:00Z"
+   },
+   "yield": {
+    "integerValue": "0"
+   },
+   "mes": {
+    "stringValue": "n/A"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.5416
+   },
+   "marketCap": {
+    "stringValue": ""
+   },
+   "pe": {
+    "stringValue": ""
+   },
+   "valorStock": {
+    "doubleValue": 76.9
+   },
+   "observacoes": {
+    "stringValue": "Neutro"
+   },
+   "sma200": {
+    "stringValue": "#N/A"
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.0163
+   },
+   "mercado": {
+    "stringValue": "Americano"
+   },
+   "ticker": {
+    "stringValue": "LON:G2X"
+   },
+   "periodicidade": {
+    "stringValue": "n/A"
+   },
+   "dividaLiquida": {
+    "integerValue": "14043000000"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-07-07T11:32:28.824Z"
+   },
+   "roic": {
+    "stringValue": "#N/A"
+   },
+   "dividendo": {
+    "integerValue": "0"
+   },
+   "setor": {
+    "stringValue": "ETF Mineração (Ouro)"
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.065
+   },
+   "ebitda": {
+    "integerValue": "6439000000"
+   }
+  },
+  "createTime": "2026-03-06T09:01:32.808844Z",
+  "updateTime": "2026-09-21T20:12:59.781243Z"
+ },
+ "UNV0_F": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/UNV0_F",
+  "fields": {
+   "dividaLiquida": {
+    "integerValue": "41954500000"
+   },
+   "dividendoMedio24m": {
+    "doubleValue": 7.5
+   },
+   "pe": {
+    "doubleValue": 35.34
+   },
+   "periodicidade": {
+    "stringValue": "Trimestral"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.0086
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-24T00:00:00Z"
+   },
+   "roic": {
+    "stringValue": "A carregar..."
+   },
+   "ticker": {
+    "stringValue": "UNV0.F"
+   },
+   "yield": {
+    "doubleValue": 0.0354
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.565Z"
+   },
+   "ebitda": {
+    "integerValue": "6625500000"
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.0527
+   },
+   "observacoes": {
+    "stringValue": "Sobrevalorizada (extrema)"
+   },
+   "setor": {
+    "stringValue": "Consumo Defensivo"
+   },
+   "mercado": {
+    "stringValue": "Europeu"
+   },
+   "valorStock": {
+    "doubleValue": 54.51
+   },
+   "mes": {
+    "stringValue": "Fevereiro"
+   },
+   "nome": {
+    "stringValue": "Unilever"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.1441
+   },
+   "epsNextY": {
+    "stringValue": "A carregar..."
+   },
+   "dividendo": {
+    "doubleValue": 0.48
+   }
+  },
+  "createTime": "2026-07-07T11:22:30.271693Z",
+  "updateTime": "2026-09-26T11:22:26.497603Z"
+ },
+ "UNV0": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/UNV0",
+  "fields": {
+   "nome": {
+    "stringValue": "Unilever PLC"
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      }
+     ]
+    }
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T21:16:57.192Z"
+   },
+   "ticker": {
+    "stringValue": "UNV0"
+   },
+   "yield": {
+    "doubleValue": 0.0358
+   },
+   "dividaLiquida": {
+    "integerValue": "41954500000"
+   },
+   "mes": {
+    "stringValue": "Março"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T21:16:57.192Z"
+   },
+   "valorStock": {
+    "doubleValue": 54.12
+   },
+   "mercado": {
+    "stringValue": "Americano SP500"
+   },
+   "periodicidade": {
+    "stringValue": "Trimestral"
+   },
+   "ebitda": {
+    "integerValue": "6625500000"
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "sma50": {
+    "doubleValue": 50.5
+   },
+   "dividendoMedio24m": {
+    "doubleValue": 7.5
+   },
+   "marketCap": {
+    "doubleValue": 99350000000
+   },
+   "priceChange_1y": {
+    "doubleValue": 0
+   },
+   "pe": {
+    "doubleValue": 22.68
+   },
+   "observacoes": {
+    "stringValue": "Sobrevalorizada (extrema)"
+   },
+   "setor": {
+    "stringValue": "Imobiliário"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:16:55.090838"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "sma_vol20": {
+    "doubleValue": 0
+   },
+   "priceChange_1w": {
+    "doubleValue": 0
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   },
+   "sma200": {
+    "doubleValue": 53.56
+   },
+   "dividendo": {
+    "doubleValue": 6.8
+   }
+  },
+  "createTime": "2026-07-07T11:12:25.608683Z",
+  "updateTime": "2026-09-21T21:16:57.222046Z"
+ },
+ "UNV0.F": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/UNV0.F",
+  "fields": {
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "ft_markets"
+      },
+      {
+       "stringValue": "yahoo"
+      }
+     ]
+    }
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "priceChange_1m": {
+    "doubleValue": -0.82
+   },
+   "sma_vol20": {
+    "doubleValue": 1728.6
+   },
+   "sma100": {
+    "doubleValue": 52.7032
+   },
+   "yield": {
+    "doubleValue": 0.0358
+   },
+   "valorStock": {
+    "doubleValue": 54.12
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "priceChange_1y": {
+    "doubleValue": -1.55
+   },
+   "pe": {
+    "doubleValue": 22.68
+   },
+   "sma200": {
+    "doubleValue": 53.9556
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-21T21:17:17.174Z"
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T22:17:02.637679"
+   },
+   "above_sma50": {
+    "booleanValue": false
+   },
+   "rsi": {
+    "doubleValue": 33.83
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "sma20": {
+    "doubleValue": 54.802
+   },
+   "sma50": {
+    "doubleValue": 54.7092
+   },
+   "marketCap": {
+    "doubleValue": 99350000000
+   },
+   "priceChange_1w": {
+    "doubleValue": -1.38
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-09-21T21:17:17.174Z"
+   },
+   "nome": {
+    "stringValue": "Unilever PLC"
+   },
+   "source_used": {
+    "stringValue": "ft_markets"
+   },
+   "ticker": {
+    "stringValue": "UNV0.F"
+   },
+   "method_used": {
+    "stringValue": "scrape"
+   }
+  },
+  "createTime": "2026-09-21T21:17:17.188760Z",
+  "updateTime": "2026-09-21T21:32:45.663982Z"
+ },
+ "GOOG": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/GOOG",
+  "fields": {
+   "dividendoMedio24m": {
+    "doubleValue": 0.6
+   },
+   "yield": {
+    "doubleValue": 0.011200000000000002
+   },
+   "evEbitda": {
+    "integerValue": "31"
+   },
+   "sma50": {
+    "doubleValue": 340.78
+   },
+   "mes": {
+    "stringValue": "Março"
+   },
+   "roic": {
+    "doubleValue": 0.3233
+   },
+   "ticker": {
+    "stringValue": "GOOG"
+   },
+   "valorStock": {
+    "doubleValue": 296.59
+   },
+   "pe": {
+    "doubleValue": 27.62
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-26T11:22:25.565Z"
+   },
+   "observacoes": {
+    "stringValue": "Sobrevalorizada — P/E desfavorável ao setor · EV/EBITDA elevado no setor"
+   },
+   "priceChange_1m": {
+    "doubleValue": 0.0058
+   },
+   "mercado": {
+    "stringValue": "Americano SP500"
+   },
+   "dividaLiquida": {
+    "integerValue": "1995000000"
+   },
+   "sma200": {
+    "doubleValue": 344.89
+   },
+   "priceChange_1w": {
+    "doubleValue": -0.0279
+   },
+   "dividendo": {
+    "doubleValue": 0.83
+   },
+   "periodicidade": {
+    "stringValue": "Trimestral"
+   },
+   "ev": {
+    "integerValue": "4189534130694"
+   },
+   "epsNextY": {
+    "doubleValue": -0.2661
+   },
+   "nome": {
+    "stringValue": "Alphabet Inc Class A"
+   },
+   "setor": {
+    "stringValue": "Comunicações"
+   },
+   "marketCap": {
+    "integerValue": "4187539130694"
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-08T00:00:00Z"
+   },
+   "ebitda": {
+    "integerValue": "135394000000"
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.3799
+   }
+  },
+  "createTime": "2026-09-22T09:22:25.804209Z",
+  "updateTime": "2026-09-26T11:22:26.499230Z"
+ },
+ "GOOGL": {
+  "name": "projects/appfinance-812b2/databases/(default)/documents/acoesDividendos/GOOGL",
+  "fields": {
+   "priceChange_1m": {
+    "doubleValue": 0.0199
+   },
+   "sma50": {
+    "doubleValue": 346.49
+   },
+   "divMedio24m": {
+    "doubleValue": 0.61
+   },
+   "yield": {
+    "doubleValue": 0.010700000000000001
+   },
+   "source_used": {
+    "stringValue": "yahoo"
+   },
+   "observacoes": {
+    "stringValue": "Sobrevalorizada — P/E desfavorável ao setor · EV/EBITDA elevado no setor"
+   },
+   "priceChange_1d": {
+    "doubleValue": 0
+   },
+   "ultimaAtu": {
+    "timestampValue": "2026-03-08T00:00:00Z"
+   },
+   "valorStock": {
+    "doubleValue": 309.99
+   },
+   "periodicidade": {
+    "stringValue": "Trimestral"
+   },
+   "sma_vol20": {
+    "doubleValue": 25772698.45
+   },
+   "sma200": {
+    "doubleValue": 346.61
+   },
+   "ebitda": {
+    "integerValue": "135394000000"
+   },
+   "pe": {
+    "doubleValue": 27.62
+   },
+   "method_used": {
+    "stringValue": "chart"
+   },
+   "evEbitda": {
+    "integerValue": "32"
+   },
+   "roe": {
+    "doubleValue": 0.4868
+   },
+   "golden_cross": {
+    "booleanValue": true
+   },
+   "epsNextY": {
+    "doubleValue": -0.2657
+   },
+   "nome": {
+    "stringValue": "Alphabet Inc Class A"
+   },
+   "rsi": {
+    "doubleValue": 62.81
+   },
+   "ev": {
+    "integerValue": "4314482948430"
+   },
+   "portfolioQuantity": {
+    "doubleValue": 3
+   },
+   "priceChange_1w": {
+    "doubleValue": 0.028999999999999998
+   },
+   "priceChange_1y": {
+    "doubleValue": 0.4057
+   },
+   "dividendValue": {
+    "doubleValue": 0
+   },
+   "sma20": {
+    "doubleValue": 342.294
+   },
+   "ev_ebitda": {
+    "doubleValue": 23.71
+   },
+   "roa": {
+    "doubleValue": 0.34299999999999997
+   },
+   "mes": {
+    "stringValue": "Março"
+   },
+   "above_sma50": {
+    "booleanValue": true
+   },
+   "roic": {
+    "doubleValue": 0.3233
+   },
+   "ticker": {
+    "stringValue": "GOOG"
+   },
+   "updatedAt": {
+    "timestampValue": "2026-09-22T09:12:25.545Z"
+   },
+   "sma100": {
+    "doubleValue": 359.1394
+   },
+   "lastFullSync": {
+    "stringValue": "2026-09-21T21:36:28.238886"
+   },
+   "portfolioPriority": {
+    "booleanValue": true
+   },
+   "marketCap": {
+    "integerValue": "4312487948430"
+   },
+   "dividendo": {
+    "doubleValue": 0.83
+   },
+   "above_sma200": {
+    "booleanValue": true
+   },
+   "dividendoMedio24m": {
+    "doubleValue": 0.6
+   },
+   "mercado": {
+    "stringValue": "Americano SP500"
+   },
+   "setor": {
+    "stringValue": "Comunicações"
+   },
+   "sources_used": {
+    "arrayValue": {
+     "values": [
+      {
+       "stringValue": "yahoo"
+      },
+      {
+       "stringValue": "finviz"
+      },
+      {
+       "stringValue": "ft_markets"
+      }
+     ]
+    }
+   },
+   "roi": {
+    "doubleValue": 0
+   },
+   "top10Weight": {
+    "doubleValue": 0
+   },
+   "dividaLiquida": {
+    "integerValue": "1995000000"
+   }
+  },
+  "createTime": "2026-02-27T15:47:44.443611Z",
+  "updateTime": "2026-09-22T09:19:41.088115Z"
+ }
+}
