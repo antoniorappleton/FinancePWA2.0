@@ -611,10 +611,8 @@ async function carregarSimulacoesGuardadas() {
         
         valorAtualTotal += a.qtd * pAtual;
         
-        const dUnit = Number(acaoFull.dividendo || 0);
-        const per = acaoFull.periodicidade || "Anual";
-        const payN = (per === "Mensal" ? 12 : per === "Trimestral" ? 4 : per === "Semestral" ? 2 : 1);
-        divAnualTotal += a.qtd * dUnit * payN;
+        const dAnual = Number(acaoFull.dividendo || 0); // anual (coluna H da Sheet)
+        divAnualTotal += a.qtd * dAnual;
 
         const pe = Number(acaoFull.pe || acaoFull.peRatio || 0);
         if (pe > 0) {

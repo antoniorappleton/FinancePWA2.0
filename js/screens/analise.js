@@ -28,6 +28,8 @@ import {
   calculateLucroMaximoScore,
   annualizeRate,
   anualPreferido,
+  dividendoPorPagamento,
+  pagamentosPorAno,
   parseSma,
   cleanTicker,
   getAssetType,
@@ -204,21 +206,14 @@ window.ANL_CFG = CFG; // podes ajustar via consola se quiseres
 
 /* =========================================================
    Cálculos de dividendos / yield
-   - alpha_update_sheet grava:
+   - Sheet "Firebase" grava:
      • dividendoMedio24m = ANUAL (média 24m)
-     • dividendo         = POR PAGAMENTO (média por pagamento 24m)
+     • dividendo         = ANUAL (coluna H)
      • periodicidade + mes (distribuição mensal)
    ========================================================= */
 function perPayment(doc) {
-  const base = toNum(doc.dividendo); // por pagamento (média 24m)
-  if (base > 0) return base;
-  const anual = anualPreferido(doc);
-  const per = String(doc.periodicidade || "");
-  if (per === "Mensal") return anual / 12;
-  if (per === "Trimestral") return anual / 4;
-  if (per === "Semestral") return anual / 2;
-  if (per === "Anual") return anual;
-  return 0;
+  if (!pagamentosPorAno(doc.periodicidade)) return 0;
+  return dividendoPorPagamento(anualPreferido(doc), doc.periodicidade);
 }
 function computeYieldPct(annualDividend, valorStock) {
   if (

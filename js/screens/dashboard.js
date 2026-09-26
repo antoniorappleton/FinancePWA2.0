@@ -1512,12 +1512,9 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
-function dividirPeriodicidade(dividendo, periodicidade) {
-  const p = String(periodicidade || "").toLowerCase();
-  if (p === "mensal") return dividendo * 12;
-  if (p === "trimestral") return dividendo * 4;
-  if (p === "semestral") return dividendo * 2;
-  return dividendo; // anual ou n/a
+// `dividendo` já é o total anual (coluna H da Sheet) — não multiplicar.
+function dividirPeriodicidade(dividendo, _periodicidade) {
+  return dividendo;
 }
 function campoCrescimento(periodoSel) {
   if (periodoSel === "1s" || periodoSel === "1w") return "priceChange_1w";

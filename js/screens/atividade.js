@@ -23,7 +23,7 @@ import {
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-import { parseSma, getAssetType, canon, cleanTicker, normalizeSector } from "../utils/scoring.js";
+import { parseSma, getAssetType, canon, cleanTicker, normalizeSector, pagamentosPorAno } from "../utils/scoring.js";
 import * as CapitalManager from "../utils/capitalManager.js";
 import { Treemap } from "../components/treemap.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
@@ -454,14 +454,7 @@ const MES_IDX = {
   novembro: 10,
   dezembro: 11,
 };
-function pagamentosAno(p) {
-  p = String(p || "").toLowerCase();
-  if (p.startsWith("mensal")) return 12;
-  if (p.startsWith("trimes")) return 4;
-  if (p.startsWith("semes")) return 2;
-  if (p.startsWith("anual")) return 1;
-  return 0;
-}
+const pagamentosAno = pagamentosPorAno;
 function mesesPagos(period, mesTipico) {
   const p = String(period || "").toLowerCase();
   const baseIdx =
@@ -2586,7 +2579,8 @@ function showPortfolioHelp(force = false) {
         g.precoAtual = precoAtual;
 
         // --- Normalização de dados (alinhamento com analise.js) ---
-        const dividendoUnit = isFiniteNum(info.dividendo)
+        // `dividendo` = total anual por ação (coluna H da Sheet)
+        const dividendoAnual = isFiniteNum(info.dividendo)
           ? Number(info.dividendo)
           : 0;
         const dmed24 = isFiniteNum(info.dividendoMedio24m)
@@ -2607,8 +2601,8 @@ function showPortfolioHelp(force = false) {
         const payN = pagamentosAno(periodicidade);
 
         const yCur =
-          precoAtual && dividendoUnit > 0 && periodicidade
-            ? (dividendoUnit * payN) / precoAtual
+          precoAtual && dividendoAnual > 0
+            ? dividendoAnual / precoAtual
             : precoAtual && dmed24 > 0
               ? dmed24 / precoAtual
               : null;
@@ -2621,8 +2615,8 @@ function showPortfolioHelp(force = false) {
         g._pe = pe;
         g._sma50 = sma50;
         g._sma200 = sma200;
-        g._divUnit = dividendoUnit;
-        g._divAnual = dmed24 || dividendoUnit * payN; // Usa média 24m ou projeta
+        g._divUnit = payN ? dividendoAnual / payN : dividendoAnual;
+        g._divAnual = dmed24 || dividendoAnual; // Usa média 24m ou o anual da Sheet
 
         rowsForYield.push({
           ticker: g.ticker,
@@ -2723,12 +2717,13 @@ function showPortfolioHelp(force = false) {
       const eurosMes = new Array(12).fill(0);
       for (const g of abertos) {
         const info = infoMap.get(g.ticker) || {};
-        const divUnit = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0;
+        const divAnual = isFiniteNum(info.dividendo) ? Number(info.dividendo) : 0; // anual
         const per = info.periodicidade;
         const mesT = info.mes;
         const payN = pagamentosAno(per);
-        rendimentoAnual += g.qtd * divUnit * payN;
-        for (const m of mesesPagos(per, mesT)) eurosMes[m] += g.qtd * divUnit;
+        if (!payN) continue;
+        rendimentoAnual += g.qtd * divAnual;
+        for (const m of mesesPagos(per, mesT)) eurosMes[m] += (g.qtd * divAnual) / payN;
       }
 
       // Exposição acima da SMA200

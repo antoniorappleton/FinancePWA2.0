@@ -283,13 +283,27 @@ export function getAssetType(ticker, acao) {
   return "stock";
 }
 
-export function anualizarDividendo(d, p) {
-  const val = Number(d) || 0; const per = String(p || "").toLowerCase();
-  if (val <= 0) return 0;
-  if (per === "mensal" || per === "monthly") return val * 12;
-  if (per === "trimestral" || per === "quarterly") return val * 4;
-  if (per === "semestral" || per === "semi-annual") return val * 2;
-  return val;
+// Convenção da Sheet "Firebase" (coluna H): `dividendo` é o total ANUAL por
+// ação — não multiplicar pela periodicidade (isso inflacionava o yield 4×/12×).
+export function pagamentosPorAno(p) {
+  const per = String(p || "").toLowerCase();
+  if (per.startsWith("mensal") || per === "monthly") return 12;
+  if (per.startsWith("trimes") || per === "quarterly") return 4;
+  if (per.startsWith("semes") || per === "semi-annual") return 2;
+  if (per.startsWith("anual") || per === "annual") return 1;
+  return 0;
+}
+
+export function anualizarDividendo(d, _p) {
+  const val = Number(d) || 0;
+  return val > 0 ? val : 0;
+}
+
+// Valor típico de cada pagamento, a partir do anual.
+export function dividendoPorPagamento(anual, p) {
+  const n = pagamentosPorAno(p) || 1;
+  const val = Number(anual) || 0;
+  return val > 0 ? val / n : 0;
 }
 
 export function anualPreferido(doc) {
