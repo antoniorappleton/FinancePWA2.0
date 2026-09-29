@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt">
   <head>
     <meta charset="UTF-8" />
@@ -12,7 +12,10 @@
           var s = JSON.parse(localStorage.getItem("app.settings") || "{}");
           dark = s.darkMode === true;
         } catch (e) {}
-        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        document.documentElement.setAttribute(
+          "data-theme",
+          dark ? "dark" : "light",
+        );
       })();
     </script>
     <link rel="stylesheet" href="style.css" />
@@ -72,7 +75,7 @@
         pointer-events: none;
       "
     >
-      v2.9.0
+      v2.14.4
     </div>
 
     <!-- Apenas um script principal (com type="module") -->

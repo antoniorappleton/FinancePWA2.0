@@ -24,7 +24,8 @@ export function navigateTo(screen) {
       window.scrollTo(0, 0);
 
       // Importar JS específico do screen (se existir) (com cache-buster em dev)
-      const isDev = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      const isDev =
+        location.hostname === "localhost" || location.hostname === "127.0.0.1";
       const buster = isDev ? `?v=${Date.now()}` : "";
       import(`./screens/${screen}.js${buster}`)
         .then((module) => {
@@ -48,7 +49,7 @@ export function navigateTo(screen) {
 // Disponibilizar globalmente para onclick="navigateTo('...')"
 window.navigateTo = navigateTo;
 
-const APP_VERSION = "2.14.3";
+const APP_VERSION = "2.14.4";
 
 // Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
@@ -63,7 +64,10 @@ document.addEventListener("DOMContentLoaded", () => {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         for (let registration of registrations) {
           registration.unregister().then((success) => {
-            if (success) console.log("🛠️ [Dev] Service Worker antigo anulado com sucesso!");
+            if (success)
+              console.log(
+                "🛠️ [Dev] Service Worker antigo anulado com sucesso!",
+              );
           });
         }
       });
@@ -87,7 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.reload();
       });
 
-      navigator.serviceWorker.register("./service-worker.js")
+      navigator.serviceWorker
+        .register("./service-worker.js")
         .then((reg) => {
           console.log("[PWA] Service Worker Registado.");
           reg.update();
