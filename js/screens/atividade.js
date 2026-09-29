@@ -262,28 +262,52 @@ function renderPosicoesFechadas(gruposArrAll) {
   const wasOpen = fechadasCont.querySelector("details")?.hasAttribute("open") ?? false;
   const hiddenCount = allFechadas.filter(g => _fechadasHidden.has(g.ticker)).length;
   const filterText = _fechadasFilterText.trim().toUpperCase();
+  // Métricas calculadas uma vez por linha — usadas tanto para ordenar como para mostrar.
   const fechadas = allFechadas
     .filter(g => !_fechadasHidden.has(g.ticker) && (!filterText || g.ticker.toUpperCase().includes(filterText)))
-    .sort((a, b) => (b.realizado || 0) - (a.realizado || 0));
+    .filter(g => _fechadasTipo === "all" || getAssetType(g.ticker, g) === _fechadasTipo)
+    .map(g => {
+      const realizado = g.realizado || 0;
+      const pmHistorico = isFiniteNum(g.custoMedioHistorico) && g.custoMedioHistorico > 0 ? Number(g.custoMedioHistorico) : null;
+      const precoAtual = isFiniteNum(g.precoAtual) ? Number(g.precoAtual) : null;
+      return {
+        g,
+        realizado,
+        pmHistorico,
+        precoAtual,
+        diffAtualPct: pmHistorico && precoAtual !== null ? ((precoAtual - pmHistorico) / pmHistorico) * 100 : null,
+        retPct: (g.totalBuyValue || 0) > 0 ? (realizado / g.totalBuyValue) * 100 : null,
+        nLotes: (_allMovimentos || []).filter(m => m.ticker === g.ticker && m.qtd > 0).length,
+      };
+    });
 
-  const totalRealizado = fechadas.reduce((s, g) => s + (g.realizado || 0), 0);
+  const { key: sortKey, dir: sortDir } = _fechadasSort;
+  const sortVal = (r) => sortKey === "ticker" ? r.g.ticker : sortKey === "nome" ? (r.g.nome || "") : r[sortKey];
+  fechadas.sort((a, b) => {
+    const va = sortVal(a), vb = sortVal(b);
+    // Valores em falta ("—") vão sempre para o fim, seja qual for a direção
+    if (va === null || va === undefined) return (vb === null || vb === undefined) ? 0 : 1;
+    if (vb === null || vb === undefined) return -1;
+    const cmp = typeof va === "string" ? va.localeCompare(vb, "pt-PT") : va - vb;
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const sortTh = (key, label, align) => {
+    const active = sortKey === key;
+    const icon = active ? (sortDir === "asc" ? "fa-sort-up" : "fa-sort-down") : "fa-sort";
+    return `<th onclick="window.__sortFechadas('${key}')" title="Ordenar por ${label}"
+      style="padding: 10px 14px; text-align: ${align}; cursor: pointer; user-select: none; white-space: nowrap; ${active ? "color: var(--foreground);" : ""}">
+      ${label} <i class="fas ${icon}" style="opacity: ${active ? 1 : 0.4}; margin-left: 2px;"></i></th>`;
+  };
+
+  const totalRealizado = fechadas.reduce((s, r) => s + r.realizado, 0);
   const corTotal = totalRealizado >= 0 ? "#22c55e" : "#ef4444";
 
   const linhas = fechadas.length
-    ? fechadas.map((g, idx) => {
-        const realizado = g.realizado || 0;
+    ? fechadas.map(({ g, realizado, pmHistorico, precoAtual, diffAtualPct, retPct, nLotes }, idx) => {
         const cor = realizado >= 0 ? "#22c55e" : "#ef4444";
-        const nLotes = (_allMovimentos || []).filter(m => m.ticker === g.ticker && m.qtd > 0).length;
-        const retPct = (g.totalBuyValue || 0) > 0
-          ? (realizado / g.totalBuyValue) * 100
-          : null;
         const isLoss = realizado < 0;
         const simId = `recSim_${idx}`;
-        const pmHistorico = isFiniteNum(g.custoMedioHistorico) && g.custoMedioHistorico > 0 ? Number(g.custoMedioHistorico) : null;
-        const precoAtual = isFiniteNum(g.precoAtual) ? Number(g.precoAtual) : null;
-        const diffAtualPct = pmHistorico && precoAtual !== null
-          ? ((precoAtual - pmHistorico) / pmHistorico) * 100
-          : null;
         const corDiff = diffAtualPct === null ? "var(--muted-foreground)" : diffAtualPct >= 0 ? "#22c55e" : "#ef4444";
         const lossAbs = Math.abs(realizado);
         const defaultGrowth = 10;
@@ -331,6 +355,12 @@ function renderPosicoesFechadas(gruposArrAll) {
           style="flex: 1; min-width: 140px; padding: 6px 10px; font-size: 0.78rem;"
           onclick="event.stopPropagation();"
           oninput="window.__filterFechadas(this.value)">
+        <select onclick="event.stopPropagation();" onchange="window.__tipoFechadas(this.value)"
+          style="padding: 6px 10px; font-size: 0.78rem;">
+          <option value="all" ${_fechadasTipo === "all" ? "selected" : ""}>Todos os tipos</option>
+          <option value="stock" ${_fechadasTipo === "stock" ? "selected" : ""}>Ações</option>
+          <option value="etf" ${_fechadasTipo === "etf" ? "selected" : ""}>ETFs</option>
+        </select>
         ${hiddenCount > 0 ? `<button type="button" onclick="event.stopPropagation(); window.__restoreFechadas()" class="btn outline" style="font-size: 0.7rem; padding: 5px 10px; white-space: nowrap;">
           <i class="fas fa-rotate-left"></i> Repor ${hiddenCount} oculta${hiddenCount > 1 ? "s" : ""}
         </button>` : ""}
@@ -339,14 +369,14 @@ function renderPosicoesFechadas(gruposArrAll) {
         <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
           <thead>
             <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground); text-align: left; background: var(--card);">
-              <th style="padding: 10px 14px;">Ticker</th>
-              <th style="padding: 10px 14px;">Nome</th>
-              <th style="padding: 10px 14px; text-align: right;">PM</th>
-              <th style="padding: 10px 14px; text-align: right;">Atual</th>
-              <th style="padding: 10px 14px; text-align: right;">Dif.</th>
-              <th style="padding: 10px 14px; text-align: right;">Lucro Realizado</th>
-              <th style="padding: 10px 14px; text-align: right;">Retorno</th>
-              <th style="padding: 10px 14px; text-align: center;">Lotes</th>
+              ${sortTh("ticker", "Ticker", "left")}
+              ${sortTh("nome", "Nome", "left")}
+              ${sortTh("pmHistorico", "PM", "right")}
+              ${sortTh("precoAtual", "Atual", "right")}
+              ${sortTh("diffAtualPct", "Dif.", "right")}
+              ${sortTh("realizado", "Lucro Realizado", "right")}
+              ${sortTh("retPct", "Retorno", "right")}
+              ${sortTh("nLotes", "Lotes", "center")}
             </tr>
           </thead>
           <tbody>
@@ -367,6 +397,19 @@ window.__filterFechadas = function (val) {
     const pos = inp.value.length;
     inp.setSelectionRange(pos, pos);
   }
+};
+window.__tipoFechadas = function (tipo) {
+  _fechadasTipo = tipo || "all";
+  renderPosicoesFechadas(window._currentGruposArr || []);
+};
+// 1º clique numa coluna: maiores primeiro (texto: A→Z); clique seguinte inverte.
+window.__sortFechadas = function (key) {
+  if (_fechadasSort.key === key) {
+    _fechadasSort = { key, dir: _fechadasSort.dir === "asc" ? "desc" : "asc" };
+  } else {
+    _fechadasSort = { key, dir: key === "ticker" || key === "nome" ? "asc" : "desc" };
+  }
+  renderPosicoesFechadas(window._currentGruposArr || []);
 };
 window.__hideFechada = function (ticker) {
   _fechadasHidden.add(ticker);
@@ -1123,6 +1166,8 @@ let _eventsWired = false;
 // Estado da lista "Posições Fechadas": filtro de texto e ocultação local
 // (nunca apaga nada na base de dados — só esconde na UI, persistido no browser).
 let _fechadasFilterText = "";
+let _fechadasTipo = "all"; // "all" | "stock" | "etf"
+let _fechadasSort = { key: "realizado", dir: "desc" };
 let _fechadasHidden = new Set();
 try {
   _fechadasHidden = new Set(JSON.parse(localStorage.getItem("atividade_fechadas_hidden") || "[]"));
