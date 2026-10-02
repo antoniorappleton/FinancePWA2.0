@@ -5,30 +5,39 @@
 // Data pulled from window._portfolioPositions & window._marketDataMap
 // ═══════════════════════════════════════════════════════════════════
 
-import { scoreAssetV2 }           from "../engines/score-v2.js";
+import { scoreAssetV2 } from "../engines/score-v2.js";
 import { generateAssetObservations } from "../engines/observations.js";
-import { enrichETFAsset, isKnownETF, smartETFAnalysis } from "../engines/etf-overlap.js";
-import { getAssetCategory }        from "../utils/normalize.js";
-import { db }                      from "../firebase-config.js";
-import { doc, deleteDoc }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  enrichETFAsset,
+  isKnownETF,
+  smartETFAnalysis,
+} from "../engines/etf-overlap.js";
+import { getAssetCategory } from "../utils/normalize.js";
+import { db } from "../firebase-config.js";
+import {
+  doc,
+  deleteDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Module state ──────────────────────────────────────────
-let _panel      = null;
-let _overlay    = null;
-let _activeTab  = "analysis";
-let _asset      = null;   // market data (acoesDividendos doc)
-let _position   = null;   // portfolio position (from byTickerGlobal)
-let _score      = null;   // scoreAssetV2 result
+let _panel = null;
+let _overlay = null;
+let _activeTab = "analysis";
+let _asset = null; // market data (acoesDividendos doc)
+let _position = null; // portfolio position (from byTickerGlobal)
+let _score = null; // scoreAssetV2 result
 
 // ── Public API ────────────────────────────────────────────
 export function openAssetPanel(ticker) {
   _ensureDOM();
 
-  ticker = String(ticker || "").toUpperCase().trim();
+  ticker = String(ticker || "")
+    .toUpperCase()
+    .trim();
   if (!ticker) return;
 
   const position = window._portfolioPositions?.get(ticker) ?? null;
-  const market   = { ...(window._marketDataMap?.get(ticker) ?? {}), ticker };
+  const market = { ...(window._marketDataMap?.get(ticker) ?? {}), ticker };
 
   if (isKnownETF(ticker) || Array.isArray(market.holdings)) {
     enrichETFAsset(market, window._marketDataMap ?? new Map());
@@ -36,22 +45,33 @@ export function openAssetPanel(ticker) {
 
   let scoreResult;
   try {
-    scoreResult = scoreAssetV2(market, null, window._macroRegime ?? "high_rates");
+    scoreResult = scoreAssetV2(
+      market,
+      null,
+      window._macroRegime ?? "high_rates",
+    );
   } catch {
-    scoreResult = { finalScore: 50, grade: "C", confidence: 0,
-      engines: {}, signals: [], warnings: [], observations: [] };
+    scoreResult = {
+      finalScore: 50,
+      grade: "C",
+      confidence: 0,
+      engines: {},
+      signals: [],
+      warnings: [],
+      observations: [],
+    };
   }
 
   const engines = {
-    quality:   scoreResult.engines?.quality   ?? { score: 50 },
-    momentum:  scoreResult.engines?.momentum  ?? { score: 50 },
+    quality: scoreResult.engines?.quality ?? { score: 50 },
+    momentum: scoreResult.engines?.momentum ?? { score: 50 },
     valuation: scoreResult.engines?.valuation ?? { score: 50 },
-    risk:      scoreResult.engines?.risk      ?? { score: 50 },
+    risk: scoreResult.engines?.risk ?? { score: 50 },
   };
 
-  _asset    = market;
+  _asset = market;
   _position = position;
-  _score    = {
+  _score = {
     ...scoreResult,
     engines,
     observations: generateAssetObservations(market, engines).slice(0, 5),
@@ -97,26 +117,33 @@ function _ensureDOM() {
 
 // ── Header ────────────────────────────────────────────────
 function _renderHeader() {
-  const a   = _asset;
+  const a = _asset;
   const pos = _position;
-  const s   = _score;
+  const s = _score;
 
-  const grade  = s.grade ?? "C";
-  const score  = s.finalScore ?? 50;
+  const grade = s.grade ?? "C";
+  const score = s.finalScore ?? 50;
   const gColor = _gradeColor(grade);
 
   const price = Number(a.valorStock || a.price || 0);
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v);
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(v);
   const priceStr = price > 0 ? fmtEUR(price) : "—";
 
-  const raw1m  = Number(a.priceChange_1m || a.taxaCrescimento_1mes || 0);
-  const pct1m  = Math.abs(raw1m) > 1 ? raw1m : raw1m * 100;
-  const chgStr = raw1m !== 0
-    ? `${pct1m >= 0 ? "+" : ""}${pct1m.toFixed(1)}% 1m`
-    : "";
+  const raw1m = Number(a.priceChange_1m || a.taxaCrescimento_1mes || 0);
+  const pct1m = Math.abs(raw1m) > 1 ? raw1m : raw1m * 100;
+  const chgStr =
+    raw1m !== 0 ? `${pct1m >= 0 ? "+" : ""}${pct1m.toFixed(1)}% 1m` : "";
 
-  const cat    = getAssetCategory(a);
-  const catLabel = cat.includes("ETF") ? "ETF" : cat === "Commodity" ? "Commodity" : "Ação";
+  const cat = getAssetCategory(a);
+  const catLabel = cat.includes("ETF")
+    ? "ETF"
+    : cat === "Commodity"
+      ? "Commodity"
+      : "Ação";
 
   document.getElementById("adpHeader").innerHTML = `
     <div class="adp-header-top">
@@ -130,7 +157,7 @@ function _renderHeader() {
       <div class="adp-header-badges">
         <span class="adp-badge">${catLabel}</span>
         ${pos?.category ? `<span class="adp-badge adp-badge--strat">${pos.category}</span>` : ""}
-        ${pos          ? `<span class="adp-badge adp-badge--pos">Em Carteira</span>` : ""}
+        ${pos ? `<span class="adp-badge adp-badge--pos">Em Carteira</span>` : ""}
       </div>
     </div>
     <div class="adp-header-price">
@@ -144,46 +171,68 @@ function _renderHeader() {
 
 // ── Tabs ──────────────────────────────────────────────────
 function _renderTabs() {
-  const cat   = getAssetCategory(_asset);
+  const cat = getAssetCategory(_asset);
   const isETF = cat.includes("ETF");
-  const tabs  = [
-    { id: "analysis",    label: "Análise" },
+  const tabs = [
+    { id: "analysis", label: "Análise" },
     ...(_position ? [{ id: "position", label: "Posição" }] : []),
-    { id: isETF ? "holdings" : "fundamentals", label: isETF ? "Holdings" : "Fundamentais" },
+    {
+      id: isETF ? "holdings" : "fundamentals",
+      label: isETF ? "Holdings" : "Fundamentais",
+    },
     { id: "technical", label: "Técnico" },
   ];
 
   document.getElementById("adpTabs").innerHTML = tabs
-    .map(t => `<button class="adp-tab ${_activeTab === t.id ? "active" : ""}" data-tab="${t.id}">${t.label}</button>`)
+    .map(
+      (t) =>
+        `<button class="adp-tab ${_activeTab === t.id ? "active" : ""}" data-tab="${t.id}">${t.label}</button>`,
+    )
     .join("");
 
-  document.getElementById("adpTabs").querySelectorAll(".adp-tab").forEach(btn => {
-    btn.onclick = () => _switchTab(btn.dataset.tab);
-  });
+  document
+    .getElementById("adpTabs")
+    .querySelectorAll(".adp-tab")
+    .forEach((btn) => {
+      btn.onclick = () => _switchTab(btn.dataset.tab);
+    });
 }
 
 function _switchTab(tabId) {
   _activeTab = tabId;
-  document.getElementById("adpTabs")?.querySelectorAll(".adp-tab").forEach(b =>
-    b.classList.toggle("active", b.dataset.tab === tabId));
+  document
+    .getElementById("adpTabs")
+    ?.querySelectorAll(".adp-tab")
+    .forEach((b) => b.classList.toggle("active", b.dataset.tab === tabId));
 
   const body = document.getElementById("adpBody");
   if (!body) return;
   body.scrollTop = 0;
 
   switch (tabId) {
-    case "analysis":      body.innerHTML = _tabAnalysis();     break;
-    case "position":      body.innerHTML = _tabPosition();     break;
-    case "fundamentals":  body.innerHTML = _tabFundamentals(); break;
-    case "holdings":      body.innerHTML = _tabHoldings();     break;
-    case "technical":     body.innerHTML = _tabTechnical();    break;
-    default: body.innerHTML = "";
+    case "analysis":
+      body.innerHTML = _tabAnalysis();
+      break;
+    case "position":
+      body.innerHTML = _tabPosition();
+      break;
+    case "fundamentals":
+      body.innerHTML = _tabFundamentals();
+      break;
+    case "holdings":
+      body.innerHTML = _tabHoldings();
+      break;
+    case "technical":
+      body.innerHTML = _tabTechnical();
+      break;
+    default:
+      body.innerHTML = "";
   }
 }
 
 // ── Decision box helpers ──────────────────────────────────
 function _decisionBox(score, grade, isETF) {
-  const a   = _asset;
+  const a = _asset;
   const pos = _position;
   // _estadoOp lives on the portfolio position object (set by atividade.js), not on market data
   const ops = pos?._estadoOp || a._estadoOp || a.estadoOp || "";
@@ -191,37 +240,58 @@ function _decisionBox(score, grade, isETF) {
   let icon, label, color, rationale;
 
   if (score >= 75) {
-    icon = "🟢"; label = "REFORÇAR"; color = "#16a34a";
+    icon = "🟢";
+    label = "REFORÇAR";
+    color = "#16a34a";
     rationale = isETF
       ? `Score ${score} — ETF com boa eficiência de custo e diversificação. Manter DCA regular.`
       : `Score ${score} — Fundamentos sólidos com momentum positivo. Bom ponto de reforço.`;
   } else if (score >= 60) {
-    icon = "🔵"; label = "MANTER"; color = "#2563eb";
+    icon = "🔵";
+    label = "MANTER";
+    color = "#2563eb";
     rationale = `Score ${score} — Ativo equilibrado. Mantém posição, aguarda catalisador antes de reforçar.`;
   } else if (score >= 40) {
-    icon = "🟡"; label = "MONITORIZAR"; color = "#d97706";
+    icon = "🟡";
+    label = "MONITORIZAR";
+    color = "#d97706";
     rationale = `Score ${score} — Qualidade mista. Revê fundamentais e aguarda melhoria antes de adicionar exposição.`;
   } else {
-    icon = "🔴"; label = "REDUZIR / SAIR"; color = "#dc2626";
+    icon = "🔴";
+    label = "REDUZIR / SAIR";
+    color = "#dc2626";
     rationale = `Score ${score} — Score baixo, sinais negativos. Considera reduzir ou sair da posição.`;
   }
 
   // Portfolio/technical state overrides the score-based label when it gives a stronger signal
   if (ops === "REFORÇAR" || ops === "COMPRAR") {
-    icon = "🟢"; label = ops; color = "#16a34a";
-    rationale = `Score ${score} — Análise técnica e de carteira indicam reforço. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
+    icon = "🟢";
+    label = ops;
+    color = "#16a34a";
+    rationale =
+      `Score ${score} — Análise técnica e de carteira indicam reforço. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
   } else if (ops === "VENDER") {
-    icon = "🔴"; label = "VENDER";  color = "#dc2626";
-    rationale = `Score ${score} — Análise operacional indica saída. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
+    icon = "🔴";
+    label = "VENDER";
+    color = "#dc2626";
+    rationale =
+      `Score ${score} — Análise operacional indica saída. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
   } else if (ops === "REDUZIR") {
-    icon = "🟠"; label = "REDUZIR"; color = "#ea580c";
-    rationale = `Score ${score} — Posição acima do alvo estratégico, considera reduzir. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
+    icon = "🟠";
+    label = "REDUZIR";
+    color = "#ea580c";
+    rationale =
+      `Score ${score} — Posição acima do alvo estratégico, considera reduzir. ${rationale.split(" — ")[1] ?? ""}`.trimEnd();
   } else if (ops === "ESPERAR") {
-    icon = "🟡"; label = "ESPERAR"; color = "#d97706";
+    icon = "🟡";
+    label = "ESPERAR";
+    color = "#d97706";
     rationale = `Score ${score} — Sem sinal claro de entrada ou saída. Aguarda.`;
   }
 
-  const inPortfolio = pos ? `<span style="font-size:.7rem;color:var(--muted-foreground)">Em carteira · ${pos.category || "—"}</span>` : "";
+  const inPortfolio = pos
+    ? `<span style="font-size:.7rem;color:var(--muted-foreground)">Em carteira · ${pos.category || "—"}</span>`
+    : "";
 
   return `
     <div style="border:1.5px solid ${color}40;border-radius:12px;padding:14px 16px;background:${color}08;margin-bottom:16px">
@@ -238,21 +308,26 @@ function _decisionBox(score, grade, isETF) {
 
 // ── Engine micro-context ──────────────────────────────────
 function _qualityMicroCtx(a) {
-  const fmt1 = v => (v !== null && v !== undefined && isFinite(v)) ? v : null;
+  const fmt1 = (v) => (v !== null && v !== undefined && isFinite(v) ? v : null);
   const roic = fmt1(Number(a.roic));
-  const de   = fmt1(Number(a.debt_eq || a.debtEquity));
-  const om   = fmt1(Number(a.oper_margin || a.operMargin));
+  const de = fmt1(Number(a.debt_eq || a.debtEquity));
+  const om = fmt1(Number(a.oper_margin || a.operMargin));
   const parts = [];
-  if (roic !== null && roic !== 0) parts.push(`ROIC ${(roic * (Math.abs(roic) > 1 ? 1 : 100)).toFixed(0)}%`);
-  if (de   !== null && de   !== 0) parts.push(`D/E ${de.toFixed(1)}`);
-  if (om   !== null && om   !== 0) parts.push(`Mg.Op. ${(om * (Math.abs(om) > 1 ? 1 : 100)).toFixed(0)}%`);
+  if (roic !== null && roic !== 0)
+    parts.push(`ROIC ${(roic * (Math.abs(roic) > 1 ? 1 : 100)).toFixed(0)}%`);
+  if (de !== null && de !== 0) parts.push(`D/E ${de.toFixed(1)}`);
+  if (om !== null && om !== 0)
+    parts.push(`Mg.Op. ${(om * (Math.abs(om) > 1 ? 1 : 100)).toFixed(0)}%`);
   return parts.length ? parts.slice(0, 3).join(" · ") : "";
 }
 
 function _momentumMicroCtx(a) {
   const p1m = Number(a.priceChange_1m || a.taxaCrescimento_1mes || 0);
   const p1y = Number(a.priceChange_1y || a.taxaCrescimento_1ano || 0);
-  const toP = v => { const n = Math.abs(v) > 1 ? v : v * 100; return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`; };
+  const toP = (v) => {
+    const n = Math.abs(v) > 1 ? v : v * 100;
+    return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+  };
   const parts = [];
   if (p1m) parts.push(`1m ${toP(p1m)}`);
   if (p1y) parts.push(`1a ${toP(p1y)}`);
@@ -262,25 +337,26 @@ function _momentumMicroCtx(a) {
 }
 
 function _valuationMicroCtx(a) {
-  const pe   = Number(a.pe);
-  const peg  = Number(a.peg);
+  const pe = Number(a.pe);
+  const peg = Number(a.peg);
   const pfcf = Number(a.p_fcf || a.priceToFCF);
   const parts = [];
-  if (pe   > 0 && isFinite(pe))   parts.push(`P/E ${pe.toFixed(0)}x`);
-  if (peg  > 0 && isFinite(peg))  parts.push(`PEG ${peg.toFixed(2)}`);
+  if (pe > 0 && isFinite(pe)) parts.push(`P/E ${pe.toFixed(0)}x`);
+  if (peg > 0 && isFinite(peg)) parts.push(`PEG ${peg.toFixed(2)}`);
   if (pfcf > 0 && isFinite(pfcf)) parts.push(`P/FCF ${pfcf.toFixed(0)}x`);
   return parts.slice(0, 3).join(" · ");
 }
 
 function _riskMicroCtx(a) {
   const beta = Number(a.beta);
-  const cr   = Number(a.current_ratio || a.currentRatio);
+  const cr = Number(a.current_ratio || a.currentRatio);
   const sma200 = Number(a.sma200);
-  const price  = Number(a.valorStock || a.price || 0);
+  const price = Number(a.valorStock || a.price || 0);
   const parts = [];
-  if (beta  > 0 && isFinite(beta))   parts.push(`Beta ${beta.toFixed(2)}`);
-  if (cr    > 0 && isFinite(cr))     parts.push(`CR ${cr.toFixed(1)}`);
-  if (sma200 > 0 && price > 0)       parts.push(`vs SMA200 ${((price / sma200 - 1) * 100).toFixed(0)}%`);
+  if (beta > 0 && isFinite(beta)) parts.push(`Beta ${beta.toFixed(2)}`);
+  if (cr > 0 && isFinite(cr)) parts.push(`CR ${cr.toFixed(1)}`);
+  if (sma200 > 0 && price > 0)
+    parts.push(`vs SMA200 ${((price / sma200 - 1) * 100).toFixed(0)}%`);
   return parts.slice(0, 3).join(" · ");
 }
 
@@ -288,67 +364,108 @@ function _riskMicroCtx(a) {
 // TAB: ANÁLISE
 // ════════════════════════════════════════════════════════
 function _tabAnalysis() {
-  const s     = _score;
-  const a     = _asset;
-  const cat   = getAssetCategory(a);
+  const s = _score;
+  const a = _asset;
+  const cat = getAssetCategory(a);
   const isETF = cat.includes("ETF");
-  const grade  = s.grade ?? "C";
-  const score  = s.finalScore ?? 50;
-  const conf   = s.confidence ?? 0;
+  const grade = s.grade ?? "C";
+  const score = s.finalScore ?? 50;
+  const conf = s.confidence ?? 0;
   const gColor = _gradeColor(grade);
 
   const eng = s.engines;
-  const qS  = eng.quality?.score   ?? 50;
-  const mS  = eng.momentum?.score  ?? 50;
-  const vS  = eng.valuation?.score ?? 50;
-  const rS  = eng.risk?.score      ?? 50;
+  const qS = eng.quality?.score ?? 50;
+  const mS = eng.momentum?.score ?? 50;
+  const vS = eng.valuation?.score ?? 50;
+  const rS = eng.risk?.score ?? 50;
 
   // ETF: replace generic engine bars with ETF-specific diversity bars
   let engineBarsHTML;
   if (isETF) {
-    const sectorS  = typeof a._etfSectorScore     === "number" ? Math.round(a._etfSectorScore * 100) : null;
-    const geoS     = typeof a._etfGeoScore        === "number" ? Math.round(a._etfGeoScore * 100)    : null;
-    const holdingQ = typeof a._etfHoldingsQuality === "number" ? a._etfHoldingsQuality               : null;
-    const ter      = Number(a.ter || a.expense_ratio || 0);
-    const terScore = ter > 0 ? Math.max(0, Math.round(100 - (ter / 0.006) * 100)) : null;
-    const terSub   = ter > 0 ? `TER ${ter < 1 ? (ter * 100).toFixed(2) : ter.toFixed(2)}%` : "";
+    const sectorS =
+      typeof a._etfSectorScore === "number"
+        ? Math.round(a._etfSectorScore * 100)
+        : null;
+    const geoS =
+      typeof a._etfGeoScore === "number"
+        ? Math.round(a._etfGeoScore * 100)
+        : null;
+    const holdingQ =
+      typeof a._etfHoldingsQuality === "number" ? a._etfHoldingsQuality : null;
+    const ter = Number(a.ter || a.expense_ratio || 0);
+    const terScore =
+      ter > 0 ? Math.max(0, Math.round(100 - (ter / 0.006) * 100)) : null;
+    const terSub =
+      ter > 0
+        ? `TER ${ter < 1 ? (ter * 100).toFixed(2) : ter.toFixed(2)}%`
+        : "";
 
     engineBarsHTML = `
       ${_bar("Custo (TER)", terScore ?? qS, "#6366f1", terSub)}
-      ${sectorS  !== null ? _bar("Diversif. Sectorial", sectorS,  "#0f766e",
-          a._etfDominantSector ? `Dominante: ${a._etfDominantSector}` : "") : _bar("Diversif. Sectorial", 50, "#0f766e", "Dados não disponíveis")}
-      ${geoS     !== null ? _bar("Diversif. Geográfica", geoS,    "#2563eb",
-          a._etfDominantRegion ? `Dominante: ${a._etfDominantRegion}` : "") : _bar("Diversif. Geográfica", 50, "#2563eb", "Dados não disponíveis")}
-      ${holdingQ !== null ? _bar("Qualidade Holdings", holdingQ,  "#7c3aed",
-          a._etfHoldingsCoverage ? `${(a._etfHoldingsCoverage * 100).toFixed(0)}% das holdings avaliadas` : "") : ""}
+      ${
+        sectorS !== null
+          ? _bar(
+              "Diversif. Sectorial",
+              sectorS,
+              "#0f766e",
+              a._etfDominantSector ? `Dominante: ${a._etfDominantSector}` : "",
+            )
+          : _bar("Diversif. Sectorial", 50, "#0f766e", "Dados não disponíveis")
+      }
+      ${
+        geoS !== null
+          ? _bar(
+              "Diversif. Geográfica",
+              geoS,
+              "#2563eb",
+              a._etfDominantRegion ? `Dominante: ${a._etfDominantRegion}` : "",
+            )
+          : _bar("Diversif. Geográfica", 50, "#2563eb", "Dados não disponíveis")
+      }
+      ${
+        holdingQ !== null
+          ? _bar(
+              "Qualidade Holdings",
+              holdingQ,
+              "#7c3aed",
+              a._etfHoldingsCoverage
+                ? `${(a._etfHoldingsCoverage * 100).toFixed(0)}% das holdings avaliadas`
+                : "",
+            )
+          : ""
+      }
       ${_bar("Risco / Volatilidade", rS, "#ef4444", _riskMicroCtx(a))}
     `;
   } else {
     engineBarsHTML = `
-      ${_bar("Quality",      qS, "#6366f1", _qualityMicroCtx(a))}
-      ${_bar("Momentum",     mS, "#f59e0b", _momentumMicroCtx(a))}
-      ${_bar("Valuation",    vS, "#10b981", _valuationMicroCtx(a))}
-      ${_bar("Risco",        rS, "#ef4444", _riskMicroCtx(a))}
+      ${_bar("Quality", qS, "#6366f1", _qualityMicroCtx(a))}
+      ${_bar("Momentum", mS, "#f59e0b", _momentumMicroCtx(a))}
+      ${_bar("Valuation", vS, "#10b981", _valuationMicroCtx(a))}
+      ${_bar("Risco", rS, "#ef4444", _riskMicroCtx(a))}
     `;
   }
 
   // Observations
   const obs = s.observations ?? [];
   const obsHTML = obs.length
-    ? obs.map(o => `
+    ? obs
+        .map(
+          (o) => `
         <div class="adp-obs adp-obs--${o.type}">
           <span class="adp-obs-icon">${_obsIcon(o.type)}</span>
           <span class="adp-obs-msg">${o.msg}</span>
-        </div>`).join("")
+        </div>`,
+        )
+        .join("")
     : `<div class="adp-empty">Dados insuficientes para gerar observações.</div>`;
 
   const signals = [...(s.warnings ?? []), ...(s.signals ?? [])]
-    .map(w => (typeof w === "string" ? w : w?.msg ?? null))
+    .map((w) => (typeof w === "string" ? w : (w?.msg ?? null)))
     .filter(Boolean)
     .slice(0, 3);
   const sigHTML = signals.length
     ? `<div class="adp-section-title" style="margin-top:16px">Sinais</div>
-       ${signals.map(w => `<div class="adp-signal">${w}</div>`).join("")}`
+       ${signals.map((w) => `<div class="adp-signal">${w}</div>`).join("")}`
     : "";
 
   return `
@@ -376,12 +493,12 @@ function _strategyEditor(ticker, pos) {
   const dynTickers = window._dynamicStrategyTickers || {};
   const saved = dynTickers[ticker];
   const cat = saved?.category || pos?.category || "NONE";
-  const tgt = saved?.target ?? (pos?.targetAlloc ?? 0);
+  const tgt = saved?.target ?? pos?.targetAlloc ?? 0;
 
   const id = `adpStrat_${ticker}`;
-  const catId  = `${id}_cat`;
-  const tgtId  = `${id}_tgt`;
-  const btnId  = `${id}_save`;
+  const catId = `${id}_cat`;
+  const tgtId = `${id}_tgt`;
+  const btnId = `${id}_save`;
   const statusId = `${id}_status`;
 
   // Wire after render
@@ -399,10 +516,15 @@ function _strategyEditor(ticker, pos) {
         if (statusEl) {
           statusEl.textContent = "Guardado!";
           statusEl.style.color = "var(--success)";
-          setTimeout(() => { if (statusEl) statusEl.textContent = ""; }, 3000);
+          setTimeout(() => {
+            if (statusEl) statusEl.textContent = "";
+          }, 3000);
         }
       } else {
-        if (statusEl) { statusEl.textContent = "Abre Atividade primeiro."; statusEl.style.color = "var(--destructive)"; }
+        if (statusEl) {
+          statusEl.textContent = "Abre Atividade primeiro.";
+          statusEl.style.color = "var(--destructive)";
+        }
       }
       btn.disabled = false;
       btn.textContent = "Guardar";
@@ -411,7 +533,8 @@ function _strategyEditor(ticker, pos) {
     // Live category toggle: show/hide target input
     document.getElementById(catId)?.addEventListener("change", (e) => {
       const tgtWrap = document.getElementById(`${id}_tgtwrap`);
-      if (tgtWrap) tgtWrap.style.display = e.target.value === "NONE" ? "none" : "";
+      if (tgtWrap)
+        tgtWrap.style.display = e.target.value === "NONE" ? "none" : "";
     });
   }, 0);
 
@@ -424,8 +547,8 @@ function _strategyEditor(ticker, pos) {
         <div>
           <label style="display:block;font-size:.65rem;color:var(--muted-foreground);margin-bottom:4px;font-weight:700">CATEGORIA</label>
           <select id="${catId}" style="width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--input);font-size:.82rem;color:var(--foreground)">
-            <option value="NONE"      ${cat === "NONE"      ? "selected" : ""}>Nenhuma</option>
-            <option value="CORE"      ${cat === "CORE"      ? "selected" : ""}>Core</option>
+            <option value="NONE"      ${cat === "NONE" ? "selected" : ""}>Nenhuma</option>
+            <option value="CORE"      ${cat === "CORE" ? "selected" : ""}>Core</option>
             <option value="SATELLITE" ${cat === "SATELLITE" ? "selected" : ""}>Satélite</option>
           </select>
         </div>
@@ -455,19 +578,30 @@ function _strategyEditor(ticker, pos) {
 // ════════════════════════════════════════════════════════
 function _tabPosition() {
   const pos = _position;
-  if (!pos) return `<div class="adp-empty">Este ativo não está em carteira.</div>`;
+  if (!pos)
+    return `<div class="adp-empty">Este ativo não está em carteira.</div>`;
 
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
-  const fmtPct = v => `${Number(v) >= 0 ? "+" : ""}${Number(v).toFixed(2)}%`;
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(v ?? 0);
+  const fmtPct = (v) => `${Number(v) >= 0 ? "+" : ""}${Number(v).toFixed(2)}%`;
 
   const precoAtual = pos.precoAtual ?? 0;
   const precoMedio = pos.qtd > 0 ? (pos.investido ?? 0) / pos.qtd : 0;
-  const lucro      = pos.lucroAtual ?? 0;
-  const percL      = pos.investido > 0 ? (lucro / pos.investido) * 100 : 0;
-  const objetivo   = pos.objetivo ?? 0;
-  const prog       = objetivo > 0 ? Math.min(100, Math.max(0, (lucro / objetivo) * 100)) : 0;
-  const progColor  = lucro >= objetivo && objetivo > 0 ? "#16a34a" : lucro > 0 ? "#2563eb" : "#dc2626";
-  const tpObj      = pos.qtd > 0 ? ((pos.investido ?? 0) + objetivo) / pos.qtd : 0;
+  const lucro = pos.lucroAtual ?? 0;
+  const percL = pos.investido > 0 ? (lucro / pos.investido) * 100 : 0;
+  const objetivo = pos.objetivo ?? 0;
+  const prog =
+    objetivo > 0 ? Math.min(100, Math.max(0, (lucro / objetivo) * 100)) : 0;
+  const progColor =
+    lucro >= objetivo && objetivo > 0
+      ? "#16a34a"
+      : lucro > 0
+        ? "#2563eb"
+        : "#dc2626";
+  const tpObj = pos.qtd > 0 ? ((pos.investido ?? 0) + objetivo) / pos.qtd : 0;
 
   const valorAtual = precoAtual * (pos.qtd ?? 0);
 
@@ -499,7 +633,9 @@ function _tabPosition() {
       <div class="adp-pl-pct">${fmtPct(percL)}</div>
     </div>
 
-    ${objetivo > 0 ? `
+    ${
+      objetivo > 0
+        ? `
     <div class="adp-section-title" style="margin-top:16px">Objetivo</div>
     <div class="adp-row-spread" style="font-size:.8rem;color:var(--muted-foreground);margin-bottom:6px">
       <span>Progresso</span>
@@ -511,7 +647,9 @@ function _tabPosition() {
     <div class="adp-row-spread" style="font-size:.72rem;color:var(--muted-foreground);margin-top:4px">
       <span>Meta: ${fmtEUR(objetivo)}</span>
       <span>TP Objetivo: ${fmtEUR(tpObj)}</span>
-    </div>` : ""}
+    </div>`
+        : ""
+    }
 
     ${_strategyEditor(_asset.ticker, _position)}
 
@@ -546,54 +684,59 @@ function _tabFundamentals() {
     return null;
   };
 
-  const pct = v => v !== null ? `${(v * (Math.abs(v) > 1 ? 1 : 100)).toFixed(1)}%` : "—";
-  const x   = v => v !== null && v > 0 ? `${v.toFixed(1)}x` : "—";
-  const num  = v => v !== null ? v.toFixed(2) : "—";
+  const pct = (v) =>
+    v !== null ? `${(v * (Math.abs(v) > 1 ? 1 : 100)).toFixed(1)}%` : "—";
+  const x = (v) => (v !== null && v > 0 ? `${v.toFixed(1)}x` : "—");
+  const num = (v) => (v !== null ? v.toFixed(2) : "—");
 
-  const pe   = n("pe");
-  const peg  = n("peg");
-  const ev   = n("ev_ebitda", "evEbitda");
+  const pe = n("pe");
+  const peg = n("peg");
+  const ev = n("ev_ebitda", "evEbitda");
   const pfcf = n("p_fcf", "priceToFCF");
   const roic = n("roic");
-  const roe  = n("roe", "returnOnEquity");
-  const om   = n("oper_margin", "operMargin", "operating_margin");
-  const nm   = n("profit_margin", "profitMargin", "net_margin");
-  const de   = n("debt_eq", "debtEquity");
-  const cr   = n("current_ratio", "currentRatio");
-  const yld  = n("yield");
+  const roe = n("roe", "returnOnEquity");
+  const om = n("oper_margin", "operMargin", "operating_margin");
+  const nm = n("profit_margin", "profitMargin", "net_margin");
+  const de = n("debt_eq", "debtEquity");
+  const cr = n("current_ratio", "currentRatio");
+  const yld = n("yield");
   const eps5 = n("eps_next_5y");
   const revG = n("sales_y_y_ttm", "revenue_growth");
 
   return `
     <div class="adp-section-title">Valuation</div>
     <div class="adp-fund-grid">
-      ${_cell("P/E",       pe  !== null && pe  > 0 ? pe.toFixed(1) + "x" : "—", pe  !== null && pe  < 25 ? "pos" : pe !== null && pe > 40 ? "neg" : "")}
-      ${_cell("PEG",       peg !== null && peg > 0 ? peg.toFixed(2)      : "—", peg !== null && peg < 1.5 ? "pos" : peg !== null && peg > 2.5 ? "neg" : "")}
-      ${_cell("EV/EBITDA", x(ev),   "")}
-      ${_cell("P/FCF",     pfcf !== null && pfcf > 0 ? pfcf.toFixed(1) + "x" : "—", pfcf !== null && pfcf < 20 ? "pos" : pfcf !== null && pfcf > 40 ? "neg" : "")}
+      ${_cell("P/E", pe !== null && pe > 0 ? pe.toFixed(1) + "x" : "—", pe !== null && pe < 25 ? "pos" : pe !== null && pe > 40 ? "neg" : "")}
+      ${_cell("PEG", peg !== null && peg > 0 ? peg.toFixed(2) : "—", peg !== null && peg < 1.5 ? "pos" : peg !== null && peg > 2.5 ? "neg" : "")}
+      ${_cell("EV/EBITDA", x(ev), "")}
+      ${_cell("P/FCF", pfcf !== null && pfcf > 0 ? pfcf.toFixed(1) + "x" : "—", pfcf !== null && pfcf < 20 ? "pos" : pfcf !== null && pfcf > 40 ? "neg" : "")}
     </div>
 
     <div class="adp-section-title" style="margin-top:12px">Qualidade</div>
     <div class="adp-fund-grid">
-      ${_cell("ROIC",      pct(roic), roic !== null && roic > 0.15 ? "pos" : roic !== null && roic < 0 ? "neg" : "")}
-      ${_cell("ROE",       pct(roe),  roe  !== null && roe  > 0.15 ? "pos" : roe  !== null && roe  < 0 ? "neg" : "")}
-      ${_cell("Mg. Oper.", pct(om),   om   !== null && om   > 0.15 ? "pos" : om   !== null && om   < 0.05 ? "neg" : "")}
-      ${_cell("Mg. Líq.",  pct(nm),   nm   !== null && nm   > 0.10 ? "pos" : nm   !== null && nm   < 0 ? "neg" : "")}
+      ${_cell("ROIC", pct(roic), roic !== null && roic > 0.15 ? "pos" : roic !== null && roic < 0 ? "neg" : "")}
+      ${_cell("ROE", pct(roe), roe !== null && roe > 0.15 ? "pos" : roe !== null && roe < 0 ? "neg" : "")}
+      ${_cell("Mg. Oper.", pct(om), om !== null && om > 0.15 ? "pos" : om !== null && om < 0.05 ? "neg" : "")}
+      ${_cell("Mg. Líq.", pct(nm), nm !== null && nm > 0.1 ? "pos" : nm !== null && nm < 0 ? "neg" : "")}
     </div>
 
     <div class="adp-section-title" style="margin-top:12px">Solidez Financeira</div>
     <div class="adp-fund-grid">
-      ${_cell("D/E",          de  !== null && de  > 0 ? de.toFixed(2) : "—",  de  !== null && de  < 1.0 ? "pos" : de !== null && de > 2.5 ? "neg" : "")}
-      ${_cell("Current R.",   cr  !== null && cr  > 0 ? cr.toFixed(2) : "—",  cr  !== null && cr  > 1.5 ? "pos" : cr !== null && cr < 1.0 ? "neg" : "")}
-      ${_cell("Yield",        pct(yld),  yld !== null && yld > 0.03 ? "pos" : "")}
-      ${_cell("EPS 5y",       pct(eps5), eps5 !== null && eps5 > 0.10 ? "pos" : eps5 !== null && eps5 < 0 ? "neg" : "")}
+      ${_cell("D/E", de !== null && de > 0 ? de.toFixed(2) : "—", de !== null && de < 1.0 ? "pos" : de !== null && de > 2.5 ? "neg" : "")}
+      ${_cell("Current R.", cr !== null && cr > 0 ? cr.toFixed(2) : "—", cr !== null && cr > 1.5 ? "pos" : cr !== null && cr < 1.0 ? "neg" : "")}
+      ${_cell("Yield", pct(yld), yld !== null && yld > 0.03 ? "pos" : "")}
+      ${_cell("EPS 5y", pct(eps5), eps5 !== null && eps5 > 0.1 ? "pos" : eps5 !== null && eps5 < 0 ? "neg" : "")}
     </div>
 
-    ${revG !== null ? `
+    ${
+      revG !== null
+        ? `
     <div class="adp-section-title" style="margin-top:12px">Crescimento</div>
     <div class="adp-fund-grid">
-      ${_cell("Receita YoY", pct(revG), revG > 0.10 ? "pos" : revG < -0.05 ? "neg" : "")}
-    </div>` : ""}
+      ${_cell("Receita YoY", pct(revG), revG > 0.1 ? "pos" : revG < -0.05 ? "neg" : "")}
+    </div>`
+        : ""
+    }
   `;
 }
 
@@ -601,123 +744,174 @@ function _tabFundamentals() {
 // TAB: HOLDINGS (ETFs)
 // ════════════════════════════════════════════════════════
 function _tabHoldings() {
-  const a   = _asset;
+  const a = _asset;
   const etf = smartETFAnalysis(a);
 
-  const ter  = Number(a.ter || a.expense_ratio || 0);
-  const terStr = ter > 0
-    ? (ter < 1 ? `${(ter * 100).toFixed(2)}%` : `${ter.toFixed(2)}%`)
-    : "—";
+  const ter = Number(a.ter || a.expense_ratio || 0);
+  const terStr =
+    ter > 0
+      ? ter < 1
+        ? `${(ter * 100).toFixed(2)}%`
+        : `${ter.toFixed(2)}%`
+      : "—";
   const numH = Number(a.holdings_count || a.num_holdings || 0);
 
-  const fmtP = v => `${Number(v).toFixed(1)}%`;
+  const fmtP = (v) => `${Number(v).toFixed(1)}%`;
 
   // Sector bars
   let sectorHTML = "";
   if (etf?.sectors) {
-    const entries = Object.entries(etf.sectors).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const entries = Object.entries(etf.sectors)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
     const max = entries[0]?.[1] || 1;
     sectorHTML = `
       <div class="adp-section-title" style="margin-top:14px">Distribuição Sectorial</div>
-      ${entries.map(([name, val]) => `
+      ${entries
+        .map(
+          ([name, val]) => `
         <div class="adp-dist-row">
           <span class="adp-dist-label">${name}</span>
           <div class="adp-dist-track">
             <div class="adp-dist-fill" style="width:${(val / max) * 100}%;background:#0f766e80"></div>
           </div>
           <span class="adp-dist-val">${fmtP(val)}</span>
-        </div>`).join("")}
+        </div>`,
+        )
+        .join("")}
     `;
   }
 
   // Geo bars
   let geoHTML = "";
   if (etf?.geography) {
-    const entries = Object.entries(etf.geography).sort((a, b) => b[1] - a[1]).slice(0, 7);
+    const entries = Object.entries(etf.geography)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 7);
     const max = entries[0]?.[1] || 1;
     geoHTML = `
       <div class="adp-section-title" style="margin-top:14px">Distribuição Geográfica</div>
-      ${entries.map(([name, val]) => `
+      ${entries
+        .map(
+          ([name, val]) => `
         <div class="adp-dist-row">
           <span class="adp-dist-label">${name}</span>
           <div class="adp-dist-track">
             <div class="adp-dist-fill" style="width:${(val / max) * 100}%;background:#2563eb80"></div>
           </div>
           <span class="adp-dist-val">${fmtP(val)}</span>
-        </div>`).join("")}
+        </div>`,
+        )
+        .join("")}
     `;
   }
 
   // Top holdings
-  const details   = a._etfHoldingsDetails ?? [];
-  const qualMap   = new Map(details.map(d => [d.ticker, d]));
-  const topList   = etf?.topHoldings ?? [];
+  const details = a._etfHoldingsDetails ?? [];
+  const qualMap = new Map(details.map((d) => [d.ticker, d]));
+  const topList = etf?.topHoldings ?? [];
   let holdingsHTML = "";
   if (topList.length > 0) {
     holdingsHTML = `
       <div class="adp-section-title" style="margin-top:14px">Top Holdings</div>
       <div class="adp-holdings-list">
-        ${topList.map(h => {
-          const q = qualMap.get(h.ticker);
-          const qs = q?.quality;
-          const qc = qs >= 70 ? "#16a34a" : qs >= 50 ? "#d97706" : qs != null ? "#dc2626" : "#a7b2bd";
-          return `
+        ${topList
+          .map((h) => {
+            const q = qualMap.get(h.ticker);
+            const qs = q?.quality;
+            const qc =
+              qs >= 70
+                ? "#16a34a"
+                : qs >= 50
+                  ? "#d97706"
+                  : qs != null
+                    ? "#dc2626"
+                    : "#a7b2bd";
+            return `
             <div class="adp-holding-row">
               <span class="adp-holding-ticker">${h.ticker}</span>
               <span class="adp-holding-weight">${h.weight}%</span>
               ${qs != null ? `<span class="adp-holding-qual" style="color:${qc}" title="${q.classification}">Q:${qs}</span>` : "<span></span>"}
             </div>`;
-        }).join("")}
+          })
+          .join("")}
       </div>
     `;
   }
 
-  const sectorS  = typeof a._etfSectorScore     === "number" ? Math.round(a._etfSectorScore * 100)     : null;
-  const geoS     = typeof a._etfGeoScore        === "number" ? Math.round(a._etfGeoScore * 100)         : null;
-  const holdingQ = typeof a._etfHoldingsQuality === "number" ? a._etfHoldingsQuality                    : null;
-  const cov      = typeof a._etfHoldingsCoverage === "number" ? (a._etfHoldingsCoverage * 100).toFixed(0) : null;
+  const sectorS =
+    typeof a._etfSectorScore === "number"
+      ? Math.round(a._etfSectorScore * 100)
+      : null;
+  const geoS =
+    typeof a._etfGeoScore === "number"
+      ? Math.round(a._etfGeoScore * 100)
+      : null;
+  const holdingQ =
+    typeof a._etfHoldingsQuality === "number" ? a._etfHoldingsQuality : null;
+  const cov =
+    typeof a._etfHoldingsCoverage === "number"
+      ? (a._etfHoldingsCoverage * 100).toFixed(0)
+      : null;
 
   // Cross-reference: which ETF holdings overlap with open direct positions (closed positions excluded)
   const portfolioTickers = window._portfolioPositions
-    ? new Set([...window._portfolioPositions.entries()]
-        .filter(([, pos]) => (pos?.qtd || 0) > 0)
-        .map(([ticker]) => ticker))
+    ? new Set(
+        [...window._portfolioPositions.entries()]
+          .filter(([, pos]) => (pos?.qtd || 0) > 0)
+          .map(([ticker]) => ticker),
+      )
     : new Set();
-  const overlaps = topList.filter(h => portfolioTickers.has(h.ticker));
-  const overlapHTML = overlaps.length > 0 ? `
+  const overlaps = topList.filter((h) => portfolioTickers.has(h.ticker));
+  const overlapHTML =
+    overlaps.length > 0
+      ? `
     <div class="adp-section-title" style="margin-top:14px;color:#7c3aed">Sobreposição com Carteira</div>
     <div style="font-size:.73rem;color:var(--muted-foreground);margin-bottom:6px">
       Holdings deste ETF que também tens em carteira direta:
     </div>
     <div class="adp-holdings-list" style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:6px 8px;">
-      ${overlaps.map(h => {
-        const pos = window._portfolioPositions.get(h.ticker);
-        const inv = pos?.investido > 0 ? new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(pos.investido) : null;
-        return `
+      ${overlaps
+        .map((h) => {
+          const pos = window._portfolioPositions.get(h.ticker);
+          const inv =
+            pos?.investido > 0
+              ? new Intl.NumberFormat("pt-PT", {
+                  style: "currency",
+                  currency: "EUR",
+                }).format(pos.investido)
+              : null;
+          return `
           <div class="adp-holding-row">
             <span class="adp-holding-ticker" style="color:#7c3aed">${h.ticker}</span>
             <span class="adp-holding-weight">${h.weight}% no ETF</span>
             ${inv ? `<span style="font-size:.72rem;color:var(--muted-foreground)">${inv} direto</span>` : "<span></span>"}
           </div>`;
-      }).join("")}
-    </div>` : "";
+        })
+        .join("")}
+    </div>`
+      : "";
 
   return `
     <div class="adp-fund-grid">
       ${_cell("TER", terStr, ter > 0 && ter < 0.0025 ? "pos" : ter > 0.006 ? "neg" : "")}
       ${_cell("Nº Holdings", numH > 0 ? numH.toLocaleString("pt-PT") : "—", numH > 1000 ? "pos" : "")}
       ${sectorS !== null ? _cell("Div. Sectorial", `${sectorS}%`, sectorS > 70 ? "pos" : sectorS < 30 ? "neg" : "") : ""}
-      ${geoS    !== null ? _cell("Div. Geográfica", `${geoS}%`,   geoS    > 60 ? "pos" : geoS    < 20 ? "neg" : "") : ""}
+      ${geoS !== null ? _cell("Div. Geográfica", `${geoS}%`, geoS > 60 ? "pos" : geoS < 20 ? "neg" : "") : ""}
     </div>
 
-    ${holdingQ !== null ? `
+    ${
+      holdingQ !== null
+        ? `
     <div style="margin:10px 0;padding:10px 12px;background:var(--muted);border-radius:8px;display:flex;justify-content:space-between;align-items:center">
       <div>
         <div class="adp-kpi-label">Qualidade média das holdings</div>
         ${cov ? `<div style="font-size:.7rem;color:var(--muted-foreground)">${cov}% das holdings avaliadas</div>` : ""}
       </div>
-      <div style="font-size:1.35rem;font-weight:800;color:${holdingQ >= 70 ? '#16a34a' : '#d97706'}">${holdingQ}/100</div>
-    </div>` : ""}
+      <div style="font-size:1.35rem;font-weight:800;color:${holdingQ >= 70 ? "#16a34a" : "#d97706"}">${holdingQ}/100</div>
+    </div>`
+        : ""
+    }
 
     ${sectorHTML}
     ${geoHTML}
@@ -732,17 +926,18 @@ function _tabHoldings() {
 function _tabTechnical() {
   const a = _asset;
 
-  const price  = Number(a.valorStock || a.price || 0);
-  const sma50  = Number(a.sma50  || 0);
+  const price = Number(a.valorStock || a.price || 0);
+  const sma50 = Number(a.sma50 || 0);
   const sma200 = Number(a.sma200 || 0);
-  const rsi    = Number(a.rsi_14 || a.rsi || 0);
+  const rsi = Number(a.rsi_14 || a.rsi || 0);
 
   const rawChange = (field) => Number(a[field] || 0);
-  const p1w  = rawChange("priceChange_1w")  || rawChange("taxaCrescimento_1semana");
-  const p1m  = rawChange("priceChange_1m")  || rawChange("taxaCrescimento_1mes");
-  const p1y  = rawChange("priceChange_1y")  || rawChange("taxaCrescimento_1ano");
+  const p1w =
+    rawChange("priceChange_1w") || rawChange("taxaCrescimento_1semana");
+  const p1m = rawChange("priceChange_1m") || rawChange("taxaCrescimento_1mes");
+  const p1y = rawChange("priceChange_1y") || rawChange("taxaCrescimento_1ano");
 
-  const toPct = v => {
+  const toPct = (v) => {
     const n = Number(v);
     if (!n) return "—";
     const p = Math.abs(n) > 1 ? n : n * 100;
@@ -755,22 +950,33 @@ function _tabTechnical() {
     sma > 0 && price > 0 ? (price / sma - 1) * 100 : null;
 
   const isGolden = sma50 > 0 && sma200 > 0 && sma50 > sma200;
-  const isDeath  = sma50 > 0 && sma200 > 0 && sma50 < sma200;
-  const crossLabel = isGolden ? "Golden Cross" : isDeath ? "Death Cross" : "Sem tendência de cross";
+  const isDeath = sma50 > 0 && sma200 > 0 && sma50 < sma200;
+  const crossLabel = isGolden
+    ? "Golden Cross"
+    : isDeath
+      ? "Death Cross"
+      : "Sem tendência de cross";
   const crossColor = isGolden ? "#16a34a" : isDeath ? "#dc2626" : "#64717d";
 
   const rsiColor = rsi > 70 ? "#dc2626" : rsi < 30 ? "#2563eb" : "#16a34a";
-  const rsiLabel = rsi > 70 ? "Sobrecomprado" : rsi < 30 ? "Oversold" : "Zona Neutra";
-  const rsiPct   = rsi > 0 ? Math.min(100, Math.max(0, rsi)) : 50;
+  const rsiLabel =
+    rsi > 70 ? "Sobrecomprado" : rsi < 30 ? "Oversold" : "Zona Neutra";
+  const rsiPct = rsi > 0 ? Math.min(100, Math.max(0, rsi)) : 50;
 
-  const fmtEUR = v => v > 0 ? new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v) : "—";
+  const fmtEUR = (v) =>
+    v > 0
+      ? new Intl.NumberFormat("pt-PT", {
+          style: "currency",
+          currency: "EUR",
+        }).format(v)
+      : "—";
 
   return `
     <div class="adp-section-title">Momentum de Preço</div>
     <div class="adp-fund-grid">
-      ${_cell("1 Semana",  toPct(p1w), Number(p1w) > 0 ? "pos" : Number(p1w) < 0 ? "neg" : "")}
-      ${_cell("1 Mês",     toPct(p1m), Number(p1m) > 0 ? "pos" : Number(p1m) < 0 ? "neg" : "")}
-      ${_cell("1 Ano",     toPct(p1y), Number(p1y) > 0 ? "pos" : Number(p1y) < 0 ? "neg" : "")}
+      ${_cell("1 Semana", toPct(p1w), Number(p1w) > 0 ? "pos" : Number(p1w) < 0 ? "neg" : "")}
+      ${_cell("1 Mês", toPct(p1m), Number(p1m) > 0 ? "pos" : Number(p1m) < 0 ? "neg" : "")}
+      ${_cell("1 Ano", toPct(p1y), Number(p1y) > 0 ? "pos" : Number(p1y) < 0 ? "neg" : "")}
     </div>
 
     <div class="adp-section-title" style="margin-top:14px">RSI (14 períodos)</div>
@@ -790,9 +996,9 @@ function _tabTechnical() {
 
     <div class="adp-section-title" style="margin-top:14px">Médias Móveis</div>
     <div class="adp-fund-grid">
-      ${_cell("vs SMA 50",  smaDist(sma50),  smaDistNum(sma50)  !== null ? (smaDistNum(sma50)  > 0 ? "pos" : "neg") : "")}
+      ${_cell("vs SMA 50", smaDist(sma50), smaDistNum(sma50) !== null ? (smaDistNum(sma50) > 0 ? "pos" : "neg") : "")}
       ${_cell("vs SMA 200", smaDist(sma200), smaDistNum(sma200) !== null ? (smaDistNum(sma200) > 0 ? "pos" : "neg") : "")}
-      ${sma50  > 0 ? _cell("SMA 50",  fmtEUR(sma50),  "") : ""}
+      ${sma50 > 0 ? _cell("SMA 50", fmtEUR(sma50), "") : ""}
       ${sma200 > 0 ? _cell("SMA 200", fmtEUR(sma200), "") : ""}
     </div>
 
@@ -808,17 +1014,22 @@ function _priceLevelsVsAvg(precoAtual, precoMedio) {
   const price = Number(precoAtual || 0);
   if (price <= 0) return "";
   const avg = Number(precoMedio || 0);
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(Number(v) || 0);
   const levels = [-5, -10, -15, -20, 10, 15];
   return `
     <div class="adp-section-title" style="margin-top:16px">Niveis face ao pre&ccedil;o atual</div>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-      ${levels.map(level => {
-        const target = price * (1 + level / 100);
-        const diff = avg > 0 ? target - avg : 0;
-        const diffPct = avg > 0 ? ((target / avg) - 1) * 100 : null;
-        const cls = diff >= 0 ? "pos" : "neg";
-        return `
+      ${levels
+        .map((level) => {
+          const target = price * (1 + level / 100);
+          const diff = avg > 0 ? target - avg : 0;
+          const diffPct = avg > 0 ? (target / avg - 1) * 100 : null;
+          const cls = diff >= 0 ? "pos" : "neg";
+          return `
           <div style="border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--card);">
             <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;">
               <span style="font-size:.72rem;color:var(--muted-foreground);font-weight:700;">${level > 0 ? "+" : ""}${level}%</span>
@@ -828,7 +1039,8 @@ function _priceLevelsVsAvg(precoAtual, precoMedio) {
               ${avg > 0 ? `${diff >= 0 ? "+" : ""}${fmtEUR(diff)} vs PM (${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(1)}%)` : "PM indisponivel"}
             </div>
           </div>`;
-      }).join("")}
+        })
+        .join("")}
     </div>`;
 }
 // ── Simulador de venda automática (take-profit para TR) ────
@@ -841,18 +1053,29 @@ function _loadCustomSellPcts() {
   try {
     const raw = JSON.parse(localStorage.getItem(_SELL_PRESETS_KEY) || "[]");
     return Array.isArray(raw)
-      ? raw.filter(n => Number.isFinite(n) && n !== 0 && !_SELL_DEFAULT_PCTS.includes(n))
+      ? raw.filter(
+          (n) =>
+            Number.isFinite(n) && n !== 0 && !_SELL_DEFAULT_PCTS.includes(n),
+        )
       : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 function _saveCustomSellPcts(list) {
-  try { localStorage.setItem(_SELL_PRESETS_KEY, JSON.stringify(list)); } catch {}
+  try {
+    localStorage.setItem(_SELL_PRESETS_KEY, JSON.stringify(list));
+  } catch {}
 }
 
 function _sellTargetSimulator(precoAtual, precoMedio, qty, invested) {
   const price = Number(precoAtual || 0);
   if (price <= 0) return "";
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(Number(v) || 0);
   const customPcts = _loadCustomSellPcts();
   const simId = `adp-sell-sim-${Math.random().toString(36).slice(2, 8)}`;
   const qtyNum = Number(qty || 0);
@@ -870,7 +1093,7 @@ function _sellTargetSimulator(precoAtual, precoMedio, qty, invested) {
       <div class="adp-plan-card-head">
         <div>
           <div class="adp-plan-title">Pre&ccedil;o alvo para ordem de venda</div>
-          <div class="adp-plan-sub">Desliza entre -10% e +10% ou escreve uma % pr&oacute;pria para saber logo o pre&ccedil;o a colocar no TR.</div>
+          <div class="adp-plan-sub">${Number(precoMedio || 0) > 0 ? "A percentagem &eacute; calculada sobre o seu PM de compra." : "PM indispon&iacute;vel; a percentagem &eacute; calculada sobre o pre&ccedil;o atual."} Desliza entre -10% e +10% ou escreve uma % pr&oacute;pria para saber o pre&ccedil;o a colocar no TR.</div>
         </div>
         <span class="adp-plan-pill">Take-profit</span>
       </div>
@@ -882,11 +1105,13 @@ function _sellTargetSimulator(precoAtual, precoMedio, qty, invested) {
 
       <div class="adp-sell-target-big">
         <span>Pre&ccedil;o alvo</span>
-        <strong data-sell-target-price class="pos">${fmtEUR(price * 1.05)}</strong>
+        <strong data-sell-target-price class="pos">${fmtEUR((Number(precoMedio || 0) > 0 ? Number(precoMedio) : price) * 1.05)}</strong>
       </div>
       <div class="adp-sell-target-sub" data-sell-target-sub></div>
 
-      ${qtyNum > 0 ? `
+      ${
+        qtyNum > 0
+          ? `
       <div class="adp-sell-net-row">
         <div class="adp-sell-net-item">
           <span>Valor l&iacute;quido da venda (${qtyNum % 1 === 0 ? qtyNum.toFixed(0) : qtyNum.toFixed(4)} a&ccedil;&otilde;es, -1,04&euro; comiss&atilde;o)</span>
@@ -896,7 +1121,9 @@ function _sellTargetSimulator(precoAtual, precoMedio, qty, invested) {
           <span>Resultado estimado vs investido</span>
           <strong data-sell-net-pnl>&mdash;</strong>
         </div>
-      </div>` : ""}
+      </div>`
+          : ""
+      }
 
       <div class="adp-plan-grid" style="margin-top:10px">
         <label class="adp-plan-field">
@@ -910,8 +1137,8 @@ function _sellTargetSimulator(precoAtual, precoMedio, qty, invested) {
       </div>
 
       <div class="adp-sell-chips" data-sell-chip-group>
-        ${_SELL_DEFAULT_PCTS.map(p => chipHTML(p, false)).join("")}
-        ${customPcts.map(p => chipHTML(p, true)).join("")}
+        ${_SELL_DEFAULT_PCTS.map((p) => chipHTML(p, false)).join("")}
+        ${customPcts.map((p) => chipHTML(p, true)).join("")}
       </div>
     </div>`;
 }
@@ -922,9 +1149,14 @@ function _wireSellTargetSimulator(id) {
 
   const price = Number(root.dataset.price || 0);
   const avg = Number(root.dataset.avg || 0);
+  const basePrice = avg > 0 ? avg : price;
   const qty = Number(root.dataset.qty || 0);
   const invested = Number(root.dataset.invested || 0);
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(Number(v) || 0);
 
   const slider = root.querySelector("[data-sell-slider]");
   const pctLabel = root.querySelector("[data-sell-pct-label]");
@@ -937,18 +1169,19 @@ function _wireSellTargetSimulator(id) {
   const netPnlEl = root.querySelector("[data-sell-net-pnl]");
   if (!slider || !pctLabel || !targetEl || !chipGroup) return;
 
-  const applyPct = pct => {
+  const applyPct = (pct) => {
     pct = Number(pct);
     if (!Number.isFinite(pct)) return;
-    const target = price * (1 + pct / 100);
+    const target = basePrice * (1 + pct / 100);
     pctLabel.textContent = `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
     targetEl.textContent = fmtEUR(target);
     targetEl.className = pct >= 0 ? "pos" : "neg";
     if (pct >= -10 && pct <= 10) slider.value = pct;
     if (subEl) {
-      subEl.textContent = avg > 0
-        ? `${((target / avg - 1) * 100 >= 0) ? "+" : ""}${((target / avg - 1) * 100).toFixed(1)}% vs PM (${fmtEUR(avg)})`
-        : "";
+      subEl.textContent =
+        avg > 0
+          ? `${(target / avg - 1) * 100 >= 0 ? "+" : ""}${((target / avg - 1) * 100).toFixed(1)}% vs PM (${fmtEUR(avg)})`
+          : "";
     }
     if (netValueEl && qty > 0) {
       const netValue = Math.max(0, qty * target - 1.04);
@@ -965,19 +1198,19 @@ function _wireSellTargetSimulator(id) {
         }
       }
     }
-    chipGroup.querySelectorAll(".adp-sell-chip").forEach(chip => {
+    chipGroup.querySelectorAll(".adp-sell-chip").forEach((chip) => {
       chip.classList.toggle("active", Number(chip.dataset.value) === pct);
     });
   };
 
   slider.addEventListener("input", () => applyPct(Number(slider.value)));
 
-  chipGroup.addEventListener("click", e => {
+  chipGroup.addEventListener("click", (e) => {
     const removeBtn = e.target.closest("[data-remove-pct]");
     if (removeBtn) {
       e.stopPropagation();
       const pct = Number(removeBtn.dataset.removePct);
-      _saveCustomSellPcts(_loadCustomSellPcts().filter(p => p !== pct));
+      _saveCustomSellPcts(_loadCustomSellPcts().filter((p) => p !== pct));
       removeBtn.closest(".adp-sell-chip")?.remove();
       return;
     }
@@ -1001,16 +1234,22 @@ function _wireSellTargetSimulator(id) {
     if (!chipGroup.querySelector(`[data-value="${val}"]`)) {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "adp-plan-chip adp-sell-chip adp-sell-chip--custom active";
+      btn.className =
+        "adp-plan-chip adp-sell-chip adp-sell-chip--custom active";
       btn.dataset.value = val;
       btn.innerHTML = `${val > 0 ? "+" : ""}${val}% <span class="adp-sell-chip-remove" data-remove-pct="${val}" title="Remover">&times;</span>`;
       chipGroup.appendChild(btn);
-      chipGroup.querySelectorAll(".adp-sell-chip").forEach(c => c.classList.toggle("active", c === btn));
+      chipGroup
+        .querySelectorAll(".adp-sell-chip")
+        .forEach((c) => c.classList.toggle("active", c === btn));
     }
   });
 
   customInput?.addEventListener("input", () => {
-    if (customInput.value !== "" && Number.isFinite(Number(customInput.value))) {
+    if (
+      customInput.value !== "" &&
+      Number.isFinite(Number(customInput.value))
+    ) {
       applyPct(Number(customInput.value));
     }
   });
@@ -1019,11 +1258,17 @@ function _wireSellTargetSimulator(id) {
 }
 
 function _positionPlanningTools(pos, precoAtual, precoMedio) {
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(v ?? 0);
   const qty = Number(pos.qtd || 0);
   const invested = Number(pos.investido || 0);
-  const dropPct = precoMedio > 0 && precoAtual > 0 ? ((precoAtual / precoMedio) - 1) * 100 : 0;
-  const targetDefault = precoMedio > 0 ? Math.max(precoAtual * 1.01, precoMedio * 0.95) : 0;
+  const dropPct =
+    precoMedio > 0 && precoAtual > 0 ? (precoAtual / precoMedio - 1) * 100 : 0;
+  const targetDefault =
+    precoMedio > 0 ? Math.max(precoAtual * 1.01, precoMedio * 0.95) : 0;
   const breakeven = qty > 0 && invested > 0 ? (invested + 2.08) / qty : 0;
   const plannerId = `adp-plan-${String(pos.ticker || "asset").replace(/[^a-z0-9_-]/gi, "")}`;
 
@@ -1065,7 +1310,7 @@ function _positionPlanningTools(pos, precoAtual, precoMedio) {
           </label>
         </div>
         <div class="adp-plan-chips" data-chip-target="buyPct">
-          ${[5, 10, 15, 20].map(v => `<button type="button" class="adp-plan-chip ${v === 10 ? "active" : ""}" data-value="${v}">${v}%</button>`).join("")}
+          ${[5, 10, 15, 20].map((v) => `<button type="button" class="adp-plan-chip ${v === 10 ? "active" : ""}" data-value="${v}">${v}%</button>`).join("")}
         </div>
         <div class="adp-plan-result" data-plan-result="buy"></div>
       </div>
@@ -1100,20 +1345,24 @@ function _positionPlanningTools(pos, precoAtual, precoMedio) {
           </label>
           <label class="adp-plan-field">
             <span>Pre&ccedil;o alvo</span>
-            <input class="adp-plan-input" data-plan-input="sellPrice" type="number" min="0" step="0.01" value="${precoAtual > 0 ? (precoAtual * 1.10).toFixed(2) : ""}">
+            <input class="adp-plan-input" data-plan-input="sellPrice" type="number" min="0" step="0.01" value="${precoAtual > 0 ? (precoAtual * 1.1).toFixed(2) : ""}">
           </label>
         </div>
         <div class="adp-plan-chips" data-chip-target="sellPct">
-          ${[10, 25, 50, 100].map(v => `<button type="button" class="adp-plan-chip ${v === 25 ? "active" : ""}" data-value="${v}">${v}%</button>`).join("")}
+          ${[10, 25, 50, 100].map((v) => `<button type="button" class="adp-plan-chip ${v === 25 ? "active" : ""}" data-value="${v}">${v}%</button>`).join("")}
         </div>
         <div class="adp-plan-result" data-plan-result="sell"></div>
       </div>
 
-      ${breakeven > 0 ? `
+      ${
+        breakeven > 0
+          ? `
       <div class="adp-plan-breakeven">
         <span>Ponto de equil&iacute;brio com 2,08&euro; comiss&otilde;es</span>
         <strong class="${precoAtual >= breakeven ? "pos" : "neg"}">${fmtEUR(breakeven)}</strong>
-      </div>` : ""}
+      </div>`
+          : ""
+      }
     </div>`;
 }
 
@@ -1121,12 +1370,17 @@ function _wirePositionPlanner(id) {
   const root = document.getElementById(id);
   if (!root) return;
 
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(v) || 0);
-  const fmtQty = v => {
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(Number(v) || 0);
+  const fmtQty = (v) => {
     const n = Number(v) || 0;
     return `${n % 1 === 0 ? n.toFixed(0) : n.toFixed(4)} a&ccedil;&otilde;es`;
   };
-  const read = name => Number(root.querySelector(`[data-plan-input="${name}"]`)?.value || 0);
+  const read = (name) =>
+    Number(root.querySelector(`[data-plan-input="${name}"]`)?.value || 0);
   const writeResult = (name, html) => {
     const el = root.querySelector(`[data-plan-result="${name}"]`);
     if (el) el.innerHTML = html;
@@ -1140,15 +1394,21 @@ function _wirePositionPlanner(id) {
   const recalc = () => {
     const base = read("base");
     const buyPct = read("buyPct");
-    const buyAmount = Math.max(0, base * buyPct / 100);
+    const buyAmount = Math.max(0, (base * buyPct) / 100);
     const buyQty = price > 0 ? buyAmount / price : 0;
-    const newAvg = qty + buyQty > 0 ? (invested + buyAmount) / (qty + buyQty) : 0;
+    const newAvg =
+      qty + buyQty > 0 ? (invested + buyAmount) / (qty + buyQty) : 0;
 
-    writeResult("buy", price > 0 && buyAmount > 0 ? `
+    writeResult(
+      "buy",
+      price > 0 && buyAmount > 0
+        ? `
       <div><span>Investir</span><strong>${fmtEUR(buyAmount)}</strong></div>
       <div><span>Comprar aprox.</span><strong>${fmtQty(buyQty)}</strong></div>
       <div><span>Novo PM estimado</span><strong>${fmtEUR(newAvg)}</strong></div>
-    ` : `<div class="adp-plan-empty">Preenche capital e percentagem para simular.</div>`);
+    `
+        : `<div class="adp-plan-empty">Preenche capital e percentagem para simular.</div>`,
+    );
 
     const targetAvg = read("targetAvg");
     let avgHTML = "";
@@ -1173,26 +1433,37 @@ function _wirePositionPlanner(id) {
 
     const sellPct = Math.min(100, Math.max(0, read("sellPct")));
     const sellPrice = read("sellPrice") || price;
-    const sellQty = qty * sellPct / 100;
+    const sellQty = (qty * sellPct) / 100;
     const proceeds = sellQty * sellPrice;
     const costBasis = sellQty * avg;
     const pnl = proceeds - costBasis;
-    writeResult("sell", qty > 0 && sellQty > 0 ? `
+    writeResult(
+      "sell",
+      qty > 0 && sellQty > 0
+        ? `
       <div><span>Vender aprox.</span><strong>${fmtQty(sellQty)}</strong></div>
       <div><span>Receber estimado</span><strong>${fmtEUR(proceeds)}</strong></div>
       <div><span>Resultado estimado</span><strong class="${pnl >= 0 ? "pos" : "neg"}">${fmtEUR(pnl)}</strong></div>
-    ` : `<div class="adp-plan-empty">Escolhe a percentagem da posi&ccedil;&atilde;o.</div>`);
+    `
+        : `<div class="adp-plan-empty">Escolhe a percentagem da posi&ccedil;&atilde;o.</div>`,
+    );
   };
 
-  root.querySelectorAll(".adp-plan-input").forEach(input => input.addEventListener("input", recalc));
-  root.querySelectorAll(".adp-plan-chip").forEach(btn => {
+  root
+    .querySelectorAll(".adp-plan-input")
+    .forEach((input) => input.addEventListener("input", recalc));
+  root.querySelectorAll(".adp-plan-chip").forEach((btn) => {
     btn.addEventListener("click", () => {
       const wrap = btn.closest(".adp-plan-chips");
       const target = wrap?.dataset.chipTarget;
-      const input = target ? root.querySelector(`[data-plan-input="${target}"]`) : null;
+      const input = target
+        ? root.querySelector(`[data-plan-input="${target}"]`)
+        : null;
       if (!input) return;
       input.value = btn.dataset.value;
-      wrap.querySelectorAll(".adp-plan-chip").forEach(chip => chip.classList.toggle("active", chip === btn));
+      wrap
+        .querySelectorAll(".adp-plan-chip")
+        .forEach((chip) => chip.classList.toggle("active", chip === btn));
       recalc();
     });
   });
@@ -1207,7 +1478,9 @@ function _wirePositionPlanner(id) {
 function _movementHistory(pos) {
   const ticker = pos?.ticker;
   const listId = `adp-hist-${String(ticker || "asset").replace(/[^a-z0-9_-]/gi, "")}`;
-  const all = Array.isArray(window._allMovimentos) ? window._allMovimentos : null;
+  const all = Array.isArray(window._allMovimentos)
+    ? window._allMovimentos
+    : null;
 
   if (all === null) {
     // Dados de histórico só existem depois de o ecrã Atividade carregar
@@ -1218,21 +1491,29 @@ function _movementHistory(pos) {
   }
 
   const movimentos = all
-    .filter(m => m.ticker === ticker)
+    .filter((m) => m.ticker === ticker)
     .slice()
     .sort((a, b) => (b.date?.getTime?.() ?? 0) - (a.date?.getTime?.() ?? 0));
 
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
-  const fmtQty = v => {
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(v ?? 0);
+  const fmtQty = (v) => {
     const n = Number(v) || 0;
-    return n % 1 === 0 ? n.toFixed(0) : n.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
+    return n % 1 === 0
+      ? n.toFixed(0)
+      : n.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
   };
 
-  const warningHTML = pos?.hasOversoldMovement ? `
+  const warningHTML = pos?.hasOversoldMovement
+    ? `
     <div class="adp-obs adp-obs--caution" style="margin-bottom:10px">
       <span class="adp-obs-icon">!</span>
       <span class="adp-obs-msg">Detetada uma venda antiga superior à posição existente na altura. Isto pode impedir esta posição de aparecer como "fechada" mesmo depois de vender tudo — revê os movimentos abaixo e corrige/elimina o que estiver errado.</span>
-    </div>` : "";
+    </div>`
+    : "";
 
   if (movimentos.length === 0) {
     return `
@@ -1241,11 +1522,15 @@ function _movementHistory(pos) {
       <div class="adp-empty" style="padding:16px">Sem movimentos registados para ${ticker}.</div>`;
   }
 
-  const rows = movimentos.map(m => {
-    const isVenda = m.qtd < 0;
-    const absQtd = Math.abs(m.qtd);
-    const dateStr = m.date instanceof Date && !isNaN(m.date) ? m.date.toLocaleDateString("pt-PT") : "—";
-    return `
+  const rows = movimentos
+    .map((m) => {
+      const isVenda = m.qtd < 0;
+      const absQtd = Math.abs(m.qtd);
+      const dateStr =
+        m.date instanceof Date && !isNaN(m.date)
+          ? m.date.toLocaleDateString("pt-PT")
+          : "—";
+      return `
       <div class="adp-hist-row" data-hist-id="${m.id}">
         <div class="adp-hist-main">
           <span class="adp-hist-tag ${isVenda ? "neg" : "pos"}">${isVenda ? "Venda" : "Compra"}</span>
@@ -1261,7 +1546,8 @@ function _movementHistory(pos) {
           <button type="button" class="adp-hist-btn adp-hist-btn--del" data-hist-del="${m.id}" title="Eliminar movimento"><i class="fas fa-trash-alt"></i></button>
         </div>
       </div>`;
-  }).join("");
+    })
+    .join("");
 
   setTimeout(() => _wireMovementHistory(listId, ticker), 0);
 
@@ -1275,7 +1561,7 @@ function _wireMovementHistory(listId, ticker) {
   const root = document.getElementById(listId);
   if (!root) return;
 
-  root.querySelectorAll("[data-hist-edit]").forEach(btn => {
+  root.querySelectorAll("[data-hist-edit]").forEach((btn) => {
     btn.onclick = async (e) => {
       e.stopPropagation();
       const docId = btn.getAttribute("data-hist-edit");
@@ -1283,16 +1569,20 @@ function _wireMovementHistory(listId, ticker) {
         _panelClose();
         await window.openEditMovementModal(docId, ticker);
       } else {
-        window.showToast?.("Abre o ecrã Atividade para editar este movimento.", 4000);
+        window.showToast?.(
+          "Abre o ecrã Atividade para editar este movimento.",
+          4000,
+        );
       }
     };
   });
 
-  root.querySelectorAll("[data-hist-del]").forEach(btn => {
+  root.querySelectorAll("[data-hist-del]").forEach((btn) => {
     btn.onclick = async (e) => {
       e.stopPropagation();
       const docId = btn.getAttribute("data-hist-del");
-      if (!confirm("Eliminar este movimento? Esta ação não pode ser desfeita.")) return;
+      if (!confirm("Eliminar este movimento? Esta ação não pode ser desfeita."))
+        return;
       try {
         await deleteDoc(doc(db, "ativos", docId));
         root.querySelector(`[data-hist-id="${docId}"]`)?.remove();
@@ -1328,11 +1618,22 @@ function _cell(label, value, modifier = "") {
     </div>`;
 }
 
-function _priceRow(label, price, color = "var(--foreground)", qty = null, qtyLabel = "") {
-  const fmtEUR = v => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(v ?? 0);
-  const qtyStr = qty !== null && qty > 0
-    ? `<span style="font-size:.72rem;color:var(--muted-foreground);margin-left:6px">${qty % 1 === 0 ? qty : qty.toFixed(4)} ${qtyLabel}</span>`
-    : "";
+function _priceRow(
+  label,
+  price,
+  color = "var(--foreground)",
+  qty = null,
+  qtyLabel = "",
+) {
+  const fmtEUR = (v) =>
+    new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(v ?? 0);
+  const qtyStr =
+    qty !== null && qty > 0
+      ? `<span style="font-size:.72rem;color:var(--muted-foreground);margin-left:6px">${qty % 1 === 0 ? qty : qty.toFixed(4)} ${qtyLabel}</span>`
+      : "";
   return `
     <div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--border)">
       <span style="color:var(--muted-foreground)">${label}</span>
@@ -1344,14 +1645,26 @@ function _priceRow(label, price, color = "var(--foreground)", qty = null, qtyLab
 }
 
 function _gradeColor(grade) {
-  return { "A+": "#16a34a", A: "#22c55e", "B+": "#0f766e", B: "#2563eb",
-           "C+": "#7c3aed", C: "#d97706", D: "#dc2626", F: "#991b1b" }[grade] ?? "#64717d";
+  return (
+    {
+      "A+": "#16a34a",
+      A: "#22c55e",
+      "B+": "#0f766e",
+      B: "#2563eb",
+      "C+": "#7c3aed",
+      C: "#d97706",
+      D: "#dc2626",
+      F: "#991b1b",
+    }[grade] ?? "#64717d"
+  );
 }
 
 function _obsIcon(type) {
-  return { positive: "✓", warning: "!", caution: "!", neutral: "•" }[type] ?? "•";
+  return (
+    { positive: "✓", warning: "!", caution: "!", neutral: "•" }[type] ?? "•"
+  );
 }
 
 // ── Expose globally ───────────────────────────────────────
-window.openAssetPanel  = openAssetPanel;
+window.openAssetPanel = openAssetPanel;
 window.closeAssetPanel = _panelClose;
