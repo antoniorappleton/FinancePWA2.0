@@ -1967,8 +1967,13 @@ function wireQuickActions(gruposArr) {
     }
   });
 
+  let _pfSubmitting = false;
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (_pfSubmitting) return;
+    _pfSubmitting = true;
+    const submitBtn = form.querySelector('[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
     const tipo = (tipoSel?.value || "compra").toLowerCase();
     const nome = fNome?.value.trim() || "";
     const ticker = fTicker?.value.trim().toUpperCase() || "";
@@ -2027,6 +2032,9 @@ function wireQuickActions(gruposArr) {
     } catch (err) {
       console.error("Erro ao guardar:", err);
       alert("Não foi possível guardar. Tenta novamente.");
+    } finally {
+      _pfSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 }
@@ -2280,6 +2288,9 @@ function showPortfolioHelp(force = false) {
   let _lastAtivosSnap = null;
   let _lastAcoesSnap = null;
   let _lastStrategySnap = null;
+  let _unsubAtivos = null;
+  let _unsubAcoes = null;
+  let _unsubStrategy = null;
   let _currentTotalInvested = 0;
   let _currentGruposArr = [];
   let _currentAcoesDataMap = new Map();
@@ -2523,8 +2534,15 @@ function showPortfolioHelp(force = false) {
       await processAndRender(_lastAtivosSnap, _lastAcoesSnap, _lastStrategySnap);
     };
 
+    // Cancelar listeners de uma navegação anterior para este ecrã, para não
+    // acumular handlers de submit (cada onSnapshot antigo mantinha viva uma
+    // referência que voltava a disparar wireQuickActions/addEventListener).
+    if (_unsubAtivos) _unsubAtivos();
+    if (_unsubAcoes) _unsubAcoes();
+    if (_unsubStrategy) _unsubStrategy();
+
     // Listeners em tempo real
-    onSnapshot(
+    _unsubAtivos = onSnapshot(
       query(collection(db, "ativos"), orderBy("dataCompra", "asc")),
       (snap) => {
         _lastAtivosSnap = snap;
@@ -2532,13 +2550,13 @@ function showPortfolioHelp(force = false) {
       },
     );
 
-    subscribeMarketData((_map, snap) => {
+    _unsubAcoes = subscribeMarketData((_map, snap) => {
       _lastAcoesSnap = snap;
       updatePriceFreshness();
       handleUpdate();
     });
 
-    onSnapshot(doc(db, "config", "strategy"), (snap) => {
+    _unsubStrategy = onSnapshot(doc(db, "config", "strategy"), (snap) => {
       _lastStrategySnap = snap;
       handleUpdate();
     });

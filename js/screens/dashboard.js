@@ -299,8 +299,13 @@ export async function initScreen() {
   });
 
   // submit
+  let _addFormSubmitting = false;
   addForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (_addFormSubmitting) return;
+    _addFormSubmitting = true;
+    const submitBtn = addForm.querySelector('[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
 
     const tipoAcao = (
       document.getElementById("tipoAcao")?.value || "compra"
@@ -323,6 +328,8 @@ export async function initScreen() {
 
     if (!nome || !ticker || !qtdRaw || !preco) {
       alert("Preenche pelo menos: Tipo, Nome, Ticker, Quantidade e Preço.");
+      _addFormSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
       return;
     }
 
@@ -352,6 +359,9 @@ export async function initScreen() {
     } catch (err) {
       console.error("❌ Erro ao guardar ativo:", err);
       alert("Não foi possível guardar. Tenta novamente.");
+    } finally {
+      _addFormSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
   wireDashBuy();
