@@ -298,7 +298,7 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
 .toast { border-radius: 999px !important; box-shadow: var(--shadow-modal) !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
-   MELHORES OPORTUNIDADES — carrossel (Dashboard)
+   OPORTUNIDADES DE REENTRADA — carrossel (Dashboard)
    Markup: screens/dashboard.html (#oppTrack .opp-card)
    Dados:  js/screens/dashboard.js → renderBestOpportunities()
    ══════════════════════════════════════════════════════════════════════ */
@@ -471,6 +471,70 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
   font-variant-numeric: tabular-nums;
 }
 .opp-price-entry { color: var(--opp-accent, var(--primary)); }
+
+.opp-sim {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.opp-sim-label {
+  display: block;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 6px;
+}
+.opp-sim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.opp-sim-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 2px;
+  border-radius: 8px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.opp-sim-chip-pct {
+  font-size: .64rem;
+  font-weight: 700;
+  color: var(--opp-accent, var(--primary));
+}
+.opp-sim-chip-val {
+  font-size: .66rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.opp-sim-custom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: .72rem;
+  color: var(--muted-foreground);
+}
+.opp-sim-custom input {
+  width: 46px;
+  padding: 3px 4px;
+  font-size: .72rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+.opp-sim-custom strong {
+  margin-left: auto;
+  font-size: .78rem;
+  color: var(--opp-accent, var(--primary));
+  font-variant-numeric: tabular-nums;
+}
 
 .opp-foot {
   display: flex;

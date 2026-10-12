@@ -1147,64 +1147,63 @@ function renderAtividades(cont, limitItems) {
 }
 
 /* =========================
-   DASHBOARD: MELHORES OPORTUNIDADES (carrossel)
-   Reaproveita o mesmo motor de scoring do popup "Analisar Oportunidades"
-   (calculateLucroMaximoScore) e o technicalSignal (preço de entrada
-   sugerido) já usado no ecrã Mercado, sem duplicar lógica de negócio.
+   DASHBOARD: OPORTUNIDADES DE REENTRADA (carrossel)
+   Lista ativos com posições já fechadas (mesma origem de dados do
+   bloco "Posições Fechadas" em Atividade — aggregatePortfolioPositions)
+   e permite simular uma nova compra a -3.5% / -5% / -10% (ou outro
+   valor) do preço atual.
    ========================= */
-const OPP_SIGNAL_COLOR = {
-  breakout: "#22c55e",
-  bullish: "#22c55e",
-  pullback: "#3b82f6",
-  neutral: "#64748b",
-  weak: "#f59e0b",
-  downtrend: "#ef4444",
-};
+const OPP_ENTRY_PRESETS = [3.5, 5, 10];
 
-function computeBestOpportunities(limitN = 12) {
-  if (!lastAcoesSnap) return [];
-  const regime = lastConfigData?.macroRegime ?? null;
-  const seen = new Set();
-  const rows = [];
+function computeClosedPositionOpportunities(limitN = 12) {
+  if (!lastAtivosSnap) return [];
+  const infoMap = buildTickerInfoMap();
+  const { groupsArr } = aggregatePortfolioPositions(lastAtivosSnap);
 
-  lastAcoesSnap.forEach((docSnap) => {
-    const d = docSnap.data();
-    const tickerRaw = String(d.ticker || "").toUpperCase();
-    if (!tickerRaw) return;
-    const ticker = cleanTicker(tickerRaw);
-    if (seen.has(ticker)) return;
+  const rows = groupsArr
+    .filter((g) => (g.qtd || 0) <= 0 && Math.abs(g.realizado || 0) > 0.001)
+    .map((g) => {
+      const info = infoMap.get(g.ticker) || null;
+      const precoAtual = info ? toNumStrict(info.valorStock) || null : null;
+      const pmHistorico =
+        Number.isFinite(g.custoMedioHistorico) && g.custoMedioHistorico > 0
+          ? Number(g.custoMedioHistorico)
+          : null;
+      const diffAtualPct =
+        pmHistorico && precoAtual ? ((precoAtual - pmHistorico) / pmHistorico) * 100 : null;
 
-    const precoAtual = toNumStrict(d.valorStock) || 0;
-    if (!precoAtual) return;
+      let rawYield = Number(info?.["Dividend Yield"] || info?.yield || 0);
+      const yieldPct =
+        Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1 ? rawYield * 100 : rawYield;
 
-    let scoreResult;
-    try {
-      scoreResult = calculateLucroMaximoScore(d, "1m", null, regime);
-    } catch (err) {
-      return;
-    }
-    const portfolioScore = scoreResult.score || 0;
-    if (portfolioScore <= 0) return;
+      let technical = null;
+      try {
+        technical = info ? technicalSignal(info) : null;
+      } catch (_) {
+        technical = null;
+      }
 
-    seen.add(ticker);
-
-    let rawYield = Number(d["Dividend Yield"] || d.yield || 0);
-    const yieldPct =
-      Math.abs(rawYield) > 0 && Math.abs(rawYield) < 1 ? rawYield * 100 : rawYield;
-
-    rows.push({
-      ticker,
-      nome: d.nome || ticker,
-      setor: normalizeSector(d) || "—",
-      precoAtual,
-      portfolioScore,
-      grade: scoreResult.v2?.grade || null,
-      yieldPct: Number.isFinite(yieldPct) ? yieldPct : null,
-      technical: technicalSignal(d),
+      return {
+        ticker: g.ticker,
+        nome: g.nome || g.ticker,
+        setor: normalizeSector(info || {}) || g.setor || "—",
+        realizado: g.realizado || 0,
+        pmHistorico,
+        precoAtual,
+        diffAtualPct,
+        yieldPct: Number.isFinite(yieldPct) ? yieldPct : null,
+        technical,
+      };
     });
+
+  rows.sort((a, b) => {
+    if (a.diffAtualPct === null && b.diffAtualPct === null) return a.realizado - b.realizado;
+    if (a.diffAtualPct === null) return 1;
+    if (b.diffAtualPct === null) return -1;
+    return a.diffAtualPct - b.diffAtualPct;
   });
 
-  return rows.sort((a, b) => b.portfolioScore - a.portfolioScore).slice(0, limitN);
+  return rows.slice(0, limitN);
 }
 
 function renderBestOpportunities() {
@@ -1213,14 +1212,14 @@ function renderBestOpportunities() {
 
   let items;
   try {
-    items = computeBestOpportunities(12);
+    items = computeClosedPositionOpportunities(12);
   } catch (err) {
     console.warn("[dashboard] renderBestOpportunities falhou:", err);
     return;
   }
 
   if (!items.length) {
-    track.innerHTML = `<div class="opp-empty">Sem dados de mercado suficientes para calcular oportunidades.</div>`;
+    track.innerHTML = `<div class="opp-empty">Ainda não há posições fechadas para simular reentradas.</div>`;
     return;
   }
 
@@ -1232,9 +1231,31 @@ function renderBestOpportunities() {
       .replace(/>/g, "&gt;");
 
   track.innerHTML = items
-    .map((it) => {
-      const color = OPP_SIGNAL_COLOR[it.technical.key] || "#64748b";
-      const entry = it.technical.support1 || it.precoAtual;
+    .map((it, idx) => {
+      const color = it.realizado >= 0 ? "#22c55e" : "#ef4444";
+      const simId = `oppSim_${idx}`;
+      const precoAtual = it.precoAtual;
+      const realizadoLabel = `${it.realizado >= 0 ? "+" : ""}${fmtEUR.format(it.realizado)}`;
+      const diffLabel =
+        it.diffAtualPct !== null
+          ? `${it.diffAtualPct >= 0 ? "+" : ""}${it.diffAtualPct.toFixed(1)}% vs PM`
+          : "Sem preço atual";
+      const diffColor =
+        it.diffAtualPct === null ? "var(--muted-foreground)" : it.diffAtualPct >= 0 ? "#22c55e" : "#ef4444";
+
+      const chips = OPP_ENTRY_PRESETS.map((pct) => {
+        const val = precoAtual ? precoAtual * (1 - pct / 100) : null;
+        return `
+          <div class="opp-sim-chip">
+            <span class="opp-sim-chip-pct">-${pct}%</span>
+            <span class="opp-sim-chip-val">${val !== null ? fmtEUR.format(val) : "—"}</span>
+          </div>`;
+      }).join("");
+
+      const defaultCustomPct = 7.5;
+      const customVal = precoAtual ? precoAtual * (1 - defaultCustomPct / 100) : null;
+      const precoAtualArg = precoAtual !== null ? precoAtual : "null";
+
       return `
       <div class="opp-card" data-ticker="${esc(it.ticker)}" style="--opp-accent:${color};">
         <div class="opp-card-top">
@@ -1242,17 +1263,31 @@ function renderBestOpportunities() {
             <div class="opp-ticker">${esc(it.ticker)}</div>
             <div class="opp-name">${esc(it.nome)}</div>
           </div>
-          <div class="opp-score">${Math.round(it.portfolioScore * 100)}</div>
+          <div class="opp-score" style="color:${color}; background: color-mix(in srgb, ${color} 14%, transparent);">${realizadoLabel}</div>
         </div>
-        <div class="opp-signal">${esc(it.technical.action)}</div>
+        <div class="opp-signal">
+          <span>${esc(it.technical?.action || "Posição fechada")}</span>
+          <span style="color:${diffColor}; margin-left:6px;">${diffLabel}</span>
+        </div>
         <div class="opp-prices">
           <div>
-            <span class="opp-price-label">Preço Atual</span>
-            <span class="opp-price-val">${fmtEUR.format(it.precoAtual)}</span>
+            <span class="opp-price-label">PM Fechado</span>
+            <span class="opp-price-val">${it.pmHistorico !== null ? fmtEUR.format(it.pmHistorico) : "—"}</span>
           </div>
           <div>
-            <span class="opp-price-label">Entrada Sugerida</span>
-            <span class="opp-price-val opp-price-entry">${fmtEUR.format(entry)}</span>
+            <span class="opp-price-label">Preço Atual</span>
+            <span class="opp-price-val opp-price-entry">${precoAtual !== null ? fmtEUR.format(precoAtual) : "—"}</span>
+          </div>
+        </div>
+        <div class="opp-sim">
+          <span class="opp-sim-label">Simular reentrada</span>
+          <div class="opp-sim-grid">${chips}</div>
+          <div class="opp-sim-custom" onclick="event.stopPropagation();">
+            <span>-</span>
+            <input type="number" id="${simId}_pct" value="${defaultCustomPct}" min="0.5" max="90" step="0.5"
+              oninput="window.calcOppEntry('${simId}', ${precoAtualArg})">
+            <span>%</span>
+            <strong id="${simId}_out">${customVal !== null ? fmtEUR.format(customVal) : "—"}</strong>
           </div>
         </div>
         <div class="opp-foot">
@@ -1270,6 +1305,19 @@ function renderBestOpportunities() {
     });
   });
 }
+
+window.calcOppEntry = function (simId, precoAtual) {
+  const input = document.getElementById(`${simId}_pct`);
+  const out = document.getElementById(`${simId}_out`);
+  if (!out) return;
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  const pct = Number(input?.value);
+  if (!Number.isFinite(precoAtual) || !Number.isFinite(pct) || pct < 0) {
+    out.textContent = "—";
+    return;
+  }
+  out.textContent = fmtEUR.format(precoAtual * (1 - pct / 100));
+};
 
 /* =========================
    POPUP: TOP 10 OPORTUNIDADES
