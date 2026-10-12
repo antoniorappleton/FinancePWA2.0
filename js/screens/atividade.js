@@ -268,7 +268,9 @@ function renderPosicoesFechadas(gruposArrAll) {
     .filter(g => _fechadasTipo === "all" || getAssetType(g.ticker, g) === _fechadasTipo)
     .map(g => {
       const realizado = g.realizado || 0;
-      const pmHistorico = isFiniteNum(g.custoMedioHistorico) && g.custoMedioHistorico > 0 ? Number(g.custoMedioHistorico) : null;
+      // Última compra feita antes do fecho da posição — não é a média
+      // histórica (que dilui compras antigas a preços diferentes).
+      const pmHistorico = isFiniteNum(g.lastBuyPreco) && g.lastBuyPreco > 0 ? Number(g.lastBuyPreco) : null;
       const precoAtual = isFiniteNum(g.precoAtual) ? Number(g.precoAtual) : null;
       return {
         g,
@@ -371,7 +373,7 @@ function renderPosicoesFechadas(gruposArrAll) {
             <tr style="border-bottom: 2px solid var(--border); color: var(--muted-foreground); text-align: left; background: var(--card);">
               ${sortTh("ticker", "Ticker", "left")}
               ${sortTh("nome", "Nome", "left")}
-              ${sortTh("pmHistorico", "PM", "right")}
+              ${sortTh("pmHistorico", "Últ. Compra", "right")}
               ${sortTh("precoAtual", "Atual", "right")}
               ${sortTh("diffAtualPct", "Dif.", "right")}
               ${sortTh("realizado", "Lucro Realizado", "right")}
@@ -1223,7 +1225,9 @@ window.openDetails = async function(ticker) {
     const realizado = g.realizado || 0;
     const totalComprado = g.totalBuyValue || 0;
     const retPct = totalComprado > 0 ? (realizado / totalComprado) * 100 : 0;
-    const cmHist = g.custoMedioHistorico || 0;
+    // Última compra feita antes do fecho da posição — não é a média
+    // histórica (que dilui compras antigas a preços diferentes).
+    const cmHist = g.lastBuyPreco || 0;
     const precoAtualFech = g.precoAtual || 0;
 
     const detBadge = document.getElementById("detEstadoBadge");
@@ -1243,6 +1247,7 @@ window.openDetails = async function(ticker) {
       elLH.className = realizado >= 0 ? "up" : "down";
     }
     $(`#detQtdHeader`).textContent = "Fechada";
+    if ($(`#detPMLabel`)) $(`#detPMLabel`).textContent = "Últ. Compra";
     $(`#detPMHeader`).textContent = cmHist > 0 ? fmtEUR.format(cmHist) : "—";
     const capEl2 = $(`#detCapitalHeader`);
     if (capEl2) capEl2.textContent = totalComprado > 0 ? fmtEUR.format(totalComprado) : "—";
@@ -1261,7 +1266,7 @@ window.openDetails = async function(ticker) {
             <strong style="color:${retPct>=0?'#22c55e':'#ef4444'}">${retPct>=0?"+":""}${retPct.toFixed(2)}%</strong></div>
           <div><span style="color:var(--muted-foreground)">Capital Investido:</span><br>
             <strong>${totalComprado>0?fmtEUR.format(totalComprado):"—"}</strong></div>
-          <div><span style="color:var(--muted-foreground)">PM Histórico:</span><br>
+          <div><span style="color:var(--muted-foreground)">Última Compra:</span><br>
             <strong>${cmHist>0?fmtEUR.format(cmHist):"—"}</strong></div>
         </div>
       </div>`;
@@ -1467,6 +1472,7 @@ window.openDetails = async function(ticker) {
   const elLucroHeader = $(`#detLucroAtualHeader`);
   elLucroHeader.textContent = `${fmtEUR.format(lucroAtual)} (${percL > 0 ? "+" : ""}${percL.toFixed(2)}%)`;
   elLucroHeader.className = lucroAtual >= 0 ? "up" : "down";
+  if ($(`#detPMLabel`)) $(`#detPMLabel`).textContent = "PM";
   $(`#detQtdHeader`).textContent = g.qtd.toFixed(4).replace(/\.?0+$/, "");
   $(`#detPMHeader`).textContent = fmtEUR.format(precoMedio);
   const capEl = $(`#detCapitalHeader`);

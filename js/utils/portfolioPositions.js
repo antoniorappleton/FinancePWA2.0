@@ -103,6 +103,8 @@ export function aggregatePortfolioPositions(snapshot) {
       lastMovementQty: 0,
       totalBuyValue: 0,
       totalBuyQty: 0,
+      lastBuyPreco: 0,
+      lastBuyDate: null,
     };
 
     g.lastMovementQty = safeQtd;
@@ -112,6 +114,11 @@ export function aggregatePortfolioPositions(snapshot) {
       g.qtd += safeQtd;
       g.totalBuyValue += safeQtd * safePreco;
       g.totalBuyQty += safeQtd;
+      // Última compra feita (não é uma média — é o preço da compra mais
+      // recente), útil para posições fechadas onde o PM histórico pode
+      // diluir compras antigas feitas a preços muito diferentes.
+      g.lastBuyPreco = safePreco;
+      g.lastBuyDate = movement.date;
     } else if (safeQtd < 0) {
       const sellQtd = Math.abs(safeQtd);
       if (sellQtd > g.qtd) {

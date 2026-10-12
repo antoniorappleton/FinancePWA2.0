@@ -1187,9 +1187,11 @@ function computeClosedPositionOpportunities() {
     .map((g) => {
       const info = infoMap.get(g.ticker) || null;
       const precoAtual = info ? toNumStrict(info.valorStock) || null : null;
+      // Última compra feita antes do fecho da posição — não é a média
+      // histórica (que dilui compras antigas a preços diferentes).
       const pmHistorico =
-        Number.isFinite(g.custoMedioHistorico) && g.custoMedioHistorico > 0
-          ? Number(g.custoMedioHistorico)
+        Number.isFinite(g.lastBuyPreco) && g.lastBuyPreco > 0
+          ? Number(g.lastBuyPreco)
           : null;
       const diffAtualPct =
         pmHistorico && precoAtual ? ((precoAtual - pmHistorico) / pmHistorico) * 100 : null;
@@ -1339,7 +1341,7 @@ function renderBestOpportunities() {
         </div>
         <div class="opp-prices">
           <div>
-            <span class="opp-price-label">PM Fechado</span>
+            <span class="opp-price-label">Últ. Compra</span>
             <span class="opp-price-val">${it.pmHistorico !== null ? fmtEUR.format(it.pmHistorico) : "—"}</span>
           </div>
           <div>
