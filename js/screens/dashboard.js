@@ -49,6 +49,7 @@ const STARTUP_BRIEF_SESSION_KEY = "fin_startup_brief_seen_v1";
 // apaga nada na base de dados).
 let _oppFilterText = "";
 let _oppTipo = "all"; // "all" | "stock" | "etf" | "crypto" | "commodity"
+let _oppSort = "losses";
 let _oppHidden = new Set();
 try {
   _oppHidden = new Set(JSON.parse(localStorage.getItem("dashboard_opp_hidden") || "[]"));
@@ -1221,13 +1222,6 @@ function computeClosedPositionOpportunities() {
       };
     });
 
-  rows.sort((a, b) => {
-    if (a.diffAtualPct === null && b.diffAtualPct === null) return a.realizado - b.realizado;
-    if (a.diffAtualPct === null) return 1;
-    if (b.diffAtualPct === null) return -1;
-    return a.diffAtualPct - b.diffAtualPct;
-  });
-
   return rows;
 }
 
@@ -1265,7 +1259,19 @@ function renderBestOpportunities() {
         !filterText ||
         it.ticker.toUpperCase().includes(filterText) ||
         it.nome.toUpperCase().includes(filterText),
-    );
+    )
+    .sort((a, b) => {
+      if (_oppSort === "losses" && a.realizado !== b.realizado) return a.realizado - b.realizado;
+      if (_oppSort === "gains" && a.realizado !== b.realizado) return b.realizado - a.realizado;
+      if (_oppSort === "vs_pm") {
+        if (a.diffAtualPct === null && b.diffAtualPct !== null) return 1;
+        if (b.diffAtualPct === null && a.diffAtualPct !== null) return -1;
+        if (a.diffAtualPct !== null && b.diffAtualPct !== null && a.diffAtualPct !== b.diffAtualPct) {
+          return b.diffAtualPct - a.diffAtualPct;
+        }
+      }
+      return a.ticker.localeCompare(b.ticker);
+    });
   const hiddenCount = allItems.filter((it) => _oppHidden.has(it.ticker)).length;
 
   if (filtersWrap) {
@@ -1279,6 +1285,11 @@ function renderBestOpportunities() {
         <option value="etf" ${_oppTipo === "etf" ? "selected" : ""}>ETFs</option>
         <option value="crypto" ${_oppTipo === "crypto" ? "selected" : ""}>Cripto</option>
         <option value="commodity" ${_oppTipo === "commodity" ? "selected" : ""}>Commodities</option>
+      </select>
+      <select id="oppSortSelect" aria-label="Ordenar oportunidades de reentrada" onchange="window.__sortOpp(this.value)">
+        <option value="losses" ${_oppSort === "losses" ? "selected" : ""}>Maiores perdas</option>
+        <option value="gains" ${_oppSort === "gains" ? "selected" : ""}>Maiores ganhos</option>
+        <option value="vs_pm" ${_oppSort === "vs_pm" ? "selected" : ""}>Maior % vs PM</option>
       </select>
       <span class="opp-filters-count">${items.length} de ${allItems.length}</span>
       ${hiddenCount > 0 ? `<button type="button" class="opp-filters-restore" onclick="window.__restoreOpp()">
@@ -1401,6 +1412,11 @@ window.__filterOpp = function (val) {
 };
 window.__tipoOpp = function (tipo) {
   _oppTipo = tipo || "all";
+  renderBestOpportunities();
+};
+window.__sortOpp = function (sort) {
+  if (!["losses", "gains", "vs_pm"].includes(sort)) return;
+  _oppSort = sort;
   renderBestOpportunities();
 };
 window.__hideOpp = function (ticker) {
