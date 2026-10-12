@@ -367,6 +367,57 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
 }
 .opp-nav-btn:active { transform: translateY(0) scale(.94); }
 
+.opp-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 20px 12px;
+}
+.opp-filters:empty { display: none; }
+.opp-filters input[type="text"] {
+  flex: 1;
+  min-width: 140px;
+  padding: 6px 10px;
+  font-size: .78rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+.opp-filters select {
+  padding: 6px 10px;
+  font-size: .78rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+.opp-filters-count {
+  font-size: .72rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.opp-filters-restore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .72rem;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.opp-filters-restore:hover {
+  background: color-mix(in srgb, var(--primary) 12%, var(--muted));
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  color: var(--primary);
+}
+
 .opp-track {
   display: flex;
   gap: 14px;
@@ -423,6 +474,12 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
   text-overflow: ellipsis;
   max-width: 150px;
 }
+.opp-card-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
 .opp-score {
   flex-shrink: 0;
   font-size: .8rem;
@@ -433,6 +490,16 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
   border-radius: 999px;
   padding: 3px 9px;
 }
+.opp-hide-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  padding: 2px 4px;
+  font-size: .72rem;
+  line-height: 1;
+}
+.opp-hide-btn:hover { color: var(--foreground); }
 
 .opp-signal {
   display: inline-flex;
@@ -560,6 +627,7 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
 
 @media (max-width: 640px) {
   .opp-section-head { padding: 0 14px 12px; }
+  .opp-filters { padding: 0 14px 12px; }
   .opp-track { padding: 2px 14px 6px; }
   .opp-card { width: 208px; }
 }

@@ -18,7 +18,8 @@ import {
   SCORING_CFG,
   canon,
   cleanTicker,
-  normalizeSector
+  normalizeSector,
+  getAssetType,
 } from "../utils/scoring.js";
 import { toNumStrict } from "../utils/num.js";
 import { Treemap } from "../components/treemap.js";
@@ -42,6 +43,21 @@ let unsubConfig = null;
 let lastConfigData = null;
 let histFltState = { ticker: "", tipo: "", periodo: "" };
 const STARTUP_BRIEF_SESSION_KEY = "fin_startup_brief_seen_v1";
+
+// Estado dos filtros do carrossel "Oportunidades de Reentrada": filtro de
+// texto, tipo de ativo e ocultação local (persistida no browser, nunca
+// apaga nada na base de dados).
+let _oppFilterText = "";
+let _oppTipo = "all"; // "all" | "stock" | "etf" | "crypto" | "commodity"
+let _oppHidden = new Set();
+try {
+  _oppHidden = new Set(JSON.parse(localStorage.getItem("dashboard_opp_hidden") || "[]"));
+} catch (_) { /* localStorage indisponível — ignora */ }
+function persistOppHidden() {
+  try {
+    localStorage.setItem("dashboard_opp_hidden", JSON.stringify([..._oppHidden]));
+  } catch (_) { /* localStorage indisponível — ignora */ }
+}
 
 
 export async function initScreen() {
@@ -1154,8 +1170,14 @@ function renderAtividades(cont, limitItems) {
    valor) do preço atual.
    ========================= */
 const OPP_ENTRY_PRESETS = [3.5, 5, 10];
+const OPP_TYPE_LABEL = {
+  stock: "Ação",
+  etf: "ETF",
+  crypto: "Cripto",
+  commodity: "Commodity",
+};
 
-function computeClosedPositionOpportunities(limitN = 12) {
+function computeClosedPositionOpportunities() {
   if (!lastAtivosSnap) return [];
   const infoMap = buildTickerInfoMap();
   const { groupsArr } = aggregatePortfolioPositions(lastAtivosSnap);
@@ -1187,6 +1209,7 @@ function computeClosedPositionOpportunities(limitN = 12) {
         ticker: g.ticker,
         nome: g.nome || g.ticker,
         setor: normalizeSector(info || {}) || g.setor || "—",
+        assetType: getAssetType(g.ticker, info || { setor: g.setor }),
         realizado: g.realizado || 0,
         pmHistorico,
         precoAtual,
@@ -1203,32 +1226,71 @@ function computeClosedPositionOpportunities(limitN = 12) {
     return a.diffAtualPct - b.diffAtualPct;
   });
 
-  return rows.slice(0, limitN);
+  return rows;
 }
 
 function renderBestOpportunities() {
   const track = document.getElementById("oppTrack");
+  const filtersWrap = document.getElementById("oppFilters");
   if (!track) return;
 
-  let items;
-  try {
-    items = computeClosedPositionOpportunities(12);
-  } catch (err) {
-    console.warn("[dashboard] renderBestOpportunities falhou:", err);
-    return;
-  }
-
-  if (!items.length) {
-    track.innerHTML = `<div class="opp-empty">Ainda não há posições fechadas para simular reentradas.</div>`;
-    return;
-  }
-
-  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
   const esc = (v) =>
     String(v ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+
+  let allItems;
+  try {
+    allItems = computeClosedPositionOpportunities();
+  } catch (err) {
+    console.warn("[dashboard] renderBestOpportunities falhou:", err);
+    return;
+  }
+
+  if (!allItems.length) {
+    if (filtersWrap) filtersWrap.innerHTML = "";
+    track.innerHTML = `<div class="opp-empty">Ainda não há posições fechadas para simular reentradas.</div>`;
+    return;
+  }
+
+  const filterText = _oppFilterText.trim().toUpperCase();
+  const items = allItems
+    .filter((it) => !_oppHidden.has(it.ticker))
+    .filter((it) => _oppTipo === "all" || it.assetType === _oppTipo)
+    .filter(
+      (it) =>
+        !filterText ||
+        it.ticker.toUpperCase().includes(filterText) ||
+        it.nome.toUpperCase().includes(filterText),
+    );
+  const hiddenCount = allItems.filter((it) => _oppHidden.has(it.ticker)).length;
+
+  if (filtersWrap) {
+    filtersWrap.innerHTML = `
+      <input type="text" id="oppSearchInput" placeholder="Pesquisar ticker ou nome..."
+        value="${esc(_oppFilterText)}"
+        oninput="window.__filterOpp(this.value)">
+      <select id="oppTipoSelect" onchange="window.__tipoOpp(this.value)">
+        <option value="all" ${_oppTipo === "all" ? "selected" : ""}>Todos os tipos</option>
+        <option value="stock" ${_oppTipo === "stock" ? "selected" : ""}>Ações</option>
+        <option value="etf" ${_oppTipo === "etf" ? "selected" : ""}>ETFs</option>
+        <option value="crypto" ${_oppTipo === "crypto" ? "selected" : ""}>Cripto</option>
+        <option value="commodity" ${_oppTipo === "commodity" ? "selected" : ""}>Commodities</option>
+      </select>
+      <span class="opp-filters-count">${items.length} de ${allItems.length}</span>
+      ${hiddenCount > 0 ? `<button type="button" class="opp-filters-restore" onclick="window.__restoreOpp()">
+        <i class="fas fa-rotate-left"></i> Repor ${hiddenCount} oculta${hiddenCount > 1 ? "s" : ""}
+      </button>` : ""}
+    `;
+  }
+
+  if (!items.length) {
+    track.innerHTML = `<div class="opp-empty">Nenhuma posição fechada corresponde ao filtro.</div>`;
+    return;
+  }
+
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 
   track.innerHTML = items
     .map((it, idx) => {
@@ -1263,7 +1325,13 @@ function renderBestOpportunities() {
             <div class="opp-ticker">${esc(it.ticker)}</div>
             <div class="opp-name">${esc(it.nome)}</div>
           </div>
-          <div class="opp-score" style="color:${color}; background: color-mix(in srgb, ${color} 14%, transparent);">${realizadoLabel}</div>
+          <div class="opp-card-top-actions">
+            <div class="opp-score" style="color:${color}; background: color-mix(in srgb, ${color} 14%, transparent);">${realizadoLabel}</div>
+            <button type="button" class="opp-hide-btn" title="Ocultar desta lista"
+              onclick="event.stopPropagation(); window.__hideOpp('${esc(it.ticker)}')">
+              <i class="fas fa-eye-slash"></i>
+            </button>
+          </div>
         </div>
         <div class="opp-signal">
           <span>${esc(it.technical?.action || "Posição fechada")}</span>
@@ -1291,7 +1359,7 @@ function renderBestOpportunities() {
           </div>
         </div>
         <div class="opp-foot">
-          <span class="opp-sector">${esc(it.setor)}</span>
+          <span class="opp-sector">${esc(it.setor)} &middot; ${OPP_TYPE_LABEL[it.assetType] || "Ação"}</span>
           ${it.yieldPct ? `<span class="opp-yield">${it.yieldPct.toFixed(1)}% yield</span>` : "<span></span>"}
         </div>
       </div>`;
@@ -1317,6 +1385,31 @@ window.calcOppEntry = function (simId, precoAtual) {
     return;
   }
   out.textContent = fmtEUR.format(precoAtual * (1 - pct / 100));
+};
+
+window.__filterOpp = function (val) {
+  _oppFilterText = val || "";
+  renderBestOpportunities();
+  const inp = document.getElementById("oppSearchInput");
+  if (inp) {
+    inp.focus();
+    const pos = inp.value.length;
+    inp.setSelectionRange(pos, pos);
+  }
+};
+window.__tipoOpp = function (tipo) {
+  _oppTipo = tipo || "all";
+  renderBestOpportunities();
+};
+window.__hideOpp = function (ticker) {
+  _oppHidden.add(ticker);
+  persistOppHidden();
+  renderBestOpportunities();
+};
+window.__restoreOpp = function () {
+  _oppHidden.clear();
+  persistOppHidden();
+  renderBestOpportunities();
 };
 
 /* =========================
