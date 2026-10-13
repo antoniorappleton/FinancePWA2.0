@@ -14,7 +14,10 @@ function scorePriceMomentum(asset) {
   const m1 = safePercent(asset, "priceChange_1m", "taxaCrescimento_1mes", "g1m");
   const y1 = safePercent(asset, "priceChange_1y", "taxaCrescimento_1ano", "g1y");
 
-  let total = 0, count = 0;
+  // Soma-se o peso realmente usado (não a posição/contagem): slice(0,count)
+  // assumia que os componentes presentes eram sempre os primeiros da lista,
+  // o que dava o denominador errado sempre que faltava, p.ex., só o "week".
+  let total = 0, weightSum = 0;
   const breakdown = {};
 
   // Short-term (1 week)
@@ -26,7 +29,7 @@ function scorePriceMomentum(asset) {
     else if (w1 > 0) s = 0.7;      // Mild positive
     else if (w1 > -0.03) s = 0.4;  // Mild dip
     else s = 0.1;                   // Harsh drop
-    total += s * 0.15; count++;
+    total += s * 0.15; weightSum += 0.15;
     breakdown.week = { score: s, value: w1 };
   }
 
@@ -38,7 +41,7 @@ function scorePriceMomentum(asset) {
     else if (m1 > 0) s = 0.6;
     else if (m1 > -0.05) s = 0.3;
     else s = 0.1;
-    total += s * 0.35; count++;
+    total += s * 0.35; weightSum += 0.35;
     breakdown.month = { score: s, value: m1 };
   }
 
@@ -50,13 +53,12 @@ function scorePriceMomentum(asset) {
     else if (y1 > 0.05) s = 0.7;
     else if (y1 > -0.10) s = 0.3;
     else s = 0.1;
-    total += s * 0.50; count++;
+    total += s * 0.50; weightSum += 0.50;
     breakdown.year = { score: s, value: y1 };
   }
 
-  if (count === 0) return { score: 0.5, available: false, breakdown };
-  const weights = [0.15, 0.35, 0.50].slice(0, count).reduce((a, b) => a + b, 0);
-  return { score: clamp(total / weights, 0, 1), available: true, breakdown };
+  if (weightSum === 0) return { score: 0.5, available: false, breakdown };
+  return { score: clamp(total / weightSum, 0, 1), available: true, breakdown };
 }
 
 function scoreTrendStructure(asset) {

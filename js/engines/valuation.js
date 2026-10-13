@@ -6,7 +6,7 @@
 // "PE 30 em software ≠ PE 30 em bancos"
 // ═══════════════════════════════════════════════════════════════════
 
-import { safeMetric, clamp, isValid, getAssetCategory, normalizeSector } from "../utils/normalize.js";
+import { safeMetric, safeMetricNonZero, clamp, isValid, getAssetCategory, normalizeSector } from "../utils/normalize.js";
 
 // ── Sector-relative PE ranges (PT canonical names only — D8.2) ──
 const SECTOR_PE = {
@@ -32,7 +32,10 @@ function getSectorPE(asset) {
 // ── Sub-scorers ──
 
 function scorePE(asset, sectorBounds) {
-  const pe = safeMetric(asset, "pe", "p_e", "PE", "forward_pe", "forward_p_e");
+  // "pe" vem 0 literal em vários tickers (BBDC, BLK, COR, MA, PLD, SO, UNH, ...)
+  // quando o scraper falha a captura — nunca um P/E real de exatamente 0 — por
+  // isso ignora-se esse 0 e tenta-se "p_e"/os restantes aliases.
+  const pe = safeMetricNonZero(asset, "pe", "p_e", "PE", "forward_pe", "forward_p_e");
   if (!isFinite(pe) || pe <= 0) return { score: 0.3, available: pe <= 0, value: pe, note: pe < 0 ? "EPS negativo" : "N/A" };
 
   const { cheap, fair, expensive } = sectorBounds;
@@ -79,7 +82,9 @@ function scorePEG(asset) {
 }
 
 function scoreEVEBITDA(asset) {
-  const ev = safeMetric(asset, "ev_ebitda", "evEbitda", "EV_EBITDA", "EV/Ebitda", "ev_ebitda_ttm");
+  // "ev_ebitda" vem 0 literal em ~metade do universo (falha de scrape) enquanto
+  // "evEbitda" tem o valor real — sem isto, o motor nunca via o dado real.
+  const ev = safeMetricNonZero(asset, "ev_ebitda", "evEbitda", "EV_EBITDA", "EV/Ebitda", "ev_ebitda_ttm");
   if (!isFinite(ev) || ev <= 0) return { score: 0.5, available: false };
 
   let s;

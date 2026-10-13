@@ -122,6 +122,32 @@ export function safePercent(asset, ...keys) {
 }
 
 /**
+ * Como safeMetric, mas ignora um 0 literal em qualquer alias e continua a
+ * tentar os seguintes — usar apenas em métricas onde zero exato NUNCA é um
+ * valor real (PE, EV/EBITDA, ROE, ROA, ROI, RSI, ...). Nestes campos o
+ * scraper grava 0 quando falha a captura, em vez de deixar em branco, e sem
+ * isto esse 0 mascarava tanto a deteção de "sem dado" como um alias
+ * posterior com o valor real (D-zero-shadow). Se nenhum alias tiver um valor
+ * não-zero, devolve NaN (sem dado) — nunca o 0 placeholder.
+ */
+export function safeMetricNonZero(asset, ...keys) {
+  for (const k of keys) {
+    const n = parseFinancialNumber(asset[k]);
+    if (isFinite(n) && n !== 0) return n;
+  }
+  return NaN;
+}
+
+/** Como safeMetricNonZero, mas para campos de percentagem. */
+export function safePercentNonZero(asset, ...keys) {
+  for (const k of keys) {
+    const n = parsePercentage(asset[k]);
+    if (isFinite(n) && n !== 0) return n;
+  }
+  return NaN;
+}
+
+/**
  * Normalize unicode whitespace and zero-width chars in a string.
  * Used by normalizeSector and anywhere sector/market strings need clean comparison.
  */
@@ -393,43 +419,53 @@ export function getAssetCategory(asset) {
 /**
  * Data confidence score (0–1) for an asset.
  * Measures how many critical fields are present and valid.
+ *
+ * Cada campo lógico é um GRUPO de aliases (OR), não uma chave literal: os
+ * dados reais usam nomes PT ("setor", "valorStock") e algumas chaves em
+ * inglês do schema original nunca chegam a existir ("sector", "forward_pe",
+ * "epsYoY" sem o "_ttm") — um grupo é "presente" se qualquer um dos seus
+ * aliases tiver dado válido. Uma lista plana com "setor" e "sector" como
+ * itens separados contava "sector" como sempre em falta, penalizando a
+ * confiança (e por arrasto o shrinkage para o prior) de quase todos os
+ * ativos mesmo com dados completos (D-confidence-alias).
  */
 export function confidenceScore(asset) {
   const category = getAssetCategory(asset);
-  
-  let CRITICAL = [
-    "valorStock", "price",           // price
-    "setor", "sector",                // classification
-    "beta"                            // risk
+
+  const CRITICAL_GROUPS = [
+    ["valorStock", "price"],
+    ["setor", "sector"],
+    ["beta"],
   ];
 
   if (category === "Single Stock") {
-    CRITICAL.push("pe", "roic", "roe", "debt_eq", "epsYoY", "yield");
+    CRITICAL_GROUPS.push(
+      ["pe", "p_e"],
+      ["roic", "return_on_capital"],
+      ["roe", "returnOnEquity"],
+      ["debt_eq", "debtEquity"],
+      ["epsYoY", "eps_y_y_ttm"],
+      ["yield"],
+    );
   } else if (category.includes("ETF")) {
-    CRITICAL.push("ter", "holdings_count");
+    CRITICAL_GROUPS.push(["ter", "expense_ratio"], ["holdings_count", "num_holdings"]);
   }
 
-  const NICE = [
-    "peg", "p_fcf", "p_s", "p_b", "ev_ebitda", "forward_pe",
-    "gross_margin", "oper_margin", "profit_margin",
-    "roa", "quick_ratio", "current_ratio",
-    "sma50", "sma200", "rsi_14",
-    "priceChange_1w", "priceChange_1m", "priceChange_1y"
+  const NICE_GROUPS = [
+    ["peg"], ["p_fcf"], ["p_s"], ["p_b"], ["ev_ebitda", "evEbitda"], ["forward_pe", "forward_p_e"],
+    ["gross_margin"], ["oper_margin"], ["profit_margin"],
+    ["roa"], ["quick_ratio"], ["current_ratio"],
+    ["sma50"], ["sma200"], ["rsi_14"],
+    ["priceChange_1w"], ["priceChange_1m"], ["priceChange_1y"],
   ];
 
-  let criticalPresent = 0;
-  let nicePresent = 0;
+  const groupPresent = (group) => group.some((k) => isValid(asset[k]));
 
-  for (const k of CRITICAL) {
-    if (isValid(asset[k])) criticalPresent++;
-  }
+  const criticalPresent = CRITICAL_GROUPS.filter(groupPresent).length;
+  const nicePresent = NICE_GROUPS.filter(groupPresent).length;
 
-  for (const k of NICE) {
-    if (isValid(asset[k])) nicePresent++;
-  }
-
-  const critScore = CRITICAL.length > 0 ? criticalPresent / CRITICAL.length : 0;
-  const niceScore = NICE.length > 0 ? nicePresent / NICE.length : 0;
+  const critScore = CRITICAL_GROUPS.length > 0 ? criticalPresent / CRITICAL_GROUPS.length : 0;
+  const niceScore = NICE_GROUPS.length > 0 ? nicePresent / NICE_GROUPS.length : 0;
 
   // Impact: Critical fields represent 70% of the confidence
   return Math.min(1, critScore * 0.7 + niceScore * 0.3);

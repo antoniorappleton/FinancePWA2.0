@@ -1,4 +1,4 @@
-import { safeMetric, safePercent, clamp, isValid, confidenceScore, getAssetCategory, normalizeSector } from "../utils/normalize.js";
+import { safeMetric, safePercent, safePercentNonZero, clamp, isValid, confidenceScore, getAssetCategory, normalizeSector } from "../utils/normalize.js";
 
 // ── Sector-aware thresholds (PT canonical names only — D8.2) ──
 const SECTOR_PROFILES = {
@@ -136,105 +136,106 @@ function scoreMargins(asset, profile) {
   const oper  = safePercent(asset, "operatingMargin", "oper_margin", "operMargin", "operating_margin");
   const net   = safePercent(asset, "profit_margin", "profitMargin", "net_margin", "net_profit_margin", "lucro_liquido_margem");
   
-  let total = 0, count = 0;
+  // Soma-se o peso realmente usado em vez de o inferir por posição/contagem
+  // (count===2 não diz QUAIS dois componentes estão presentes, e os pesos não
+  // são todos iguais — a normalização por posição estava a usar o denominador
+  // errado sempre que faltava um componente que não fosse o último da lista).
+  let total = 0, weightSum = 0;
   const breakdown = {};
 
   if (isFinite(gross)) {
     const s = gross >= 0.50 ? 1.0 : gross >= 0.30 ? 0.75 : gross >= 0.15 ? 0.5 : gross > 0 ? 0.25 : 0.05;
-    total += s * 0.3; count++;
+    total += s * 0.3; weightSum += 0.3;
     breakdown.gross = { score: s, value: gross };
   }
   if (isFinite(oper)) {
     const target = profile.marginTarget;
     const s = oper >= target * 1.5 ? 1.0 : oper >= target ? 0.8 : oper >= target * 0.5 ? 0.5 : oper > 0 ? 0.2 : 0.05;
-    total += s * 0.4; count++;
+    total += s * 0.4; weightSum += 0.4;
     breakdown.operating = { score: s, value: oper };
   }
   if (isFinite(net)) {
     const s = net >= 0.20 ? 1.0 : net >= 0.10 ? 0.75 : net >= 0.05 ? 0.5 : net > 0 ? 0.25 : 0.05;
-    total += s * 0.3; count++;
+    total += s * 0.3; weightSum += 0.3;
     breakdown.net = { score: s, value: net };
   }
 
-  if (count === 0) return { score: 0.5, available: false, breakdown };
-  // Normalize by actual weight used
-  const weights = count === 3 ? 1 : count === 2 ? 0.7 : 0.4;
-  return { score: clamp(total / weights, 0, 1), available: true, breakdown };
+  if (weightSum === 0) return { score: 0.5, available: false, breakdown };
+  return { score: clamp(total / weightSum, 0, 1), available: true, breakdown };
 }
 
 function scoreBalanceSheet(asset, profile) {
   const de = safeMetric(asset, "debt_eq", "debtEquity", "debt_to_equity");
   const cr = safeMetric(asset, "current_ratio", "currentRatio");
   const qr = safeMetric(asset, "quick_ratio", "quickRatio");
-  
-  let total = 0, count = 0;
+
+  let total = 0, weightSum = 0;
   const breakdown = {};
 
   if (isFinite(de)) {
     const ceiling = profile.debtCeiling;
     const s = de <= ceiling * 0.3 ? 1.0 : de <= ceiling * 0.6 ? 0.8 : de <= ceiling ? 0.5 : de <= ceiling * 2 ? 0.2 : 0.05;
-    total += s * 0.5; count++;
+    total += s * 0.5; weightSum += 0.5;
     breakdown.debtEquity = { score: s, value: de };
   }
   if (isFinite(cr)) {
     const s = cr >= 2.0 ? 1.0 : cr >= 1.5 ? 0.8 : cr >= 1.0 ? 0.5 : cr >= 0.5 ? 0.2 : 0.05;
-    total += s * 0.3; count++;
+    total += s * 0.3; weightSum += 0.3;
     breakdown.currentRatio = { score: s, value: cr };
   }
   if (isFinite(qr)) {
     const s = qr >= 1.5 ? 1.0 : qr >= 1.0 ? 0.75 : qr >= 0.5 ? 0.4 : 0.1;
-    total += s * 0.2; count++;
+    total += s * 0.2; weightSum += 0.2;
     breakdown.quickRatio = { score: s, value: qr };
   }
 
-  if (count === 0) return { score: 0.5, available: false, breakdown };
-  const weights = count === 3 ? 1 : count === 2 ? 0.8 : 0.5;
-  return { score: clamp(total / weights, 0, 1), available: true, breakdown };
+  if (weightSum === 0) return { score: 0.5, available: false, breakdown };
+  return { score: clamp(total / weightSum, 0, 1), available: true, breakdown };
 }
 
 function scoreROE(asset) {
-  const roe = safePercent(asset, "roe", "returnOnEquity");
-  // O scraper grava "roe" como 0 literal quando não consegue capturar o valor real
-  // (em vez de deixar o campo em branco) — ROE exatamente 0% não ocorre na prática,
-  // por isso trata-se como "sem dado" em vez de "destruição de valor" (D-roe-0).
-  if (!isFinite(roe) || roe === 0) return { score: 0.5, available: false };
+  // "roe" é 0 literal quando o scraper falha a captura (nunca um ROE real de
+  // exatamente 0%) — safePercentNonZero ignora esse 0 e tenta "returnOnEquity".
+  const roe = safePercentNonZero(asset, "roe", "returnOnEquity");
+  if (!isFinite(roe)) return { score: 0.5, available: false };
   const s = roe >= 0.25 ? 1.0 : roe >= 0.15 ? 0.8 : roe >= 0.10 ? 0.6 : roe > 0 ? 0.3 : 0.05;
   return { score: s, value: roe, available: true };
 }
 
 function scoreGrowthQuality(asset) {
-  const epsYoY  = safePercent(asset, "epsYoY", "eps_yoy", "earnings_growth");
+  // "epsYoY"/"eps_yoy" quase nunca vêm preenchidos nos dados reais (scrape);
+  // "eps_y_y_ttm" é o campo que efetivamente tem o crescimento homólogo do EPS.
+  const epsYoY  = safePercent(asset, "epsYoY", "eps_yoy", "earnings_growth", "eps_y_y_ttm");
   const epsNext = safePercent(asset, "epsNextY", "eps_next_y", "earnings_growth_next");
   const eps5y   = safePercent(asset, "eps_next_5y", "eps_growth_5y");
   const sales   = safePercent(asset, "revenueGrowth", "sales_y_y_ttm", "revenue_growth", "salesGrowth");
 
-  let total = 0, count = 0;
+  let total = 0, weightSum = 0;
   const breakdown = {};
 
   if (isFinite(epsYoY)) {
     const s = epsYoY > 0.25 ? 1.0 : epsYoY > 0.10 ? 0.7 : epsYoY > 0 ? 0.4 : epsYoY > -0.10 ? 0.2 : 0.05;
-    total += s * 0.3; count++;
+    total += s * 0.3; weightSum += 0.3;
     breakdown.epsYoY = { score: s, value: epsYoY };
   }
   if (isFinite(epsNext)) {
     const s = epsNext > 0.15 ? 1.0 : epsNext > 0.05 ? 0.7 : epsNext > 0 ? 0.4 : 0.1;
-    total += s * 0.25; count++;
+    total += s * 0.25; weightSum += 0.25;
     breakdown.epsNext = { score: s, value: epsNext };
   }
   if (isFinite(eps5y)) {
     const s = eps5y > 0.15 ? 1.0 : eps5y > 0.08 ? 0.7 : eps5y > 0 ? 0.4 : 0.1;
-    total += s * 0.25; count++;
+    total += s * 0.25; weightSum += 0.25;
     breakdown.eps5y = { score: s, value: eps5y };
   }
   if (isFinite(sales)) {
     const s = sales > 0.20 ? 1.0 : sales > 0.10 ? 0.7 : sales > 0 ? 0.4 : 0.1;
-    total += s * 0.2; count++;
+    total += s * 0.2; weightSum += 0.2;
     breakdown.salesGrowth = { score: s, value: sales };
   }
 
-  if (count === 0) return { score: 0.5, available: false, breakdown };
-  const weights = [0.3, 0.25, 0.25, 0.2].slice(0, count).reduce((a, b) => a + b, 0);
-  return { score: clamp(total / weights, 0, 1), available: true, breakdown };
+  if (weightSum === 0) return { score: 0.5, available: false, breakdown };
+  return { score: clamp(total / weightSum, 0, 1), available: true, breakdown };
 }
 
 // ══════════════════════════════════════════════════════════════
