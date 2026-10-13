@@ -126,7 +126,9 @@ function scoreTrendStructure(asset) {
 }
 
 function scoreRSI(asset) {
-  const rsi = safeMetric(asset, "rsi", "rsi_14", "rsi14", "RSI");
+  // "rsi_14" é o campo fiável do scraper; "rsi" vem frequentemente a 0 (placeholder
+  // de captura falhada), por isso só é usado como último recurso.
+  const rsi = safeMetric(asset, "rsi_14", "rsi14", "RSI", "rsi");
   if (!isFinite(rsi)) return { score: 0.5, available: false, zone: "unknown" };
 
   let s, zone, warnings = [];

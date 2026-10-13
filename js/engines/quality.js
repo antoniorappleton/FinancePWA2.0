@@ -194,7 +194,10 @@ function scoreBalanceSheet(asset, profile) {
 
 function scoreROE(asset) {
   const roe = safePercent(asset, "roe", "returnOnEquity");
-  if (!isFinite(roe)) return { score: 0.5, available: false };
+  // O scraper grava "roe" como 0 literal quando não consegue capturar o valor real
+  // (em vez de deixar o campo em branco) — ROE exatamente 0% não ocorre na prática,
+  // por isso trata-se como "sem dado" em vez de "destruição de valor" (D-roe-0).
+  if (!isFinite(roe) || roe === 0) return { score: 0.5, available: false };
   const s = roe >= 0.25 ? 1.0 : roe >= 0.15 ? 0.8 : roe >= 0.10 ? 0.6 : roe > 0 ? 0.3 : 0.05;
   return { score: s, value: roe, available: true };
 }

@@ -89,10 +89,22 @@
     </div>
   </div>
 
-  <!-- Motor de Capital Dinâmico (War Chest / DCA Inteligente) -->
-  <div id="capitalStrategyContainer" style="margin-bottom: 2rem;">
-    <!-- Injetado via dashboard.js -->
-  </div>
+  <!-- Dividendos do Mês — carrossel de bolhas (dados via dashboard.js > renderDividendCarousel) -->
+  <section class="opp-section" aria-label="Dividendos do Mês" style="margin-bottom: 2rem;">
+    <div class="opp-section-head">
+      <div>
+        <h3 class="opp-title"><i class="fas fa-coins"></i> Dividendos de <span id="divMonthLabel">—</span></h3>
+        <p class="opp-subtitle">Empresas da carteira que pagam dividendos este mês</p>
+      </div>
+      <div class="opp-nav">
+        <button type="button" class="opp-nav-btn" id="divPrev" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+        <button type="button" class="opp-nav-btn" id="divNext" aria-label="Seguinte"><i class="fas fa-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="div-track" id="divTrack">
+      <div class="opp-skeleton">A calcular dividendos do mês...</div>
+    </div>
+  </section>
 
   <!-- Oportunidades de Reentrada — carrossel (dados via dashboard.js > renderBestOpportunities) -->
   <section class="opp-section" aria-label="Oportunidades de Reentrada">

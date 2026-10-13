@@ -632,6 +632,83 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
   .opp-card { width: 208px; }
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   DIVIDENDOS DO MÊS — carrossel de bolhas (Dashboard)
+   Markup: screens/dashboard.html (#divTrack .div-bubble-wrap)
+   Dados:  js/screens/dashboard.js → renderDividendCarousel()
+   ══════════════════════════════════════════════════════════════════════ */
+
+.div-track {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 10px 20px 14px;
+  scrollbar-width: none;
+}
+.div-track::-webkit-scrollbar { display: none; }
+
+.div-bubble-wrap {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 150px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.div-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent-gold) 55%, var(--primary)), color-mix(in srgb, var(--accent-gold) 20%, var(--card)));
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 40%, var(--border));
+  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--accent-gold) 55%, transparent);
+  color: #fff;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.div-bubble-wrap:hover .div-bubble {
+  transform: scale(1.05);
+  box-shadow: 0 14px 32px -10px color-mix(in srgb, var(--accent-gold) 65%, transparent);
+}
+
+.div-bubble-ticker {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.div-bubble-amount {
+  font-size: 0.82em;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.div-bubble-name {
+  margin-top: 10px;
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.div-bubble-meta {
+  font-size: .68rem;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .div-track { padding: 8px 14px 12px; gap: 16px; }
+  .div-bubble-wrap { width: 118px; }
+}
+
 /* ---------- Redução de movimento ---------- */
 @media (prefers-reduced-motion: reduce) {
   .card, .asset-card, .btn, .chip, .icon-btn, .footer-nav button,

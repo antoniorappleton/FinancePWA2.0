@@ -20,11 +20,13 @@ import {
   cleanTicker,
   normalizeSector,
   getAssetType,
+  pagamentosPorAno,
+  dividendoPorPagamento,
+  anualPreferido,
 } from "../utils/scoring.js";
 import { toNumStrict } from "../utils/num.js";
 import { Treemap } from "../components/treemap.js";
 import { canonicalTicker, getAssetCategory } from "../utils/normalize.js";
-import * as CapitalManager from "../utils/capitalManager.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 import { subscribeMarketData } from "../utils/marketDataStore.js";
 import { technicalSignal } from "../engines/technical-signal.js";
@@ -182,8 +184,7 @@ export async function initScreen() {
     if (valorCarteiraEl)
       valorCarteiraEl.textContent = `${fmtEUR.format(valorCarteira)} valor em carteira`;
 
-    // --- NOVA LÓGICA: Capital Manager ---
-    renderCapitalStrategy(agrupadoPorTicker, valorAtualMap);
+    renderDividendCarousel(agrupadoPorTicker);
     renderStartupPortfolioBrief(agrupadoPorTicker, valorAtualMap);
     renderBestOpportunities();
   };
@@ -261,6 +262,13 @@ export async function initScreen() {
   });
   document.getElementById("oppNext")?.addEventListener("click", () => {
     document.getElementById("oppTrack")?.scrollBy({ left: 320, behavior: "smooth" });
+  });
+
+  document.getElementById("divPrev")?.addEventListener("click", () => {
+    document.getElementById("divTrack")?.scrollBy({ left: -320, behavior: "smooth" });
+  });
+  document.getElementById("divNext")?.addEventListener("click", () => {
+    document.getElementById("divTrack")?.scrollBy({ left: 320, behavior: "smooth" });
   });
 
   setupStartupBriefModal();
@@ -783,110 +791,108 @@ function normalizeBriefText(value) {
     .replace(/\u2264/g, "<=")
     .replace(/\u2265/g, ">=");
 }
-function renderCapitalStrategy(agrupadoPorTicker, valorAtualMap) {
-  const container = document.getElementById("capitalStrategyContainer");
-  if (!container) return;
+const MESES_PT_DIV = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+const MES_TO_IDX_DIV = new Map(MESES_PT_DIV.map((m, i) => [m, i]));
 
-  const positions = Array.from(agrupadoPorTicker.entries()).map(([ticker, data]) => ({
-    ticker,
-    ...data
-  }));
+/** Expande o mês típico de pagamento (campo "mes") na lista de meses (0-11) em que a periodicidade paga. */
+function mesesPagamentoDividendo(periodicidade, mesTipicoIdx) {
+  if (!Number.isFinite(mesTipicoIdx)) return [];
+  const per = String(periodicidade || "");
+  if (per.startsWith("Mensal")) return Array.from({ length: 12 }, (_, i) => i);
+  if (per.startsWith("Trimes")) return [0, 3, 6, 9].map((k) => (mesTipicoIdx + k) % 12);
+  if (per.startsWith("Semes")) return [0, 6].map((k) => (mesTipicoIdx + k) % 12);
+  if (per.startsWith("Anual")) return [mesTipicoIdx];
+  return [];
+}
 
-  // Converter snapshots em Map de objetos para o CapitalManager
+/**
+ * Renderiza o carrossel de "Dividendos do Mês": bolhas por ticker da carteira
+ * que paga dividendo no mês corrente, dimensionadas pelo valor total esperado.
+ */
+function renderDividendCarousel(agrupadoPorTicker) {
+  const track = document.getElementById("divTrack");
+  const monthLabelEl = document.getElementById("divMonthLabel");
+  if (!track) return;
+
+  const monthIdx = new Date().getMonth();
+  if (monthLabelEl) monthLabelEl.textContent = MESES_PT_DIV[monthIdx];
+
   const acoesDataMap = new Map();
-  lastAcoesSnap?.forEach(doc => {
-    const d = doc.data();
+  lastAcoesSnap?.forEach((docu) => {
+    const d = docu.data();
     if (d.ticker) {
       acoesDataMap.set(canonicalTicker(cleanTicker(d.ticker)), d);
     }
   });
 
-  const cashReservePct = lastConfigData?.cashReservePct ?? 22;
-  const state = CapitalManager.calculatePortfolioState(positions, acoesDataMap, cashReservePct);
-  
-  // Valores do utilizador vindos do Firestore
-  const availableCash = lastConfigData?.availableCash || 0;
-  const monthlyBase = lastConfigData?.monthlyBase || 0;
-  const portfolioValue = positions.reduce((sum, p) => {
-    const price = Number(valorAtualMap.get(p.ticker) || p.custoMedio || 0);
-    return sum + Number(p.qtd || 0) * price;
-  }, 0);
-  const totalWithCash = portfolioValue + availableCash;
-  const cashSharePct = totalWithCash > 0 ? (availableCash / totalWithCash) * 100 : 0;
-  const recommendation = CapitalManager.getWarChestRecommendation(state, availableCash);
-  const smartDca = CapitalManager.getSmartDCA(monthlyBase, state);
-
+  const esc = (v) =>
+    String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 
-  container.innerHTML = `
-    <div class="card" style="border-top: 4px solid ${state.color}; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
-        <div style="flex: 1; min-width: 280px;">
-          <h3 style="margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-shield-halved" style="color: ${state.color}"></i>
-            Estado da Carteira: <span style="color: ${state.color}">${state.label}</span>
-          </h3>
-          <p class="muted" style="font-size: 0.9rem; margin-bottom: 16px;">${state.message}</p>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="report-kpi" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
-              <span class="kpi-label" style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase;">Reserva Recomendada</span>
-              <span class="kpi-value" style="font-size: 1.1rem; font-weight: 800;">${recommendation.percentage.toFixed(0)}%</span>
-            </div>
-            <div class="report-kpi" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;">
-              <span class="kpi-label" style="font-size: 0.7rem; opacity: 0.7; text-transform: uppercase;">DCA Inteligente</span>
-              <span class="kpi-value" style="font-size: 1.1rem; font-weight: 800;">${fmtEUR.format(smartDca.adjusted)}</span>
-            </div>
-          </div>
+  const items = [];
+  for (const [ticker, pos] of agrupadoPorTicker.entries()) {
+    if (!(pos.qtd > 0)) continue;
+    const asset = acoesDataMap.get(ticker);
+    if (!asset) continue;
+
+    const idxMes = MES_TO_IDX_DIV.get(String(asset.mes || "")) ?? NaN;
+    const meses = mesesPagamentoDividendo(asset.periodicidade, idxMes);
+    if (!meses.includes(monthIdx)) continue;
+
+    const perShare = dividendoPorPagamento(anualPreferido(asset), asset.periodicidade);
+    if (!(perShare > 0)) continue;
+
+    items.push({
+      ticker,
+      nome: pos.nome || asset.nome || ticker,
+      perShare,
+      qtd: pos.qtd,
+      total: perShare * pos.qtd,
+    });
+  }
+
+  items.sort((a, b) => b.total - a.total);
+
+  if (!items.length) {
+    track.innerHTML = `<div class="opp-empty">Nenhuma empresa da carteira paga dividendos em ${MESES_PT_DIV[monthIdx]}.</div>`;
+    return;
+  }
+
+  const maxTotal = Math.max(...items.map((it) => it.total));
+  const MIN_SIZE = 86, MAX_SIZE = 168;
+
+  track.innerHTML = items
+    .map((it) => {
+      // Área da bolha ∝ valor do dividendo → diâmetro ∝ raiz quadrada.
+      const ratio = maxTotal > 0 ? Math.sqrt(it.total / maxTotal) : 0;
+      const size = Math.round(MIN_SIZE + (MAX_SIZE - MIN_SIZE) * ratio);
+      const fontScale = Math.max(0.72, Math.min(1, size / 150)).toFixed(2);
+      const qtdLabel = Number.isInteger(it.qtd) ? it.qtd : it.qtd.toFixed(2);
+
+      return `
+      <div class="div-bubble-wrap" data-ticker="${esc(it.ticker)}">
+        <div class="div-bubble" style="width:${size}px;height:${size}px;font-size:${fontScale}rem;">
+          <span class="div-bubble-ticker">${esc(it.ticker)}</span>
+          <span class="div-bubble-amount">${fmtEUR.format(it.total)}</span>
         </div>
+        <div class="div-bubble-name">${esc(it.nome)}</div>
+        <div class="div-bubble-meta">${fmtEUR.format(it.perShare)}/ação &middot; ${qtdLabel} ações</div>
+      </div>`;
+    })
+    .join("");
 
-        <div style="flex: 1; min-width: 280px; border-left: 1px solid var(--border); padding-left: 20px;">
-          <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; text-transform: uppercase; color: #888;">Gestão de "War Chest"</h4>
-          
-          <div style="margin-bottom: 16px; background: rgba(var(--primary-rgb), 0.1); border-radius: 12px; padding: 12px; border: 1px solid rgba(var(--primary-rgb), 0.2);">
-             <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 8px;">🛒 Ação para este Mês (DCA):</div>
-             <div style="font-size: 1.2rem; font-weight: 800; color: var(--success);">
-               Investir ${fmtEUR.format(smartDca.adjusted)}
-             </div>
-             <div style="font-size: 0.75rem; margin-top: 4px; opacity: 0.8;">
-               ${smartDca.fromReserve > 0 
-                 ? `Inclui ${fmtEUR.format(smartDca.fromReserve)} extra vindo da tua reserva (Mercado em Saldos).` 
-                 : `Plano padrão de ${fmtEUR.format(smartDca.original)}.`}
-             </div>
-          </div>
-
-          <div style="background: #111; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; border: 1px solid #333;">
-            <div style="width: ${recommendation.percentage}%; height: 100%; background: ${state.color}; transition: width 1s;"></div>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 12px;">
-            <span class="muted">Em Reserva: <strong>${fmtEUR.format(recommendation.amount)}</strong></span>
-            <span class="muted">Fundo de Investimento: <strong>${fmtEUR.format(recommendation.totalInvestable)}</strong></span>
-          </div>
-
-          <div style="border-top: 1px dashed var(--border); padding-top: 10px; font-size: 0.75rem; color: var(--muted-foreground);">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span>Liquidez Total:</span>
-              <strong>${fmtEUR.format(availableCash)} (${cashSharePct.toFixed(1)}%)</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span>Autonomia Estimada:</span>
-              <strong>${smartDca.adjusted > 0 ? (availableCash / smartDca.adjusted).toFixed(1) : 0} meses</strong>
-            </div>
-          </div>
-          
-          <div style="margin-top: 16px; font-size: 0.8rem; padding: 10px; background: rgba(239, 68, 68, 0.05); border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.1);">
-             <i class="fas fa-fire" style="color: #ef4444; margin-right: 6px;"></i>
-             ${(() => {
-               const ladder = lastConfigData?.crisisLadder || CapitalManager.DEFAULT_CRISIS_LADDER;
-               const firstRung = ladder[0] ?? { drawdownPct: 10, deployPct: 25 };
-               const deployed = CapitalManager.getCrisisDeployment(firstRung.drawdownPct / 100, recommendation.amount, ladder).amountToDeploy;
-               return `<strong>Plano de Crise:</strong> Se o mercado cair ${firstRung.drawdownPct}%, mobiliza <strong>${fmtEUR.format(deployed)}</strong> da reserva.`;
-             })()}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+  track.querySelectorAll(".div-bubble-wrap").forEach((el) => {
+    el.addEventListener("click", () => {
+      const ticker = el.dataset.ticker;
+      if (typeof window.openAssetPanel === "function") window.openAssetPanel(ticker);
+    });
+  });
 }
 
 /* =========================
