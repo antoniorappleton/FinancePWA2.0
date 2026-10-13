@@ -809,8 +809,10 @@ function mesesPagamentoDividendo(periodicidade, mesTipicoIdx) {
 }
 
 /**
- * Renderiza o carrossel de "Dividendos do Mês": bolhas por ticker da carteira
- * que paga dividendo no mês corrente, dimensionadas pelo valor total esperado.
+ * Renderiza o carrossel de "Dividendos do Mês": o mesmo universo de ativos
+ * do mapa de pagamentos em Análise > Mercados (todos os ativos, não só os
+ * da carteira), filtrado ao mês corrente, em bolhas dimensionadas pelo
+ * valor do dividendo por ação. Ativos detidos na carteira ficam destacados.
  */
 function renderDividendCarousel(agrupadoPorTicker) {
   const track = document.getElementById("divTrack");
@@ -820,14 +822,6 @@ function renderDividendCarousel(agrupadoPorTicker) {
   const monthIdx = new Date().getMonth();
   if (monthLabelEl) monthLabelEl.textContent = MESES_PT_DIV[monthIdx];
 
-  const acoesDataMap = new Map();
-  lastAcoesSnap?.forEach((docu) => {
-    const d = docu.data();
-    if (d.ticker) {
-      acoesDataMap.set(canonicalTicker(cleanTicker(d.ticker)), d);
-    }
-  });
-
   const esc = (v) =>
     String(v ?? "")
       .replace(/&/g, "&amp;")
@@ -836,53 +830,62 @@ function renderDividendCarousel(agrupadoPorTicker) {
   const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 
   const items = [];
-  for (const [ticker, pos] of agrupadoPorTicker.entries()) {
-    if (!(pos.qtd > 0)) continue;
-    const asset = acoesDataMap.get(ticker);
-    if (!asset) continue;
+  lastAcoesSnap?.forEach((docu) => {
+    const asset = docu.data();
+    if (!asset.ticker) return;
+    const ticker = canonicalTicker(cleanTicker(asset.ticker));
 
     const idxMes = MES_TO_IDX_DIV.get(String(asset.mes || "")) ?? NaN;
     const meses = mesesPagamentoDividendo(asset.periodicidade, idxMes);
-    if (!meses.includes(monthIdx)) continue;
+    if (!meses.includes(monthIdx)) return;
 
     const perShare = dividendoPorPagamento(anualPreferido(asset), asset.periodicidade);
-    if (!(perShare > 0)) continue;
+    if (!(perShare > 0)) return;
+
+    const pos = agrupadoPorTicker.get(ticker);
+    const qtd = pos?.qtd > 0 ? pos.qtd : 0;
 
     items.push({
       ticker,
-      nome: pos.nome || asset.nome || ticker,
+      nome: asset.nome || ticker,
+      setor: asset.setor || asset.mercado || "",
       perShare,
-      qtd: pos.qtd,
-      total: perShare * pos.qtd,
+      qtd,
+      owned: qtd > 0,
+      total: perShare * qtd,
     });
-  }
+  });
 
-  items.sort((a, b) => b.total - a.total);
+  // Carteira primeiro (mais relevante para o utilizador), depois por valor do dividendo.
+  items.sort((a, b) => (b.owned - a.owned) || (b.perShare - a.perShare));
 
   if (!items.length) {
-    track.innerHTML = `<div class="opp-empty">Nenhuma empresa da carteira paga dividendos em ${MESES_PT_DIV[monthIdx]}.</div>`;
+    track.innerHTML = `<div class="opp-empty">Nenhum ativo do mercado paga dividendos em ${MESES_PT_DIV[monthIdx]}.</div>`;
     return;
   }
 
-  const maxTotal = Math.max(...items.map((it) => it.total));
-  const MIN_SIZE = 86, MAX_SIZE = 168;
+  const maxPerShare = Math.max(...items.map((it) => it.perShare));
+  const MIN_SIZE = 76, MAX_SIZE = 156;
 
   track.innerHTML = items
     .map((it) => {
-      // Área da bolha ∝ valor do dividendo → diâmetro ∝ raiz quadrada.
-      const ratio = maxTotal > 0 ? Math.sqrt(it.total / maxTotal) : 0;
+      // Área da bolha ∝ valor do dividendo por ação → diâmetro ∝ raiz quadrada.
+      const ratio = maxPerShare > 0 ? Math.sqrt(it.perShare / maxPerShare) : 0;
       const size = Math.round(MIN_SIZE + (MAX_SIZE - MIN_SIZE) * ratio);
-      const fontScale = Math.max(0.72, Math.min(1, size / 150)).toFixed(2);
+      const fontScale = Math.max(0.68, Math.min(1, size / 150)).toFixed(2);
       const qtdLabel = Number.isInteger(it.qtd) ? it.qtd : it.qtd.toFixed(2);
+      const meta = it.owned
+        ? `${qtdLabel} ações &middot; ${fmtEUR.format(it.total)} total`
+        : esc(it.setor) || "Fora da carteira";
 
       return `
-      <div class="div-bubble-wrap" data-ticker="${esc(it.ticker)}">
+      <div class="div-bubble-wrap${it.owned ? " div-bubble-owned" : ""}" data-ticker="${esc(it.ticker)}">
         <div class="div-bubble" style="width:${size}px;height:${size}px;font-size:${fontScale}rem;">
           <span class="div-bubble-ticker">${esc(it.ticker)}</span>
-          <span class="div-bubble-amount">${fmtEUR.format(it.total)}</span>
+          <span class="div-bubble-amount">${fmtEUR.format(it.perShare)}</span>
         </div>
         <div class="div-bubble-name">${esc(it.nome)}</div>
-        <div class="div-bubble-meta">${fmtEUR.format(it.perShare)}/ação &middot; ${qtdLabel} ações</div>
+        <div class="div-bubble-meta">${meta}</div>
       </div>`;
     })
     .join("");

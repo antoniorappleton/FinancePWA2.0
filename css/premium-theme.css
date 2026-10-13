@@ -667,16 +667,28 @@ tbody tr, .analysis-table tbody tr, .fine-table tbody tr { transition: backgroun
   justify-content: center;
   gap: 4px;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent-gold) 55%, var(--primary)), color-mix(in srgb, var(--accent-gold) 20%, var(--card)));
-  border: 1px solid color-mix(in srgb, var(--accent-gold) 40%, var(--border));
-  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--accent-gold) 55%, transparent);
+  /* Por defeito (fora da carteira): tom neutro, discreto. */
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--primary) 45%, var(--muted)), color-mix(in srgb, var(--primary) 10%, var(--card)));
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 20px -14px color-mix(in srgb, var(--primary) 40%, transparent);
   color: #fff;
   transition: transform var(--transition), box-shadow var(--transition);
 }
 .div-bubble-wrap:hover .div-bubble {
   transform: scale(1.05);
+  box-shadow: 0 14px 32px -10px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+/* Ativos detidos na carteira: destaque dourado. */
+.div-bubble-owned .div-bubble {
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--accent-gold) 55%, var(--primary)), color-mix(in srgb, var(--accent-gold) 20%, var(--card)));
+  border: 1px solid color-mix(in srgb, var(--accent-gold) 40%, var(--border));
+  box-shadow: 0 10px 26px -12px color-mix(in srgb, var(--accent-gold) 55%, transparent);
+}
+.div-bubble-owned:hover .div-bubble {
   box-shadow: 0 14px 32px -10px color-mix(in srgb, var(--accent-gold) 65%, transparent);
 }
+.div-bubble-owned .div-bubble-meta { color: var(--accent-gold); font-weight: 600; }
 
 .div-bubble-ticker {
   font-weight: 800;

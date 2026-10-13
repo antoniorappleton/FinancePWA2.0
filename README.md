@@ -279,4 +279,4 @@ Além deste README, o repositório mantém documentos vivos que registam o racio
 *   [`PLANO_RECONCILIACAO.md`](PLANO_RECONCILIACAO.md) — plano de reconciliação de inconsistências identificadas entre motores.
 
 ---
-*v2.14.10 - Desenvolvido por Antonio Appleton • Otimizado para Análise de Fatores, Saúde de Portfólio e Inteligência Financeira Avançada*
+*v2.14.11 - Desenvolvido por Antonio Appleton • Otimizado para Análise de Fatores, Saúde de Portfólio e Inteligência Financeira Avançada*
