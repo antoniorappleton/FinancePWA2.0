@@ -29,6 +29,7 @@ import { Treemap } from "../components/treemap.js";
 import { aggregatePortfolioPositions } from "../utils/portfolioPositions.js";
 import { subscribeMarketData, getMarketDataSnapshot, getLastUpdatedAt } from "../utils/marketDataStore.js";
 import { checkAlerts, notifyAlert } from "../utils/alerts.js";
+import { getEstrategiaAlternativa } from "../utils/decisionHelpers.js";
 
 // ===============================
 // Carregar Chart.js on-demand
@@ -3217,6 +3218,10 @@ function showPortfolioHelp(force = false) {
     const d50Txt = formatSmaDelta(g._sma50, precoAtual);
     const d200Txt = formatSmaDelta(s200, precoAtual);
 
+    // Se a posição está em prejuízo: o que perco se vender agora, e quanto
+    // precisa de cair ainda para uma reentrada recuperar esse valor.
+    const estrategiaAlt = getEstrategiaAlternativa(lucroAtual, precoAtual, g.qtd || 0);
+
     // ESTRATÉGIA INFO
     const sInfo = g._strategy;
     const currentW = (g._currentWeight || 0) * 100;
@@ -3431,6 +3436,20 @@ function showPortfolioHelp(force = false) {
           </div>
         </div>
       </div>
+
+      <!-- VENDER AGORA vs. REENTRADA: quanto perco e quanto precisa de cair para recuperar -->
+      ${estrategiaAlt ? `
+      <div style="margin: 0 16px 12px; padding: 10px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; border: 1px dashed rgba(239, 68, 68, 0.3);">
+        <div style="font-size: 0.72rem; color: #ef4444; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-triangle-exclamation"></i> SE VENDER AGORA: perco ${fmtEUR.format(estrategiaAlt.prejuizo)}
+        </div>
+        <div style="font-size: 0.68rem; color: #ef4444; margin-top: 4px; opacity: 0.9;">
+          ${estrategiaAlt.precoReentrada > 0
+            ? `Para recuperar via reentrada, o preço tem de cair mais <strong>${Math.abs((estrategiaAlt.precoReentrada / precoAtual - 1) * 100).toFixed(1)}%</strong> (até ${fmtEUR.format(estrategiaAlt.precoReentrada)}) antes de comprar de novo.`
+            : `Prejuízo demasiado elevado: nem uma queda total a 0€ chegaria para recuperar via reentrada.`}
+        </div>
+      </div>
+      ` : ""}
 
       <!-- ACTIONS: Compactos em Mobile, Alinhados no PC -->
       <div class="asset-actions">
