@@ -96,24 +96,49 @@ export function getReforcoSuggestion(drawdown, investido, precoAtual, qtd) {
 }
 
 /**
- * Gets strategy alternative (venda reentrada) data.
- * @param {number} lucroAtual - Negative if loss
+ * Gets strategy alternative (venda parcial/total + reentrada) data.
+ *
+ * Simula vender uma fração `pctVenda` da posição ao preço atual (realizando
+ * prejuízo proporcional) e recomprar exatamente essa mesma quantidade mais
+ * barato. O preço de reentrada é o ponto ao qual, ao recomprar a quantidade
+ * vendida, o dinheiro que fica "por gastar" (face ao que se recebeu na venda)
+ * equivale exatamente ao prejuízo realizado nessa fração — por isso o preço
+ * de reentrada e a queda % necessária NÃO dependem de `pctVenda` (é uma
+ * relação por unidade); o que varia com a fração vendida é o valor em euros
+ * em jogo e a quantidade a recomprar.
+ *
+ * @param {number} lucroAtual - P/L total não realizado da posição (negativo se prejuízo)
  * @param {number} precoAtual
- * @param {number} qtd
- * @returns {Object} {precoReentrada, dropNeededStr}
+ * @param {number} qtd - Quantidade total da posição
+ * @param {number} [pctVenda=1] - Fração da posição a simular vender (0-1, ex: 0.5 = 50%)
+ * @returns {Object|null} {pctVenda, qtdVendida, prejuizo, valorVenda, precoReentrada, dropNeededStr, qtdRecompra, valorRecompra}
  */
-export function getEstrategiaAlternativa(lucroAtual, precoAtual, qtd) {
+export function getEstrategiaAlternativa(lucroAtual, precoAtual, qtd, pctVenda = 1) {
   if (lucroAtual >= 0 || !Number.isFinite(precoAtual) || qtd <= 0) {
     return null;
   }
 
-  const prejuizo = -lucroAtual;
-  const precoReentrada = (precoAtual * qtd - prejuizo) / qtd;
+  const pct = Math.min(1, Math.max(0, Number(pctVenda) || 0));
+  if (pct <= 0) return null;
+
+  const precoMedio = precoAtual - lucroAtual / qtd;
+  const qtdVendida = qtd * pct;
+  const prejuizo = (precoMedio - precoAtual) * qtdVendida; // > 0 = perda realizada nesta fração
+  const valorVenda = precoAtual * qtdVendida;
+
+  const precoReentrada = precoAtual - prejuizo / qtdVendida; // = 2*precoAtual - precoMedio
   const dropNeeded = (precoReentrada / precoAtual - 1) * 100;
+  const valorRecompra = qtdVendida * precoReentrada;
+
   return {
+    pctVenda: pct,
+    qtdVendida,
+    prejuizo,
+    valorVenda,
     precoReentrada,
     dropNeededStr: `${dropNeeded < 0 ? '-' : '+'}${Math.abs(dropNeeded).toFixed(1)}%`,
-    prejuizo
+    qtdRecompra: qtdVendida,
+    valorRecompra
   };
 }
 

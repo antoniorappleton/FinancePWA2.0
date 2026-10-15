@@ -32,6 +32,58 @@ import { checkAlerts, notifyAlert } from "../utils/alerts.js";
 import { getEstrategiaAlternativa } from "../utils/decisionHelpers.js";
 
 // ===============================
+// Simulador de venda parcial / reentrada
+// ===============================
+const SIM_SELL_PCTS = [10, 25, 50, 100];
+
+function renderSimResultInner(g, pct) {
+  const fmtEUR = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+  const precoAtual = g?.precoAtual || 0;
+  const lucroAtual = g?.lucroAtual || 0;
+  const estrategiaAlt = getEstrategiaAlternativa(lucroAtual, precoAtual, g?.qtd || 0, pct / 100);
+
+  if (!estrategiaAlt) {
+    return `<div style="font-size: 0.68rem; color: var(--muted-foreground); margin-top: 6px;">Posição em lucro — sem prejuízo a simular.</div>`;
+  }
+
+  const qtdTxt = estrategiaAlt.qtdVendida.toFixed(4).replace(/\.?0+$/, "");
+  return `
+    <div style="font-size: 0.72rem; color: #ef4444; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+      <i class="fas fa-triangle-exclamation"></i> Vender ${pct}% (${qtdTxt} un.) agora: perco ${fmtEUR.format(estrategiaAlt.prejuizo)}
+    </div>
+    <div style="font-size: 0.68rem; color: #ef4444; margin-top: 4px; opacity: 0.9;">
+      ${estrategiaAlt.precoReentrada > 0
+        ? `Para compensar, recompra as mesmas <strong>${qtdTxt} un.</strong> quando o preço cair mais <strong>${Math.abs((estrategiaAlt.precoReentrada / precoAtual - 1) * 100).toFixed(1)}%</strong> (até ${fmtEUR.format(estrategiaAlt.precoReentrada)}).`
+        : `Prejuízo demasiado elevado: nem uma queda total a 0€ chegaria para recuperar via reentrada.`}
+    </div>
+  `;
+}
+
+function renderSellSimBlockHTML(g) {
+  const lucroAtual = g?.lucroAtual || 0;
+  if (lucroAtual >= 0) return "";
+
+  const ticker = g.ticker;
+  return `
+      <!-- SIMULADOR: venda parcial/total e reentrada para compensar -->
+      <div class="asset-sell-sim" style="margin: 0 16px 12px; padding: 10px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; border: 1px dashed rgba(239, 68, 68, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <div style="font-size: 0.65rem; color: var(--muted-foreground); font-weight: 700; text-transform: uppercase;">Simular venda de:</div>
+          <div style="display: flex; gap: 4px;">
+            ${SIM_SELL_PCTS.map(p => `
+              <button type="button" class="btn ${p === 100 ? "premium" : "ghost"} sim-pct-btn" data-sim-pct="${p}" data-sim-ticker="${ticker}"
+                style="padding: 3px 8px; font-size: 0.65rem; border-radius: 6px; line-height: 1.4;">${p}%</button>
+            `).join("")}
+          </div>
+        </div>
+        <div class="sim-result" id="simResult-${ticker}">
+          ${renderSimResultInner(g, 100)}
+        </div>
+      </div>
+  `;
+}
+
+// ===============================
 // Carregar Chart.js on-demand
 // ===============================
 async function ensureChartJS() {
@@ -2116,6 +2168,23 @@ function wireAtividadeListeners() {
     if (sell) window.openActionModal?.("venda", sell.getAttribute("data-sell"));
     if (chart) openTechnicalChart(chart.getAttribute("data-chart"));
 
+    // 1.0 Simulador de venda parcial/total
+    const simBtn = e.target.closest("[data-sim-pct]");
+    if (simBtn) {
+      e.stopPropagation();
+      const ticker = simBtn.getAttribute("data-sim-ticker");
+      const pct = Number(simBtn.getAttribute("data-sim-pct"));
+      const g = byTickerGlobal?.get(ticker);
+      const resultEl = document.getElementById(`simResult-${ticker}`);
+      if (g && resultEl) {
+        resultEl.innerHTML = renderSimResultInner(g, pct);
+        simBtn.parentElement?.querySelectorAll("[data-sim-pct]").forEach((btn) => {
+          btn.classList.toggle("premium", btn === simBtn);
+          btn.classList.toggle("ghost", btn !== simBtn);
+        });
+      }
+    }
+
     // 1.1 Holdings Map (NOVO)
     const hMap = e.target.closest(".holdings-map-trigger");
     if (hMap) {
@@ -3218,10 +3287,6 @@ function showPortfolioHelp(force = false) {
     const d50Txt = formatSmaDelta(g._sma50, precoAtual);
     const d200Txt = formatSmaDelta(s200, precoAtual);
 
-    // Se a posição está em prejuízo: o que perco se vender agora, e quanto
-    // precisa de cair ainda para uma reentrada recuperar esse valor.
-    const estrategiaAlt = getEstrategiaAlternativa(lucroAtual, precoAtual, g.qtd || 0);
-
     // ESTRATÉGIA INFO
     const sInfo = g._strategy;
     const currentW = (g._currentWeight || 0) * 100;
@@ -3437,19 +3502,8 @@ function showPortfolioHelp(force = false) {
         </div>
       </div>
 
-      <!-- VENDER AGORA vs. REENTRADA: quanto perco e quanto precisa de cair para recuperar -->
-      ${estrategiaAlt ? `
-      <div style="margin: 0 16px 12px; padding: 10px; background: rgba(239, 68, 68, 0.08); border-radius: 8px; border: 1px dashed rgba(239, 68, 68, 0.3);">
-        <div style="font-size: 0.72rem; color: #ef4444; font-weight: 800; display: flex; align-items: center; gap: 6px;">
-          <i class="fas fa-triangle-exclamation"></i> SE VENDER AGORA: perco ${fmtEUR.format(estrategiaAlt.prejuizo)}
-        </div>
-        <div style="font-size: 0.68rem; color: #ef4444; margin-top: 4px; opacity: 0.9;">
-          ${estrategiaAlt.precoReentrada > 0
-            ? `Para recuperar via reentrada, o preço tem de cair mais <strong>${Math.abs((estrategiaAlt.precoReentrada / precoAtual - 1) * 100).toFixed(1)}%</strong> (até ${fmtEUR.format(estrategiaAlt.precoReentrada)}) antes de comprar de novo.`
-            : `Prejuízo demasiado elevado: nem uma queda total a 0€ chegaria para recuperar via reentrada.`}
-        </div>
-      </div>
-      ` : ""}
+      <!-- VENDER AGORA vs. REENTRADA: simulador de venda parcial/total -->
+      ${renderSellSimBlockHTML(g)}
 
       <!-- ACTIONS: Compactos em Mobile, Alinhados no PC -->
       <div class="asset-actions">
