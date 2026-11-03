@@ -115,11 +115,16 @@ FinancePWA2.0/
 │
 ├── icons/                     # Ícones PWA para múltiplos tamanhos de ecrã
 ├── img/                       # Recursos de imagem e logótipos
+├── docs/                      # Documentação de apoio, histórico e extratos (não faz parte do bundle da PWA)
+├── scripts/
+│   ├── gas/                   # Google Apps Script: recolha de fundamentais (FMP) e sync para o Firestore
+│   ├── alerts/                # Alertas de reentrada (Telegram), corridos via GitHub Actions
+│   ├── audit/                 # Auditoria semanal de prontidão do scoring (GitHub Actions)
+│   └── data/                  # Scripts pontuais de reconciliação de dados (histórico)
 ├── index.html                 # 🏠 HTML Principal (Ecrã de entrada único)
 ├── manifest.json              # Configurações do manifesto PWA
 ├── service-worker.js          # Cache e suporte Offline da PWA
-├── style.css                  # 🎨 Folha de estilos centralizada (Design System)
-└── ultima atualização.txt     # Histórico de alterações e changelog
+└── style.css                  # 🎨 Folha de estilos centralizada (Design System)
 ```
 
 ---
