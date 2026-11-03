@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 20 * * *"
   workflow_dispatch:
+    inputs:
+      test_email:
+        description: "Enviar só um email de teste (não consulta o Firestore)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -24,7 +29,7 @@ jobs:
         run: npm install
 
       - name: Check reentry alerts
-        run: node scripts/alerts/check-reentry-alerts.mjs
+        run: node scripts/alerts/check-reentry-alerts.mjs ${{ (github.event_name == 'workflow_dispatch' && inputs.test_email) && '--test-email' || '' }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}

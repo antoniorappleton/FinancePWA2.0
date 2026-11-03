@@ -16,11 +16,16 @@
 // Opcionais (por omissão assume Gmail):
 //   SMTP_HOST   (default smtp.gmail.com)
 //   SMTP_PORT   (default 465)
+//
+// Para confirmar que o envio de email está bem configurado sem esperar por um
+// alerta real, corre com --test-email: envia logo um email de confirmação e
+// sai, sem tocar no Firestore/reentryWatch.
 
 import admin from "firebase-admin";
 import nodemailer from "nodemailer";
 
 const THRESHOLDS = [7, 10, 15];
+const TEST_EMAIL_MODE = process.argv.includes("--test-email");
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -35,22 +40,39 @@ function formatEUR(value) {
   return new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(value);
 }
 
-async function main() {
-  const serviceAccountRaw = requireEnv("FIREBASE_SERVICE_ACCOUNT");
-  const emailUser = requireEnv("EMAIL_USER");
-  const emailAppPassword = requireEnv("EMAIL_APP_PASSWORD");
-  const emailTo = requireEnv("EMAIL_TO");
-
-  const serviceAccount = JSON.parse(serviceAccountRaw);
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-  const db = admin.firestore();
-
-  const transporter = nodemailer.createTransport({
+function makeTransporter(emailUser, emailAppPassword) {
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: Number(process.env.SMTP_PORT || 465),
     secure: true,
     auth: { user: emailUser, pass: emailAppPassword },
   });
+}
+
+async function main() {
+  const emailUser = requireEnv("EMAIL_USER");
+  const emailAppPassword = requireEnv("EMAIL_APP_PASSWORD");
+  const emailTo = requireEnv("EMAIL_TO");
+  const transporter = makeTransporter(emailUser, emailAppPassword);
+
+  if (TEST_EMAIL_MODE) {
+    console.log("🧪 Modo de teste: a enviar email de confirmação (sem consultar o Firestore)...");
+    await transporter.sendMail({
+      from: emailUser,
+      to: emailTo,
+      subject: "✅ APPFinance: teste de alertas de reentrada",
+      text:
+        "Se estás a ler isto, o envio de email via SMTP está configurado corretamente.\n\n" +
+        "Este foi um email de teste manual (--test-email), não um alerta real de reentrada.",
+    });
+    console.log("✅ Email de teste enviado com sucesso.");
+    return;
+  }
+
+  const serviceAccountRaw = requireEnv("FIREBASE_SERVICE_ACCOUNT");
+  const serviceAccount = JSON.parse(serviceAccountRaw);
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  const db = admin.firestore();
 
   const watchSnap = await db.collection("reentryWatch").where("active", "==", true).get();
   console.log(`🔎 ${watchSnap.size} ativo(s) ativo(s) em reentryWatch.`);
