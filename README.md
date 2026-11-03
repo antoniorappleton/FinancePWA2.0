@@ -118,7 +118,7 @@ FinancePWA2.0/
 ├── docs/                      # Documentação de apoio, histórico e extratos (não faz parte do bundle da PWA)
 ├── scripts/
 │   ├── gas/                   # Google Apps Script: recolha de fundamentais (FMP) e sync para o Firestore
-│   ├── alerts/                # Alertas de reentrada (Telegram), corridos via GitHub Actions
+│   ├── alerts/                # Alertas de reentrada (email), corridos via GitHub Actions
 │   ├── audit/                 # Auditoria semanal de prontidão do scoring (GitHub Actions)
 │   └── data/                  # Scripts pontuais de reconciliação de dados (histórico)
 ├── index.html                 # 🏠 HTML Principal (Ecrã de entrada único)

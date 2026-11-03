@@ -1,16 +1,24 @@
 // scripts/alerts/check-reentry-alerts.mjs
 //
-// Corre fora da app (GitHub Actions, cron diário) para enviar um alerta
-// Telegram quando um ativo em `reentryWatch` (posições fechadas de "boas
+// Corre fora da app (GitHub Actions, cron diário) para enviar um alerta por
+// email quando um ativo em `reentryWatch` (posições fechadas de "boas
 // empresas", ver js/screens/dashboard.js:syncReentryWatchlist) cai -7%/-10%/
 // -15% desde o preço a que a posição foi vendida.
 //
 // Variáveis de ambiente obrigatórias:
 //   FIREBASE_SERVICE_ACCOUNT  JSON da conta de serviço (Firebase Admin SDK)
-//   TELEGRAM_BOT_TOKEN        token do bot (@BotFather)
-//   TELEGRAM_CHAT_ID          chat para onde enviar as mensagens
+//   EMAIL_USER                conta de email que envia (ex: a tua Gmail)
+//   EMAIL_APP_PASSWORD        palavra-passe de aplicação dessa conta (não é a
+//                              palavra-passe normal de login — ver README)
+//   EMAIL_TO                  para onde enviar os alertas (pode ser a mesma
+//                              conta de EMAIL_USER)
+//
+// Opcionais (por omissão assume Gmail):
+//   SMTP_HOST   (default smtp.gmail.com)
+//   SMTP_PORT   (default 465)
 
 import admin from "firebase-admin";
+import nodemailer from "nodemailer";
 
 const THRESHOLDS = [7, 10, 15];
 
@@ -23,47 +31,33 @@ function requireEnv(name) {
   return value;
 }
 
-async function sendTelegramMessage(token, chatId, text) {
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Telegram sendMessage falhou (${res.status}): ${body.slice(0, 500)}`);
-  }
-}
-
 function formatEUR(value) {
   return new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(value);
 }
 
-// Telegram parse_mode "HTML" interpreta &, < e > como marcação — nomes de
-// ativos reais contêm "&" com frequência (ex: "S&P 500 Information Tech"),
-// por isso tudo o que vem dos dados tem de ser escapado antes de entrar no texto.
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 async function main() {
   const serviceAccountRaw = requireEnv("FIREBASE_SERVICE_ACCOUNT");
-  const botToken = requireEnv("TELEGRAM_BOT_TOKEN");
-  const chatId = requireEnv("TELEGRAM_CHAT_ID");
+  const emailUser = requireEnv("EMAIL_USER");
+  const emailAppPassword = requireEnv("EMAIL_APP_PASSWORD");
+  const emailTo = requireEnv("EMAIL_TO");
 
   const serviceAccount = JSON.parse(serviceAccountRaw);
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   const db = admin.firestore();
 
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: true,
+    auth: { user: emailUser, pass: emailAppPassword },
+  });
+
   const watchSnap = await db.collection("reentryWatch").where("active", "==", true).get();
   console.log(`🔎 ${watchSnap.size} ativo(s) ativo(s) em reentryWatch.`);
 
-  let sent = 0;
   let checked = 0;
   let errors = 0;
+  const alerts = []; // { ticker, nome, threshold, dropPct, exitPrice, currentPrice, watchDoc, notified }
 
   for (const watchDoc of watchSnap.docs) {
     const watch = watchDoc.data();
@@ -95,17 +89,8 @@ async function main() {
       if (newlyCrossed.length === 0) continue;
 
       const nome = watch.nome || ticker;
-      const tickerSafe = escapeHtml(ticker);
-      const nomeSafe = escapeHtml(nome);
       for (const threshold of newlyCrossed) {
-        const text =
-          `📉 <b>Oportunidade de reentrada: ${tickerSafe}</b>\n` +
-          `${nomeSafe}\n\n` +
-          `Caiu <b>${dropPct.toFixed(1)}%</b> desde a saída (atingiu o nível -${threshold}%).\n` +
-          `Preço de saída: ${formatEUR(exitPrice)}\n` +
-          `Preço atual: ${formatEUR(currentPrice)}`;
-        await sendTelegramMessage(botToken, chatId, text);
-        sent++;
+        alerts.push({ ticker, nome, threshold, dropPct, exitPrice, currentPrice });
       }
 
       await watchDoc.ref.update({
@@ -117,7 +102,28 @@ async function main() {
     }
   }
 
-  console.log(`✅ Verificados: ${checked} | Alertas enviados: ${sent} | Erros: ${errors}`);
+  if (alerts.length > 0) {
+    // Um único email a resumir todos os alertas desta corrida, em vez de um
+    // email por threshold atingido (menos spam do que no Telegram).
+    const lines = alerts.map(
+      (a) =>
+        `• ${a.ticker} (${a.nome}): caiu ${a.dropPct.toFixed(1)}% desde a saída ` +
+        `(nível -${a.threshold}%). Saída: ${formatEUR(a.exitPrice)} | Atual: ${formatEUR(a.currentPrice)}`,
+    );
+    const text =
+      `${alerts.length} oportunidade(s) de reentrada atingiram um novo nível de queda:\n\n` +
+      lines.join("\n");
+
+    await transporter.sendMail({
+      from: emailUser,
+      to: emailTo,
+      subject: `📉 APPFinance: ${alerts.length} oportunidade(s) de reentrada`,
+      text,
+    });
+    console.log(`✅ Email enviado com ${alerts.length} alerta(s).`);
+  }
+
+  console.log(`✅ Verificados: ${checked} | Alertas enviados: ${alerts.length} | Erros: ${errors}`);
 }
 
 main().catch((err) => {
