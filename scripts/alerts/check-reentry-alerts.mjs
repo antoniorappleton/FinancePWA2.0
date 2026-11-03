@@ -1,6 +1,6 @@
 // scripts/alerts/check-reentry-alerts.mjs
 //
-// Corre fora da app (GitHub Actions, cron diário) para enviar um alerta por
+// Corre fora da app (GitHub Actions, cron a cada 6h) para enviar um alerta por
 // email quando um ativo em `reentryWatch` (posições fechadas de "boas
 // empresas", ver js/screens/dashboard.js:syncReentryWatchlist) cai -7%/-10%/
 // -15% desde o preço a que a posição foi vendida.

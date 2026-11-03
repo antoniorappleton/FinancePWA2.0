@@ -2,7 +2,9 @@ name: Reentry alerts (Email)
 
 on:
   schedule:
-    - cron: "0 20 * * *"
+    # A cada 6h (00h/06h/12h/18h UTC) -- acompanha a cadência a que o motor de
+    # fundamentais (indicadoresAPI's_v8.gs) atualiza os preços no Firestore.
+    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       mode:
