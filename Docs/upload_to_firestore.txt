@@ -1,0 +1,5 @@
+O código-fonte do script de upload para o Firestore vive em
+scripts/gas/upload_to_firestore.gs (é o que está versionado e mantido).
+
+Este ficheiro em Docs/ é só um placeholder histórico — não colar código
+aqui, para evitar duas cópias a divergirem uma da outra.

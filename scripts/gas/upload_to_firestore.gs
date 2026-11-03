@@ -1,39 +1,42 @@
 /****************************************************
- * Upload_Firestore_Robust.gs  (V2.1 - Atualizado)
+ * Upload_Firestore_Robust.gs  (V2.2 - Atualizado)
  *
  * Faz UPSERT (create/update) para Firestore a partir da sheet "Firebase"
  * Coleção: acoesDividendos
  *
  * ✅ Envia TODAS as tabelas e conteúdos (como #N/A, ou vazios como null).
  * ✅ Processamento contínuo em massa (envia tudo dentro do limite de tempo).
- * ✅ Resolve o bloqueio/lentidão de enviar poucas linhas de cada vez.
+ * ✅ Regra: Ativos com Setor "ETF" não atualizam SMA50 nem SMA200.
+ *
+ * V8.8 (indicadoresAPI's_v8.gs): duas entradas novas no UP_FIELD_MAP para o
+ * histórico de P/E (D9.2) — "pe percentil" e "pe hist median 5y".
  ****************************************************/
 
 const UP_PROPS = PropertiesService.getScriptProperties();
 
 // ---- Config base ----
 const UP_FIREBASE_PROJECT = "appfinance-812b2";
-const UP_FIREBASE_COLL = "acoesDividendos";   // Verifica se é mesmo este nome na tua BD!
+const UP_FIREBASE_COLL = "acoesDividendos";
 const UP_SHEET_NAME = "Firebase";
 
 // ---- Scheduler ----
 const UP_BASE_TRIGGER_MIN = 10;
-const UP_MIN_INTERVAL_MS = 8 * 60 * 1000; // gate
+const UP_MIN_INTERVAL_MS = 8 * 60 * 1000;
 const UP_LAST_RUN_PROP = "UP_FS_LAST_RUN_MS";
 
 // ---- Chunk/tempo ----
-const UP_CHUNK_ROWS = 500; // Lê imensas linhas de uma vez para ser ágil (era 60)
-const UP_FLUSH_EVERY = 300; // Máximo do firestore batchWrite é 500
+const UP_CHUNK_ROWS = 500;
+const UP_FLUSH_EVERY = 300;
 const UP_LAST_ROW_PROP = "UP_FS_LAST_ROW";
-const UP_SOFT_DEADLINE_MS = 5 * 60 * 1000 - 20000; // ~4m40s tolerância do google
+const UP_SOFT_DEADLINE_MS = 5 * 60 * 1000 - 20000;
 const UP_PRE_READ_FLUSH = true;
 const UP_PRE_READ_SLEEP_MS = 500;
 const UP_USE_DISPLAY_VALUES = true;
 
 // ---- Eliminação de “stale tickers” ----
-const UP_DELETE_STALE_TICKERS = false;       
-const UP_DELETE_MAX_PER_RUN = 150;           
-const UP_DELETE_RUN_ONLY_WHEN_CYCLE_RESTARTS = true; 
+const UP_DELETE_STALE_TICKERS = false;
+const UP_DELETE_MAX_PER_RUN = 150;
+const UP_DELETE_RUN_ONLY_WHEN_CYCLE_RESTARTS = true;
 
 // ---- Opções de escrita ----
 const UP_ADD_UPDATED_AT = true;
@@ -43,7 +46,6 @@ const UP_UPDATED_AT_FIELD = "updatedAt";
  * Mapeamento de headers (normalizados) -> nomes de campos no Firestore.
  */
 const UP_FIELD_MAP = {
-  // base
   "nome": "nome",
   "name": "nome",
   "ticker": "ticker",
@@ -59,21 +61,15 @@ const UP_FIELD_MAP = {
   "mes": "mes",
   "mês": "mes",
   "dividendo": "dividendo",
-
-  // yield
   "yield": "yield",
   "dividend yield": "yield",
   "dividend yield (%)": "yield",
-
-  // changes
   "1w": "priceChange_1w",
   "1m": "priceChange_1m",
   "1y": "priceChange_1y",
   "pricechange 1w": "priceChange_1w",
   "pricechange 1m": "priceChange_1m",
   "pricechange 1y": "priceChange_1y",
-
-  // valuation/tech
   "pe": "pe",
   "p/e": "pe",
   "p e": "pe",
@@ -83,23 +79,17 @@ const UP_FIELD_MAP = {
   "sma 50": "sma50",
   "sma200": "sma200",
   "sma 200": "sma200",
-
-  // dividendos
   "dividendo medio 24m": "dividendoMedio24m",
   "dividendo medio 24 m": "dividendoMedio24m",
   "dividendomedio24m": "dividendoMedio24m",
   "divmedo24m": "dividendoMedio24m",
   "divmedio24m": "dividendoMedio24m",
-
-  // earnings/quality
   "eps_yoy": "epsYoY",
   "eps yoy": "epsYoY",
   "eps_yoy (%)": "epsYoY",
   "eps next y": "epsNextY",
   "eps next year": "epsNextY",
   "roic": "roic",
-
-  // enterprise/value
   "ev": "ev",
   "market cap": "marketCap",
   "marketcap": "marketCap",
@@ -163,12 +153,9 @@ const UP_FIELD_MAP = {
   "target price": "target_price",
   "volatility": "volatility",
   "rel volume": "rel_volume",
-
   // D9.2 — histórico de P/E (V8.8)
   "pe percentil": "pe_percentil",
   "pe hist median 5y": "pe_hist_median_5y",
-
-  // extras
   "ultima atu": "ultimaAtu",
   "última atu": "ultimaAtu",
   "ultima atualizacao": "ultimaAtu",
@@ -177,12 +164,10 @@ const UP_FIELD_MAP = {
   "observações": "observacoes"
 };
 
-/** Função wrapper do menu / execução manual. */
 function UP_enviarParaFirebase() {
   UP_enviarParaFirebase_Logic();
 }
 
-/** CONFIGURAÇÃO (Executares no editor manualmente caso não esteja a correr sozínho) */
 function UP_setupTriggers() {
   UP_removeTriggers_();
   ScriptApp.newTrigger("UP_runIfDue")
@@ -200,7 +185,6 @@ function UP_removeTriggers_() {
   Logger.log("✅ Triggers removidos (se existiam).");
 }
 
-/** Função chamada de 10 em 10 min pelo trigger */
 function UP_runIfDue() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return;
@@ -248,7 +232,6 @@ function UP_enviarParaFirebase_Logic() {
       Utilities.sleep(UP_PRE_READ_SLEEP_MS);
     }
 
-    // headers
     const headerRaw = sh
       .getRange(1, 1, 1, lastCol)
       .getValues()[0]
@@ -257,6 +240,8 @@ function UP_enviarParaFirebase_Logic() {
     const headerNorm = headerRaw.map(UP_normKey_);
 
     const iTicker = headerNorm.findIndex(h => h === "ticker");
+    const iSetor = headerNorm.findIndex(h => h === "setor" || h === "sector");
+
     if (iTicker < 0) {
       Logger.log("❌ Coluna 'ticker' não encontrada (linha 1).");
       return;
@@ -273,7 +258,6 @@ function UP_enviarParaFirebase_Logic() {
     let currentRow = startRow;
     let cycleRestarted = false;
 
-    // NOVO LOOP: Processa o máximo de dados que conseguir nesse intervalo!
     while (currentRow <= lastRow) {
       if (Date.now() - startMs > UP_SOFT_DEADLINE_MS) break;
 
@@ -284,7 +268,11 @@ function UP_enviarParaFirebase_Logic() {
 
       for (let r = 0; r < dataValues.length; r++) {
         const tickerRaw = String(dataValues[r][iTicker] || "").trim().toUpperCase();
-        if (!tickerRaw) continue; // Sem ticket é impossivrl iterar.
+        if (!tickerRaw) continue;
+
+        // Detetar se é ETF para regras de exclusão
+        const setorRaw = iSetor >= 0 ? String(dataValues[r][iSetor] || "").trim() : "";
+        const isETF = setorRaw.toUpperCase().startsWith("ETF");
 
         const docId = UP_safeDocId_(tickerRaw);
         if (!docId) continue;
@@ -301,6 +289,9 @@ function UP_enviarParaFirebase_Logic() {
           if (!rawHeader || !String(rawHeader).trim()) continue;
 
           const key = UP_FIELD_MAP[norm] || rawHeader;
+
+          // REGRA: Se for ETF, não atualiza SMA50 nem SMA200
+          if (isETF && (key === "sma50" || key === "sma200")) continue;
 
           const cel = UP_sanitizeCell_(
             dataValues[r][c],
@@ -319,7 +310,6 @@ function UP_enviarParaFirebase_Logic() {
           fields[UP_UPDATED_AT_FIELD] = { timestampValue: new Date().toISOString() };
         }
 
-        // NOVO: Processamento de campos complexos (52w, Growth, etc)
         UP_processComplexFields_(fields);
 
         writes.push({
@@ -337,11 +327,11 @@ function UP_enviarParaFirebase_Logic() {
       }
 
       currentRow += numRowsToFetch;
-      
+
       let nextRow = currentRow;
       cycleRestarted = nextRow > lastRow;
-      if (cycleRestarted) nextRow = 2; // Volta ao recomeço caso finalize as linhas
-      
+      if (cycleRestarted) nextRow = 2;
+
       UP_PROPS.setProperty(UP_LAST_ROW_PROP, String(nextRow));
     }
 
@@ -370,7 +360,7 @@ function UP_normKey_(s) {
     .trim()
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/_/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -387,11 +377,10 @@ function UP_safeDocId_(ticker) {
 }
 
 function UP_sanitizeCell_(v, d) {
-  // Alterado para capturar sempre a célula:
   const raw = (d !== null && d !== undefined && String(d).trim() !== "") ? d : v;
 
   if (raw === null || raw === undefined || String(raw).trim() === "") {
-    return { ok: false }; // Vazio: omite o campo em vez de gravar string vazia
+    return { ok: true, value: "" };
   }
 
   if (raw instanceof Date) return { ok: true, value: raw };
@@ -400,12 +389,10 @@ function UP_sanitizeCell_(v, d) {
 
   const s = String(raw).trim();
 
-  // #N/A, NA, etc: omite o campo em vez de gravar a string literal
   if (s.startsWith("#") || ["n/a", "na", "n.a.", "não aplicável", "nao aplicavel", "-", "—", "--"].includes(s.toLowerCase())) {
-    return { ok: false };
+    return { ok: true, value: s };
   }
 
-  // Tenta extrair percentagens, valores pt, datas - se não der, envia como string
   const pct = UP_parsePercent_(s);
   if (pct !== null) return { ok: true, value: pct };
 
@@ -430,12 +417,9 @@ function UP_parsePtNumber_(s) {
   let x = String(s).trim();
   if (!x) return null;
 
-  // remove espaços internos
   x = x.replace(/\s+/g, "");
-  // remove apóstrofos de milhar
   x = x.replace(/'/g, "");
 
-  // Se tem vírgula, assume vírgula decimal (PT) e remove pontos de milhar
   if (x.includes(",")) {
     x = x.replace(/\./g, "");
     x = x.replace(",", ".");
@@ -488,7 +472,6 @@ function UP_batchWriteChecked_(writes, auth) {
     return;
   }
 
-  // Se a API devolver status por write, pode ter erros parciais
   try {
     const obj = JSON.parse(txt);
     if (obj && Array.isArray(obj.status)) {
@@ -508,13 +491,11 @@ function UP_batchWriteChecked_(writes, auth) {
 /** ===== Eliminação de tickers “stale” (opcional) ===== */
 
 function UP_deleteStaleTickers_(sh, lastRow, iTicker, auth, startMs) {
-  // Se já estamos perto do deadline, não inicia delete
   if (Date.now() - startMs > UP_SOFT_DEADLINE_MS - 30000) {
     Logger.log("ℹ️ Skip delete stale: perto do deadline.");
     return;
   }
 
-  // 1) Tickers presentes na sheet
   const rng = sh.getRange(2, iTicker + 1, Math.max(0, lastRow - 1), 1);
   const vals = rng.getValues();
 
@@ -526,7 +507,6 @@ function UP_deleteStaleTickers_(sh, lastRow, iTicker, auth, startMs) {
     if (docId) sheetTickers.add(docId);
   }
 
-  // 2) Listar documentos na coleção (paginado)
   const baseUrl = `https://firestore.googleapis.com/v1/projects/${UP_FIREBASE_PROJECT}/databases/(default)/documents/${UP_FIREBASE_COLL}`;
   let pageToken = null;
 
@@ -562,7 +542,7 @@ function UP_deleteStaleTickers_(sh, lastRow, iTicker, auth, startMs) {
       if (deleted >= UP_DELETE_MAX_PER_RUN) break;
       if (Date.now() - startMs > UP_SOFT_DEADLINE_MS - 20000) break;
 
-      const name = docs[i].name; // .../documents/acoesDividendos/<docId>
+      const name = docs[i].name;
       const docId = String(name || "").split("/").pop();
       if (!docId) continue;
 
@@ -594,8 +574,6 @@ function UP_processComplexFields_(fields) {
   const getS = (k) => fields[k] && fields[k].stringValue ? fields[k].stringValue : null;
   const setD = (k, v) => { if (v !== null) fields[k] = { doubleValue: v }; };
 
-  // 1. 52w High / Low
-  // Format: "288.62 -14.26%"
   const high52 = getS("52w_high");
   if (high52) {
     const parts = high52.split(/\s+/);
@@ -614,8 +592,6 @@ function UP_processComplexFields_(fields) {
     }
   }
 
-  // 2. Dividend Growth 3/5y
-  // Format: "4.26% 4.98%"
   const divGr = getS("dividend_gr_3_5y");
   if (divGr) {
     const parts = divGr.split(/\s+/);
@@ -625,8 +601,6 @@ function UP_processComplexFields_(fields) {
     }
   }
 
-  // 3. EPS Growth Past 3/5y
-  // Format: "6.89% 17.91%"
   const epsGr = getS("eps_past_3_5y");
   if (epsGr) {
     const parts = epsGr.split(/\s+/);
@@ -636,8 +610,6 @@ function UP_processComplexFields_(fields) {
     }
   }
 
-  // 4. Volatility
-  // Format: "1.94% 2.09%"
   const vol = getS("volatility");
   if (vol) {
     const parts = vol.split(/\s+/);
@@ -647,8 +619,6 @@ function UP_processComplexFields_(fields) {
     }
   }
 
-  // 5. Dividend Estimate
-  // Format: "1.07 (0.43%)"
   const divEst = getS("dividend_est");
   if (divEst) {
     const m = divEst.match(/^([\d.,]+)\s*\(([\d.,]+)%\)$/);
@@ -658,4 +628,3 @@ function UP_processComplexFields_(fields) {
     }
   }
 }
-
