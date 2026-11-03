@@ -21,14 +21,14 @@ jobs:
           node-version: "20"
 
       - name: Run scoring readiness audit
-        run: node scratch/audit_scoring_readiness.mjs --write
+        run: node scripts/audit/audit_scoring_readiness.mjs --write
 
       - name: Write summary
         shell: bash
         run: |
           node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
           const fs = require("node:fs");
-          const report = JSON.parse(fs.readFileSync("scratch/scoring_readiness_report.json", "utf8"));
+          const report = JSON.parse(fs.readFileSync("scripts/audit/scoring_readiness_report.json", "utf8"));
           const byMode = report.summary.byMode || {};
           const ready = report.ready || [];
           console.log("## Scoring readiness audit");
@@ -57,5 +57,5 @@ jobs:
         with:
           name: scoring-readiness-report
           path: |
-            scratch/scoring_readiness_report.json
-            scratch/scoring_readiness_report.csv
+            scripts/audit/scoring_readiness_report.json
+            scripts/audit/scoring_readiness_report.csv

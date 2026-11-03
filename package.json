@@ -1,0 +1,9 @@
+{
+  "name": "appfinance-pwa",
+  "private": true,
+  "type": "module",
+  "description": "Scripts de apoio (alertas, auditoria) para a APPFinance PWA. A app em si não tem build step.",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

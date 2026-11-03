@@ -10,6 +10,8 @@ import {
   serverTimestamp,
   getDocs,
   doc,
+  getDoc,
+  setDoc,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
@@ -35,6 +37,7 @@ import { portfolioHealth } from "../engines/portfolio-health.js";
 import { stressTest } from "../engines/stress-test.js";
 import { riskContribution } from "../engines/risk-contrib.js";
 import { analyzeETFOverlap, isKnownETF, smartETFAnalysis, enrichETFAsset } from "../engines/etf-overlap.js";
+import { getScoreBadge } from "../utils/decisionHelpers.js";
 
 let lastAtivosSnap = null;
 let lastAcoesSnap = null;
@@ -1234,6 +1237,92 @@ function computeClosedPositionOpportunities() {
   return rows;
 }
 
+let _lastReentrySyncAt = 0;
+const REENTRY_SYNC_THROTTLE_MS = 30 * 60 * 1000; // 30 min
+
+/**
+ * Mantém a coleção Firestore "reentryWatch" sincronizada com as posições
+ * fechadas que ainda são "boas empresas" (score >= 60, mesmo critério de
+ * js/utils/decisionHelpers.js:getScoreBadge). Serve de fonte de verdade para
+ * o alerta externo (scripts/alerts/check-reentry-alerts.mjs) comparar o preço
+ * atual com o preço de saída e notificar quedas de -7%/-10%/-15%.
+ * Esta função corre no cliente (self-throttled) porque é aqui que já temos o
+ * preço/score calculados; o script de alerta só lê o que ficou gravado.
+ */
+async function syncReentryWatchlist() {
+  if (!lastAtivosSnap) return;
+  const now = Date.now();
+  if (now - _lastReentrySyncAt < REENTRY_SYNC_THROTTLE_MS) return;
+  _lastReentrySyncAt = now;
+
+  try {
+    const infoMap = buildTickerInfoMap();
+    const { groupsArr } = aggregatePortfolioPositions(lastAtivosSnap);
+    const closedGroups = groupsArr.filter(
+      (g) => (g.qtd || 0) <= 0 && Math.abs(g.realizado || 0) > 0.001,
+    );
+
+    for (const g of closedGroups) {
+      const hasExitPrice = Number.isFinite(g.lastSellPreco) && g.lastSellPreco > 0;
+      if (!hasExitPrice) continue;
+
+      const info = infoMap.get(g.ticker) || null;
+      let scorePct = null;
+      try {
+        if (info) {
+          const result = calculateLucroMaximoScore(info, "1y", null, lastConfigData?.macroRegime ?? null);
+          scorePct = Number.isFinite(result?.score) ? result.score * 100 : null;
+        }
+      } catch (err) {
+        console.warn(`[reentryWatch] score falhou para ${g.ticker}:`, err);
+      }
+
+      const badgeClass = scorePct !== null ? getScoreBadge(scorePct).badgeClass : null;
+      const isGoodCompany = badgeClass === "strong" || badgeClass === "interesting";
+      const ref = doc(db, "reentryWatch", g.ticker);
+
+      try {
+        if (isGoodCompany) {
+          const snap = await getDoc(ref);
+          const payload = {
+            ticker: g.ticker,
+            nome: g.nome || g.ticker,
+            exitPrice: g.lastSellPreco,
+            exitDate: g.lastSellDate ? Timestamp.fromDate(g.lastSellDate) : null,
+            scoreAtSync: scorePct,
+            active: true,
+          };
+          if (!snap.exists()) payload.notifiedThresholds = [];
+          await setDoc(ref, payload, { merge: true });
+        } else {
+          const snap = await getDoc(ref);
+          if (snap.exists() && snap.data()?.active !== false) {
+            await setDoc(ref, { active: false }, { merge: true });
+          }
+        }
+      } catch (err) {
+        console.warn(`[reentryWatch] upsert falhou para ${g.ticker}:`, err);
+      }
+    }
+
+    // Posições reabertas (qtd > 0) deixam de ser "oportunidade de reentrada".
+    const reopenedTickers = groupsArr.filter((g) => (g.qtd || 0) > 0).map((g) => g.ticker);
+    for (const ticker of reopenedTickers) {
+      try {
+        const ref = doc(db, "reentryWatch", ticker);
+        const snap = await getDoc(ref);
+        if (snap.exists() && snap.data()?.active !== false) {
+          await setDoc(ref, { active: false }, { merge: true });
+        }
+      } catch (err) {
+        console.warn(`[reentryWatch] desativação (reaberta) falhou para ${ticker}:`, err);
+      }
+    }
+  } catch (err) {
+    console.warn("[dashboard] syncReentryWatchlist falhou:", err);
+  }
+}
+
 function renderBestOpportunities() {
   const track = document.getElementById("oppTrack");
   const filtersWrap = document.getElementById("oppFilters");
@@ -1248,6 +1337,7 @@ function renderBestOpportunities() {
   let allItems;
   try {
     allItems = computeClosedPositionOpportunities();
+    syncReentryWatchlist();
   } catch (err) {
     console.warn("[dashboard] renderBestOpportunities falhou:", err);
     return;

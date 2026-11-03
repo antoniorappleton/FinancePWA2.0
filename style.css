@@ -3584,12 +3584,6 @@ body.auth-screen .form-grid {
     max-width: 96vw !important;
   }
 
-  /* Report modal */
-  #anlReportModal .modal-content {
-    width: 96vw !important;
-    max-width: 96vw !important;
-  }
-
   /* Investment plan modal */
   #invPlanModal .modal-dialog {
     width: 96vw !important;
@@ -3610,12 +3604,6 @@ body.auth-screen .form-grid {
     width: 96vw !important;
     max-width: 96vw !important;
     max-height: 90vh !important;
-  }
-
-  /* Simulation modal */
-  #anlSimModal .modal-dialog {
-    width: 96vw !important;
-    max-width: 96vw !important;
   }
 
   /* Dashboard add modal */

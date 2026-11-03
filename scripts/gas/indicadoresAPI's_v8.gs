@@ -1,0 +1,443 @@
+/**
+ * =============================================================================
+ * ENGINE FINANCEIRO V8.7 — ETF AWARE + TICKER FIX
+ * Ficheiro: indicadoresAPI's_v8.gs
+ * =============================================================================
+ *
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║              ORDEM DE EXECUÇÃO (PRIMEIRA CONFIGURAÇÃO)           ║
+ * ╠══════════════════════════════════════════════════════════════════╣
+ * ║  PASSO 1 — (indicadoresAPI's_v8.gs)                              ║
+ * ║    ► Em Project Settings > Script Properties, define              ║
+ * ║      FMP_API_KEY manualmente (não vai no código-fonte).          ║
+ * ║    ► Executar: setupAPIKeys()                                    ║
+ * ║      Só valida que a chave está configurada.                     ║
+ * ║                                                                  ║
+ * ║  PASSO 2 — (indicadoresAPI's_v8.gs)                              ║
+ * ║    ► Executar: ENG_setupTriggers()                               ║
+ * ║      Cria um gatilho automático de 6/6h para ir buscar           ║
+ * ║      indicadores fundamentais (PE, ROIC, EPS, SMAs…) à FMP.      ║
+ * ║                                                                  ║
+ * ║  PASSO 3 — (Upload_Firestore_Robust.gs)                          ║
+ * ║    ► Executar: UP_setupTriggers()                                ║ 
+ * ║      Cria um gatilho automático de 10/10min para sincronizar     ║ 
+ * ║      a sheet "Firebase" para a base de dados Firestore.          ║
+ * ║                                                                  ║
+ * ║  PASSO 4 — Autorizar o script (feito automaticamente)            ║
+ * ║      Após executar qualquer função pela 1ª vez, o Google         ║ 
+ * ║      pede autorização. Clica em "Rever autorizações" e aceita.   ║
+ * ║                                                                  ║
+ * ║  ORDEM DO FLUXO AUTOMÁTICO (após configuração):                  ║
+ * ║    [1] FMP busca indicadores → escreve na sheet "Firebase"       ║
+ * ║    [2] Upload_Firestore envia a sheet atualizada ao Firestore    ║
+ * ║    [3] A PWA lê do Firestore e mostra dados atualizados          ║
+ * ╚══════════════════════════════════════════════════════════════════╝
+ *
+ * Correções V8.7:
+ *  1. normalizeTicker: verifica exclusões APÓS extrair o ticker
+ *     do formato EXCHANGE:TICKER (ex: "XETR:EUR" → filtrado ✅)
+ *  2. ETF Detection: usa o campo isEtf/isFund do profile FMP
+ *  3. EPS_YoY, EPS_Next e ROIC: só se escrevem para ações,
+ *     nunca para ETFs (evita valores sem sentido)
+ *  4. Profile chamado PRIMEIRO para detetar ETF antes de outros endpoints
+ *  5. hasData: um profile válido já conta como sucesso (evita fallback AV desnecessário)
+ *
+ * Correções V8.8:
+ *  6. Beta: já vinha na resposta do profile FMP mas era descartado — passa a
+ *     escrever-se na coluna BETA (resolvia ~63% dos ativos sem beta válido).
+ *  7. Nova chamada a /stable/ratios-ttm: ROE, ROA, Current Ratio e Debt/Equity
+ *     passam a ser capturados (campos que o scorer de "readiness" já esperava
+ *     mas nunca chegavam a existir na sheet).
+ *  8. Guardas de sanidade (ENG_isReasonable_) antes de qualquer setValue de
+ *     PE/ROIC/EV-EBITDA/BETA/ROE/ROA/CURRENT_RATIO/DEBT_EQ — um valor absurdo
+ *     da API deixa de poder entrar na sheet sem filtro.
+ *  9. D9.2: nova chamada a /stable/ratios (anual, 10 anos) para calcular
+ *     pe_percentil e pe_hist_median_5y por ação, desbloqueando a camada de
+ *     "valorização vs. histórico próprio" em js/engines/valuation.js, que
+ *     antes degradava sempre para 100% comparação sectorial.
+ */
+
+const ENG_PROPS = PropertiesService.getScriptProperties();
+const ENG_FMP_KEY = (ENG_PROPS.getProperty("FMP_API_KEY") || "").trim();
+const ENG_AV_KEY = (ENG_PROPS.getProperty("ALPHAVANTAGE_API_KEY") || "").trim();
+
+const ENG_SHEET_NAME = "Firebase";
+const ENG_START_ROW = 2;
+const ENG_MAX_EXECUTION_MS = 5 * 60 * 1000 + 30 * 1000; // 5 minutos e 30 segundos
+
+const ENG_COL = {
+  TICKER: 1,      // B
+  DIVIDENDO: 7,   // H
+  PE: 12,         // M (P/E)
+  SMA50: 13,      // N
+  SMA200: 14,     // O
+  EPS_YOY: 16,    // Q (EPS YoY)
+  EPS_NEXT: 17,   // R (EPS Next Y)
+  ROIC: 18,       // S
+  EV: 19,         // T
+  MARKET_CAP: 20, // U
+  NET_DEBT: 21,   // V
+  EBITDA: 22,     // W
+  EV_EBITDA: 23,  // X
+  ULTIMA_ATU: 24, // Y
+  // ── Novas colunas V8.8 — criar manualmente na sheet "Firebase" com estes
+  // cabeçalhos exatos (ver lista completa no topo do PASSO 2 nos comentários) ──
+  BETA: 25,              // Z
+  ROE: 26,               // AA
+  ROA: 27,               // AB
+  CURRENT_RATIO: 28,     // AC
+  DEBT_EQ: 29,           // AD
+  PE_PERCENTIL: 30,      // AE
+  PE_HIST_MEDIAN_5Y: 31  // AF
+};
+
+// Tickers a ignorar completamente (mesmo que venham depois de ":" em "EXCHANGE:TICKER")
+const ENG_SKIP_TICKERS = ["BTC", "ETH", "EUR", "USD", "GBP", "ADA", "XRP", "SOL", "DOT", "MATIC"];
+
+/**
+ * Guarda de sanidade na ingestão (V8.8): só escreve o valor se estiver dentro
+ * de um intervalo plausível. Evita que um valor absurdo da API (erro da FMP,
+ * ticker errado, divisão por quase-zero, etc.) entre na sheet sem filtro.
+ */
+function ENG_isReasonable_(value, min, max) {
+  return typeof value === "number" && isFinite(value) && value >= min && value <= max;
+}
+
+// Intervalo de beta: igual ao validBeta() em js/utils/normalize.js ([0.1, 3.0]),
+// para manter a mesma definição de "beta plausível" na ingestão e na app.
+const ENG_BETA_RANGE = [0.1, 3.0];
+const ENG_PE_RANGE = [-500, 500];
+const ENG_ROIC_RANGE = [-200, 200];
+const ENG_EV_EBITDA_RANGE = [-100, 300];
+const ENG_ROE_RANGE = [-300, 300];
+const ENG_ROA_RANGE = [-100, 100];
+const ENG_CURRENT_RATIO_RANGE = [0, 50];
+const ENG_DEBT_EQ_RANGE = [-10, 50];
+
+/**
+ * PASSO 1 — Guardar chave API da FMP
+ * Define FMP_API_KEY diretamente em Project Settings > Script Properties
+ * no editor do Apps Script (NÃO colar a chave aqui no código-fonte).
+ */
+function setupAPIKeys() {
+  if (!ENG_PROPS.getProperty("FMP_API_KEY")) {
+    throw new Error(
+      "FMP_API_KEY não definida. Configura-a em Project Settings > Script Properties no editor do Apps Script."
+    );
+  }
+  Logger.log("✅ Chave FMP já configurada em Script Properties.");
+}
+
+/**
+ * PASSO 2 — Criar gatilho de 6/6h para buscar indicadores
+ */
+function ENG_setupTriggers() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (["trigger_UpdateFundamentalAPIs", "trigger_SyncToFirebase"].includes(t.getHandlerFunction())) {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  ScriptApp.newTrigger("trigger_UpdateFundamentalAPIs").timeBased().everyHours(6).create();
+  Logger.log("✅ Gatilho de 6/6h configurado para V8.7.");
+}
+
+function trigger_UpdateFundamentalAPIs() {
+  updateFundamentalDataRotational();
+}
+
+/**
+ * MOTOR PRINCIPAL V8.7 — Rotação Anti-Timeout
+ * Processa lotes de 20 ativos por execução (os mais antigos primeiro).
+ */
+function updateFundamentalDataRotational() {
+  const startTime = Date.now();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(ENG_SHEET_NAME);
+  if (!sheet) return;
+  const data = sheet.getDataRange().getValues();
+  const today = new Date();
+
+  let candidates = [];
+  for (let i = ENG_START_ROW - 1; i < data.length; i++) {
+    const ticker = normalizeTicker(String(data[i][ENG_COL.TICKER]));
+    if (!ticker) continue;
+    candidates.push({
+      row: i + 1,
+      ticker: ticker,
+      lastUpdate: data[i][ENG_COL.ULTIMA_ATU] ? new Date(data[i][ENG_COL.ULTIMA_ATU]) : new Date(0)
+    });
+  }
+
+  candidates.sort((a, b) => a.lastUpdate - b.lastUpdate);
+  const toProcess = candidates.slice(0, 20);
+  Logger.log("🚀 Iniciando Motor V8.7 (Lote de %s ativos)...", toProcess.length);
+
+  for (let item of toProcess) {
+    if (Date.now() - startTime > ENG_MAX_EXECUTION_MS) {
+      Logger.log("⏳ Soft Deadline atingido. Parando para evitar erro do Google.");
+      break;
+    }
+
+    let success = false;
+    if (ENG_FMP_KEY) {
+      success = fetchFromFMP_DeepScan(sheet, item.row, item.ticker);
+    }
+
+    if (!success && ENG_AV_KEY) {
+      Logger.log("⚠️ Fallback AV para: %s", item.ticker);
+      success = fetchFromAlphaVantage(sheet, item.row, item.ticker);
+      Utilities.sleep(13000);
+    }
+
+    if (success) {
+      sheet.getRange(item.row, ENG_COL.ULTIMA_ATU + 1).setValue(today);
+    }
+  }
+  Logger.log("✅ Rotação concluída ou pausada com segurança.");
+}
+
+/**
+ * Fetch principal via FMP (Financial Modeling Prep).
+ * Ordem de chamadas:
+ *   1. Profile  → detecta ETF, obtém lastDiv
+ *   2. Key Metrics TTM → PE, ROIC (só ações), EV, MarketCap, EV/EBITDA
+ *   3. Financial Growth → EPS YoY (só ações)
+ *   4. Analyst Estimates → EPS Next Year (só ações)
+ *   5. Historical Prices → SMA50, SMA200 (ações e ETFs)
+ */
+function fetchFromFMP_DeepScan(sheet, row, ticker) {
+  try {
+    let hasData = false;
+    let isEtf = false;
+    const apikey = `apikey=${ENG_FMP_KEY}`;
+
+    // ── 1. PROFILE (primeiro para detectar ETF) ──────────────────────────────
+    const resP = UrlFetchApp.fetch(
+      `https://financialmodelingprep.com/stable/profile?symbol=${ticker}&${apikey}`,
+      { muteHttpExceptions: true }
+    );
+    if (resP.getResponseCode() === 200) {
+      const dataP = JSON.parse(resP.getContentText())[0];
+      if (dataP) {
+        hasData = true;
+        isEtf = !!(dataP.isEtf || dataP.isFund);
+        if (dataP.lastDiv) {
+          sheet.getRange(row, ENG_COL.DIVIDENDO + 1).setValue(dataP.lastDiv);
+        }
+        if (ENG_isReasonable_(dataP.beta, ENG_BETA_RANGE[0], ENG_BETA_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.BETA + 1).setValue(dataP.beta);
+        }
+        if (isEtf) {
+          Logger.log("📦 ETF/Fundo detetado: %s — a saltar EPS_YoY e ROIC", ticker);
+          // Limpa células de EPS/ROIC em ETFs para evitar lixo de corridas anteriores
+          sheet.getRange(row, ENG_COL.EPS_YOY + 1).setValue("");
+          sheet.getRange(row, ENG_COL.ROIC + 1).setValue("");
+          sheet.getRange(row, ENG_COL.EPS_NEXT + 1).setValue("");
+        }
+      }
+    }
+
+    // ── 2. KEY METRICS TTM ───────────────────────────────────────────────────
+    let peValue = null;
+    const resM = UrlFetchApp.fetch(
+      `https://financialmodelingprep.com/stable/key-metrics-ttm?symbol=${ticker}&${apikey}`,
+      { muteHttpExceptions: true }
+    );
+    if (resM.getResponseCode() === 200) {
+      const dataM = JSON.parse(resM.getContentText())[0];
+      if (dataM) {
+        if (ENG_isReasonable_(dataM.peRatioTTM, ENG_PE_RANGE[0], ENG_PE_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.PE + 1).setValue(dataM.peRatioTTM);
+          peValue = dataM.peRatioTTM;
+        }
+        // ROIC apenas para ações (não ETFs)
+        const roicPct = dataM.returnOnInvestedCapitalTTM != null ? dataM.returnOnInvestedCapitalTTM * 100 : null;
+        if (!isEtf && ENG_isReasonable_(roicPct, ENG_ROIC_RANGE[0], ENG_ROIC_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.ROIC + 1).setValue(roicPct);
+        }
+        const ev   = dataM.enterpriseValueTTM || dataM.enterpriseValue;
+        const mc   = dataM.marketCapTTM || dataM.marketCap;
+        const evEb = dataM.enterpriseValueOverEbitdaTTM || dataM.evToEbitdaTTM;
+        if (ev) sheet.getRange(row, ENG_COL.EV + 1).setValue(ev);
+        if (mc) sheet.getRange(row, ENG_COL.MARKET_CAP + 1).setValue(mc);
+        if (ENG_isReasonable_(evEb, ENG_EV_EBITDA_RANGE[0], ENG_EV_EBITDA_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.EV_EBITDA + 1).setValue(evEb);
+          if (ev && evEb > 0) sheet.getRange(row, ENG_COL.EBITDA + 1).setValue(ev / evEb);
+        }
+        if (ev && mc) sheet.getRange(row, ENG_COL.NET_DEBT + 1).setValue(ev - mc);
+        hasData = true;
+      }
+    }
+
+    // ── 2b. RATIOS TTM (V8.8) — ROE, ROA, Current Ratio, Debt/Equity ────────
+    // NOTA: nomes de campo abaixo são os mais plausíveis para este endpoint da
+    // FMP; não foi possível confirmar contra uma resposta real da API a partir
+    // daqui — testar numa execução real e ajustar os nomes se necessário.
+    const resR = UrlFetchApp.fetch(
+      `https://financialmodelingprep.com/stable/ratios-ttm?symbol=${ticker}&${apikey}`,
+      { muteHttpExceptions: true }
+    );
+    if (resR.getResponseCode() === 200) {
+      const dataR = JSON.parse(resR.getContentText())[0];
+      if (dataR) {
+        const roePct = dataR.returnOnEquityTTM != null ? dataR.returnOnEquityTTM * 100 : null;
+        const roaPct = dataR.returnOnAssetsTTM != null ? dataR.returnOnAssetsTTM * 100 : null;
+        const currentRatio = dataR.currentRatioTTM;
+        const debtEq = dataR.debtToEquityRatioTTM;
+
+        if (ENG_isReasonable_(roePct, ENG_ROE_RANGE[0], ENG_ROE_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.ROE + 1).setValue(roePct);
+          hasData = true;
+        }
+        if (ENG_isReasonable_(roaPct, ENG_ROA_RANGE[0], ENG_ROA_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.ROA + 1).setValue(roaPct);
+          hasData = true;
+        }
+        if (ENG_isReasonable_(currentRatio, ENG_CURRENT_RATIO_RANGE[0], ENG_CURRENT_RATIO_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.CURRENT_RATIO + 1).setValue(currentRatio);
+          hasData = true;
+        }
+        if (ENG_isReasonable_(debtEq, ENG_DEBT_EQ_RANGE[0], ENG_DEBT_EQ_RANGE[1])) {
+          sheet.getRange(row, ENG_COL.DEBT_EQ + 1).setValue(debtEq);
+          hasData = true;
+        }
+      }
+    }
+
+    // ── 3 + 4. EPS (só ações) ────────────────────────────────────────────────
+    if (!isEtf) {
+      // Financial Growth → EPS YoY
+      const resG = UrlFetchApp.fetch(
+        `https://financialmodelingprep.com/stable/financial-growth?symbol=${ticker}&period=annual&${apikey}`,
+        { muteHttpExceptions: true }
+      );
+      if (resG.getResponseCode() === 200) {
+        const dataG = JSON.parse(resG.getContentText())[0];
+        if (dataG && dataG.epsgrowth != null) {
+          sheet.getRange(row, ENG_COL.EPS_YOY + 1).setValue(dataG.epsgrowth * 100);
+          hasData = true;
+        }
+      }
+
+      // Analyst Estimates → EPS Next Year
+      const resE = UrlFetchApp.fetch(
+        `https://financialmodelingprep.com/stable/analyst-estimates?symbol=${ticker}&period=annual&${apikey}`,
+        { muteHttpExceptions: true }
+      );
+      if (resE.getResponseCode() === 200) {
+        const dataE = JSON.parse(resE.getContentText())[0];
+        if (dataE && dataE.epsAvg) {
+          sheet.getRange(row, ENG_COL.EPS_NEXT + 1).setValue(dataE.epsAvg);
+          hasData = true;
+        }
+      }
+
+      // D9.2 — P/E histórico (só ações): percentil do P/E atual face aos
+      // últimos ~10 anos da própria empresa.
+      if (peValue != null) {
+        fetchHistoricalPE_(sheet, row, ticker, apikey, peValue);
+      }
+    }
+
+    // ── 5. HISTORICAL (SMAs) — válido para ações e ETFs ─────────────────────
+    const resH = UrlFetchApp.fetch(
+      `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${ticker}&${apikey}`,
+      { muteHttpExceptions: true }
+    );
+    if (resH.getResponseCode() === 200) {
+      const histData = JSON.parse(resH.getContentText());
+      if (Array.isArray(histData) && histData.length >= 50) {
+        const hist = histData.map(d => d.close);
+        const sma50 = hist.slice(0, 50).reduce((a, b) => a + b, 0) / 50;
+        sheet.getRange(row, ENG_COL.SMA50 + 1).setValue(sma50);
+        if (hist.length >= 200) {
+          const sma200 = hist.slice(0, 200).reduce((a, b) => a + b, 0) / 200;
+          sheet.getRange(row, ENG_COL.SMA200 + 1).setValue(sma200);
+        }
+        hasData = true;
+      }
+    }
+
+    if (hasData) Logger.log("✅ FMP [%s] (ETF=%s): Atualizado", ticker, isEtf);
+    return hasData;
+  } catch (e) {
+    Logger.log("❌ Erro FMP [%s]: %s", ticker, e.message);
+    return false;
+  }
+}
+
+/**
+ * D9.2 — Histórico de P/E (V8.8): calcula a mediana do P/E anual dos últimos
+ * até 10 anos e o percentil do P/E atual dentro dessa distribuição (0 = mais
+ * barato de sempre, 100 = mais caro de sempre). Só é chamada para ações.
+ *
+ * NOTA: "priceToEarningsRatioTTM" é o nome de campo mais plausível para este
+ * endpoint da FMP; não foi possível confirmar contra uma resposta real da API
+ * a partir daqui — testar numa execução real e ajustar se necessário.
+ */
+function fetchHistoricalPE_(sheet, row, ticker, apikey, currentPE) {
+  try {
+    const res = UrlFetchApp.fetch(
+      `https://financialmodelingprep.com/stable/ratios?symbol=${ticker}&period=annual&limit=10&${apikey}`,
+      { muteHttpExceptions: true }
+    );
+    if (res.getResponseCode() !== 200) return;
+
+    const data = JSON.parse(res.getContentText());
+    if (!Array.isArray(data) || data.length === 0) return;
+
+    const history = data
+      .map(d => d.priceToEarningsRatioTTM != null ? d.priceToEarningsRatioTTM : d.priceEarningsRatio)
+      .filter(v => ENG_isReasonable_(v, ENG_PE_RANGE[0], ENG_PE_RANGE[1]));
+
+    if (history.length < 3) return; // histórico curto demais para um percentil com sentido
+
+    const sorted = history.slice().sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+
+    const below = sorted.filter(v => v <= currentPE).length;
+    const percentile = Math.round((below / sorted.length) * 100);
+
+    sheet.getRange(row, ENG_COL.PE_HIST_MEDIAN_5Y + 1).setValue(median);
+    sheet.getRange(row, ENG_COL.PE_PERCENTIL + 1).setValue(percentile);
+  } catch (e) {
+    Logger.log("❌ Erro histórico P/E [%s]: %s", ticker, e.message);
+  }
+}
+
+/**
+ * Fallback: AlphaVantage (usado apenas se FMP falhar completamente)
+ */
+function fetchFromAlphaVantage(sheet, row, ticker) {
+  try {
+    const url = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${ticker}&apikey=${ENG_AV_KEY}`;
+    const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (resp.getResponseCode() !== 200) return false;
+    const av = JSON.parse(resp.getContentText());
+    if (!av.Symbol) return false;
+    if (av.PERatio && av.PERatio !== "None") sheet.getRange(row, ENG_COL.PE + 1).setValue(Number(av.PERatio));
+    if (av.DividendPerShare && av.DividendPerShare !== "None") sheet.getRange(row, ENG_COL.DIVIDENDO + 1).setValue(Number(av.DividendPerShare));
+    return true;
+  } catch (e) { return false; }
+}
+
+/**
+ * Normaliza um ticker da sheet para o formato esperado pela FMP.
+ *
+ * CORREÇÃO V8.7: a verificação da lista de exclusão acontece DEPOIS
+ * de extrair o ticker limpo. Assim "XETR:EUR" → "EUR" → filtrado ✅
+ * (antes ficava "XETR:EUR" → não estava na lista → passava → retornava "EUR" ❌)
+ *
+ * @param {string} raw  Valor bruto da célula (ex: "AAPL", "XETR:BMW", "EUR")
+ * @returns {string|null} Ticker normalizado ou null se deve ser ignorado
+ */
+function normalizeTicker(raw) {
+  if (!raw) return null;
+  const clean = raw.trim().toUpperCase();
+  // 1. Extrai o ticker PRIMEIRO (parte depois de ":" no formato "EXCHANGE:TICKER")
+  const ticker = clean.includes(":") ? clean.split(":").pop() : clean;
+  // 2. SÓ DEPOIS verifica se deve ser ignorado (moedas, cripto, vazio)
+  if (!ticker || ENG_SKIP_TICKERS.includes(ticker)) return null;
+  return ticker;
+}

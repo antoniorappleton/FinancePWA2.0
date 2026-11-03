@@ -105,6 +105,8 @@ export function aggregatePortfolioPositions(snapshot) {
       totalBuyQty: 0,
       lastBuyPreco: 0,
       lastBuyDate: null,
+      lastSellPreco: 0,
+      lastSellDate: null,
     };
 
     g.lastMovementQty = safeQtd;
@@ -149,6 +151,10 @@ export function aggregatePortfolioPositions(snapshot) {
 
       if (efetivaVenda > 0) {
         g.realizado += safePreco * efetivaVenda - custoBaseVenda;
+        // Preço de saída real (última venda), usado como referência para
+        // detetar oportunidades de reentrada quando a posição fecha.
+        g.lastSellPreco = safePreco;
+        g.lastSellDate = movement.date;
       }
 
       g.qtd -= efetivaVenda;
