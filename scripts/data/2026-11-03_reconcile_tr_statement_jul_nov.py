@@ -13,6 +13,15 @@
 #   - `config/strategy.availableCash` NÃO foi tocado: é um valor de gestão de caixa
 #     da estratégia (1228 no momento da reconciliação), não espelha 1:1 o saldo em
 #     conta do extrato Trade Republic — confirmado antes de qualquer escrita.
+#
+# ATUALIZAÇÃO 2026-11-03 (pedido do utilizador): os 11 registos de "WTIO"
+# criados abaixo foram removidos do Firestore depois de aplicados — é
+# compra/venda intradiária de curtíssima duração (ETP 3x leveraged), não uma
+# posição real de investimento, por isso não faz sentido ficar no histórico
+# de Atividade/PM nem entrar no sistema de alertas de reentrada. Confirmado
+# que não há rasto de "WTIO" em `reentryWatch` nem em `config/strategy.tickers`.
+# O ticker "XESC" (iShares Europe Consumer Staples) FICOU, por ser uma posição
+# de ETF normal (não leveraged/intradiária).
 
 import urllib.request, json, sys
 
