@@ -80,15 +80,15 @@ const ENG_COL = {
   EBITDA: 22,     // W
   EV_EBITDA: 23,  // X
   ULTIMA_ATU: 24, // Y
-  // ── Novas colunas V8.8 — criar manualmente na sheet "Firebase" com estes
-  // cabeçalhos exatos (ver lista completa no topo do PASSO 2 nos comentários) ──
-  BETA: 25,              // Z
-  ROE: 26,               // AA
-  ROA: 27,               // AB
-  CURRENT_RATIO: 28,     // AC
-  DEBT_EQ: 29,           // AD
-  PE_PERCENTIL: 30,      // AE
-  PE_HIST_MEDIAN_5Y: 31  // AF
+  // Z já está em uso ("Observações") — as colunas novas da V8.8 começam em AA.
+  // Criar manualmente na sheet "Firebase" com estes cabeçalhos exatos:
+  BETA: 26,              // AA
+  ROE: 27,               // AB
+  ROA: 28,               // AC
+  CURRENT_RATIO: 29,     // AD
+  DEBT_EQ: 30,           // AE
+  PE_PERCENTIL: 31,      // AF
+  PE_HIST_MEDIAN_5Y: 32  // AG
 };
 
 // Tickers a ignorar completamente (mesmo que venham depois de ":" em "EXCHANGE:TICKER")
