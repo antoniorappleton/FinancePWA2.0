@@ -20,12 +20,18 @@
 // Para confirmar que o envio de email está bem configurado sem esperar por um
 // alerta real, corre com --test-email: envia logo um email de confirmação e
 // sai, sem tocar no Firestore/reentryWatch.
+//
+// Para ver o modelo/estrutura exata do email de alerta real, corre com
+// --preview-email: envia um email com 3 empresas de exemplo (dados
+// inventados mas plausíveis), construído pela mesma função que gera o
+// email real — não toca no Firestore.
 
 import admin from "firebase-admin";
 import nodemailer from "nodemailer";
 
 const THRESHOLDS = [7, 10, 15];
 const TEST_EMAIL_MODE = process.argv.includes("--test-email");
+const PREVIEW_EMAIL_MODE = process.argv.includes("--preview-email");
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -49,6 +55,51 @@ function makeTransporter(emailUser, emailAppPassword) {
   });
 }
 
+// Constrói o assunto + corpo do email a partir da lista de alertas — usado
+// tanto pelo envio real como pelo --preview-email, para o modelo ser
+// exatamente igual ao que vai sair a sério.
+function buildAlertEmail(alerts) {
+  const lines = alerts.map(
+    (a) =>
+      `• ${a.ticker} (${a.nome}): caiu ${a.dropPct.toFixed(1)}% desde a saída ` +
+      `(nível -${a.threshold}%). Saída: ${formatEUR(a.exitPrice)} | Atual: ${formatEUR(a.currentPrice)}`,
+  );
+  const text =
+    `${alerts.length} oportunidade(s) de reentrada atingiram um novo nível de queda:\n\n` +
+    lines.join("\n");
+  const subject = `📉 APPFinance: ${alerts.length} oportunidade(s) de reentrada`;
+  return { subject, text };
+}
+
+// Empresas de exemplo (tickers reais da carteira, números inventados) só
+// para --preview-email — nunca usadas no envio real de alertas.
+const PREVIEW_ALERTS = [
+  {
+    ticker: "NUKL",
+    nome: "VanEck Uranium and Nuclear Technologies UCITS ETF",
+    threshold: 7,
+    dropPct: 8.3,
+    exitPrice: 49.6,
+    currentPrice: 45.49,
+  },
+  {
+    ticker: "CBRS",
+    nome: "First Trust Nasdaq Cybersecurity UCITS ETF",
+    threshold: 10,
+    dropPct: 11.7,
+    exitPrice: 56.09,
+    currentPrice: 49.54,
+  },
+  {
+    ticker: "GRID",
+    nome: "First Trust Nasdaq Clean Edge Smart Grid Infrastructure UCITS ETF",
+    threshold: 15,
+    dropPct: 16.2,
+    exitPrice: 57.59,
+    currentPrice: 48.26,
+  },
+];
+
 async function main() {
   const emailUser = requireEnv("EMAIL_USER");
   const emailAppPassword = requireEnv("EMAIL_APP_PASSWORD");
@@ -66,6 +117,19 @@ async function main() {
         "Este foi um email de teste manual (--test-email), não um alerta real de reentrada.",
     });
     console.log("✅ Email de teste enviado com sucesso.");
+    return;
+  }
+
+  if (PREVIEW_EMAIL_MODE) {
+    console.log("🧪 Modo de pré-visualização: a enviar email com 3 empresas de exemplo...");
+    const { subject, text } = buildAlertEmail(PREVIEW_ALERTS);
+    await transporter.sendMail({
+      from: emailUser,
+      to: emailTo,
+      subject: `[PREVIEW] ${subject}`,
+      text: `⚠️ Isto é uma pré-visualização com dados inventados, não um alerta real.\n\n${text}`,
+    });
+    console.log("✅ Email de pré-visualização enviado com sucesso.");
     return;
   }
 
@@ -127,21 +191,8 @@ async function main() {
   if (alerts.length > 0) {
     // Um único email a resumir todos os alertas desta corrida, em vez de um
     // email por threshold atingido (menos spam do que no Telegram).
-    const lines = alerts.map(
-      (a) =>
-        `• ${a.ticker} (${a.nome}): caiu ${a.dropPct.toFixed(1)}% desde a saída ` +
-        `(nível -${a.threshold}%). Saída: ${formatEUR(a.exitPrice)} | Atual: ${formatEUR(a.currentPrice)}`,
-    );
-    const text =
-      `${alerts.length} oportunidade(s) de reentrada atingiram um novo nível de queda:\n\n` +
-      lines.join("\n");
-
-    await transporter.sendMail({
-      from: emailUser,
-      to: emailTo,
-      subject: `📉 APPFinance: ${alerts.length} oportunidade(s) de reentrada`,
-      text,
-    });
+    const { subject, text } = buildAlertEmail(alerts);
+    await transporter.sendMail({ from: emailUser, to: emailTo, subject, text });
     console.log(`✅ Email enviado com ${alerts.length} alerta(s).`);
   }
 
