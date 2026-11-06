@@ -49,7 +49,7 @@ export function navigateTo(screen) {
 // Disponibilizar globalmente para onclick="navigateTo('...')"
 window.navigateTo = navigateTo;
 
-const APP_VERSION = "2.15.1";
+const APP_VERSION = "2.15.2";
 
 // Arranque na auth e Registo de Service Worker
 document.addEventListener("DOMContentLoaded", () => {
